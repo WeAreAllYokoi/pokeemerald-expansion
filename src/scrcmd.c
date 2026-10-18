@@ -489,6 +489,18 @@ bool8 ScrCmd_setvar(struct ScriptContext *ctx)
     return FALSE;
 }
 
+// setvarword calls this through callnative with a 16-bit variable ID and a 32-bit value
+void ScrCmd_setvarword(struct ScriptContext *ctx)
+{
+    u32 varId = ScriptReadHalfword(ctx);
+    u32 *ptr = ADMG_SCRIPT_POINTER(ctx, varId);
+
+    Script_RequestEffects(SCREFF_V1);
+    Script_RequestWriteVar(varId);
+
+    *ptr = ScriptReadWord(ctx);
+}
+
 bool8 ScrCmd_copyvar(struct ScriptContext *ctx)
 {
     u32 varId = ScriptReadHalfword(ctx);
@@ -2341,7 +2353,7 @@ bool8 ScrCmd_setmonmove(struct ScriptContext *ctx)
 {
     u8 partyIndex = ScriptReadByte(ctx);
     u8 slot = ScriptReadByte(ctx);
-    enum Move move = ScriptReadHalfword(ctx);
+    enum Move move = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -2545,12 +2557,12 @@ bool8 ScrCmd_cleartrainerflag(struct ScriptContext *ctx)
 
 bool8 ScrCmd_setwildbattle(struct ScriptContext *ctx)
 {
-    enum Species species = ScriptReadHalfword(ctx);
+    enum Species species = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u8 level = ScriptReadByte(ctx);
-    enum Item item = ScriptReadHalfword(ctx);
-    enum Species species2 = ScriptReadHalfword(ctx);
+    enum Item item = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    enum Species species2 = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u8 level2 = ScriptReadByte(ctx);
-    enum Item item2 = ScriptReadHalfword(ctx);
+    enum Item item2 = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 

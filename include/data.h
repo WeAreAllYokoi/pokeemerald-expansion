@@ -133,7 +133,7 @@ struct Trainer
     const struct TrainerMon *party;
     enum Item items[MAX_TRAINER_ITEMS];
     struct StartingStatuses startingStatus; // this trainer starts a battle with a given status. see include/constants/battle.h for values
-    u8 trainerClass;
+    enum TrainerClassID trainerClass;
     u16 encounterMusic:4;
     u16 multiTeamSize:1;
     u16 gender:1;
@@ -162,8 +162,8 @@ struct TypeInfo
     u8 name[TYPE_NAME_LENGTH + 1];
     u8 generic[17];
     u8 palette;
-    u16 zMove;
-    u16 maxMove;
+    enum Move zMove;
+    enum Move maxMove;
     u16 teraTypeRGBValue;    // Most values pulled from the Tera type icon palette.
     u16 damageCategory:2;    // Used for B_PHYSICAL_SPECIAL_SPLIT <= GEN_3
     u16 useSecondTypeIconPalette:1;

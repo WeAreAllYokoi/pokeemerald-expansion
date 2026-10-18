@@ -161,6 +161,15 @@
 	.2byte \value
 	.endm
 
+	@ Set a variable to a 32-bit value
+	@ Value operands read through VarGet use a halfword: IDs below VARS_START are literals, others are variable IDs
+	@ Use setvarword first to pass a content ID that exceeds the literal range
+	.macro setvarword destination:req, value:req
+	callnative ScrCmd_setvarword, requests_effects=1
+	.2byte \destination
+	.4byte \value
+	.endm
+
 	@ Changes the value of destination by adding value to it. Overflow is not prevented (0xFFFF + 1 = 0x0000).
 	.macro addvar destination:req, value:req
 	.byte SCR_OP_ADDVAR

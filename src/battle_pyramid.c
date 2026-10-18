@@ -67,7 +67,7 @@ struct PyramidFloorTemplate
 
 struct PyramidTrainerEncounterMusic
 {
-    u8 trainerClass;
+    enum TrainerClassID trainerClass;
     u8 trainerEncounterMusic;
 };
 

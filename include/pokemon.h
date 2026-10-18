@@ -398,7 +398,7 @@ struct SpeciesInfo /*0xC4*/
     u8 baseSpDefense;
     enum Type types[2];
     u8 catchRate;
-    u8 forceTeraType;
+    enum Type forceTeraType;
     u16 expYield; // expYield was changed from u8 to u16 for the new Exp System.
     u16 evYield_HP:2;
     u16 evYield_Attack:2;
@@ -526,19 +526,19 @@ struct SpeciesInfo /*0xC4*/
 // The absence of enum and the use of large data types is there to reflect the full range of user input
 struct PokemonTemplate
 {
-    u16 species;
-    u16 heldItem;
+    u32 species;
+    u32 heldItem;
     u16 level;
     u16 ball;
     u16 gender;
-    u16 nature;
+    u32 nature;
     bool16 isShiny;
     u16 abilityNum;
     u16 evs[NUM_STATS];
     u16 ivs[NUM_STATS];
-    u16 moves[MAX_MON_MOVES];
+    u32 moves[MAX_MON_MOVES];
     bool16 gmaxFactor;
-    u16 teraType;
+    u32 teraType;
     u16 dmaxLevel;
     bool16 isEgg;
     enum GeneratedMonOrigin origin;

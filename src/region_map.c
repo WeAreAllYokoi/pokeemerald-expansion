@@ -2141,7 +2141,7 @@ struct FlyLocation
 {
     enum RegionMapType regionMapType;
     u16 flag;
-    u16 mapsec;
+    mapsec_u16_t mapsec;
 };
 
 static const struct FlyLocation sFlyLocations[] =

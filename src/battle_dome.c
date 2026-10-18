@@ -5393,7 +5393,7 @@ struct ADMG_DomeMatchView
     struct SaveBlock2 *save;
     u64 generation;
     struct BattleDomeTrainer trainers[DOME_TOURNAMENT_TRAINERS_COUNT];
-    u16 moves[DOME_TOURNAMENT_TRAINERS_COUNT];
+    enum Move moves[DOME_TOURNAMENT_TRAINERS_COUNT];
     u8 playerName[PLAYER_NAME_LENGTH + 1];
     u8 ids[2];
     u32 count, readMask, roundMask, nameMask, moveMask;
@@ -6055,7 +6055,7 @@ struct ADMG_DomeRoundFrame
     struct SaveBlock2 *save;
     u64 generation;
     struct BattleDomeTrainer trainers[DOME_TOURNAMENT_TRAINERS_COUNT];
-    u16 moves[DOME_TOURNAMENT_TRAINERS_COUNT];
+    enum Move moves[DOME_TOURNAMENT_TRAINERS_COUNT];
     u8 first[sizeof(gStringVar1)], second[sizeof(gStringVar2)];
     const struct ADMG_DomeSelectionInput *left, *right;
     const struct BattleFrontierTrainer *previousTrainers, *ownedTrainers;

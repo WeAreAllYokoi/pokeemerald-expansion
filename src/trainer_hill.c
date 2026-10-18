@@ -87,7 +87,7 @@ static enum Item GetPrizeItemId(void);
 
 struct
 {
-    u8 trainerClass;
+    enum TrainerClassID trainerClass;
     u8 musicId;
 } static const sTrainerClassesAndMusic[] =
 {
