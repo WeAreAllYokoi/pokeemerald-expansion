@@ -71,6 +71,12 @@ static inline bool32 IsTrainerPicIdValid(u32 pic) { return pic < RUNTIME_TRAINER
 #define NEXT_TYPE_ID(i)    ((i) + 1 == NUMBER_OF_MON_TYPES ? (i) + 2 : (i) + 1)
 #define NEXT_ITEM_ID(i)    ((i) + 1 == ITEMS_COUNT ? (i) + 2 : (i) + 1)
 
+// Native memory, where the platform places content and assets added at run time. Code that accepts a pointer only
+// when it is in ROM accepts one here too.
+#define ADMG_NATIVE_MEMORY_START 0x10000000
+#define ADMG_NATIVE_MEMORY_END   0x80000000
+static inline bool32 ADMG_IsNativeAddress(u32 address) { return address >= ADMG_NATIVE_MEMORY_START && address < ADMG_NATIVE_MEMORY_END; }
+
 // Choose from [first, baseEnd), then the added species starting at FIRST_ADDED_SPECIES
 // Keep the original Random() draw when no species have been added
 u32 ADMG_RandomSpecies(u32 first, u32 baseEnd);
