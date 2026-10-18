@@ -1,4 +1,5 @@
 #include "global.h"
+#include "type_icon_anim.h"
 #include "battle_main.h"
 #include "battle_setup.h"
 #include "bg.h"
@@ -2067,7 +2068,7 @@ static void SetTypeIconPosAndPal(enum Type typeId, u8 x, u8 y, u8 spriteArrayId)
     struct Sprite *sprite;
 
     sprite = &gSprites[sDexNavUiDataPtr->typeIconSpriteIds[spriteArrayId]];
-    StartSpriteAnim(sprite, typeId);
+    SetTypeIconSpriteAnim(sprite, typeId);
     sprite->oam.paletteNum = sMoveTypeToOamPaletteNum[typeId];
     sprite->x = x + 16;
     sprite->y = y + 8;

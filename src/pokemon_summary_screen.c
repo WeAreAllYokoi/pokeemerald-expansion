@@ -1,4 +1,5 @@
 #include "global.h"
+#include "type_icon_anim.h"
 #include "main.h"
 #include "battle.h"
 #include "battle_anim.h"
@@ -4324,7 +4325,7 @@ static void CreateMoveTypeIcons(void)
 void SetTypeSpritePosAndPal(enum Type typeId, u8 x, u8 y, u8 spriteArrayId)
 {
     struct Sprite *sprite = &gSprites[sMonSummaryScreen->spriteIds[spriteArrayId]];
-    StartSpriteAnim(sprite, typeId);
+    SetTypeIconSpriteAnim(sprite, typeId);
     if (typeId < NUMBER_OF_MON_TYPES)
         sprite->oam.paletteNum = gTypesInfo[typeId].palette;
     else

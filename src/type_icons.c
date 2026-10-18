@@ -1,4 +1,5 @@
 #include "global.h"
+#include "type_icon_anim.h"
 #include "battle.h"
 #include "battle_anim.h"
 #include "battle_controllers.h"
@@ -407,7 +408,15 @@ static void CreateSpriteAndSetTypeSpriteAttributes(enum Type type, u32 x, u32 y,
 
     sprite->hFlip = ShouldFlipTypeIcon(useDoubleBattleCoords, position, type);
 
-    StartSpriteAnim(sprite, type);
+    SetTypeIconSpriteAnim(sprite, type);
+}
+
+// Built-in types use their frame in the type icon sheet
+// IDs outside that range show TYPE_MYSTERY
+// Mods can replace this function to draw icons for added types
+__attribute__((noinline)) void SetTypeIconSpriteAnim(struct Sprite *sprite, enum Type type)
+{
+    StartSpriteAnim(sprite, type < NUMBER_OF_MON_TYPES ? type : TYPE_MYSTERY);
 }
 
 static bool32 ShouldFlipTypeIcon(bool32 useDoubleBattleCoords, u32 position, enum Type typeId)

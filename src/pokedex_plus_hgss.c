@@ -1,4 +1,5 @@
 #include "global.h"
+#include "type_icon_anim.h"
 #include "battle_main.h"
 #include "battle_util.h"
 #include "bg.h"
@@ -1686,7 +1687,7 @@ static void SetTypeIconPosAndPal(enum Type typeId, u8 x, u8 y, u8 spriteArrayId)
     struct Sprite *sprite;
 
     sprite = &gSprites[sPokedexView->typeIconSpriteIds[spriteArrayId]];
-    StartSpriteAnim(sprite, typeId);
+    SetTypeIconSpriteAnim(sprite, typeId);
     if (typeId < NUMBER_OF_MON_TYPES)
         sprite->oam.paletteNum = gTypesInfo[typeId].palette + TYPE_INFO_PALETTE_NUM_OFFSET;
     else
