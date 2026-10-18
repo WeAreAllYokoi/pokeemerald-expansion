@@ -496,7 +496,7 @@ enum TimeOfDay GetTimeOfDayForEncounters(u32 headerId, enum WildPokemonArea area
         return GenConfigTimeOfDay(timeOfDay);
 }
 
-static u8 PickWildMonNature(enum Species species)
+static nature_t PickWildMonNature(enum Species species)
 {
     u8 i;
     struct Pokeblock *safariPokeblock;
@@ -595,7 +595,7 @@ bool8 TryGenerateWildMon(const struct WildPokemonInfo *wildMonInfo, enum WildPok
     return TRUE;
 }
 
-static u16 GenerateFishingWildMon(const struct WildPokemonInfo *wildMonInfo, u8 rod)
+static enum Species GenerateFishingWildMon(const struct WildPokemonInfo *wildMonInfo, u8 rod)
 {
     ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1, SPECIES_NONE);
 

@@ -235,7 +235,7 @@ static enum Item GetNextBall(enum Item ballId)
 
 static void HandleInputChooseAction(enum BattlerId battler)
 {
-    enum Item itemId = gBattleResources->bufferA[battler][2] | (gBattleResources->bufferA[battler][3] << 8);
+    enum Item itemId = T1_READ_32(&gBattleResources->bufferA[battler][2]);
 
     DoBounceEffect(battler, BOUNCE_HEALTHBOX, 7, 1);
     DoBounceEffect(battler, BOUNCE_MON, 7, 1);

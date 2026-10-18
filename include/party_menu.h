@@ -47,7 +47,7 @@ struct PartyMenu
     s8 slotId;
     s8 slotId2;
     u8 action;
-    u16 bagItem;
+    enum Item bagItem;
     s32 data1;           // Stores a move ID, counter, move slot, cursor position, minigame eligibility mask, or field-open flag
     s16 learnMoveState;  // data2, used only as a learn move state
 };

@@ -133,7 +133,7 @@ static void CalculateAppealMoveImpact(u8);
 static void SetMoveAnimAttackerData(u8);
 static void BlinkContestantBox(u8, u8);
 static u8 CreateContestantBoxBlinkSprites(u8);
-static u16 SanitizeMove(enum Move);
+static enum Move SanitizeMove(enum Move);
 static void SetMoveSpecificAnimData(u8);
 static void SetMoveTargetPosition(enum Move move);
 static void ClearMoveAnimData(u8);
@@ -5359,7 +5359,7 @@ static void Task_WaitForSliderHeartAnim(u8 taskId)
 
 #undef tAnimId
 
-static u16 SanitizeMove(enum Move move)
+static enum Move SanitizeMove(enum Move move)
 {
     assertf(move < MOVES_COUNT, "invalid move: %d", move)
     {

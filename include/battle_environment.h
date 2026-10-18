@@ -8,7 +8,7 @@
 struct BattleEnvironment
 {
     u8 name[26];
-    u16 naturePower;
+    enum Move naturePower;
     const void *secretPowerAnimation;
     u16 secretPowerEffect;
     enum Type camouflageType;

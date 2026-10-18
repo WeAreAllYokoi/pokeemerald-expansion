@@ -1028,6 +1028,7 @@ static void UNUSED BtlController_EmitPause(enum BattlerId battler, u32 bufferId,
 void BtlController_EmitMoveAnimation(enum BattlerId battler, u32 bufferId, enum Move move, u8 turnOfMove, u16 movePower, s32 dmg, u8 friendship, u8 multihit)
 {
     gBattleResources->transferBuffer[0] = CONTROLLER_MOVEANIMATION;
+    // Move ID layout: low 16 bits in bytes 1-2, high 16 bits in bytes 14-15
     gBattleResources->transferBuffer[1] = move;
     gBattleResources->transferBuffer[2] = (move & 0xFF00) >> 8;
     gBattleResources->transferBuffer[3] = turnOfMove;
@@ -1049,7 +1050,8 @@ void BtlController_EmitMoveAnimation(enum BattlerId battler, u32 bufferId, enum 
         gBattleResources->transferBuffer[12] = 0;
         gBattleResources->transferBuffer[13] = 0;
     }
-    gBattleResources->transferBuffer[14] = 0;
+    gBattleResources->transferBuffer[14] = (move >> 16) & 0xFF;
+    gBattleResources->transferBuffer[15] = (move >> 24) & 0xFF;
     gBattleResources->transferBuffer[15] = 0;
 
     struct LinkBattleAnim anim = {0};
@@ -1144,14 +1146,15 @@ void BtlController_EmitPrintSelectionString(enum BattlerId battler, u32 bufferId
     PrepareBufferDataTransfer(battler, bufferId, gBattleResources->transferBuffer, sizeof(struct BattleMsgData) + 4);
 }
 
+static u32 PutContentId(u8 *dst, u32 id);
+
 // itemId only relevant for B_ACTION_USE_ITEM
 void BtlController_EmitChooseAction(enum BattlerId battler, u32 bufferId, u8 action, enum Item itemId)
 {
     gBattleResources->transferBuffer[0] = CONTROLLER_CHOOSEACTION;
     gBattleResources->transferBuffer[1] = action;
-    gBattleResources->transferBuffer[2] = itemId;
-    gBattleResources->transferBuffer[3] = (itemId & 0xFF00) >> 8;
-    PrepareBufferDataTransfer(battler, bufferId, gBattleResources->transferBuffer, 4);
+    PutContentId(&gBattleResources->transferBuffer[2], itemId);
+    PrepareBufferDataTransfer(battler, bufferId, gBattleResources->transferBuffer, 6);
 }
 
 // Only used by the forfeit prompt in the Battle Frontier
@@ -1342,22 +1345,18 @@ void BtlController_EmitChosenMonReturnValue(enum BattlerId battler, u32 bufferId
     PrepareBufferDataTransfer(battler, bufferId, gBattleResources->transferBuffer, 5);
 }
 
-void BtlController_EmitOneReturnValue(enum BattlerId battler, u32 bufferId, u16 ret)
+void BtlController_EmitOneReturnValue(enum BattlerId battler, u32 bufferId, u32 ret)
 {
     gBattleResources->transferBuffer[0] = CONTROLLER_ONERETURNVALUE;
-    gBattleResources->transferBuffer[1] = ret;
-    gBattleResources->transferBuffer[2] = (ret & 0xFF00) >> 8;
-    gBattleResources->transferBuffer[3] = 0;
-    PrepareBufferDataTransfer(battler, bufferId, gBattleResources->transferBuffer, 4);
+    PutContentId(&gBattleResources->transferBuffer[1], ret);
+    PrepareBufferDataTransfer(battler, bufferId, gBattleResources->transferBuffer, 5);
 }
 
-void BtlController_EmitOneReturnValue_Duplicate(enum BattlerId battler, u32 bufferId, u16 ret)
+void BtlController_EmitOneReturnValue_Duplicate(enum BattlerId battler, u32 bufferId, u32 ret)
 {
     gBattleResources->transferBuffer[0] = CONTROLLER_ONERETURNVALUE_DUPLICATE;
-    gBattleResources->transferBuffer[1] = ret;
-    gBattleResources->transferBuffer[2] = (ret & 0xFF00) >> 8;
-    gBattleResources->transferBuffer[3] = 0;
-    PrepareBufferDataTransfer(battler, bufferId, gBattleResources->transferBuffer, 4);
+    PutContentId(&gBattleResources->transferBuffer[1], ret);
+    PrepareBufferDataTransfer(battler, bufferId, gBattleResources->transferBuffer, 5);
 }
 
 void BtlController_EmitHitAnimation(enum BattlerId battler, u32 bufferId)
@@ -2575,7 +2574,7 @@ void BtlController_HandleDrawTrainerPic(enum BattlerId battler, enum TrainerPicI
         gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].oam.paletteNum = IndexOfSpritePaletteTag(GetTrainerPicTag(trainerPicId, TRUE));
         gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].x2 = -DISPLAY_WIDTH;
         gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].sSpeedX = 2;
-        gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].oam.affineParam = trainerPicId;
+        gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].contentId = trainerPicId;
     }
     else // Player's side
     {
@@ -2676,7 +2675,7 @@ void BtlController_HandleTrainerSlide(enum BattlerId battler, enum TrainerPicID 
         if (gBattleStruct->trainerSlideSpriteIds[battler] >= MAX_SPRITES)
         { ADMG_StateAccessRejected(gBattleStruct->trainerSlideSpriteIds[battler], __func__); return; }
 
-        gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].oam.affineParam = trainerPicId;
+        gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].contentId = trainerPicId;
         gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].oam.paletteNum = IndexOfSpritePaletteTag(GetTrainerPicTag(trainerPicId, TRUE));
         gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].x2 = 96;
         gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].x += 32;
@@ -2781,7 +2780,8 @@ void BtlController_HandleMoveAnimation(enum BattlerId battler)
 {
     if (!IsBattleSEPlaying(battler))
     {
-        u16 move = gBattleResources->bufferA[battler][1] | (gBattleResources->bufferA[battler][2] << 8);
+        enum Move move = gBattleResources->bufferA[battler][1] | (gBattleResources->bufferA[battler][2] << 8)
+                       | (gBattleResources->bufferA[battler][14] << 16) | ((u32)gBattleResources->bufferA[battler][15] << 24);
 
         gAnimMoveTurn = gBattleResources->bufferA[battler][3];
         gAnimMovePower = gBattleResources->bufferA[battler][4] | (gBattleResources->bufferA[battler][5] << 8);

@@ -2062,7 +2062,7 @@ static const u8 sMoveTypeToOamPaletteNum[NUMBER_OF_MON_TYPES] =
     [TYPE_DARK] = TYPE_ICON_PAL_NUM_0,
     [TYPE_FAIRY] = TYPE_ICON_PAL_NUM_1,
 };
-static void SetTypeIconPosAndPal(u8 typeId, u8 x, u8 y, u8 spriteArrayId)
+static void SetTypeIconPosAndPal(enum Type typeId, u8 x, u8 y, u8 spriteArrayId)
 {
     struct Sprite *sprite;
 

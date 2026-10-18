@@ -2420,7 +2420,7 @@ static void TryCreateRedOutlineFlyDestIcons(void)
                 gSprites[spriteId].oam.size = SPRITE_SIZE(16x16);
                 gSprites[spriteId].callback = SpriteCB_FlyDestIcon;
                 StartSpriteAnim(&gSprites[spriteId], FLYDESTICON_RED_OUTLINE);
-                gSprites[spriteId].sIconMapSec = mapSecId;
+                gSprites[spriteId].contentId = mapSecId;
             }
         }
     }

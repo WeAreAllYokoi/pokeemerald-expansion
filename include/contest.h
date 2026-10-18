@@ -174,8 +174,8 @@ struct ContestantStatus
     s16 baseAppeal;
     s16 appeal;
     s16 pointTotal;
-    u16 currMove;
-    u16 prevMove;
+    enum Move currMove;
+    enum Move prevMove;
     u8 moveCategory;
     u8 ranking:2;
     u8 unused1:2;
@@ -231,7 +231,7 @@ struct ContestAppealMoveResults
 struct ContestAIInfo
 {
     /*0x00*/ u8 aiState;
-    /*0x02*/ u16 nextMove;
+    enum Move nextMove;
     /*0x04*/ u8 nextMoveIndex;
     /*0x05*/ u8 moveScores[MAX_MON_MOVES];
     /*0x09*/ u8 aiAction;

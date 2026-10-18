@@ -6233,7 +6233,7 @@ static u32 ADMG_DomeWinningOpponent(struct ADMG_DomeWinningInput *input, u32 win
     ({ __typeof__(expression) admg_value = (expression); \
        if (!ADMG_DomeWinningCurrent(input)) goto ADMG_winning_reject; admg_value; })
 
-static u16 ADMG_RunDomeWinningMove(int winnerTournamentId, int loserTournamentId, u8 roundId, struct ADMG_DomeWinningInput *input)
+static enum Move ADMG_RunDomeWinningMove(int winnerTournamentId, int loserTournamentId, u8 roundId, struct ADMG_DomeWinningInput *input)
 {
     int i, j, k;
     int moveScores[MAX_MON_MOVES * FRONTIER_PARTY_SIZE];

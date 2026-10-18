@@ -470,7 +470,7 @@ u16 MapPreview_CreateMapNameWindow(mapsec_u8_t mapsec)
 #define tMapSecId   data[3]
 #define tWindowId   data[4]
 
-void RunMapPreviewScreenNonFade(u8 mapSecId)
+void RunMapPreviewScreenNonFade(mapsec_u8_t mapSecId)
 {
     u8 taskId = CreateTask(Task_MapPreviewScreen_NonFade, 0);
     gTasks[taskId].tMapSecId = mapSecId;

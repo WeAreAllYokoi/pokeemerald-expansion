@@ -210,7 +210,7 @@ typedef union // size = 0x24
         /*0x02*/ u8 language;
         /*0x03*/ u8 language2;
         /*0x04*/ u8 nickname[VANILLA_POKEMON_NAME_LENGTH + 1];
-        /*0x0F*/ u8 ball;
+        enum Item ball;
         /*0x10*/ enum Species species;
         /*0x12*/ u8 nBallsUsed;
         /*0x13*/ u8 playerName[PLAYER_NAME_LENGTH + 1];
@@ -264,7 +264,7 @@ typedef union // size = 0x24
         /*0x00*/ u8 kind;
         /*0x01*/ bool8 active;
         /*0x02*/ u16 numPokeCaught;
-        /*0x04*/ u16 caughtPoke;
+        enum Species caughtPoke;
         /*0x06*/ u16 steps;
         /*0x08*/ enum Species species;
         /*0x0A*/ mapsec_u8_t location;
@@ -338,10 +338,10 @@ typedef union // size = 0x24
         /*0x02*/ enum Species lastOpponentSpecies;
         /*0x04*/ mapsec_u8_t location;
         /*0x05*/ u8 outcome;
-        /*0x06*/ u16 caughtMonBall;
+        enum Item caughtMonBall;
         /*0x08*/ u16 balls;
         /*0x0A*/ enum Species poke1Species;
-        /*0x0C*/ u16 lastUsedMove;
+        enum Move lastUsedMove;
         /*0x0E*/ u8 language;
         /*0x0F*/ u8 filler_0f[4];
         /*0x13*/ u8 playerName[PLAYER_NAME_LENGTH + 1];
@@ -382,8 +382,8 @@ typedef union // size = 0x24
         /*0x02*/ enum Move move;
         /*0x04*/ enum Species foeSpecies;
         /*0x06*/ enum Species species;
-        /*0x08*/ u16 otherMoves[3];
-        /*0x0E*/ u16 betterMove;
+        enum Move otherMoves[3];
+        enum Move betterMove;
         /*0x10*/ u8 nOtherMoves;
         /*0x11*/ u8 language;
         /*0x12*/ u8 filler_12[1];
@@ -502,9 +502,9 @@ typedef struct
 
 struct GabbyAndTyData
 {
-    /*2BA4*/ u16 mon1;
-    /*2BA6*/ u16 mon2;
-    /*2BA8*/ u16 lastMove;
+    enum Species mon1;
+    enum Species mon2;
+    enum Move lastMove;
     /*2BAA*/ u16 quote[1];
     /*2BAC*/ mapsec_u8_t mapnum;
     /*2BAD*/ u8 battleNum;

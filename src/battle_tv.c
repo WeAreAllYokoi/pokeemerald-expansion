@@ -14,7 +14,7 @@
 
 // this file's functions
 static bool8 IsNotSpecialBattleString(enum StringID stringId);
-static void AddMovePoints(u8 caseId, u16 arg1, u8 arg2, u8 arg3);
+static void AddMovePoints(u8 caseId, u32 arg1, u32 arg2, u32 arg3);
 static void TrySetBattleSeminarShow(void);
 static void AddPointsOnFainting(void);
 static void AddPointsBasedOnWeather(u16 weatherFlags, enum Move move, u8 moveSlot);
@@ -787,7 +787,7 @@ void TryPutLinkBattleTvShowOnAir(void)
     }
 }
 
-static void AddMovePoints(u8 caseId, u16 arg1, u8 arg2, u8 arg3)
+static void AddMovePoints(u8 caseId, u32 arg1, u32 arg2, u32 arg3)
 {
     struct BattleTvMovePoints *movePoints = &gBattleStruct->tvMovePoints;
     struct BattleTv *tvPtr = &gBattleStruct->tv;

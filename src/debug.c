@@ -1172,7 +1172,7 @@ static void DebugNativeStep_CloseDebugWindow(u8 taskId)
     UnlockPlayerFieldControls();
 }
 
-static void DebugSelection_SetData(u8 taskId, u32 index, u16 value)
+static void DebugSelection_SetData(u8 taskId, u32 index, u32 value)
 {
     u16 *stepsData = (u16 *)GetWordTaskArg(taskId, STEPS_DATA_PTR_ARG);
     stepsData[index] = value;

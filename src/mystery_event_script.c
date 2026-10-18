@@ -147,7 +147,7 @@ static void SetRecordMixingGift(u8 unk, u8 quantity, enum Item itemId)
     }
 }
 
-u16 GetRecordMixingGift(void)
+enum Item GetRecordMixingGift(void)
 {
     struct RecordMixingGiftData *data = &gSaveBlock1Ptr->recordMixingGift.data;
 

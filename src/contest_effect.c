@@ -58,7 +58,7 @@ static s16 RoundUp(s16);
 
 #include "data/contest_moves.h"
 
-bool8 AreMovesContestCombo(u16 lastMove, u16 nextMove)
+bool8 AreMovesContestCombo(enum Move lastMove, enum Move nextMove)
 {
     int i;
     u8 lastMoveComboStarterId = GetMoveContestComboStarter(lastMove);

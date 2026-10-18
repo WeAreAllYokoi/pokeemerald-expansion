@@ -5043,7 +5043,7 @@ bool32 CanLearnTeachableMove(enum Species species, enum Move move)
     return FALSE;
 }
 
-u16 SpeciesToPokedexNum(enum Species species)
+u32 SpeciesToPokedexNum(enum Species species)
 {
     if (IsNationalPokedexEnabled())
     {
@@ -6210,7 +6210,7 @@ bool32 DoesSpeciesHaveFormChangeMethod(enum Species species, enum FormChanges me
     return FALSE;
 }
 
-u16 MonTryLearningNewMoveEvolution(struct Pokemon *mon, bool8 firstMove)
+enum Move MonTryLearningNewMoveEvolution(struct Pokemon *mon, bool8 firstMove)
 {
     enum Species species = GetMonData(mon, MON_DATA_SPECIES);
     u8 level = GetMonData(mon, MON_DATA_LEVEL);

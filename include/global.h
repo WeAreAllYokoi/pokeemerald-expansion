@@ -512,7 +512,7 @@ struct BattleFrontier
               u8 pikeHintedRoomType:4;
               u8 pikeHealingRoomsDisabled:1;
     /*0xE11*/ //u8 padding2;
-    /*0xE12*/ u16 pikeHeldItemsBackup[FRONTIER_PARTY_SIZE];
+    enum Item pikeHeldItemsBackup[FRONTIER_PARTY_SIZE];
     /*0xE18*/ u16 pyramidPrize;
     /*0xE1A*/ u16 pyramidWinStreaks[FRONTIER_LVL_MODE_COUNT];
     /*0xE1E*/ u16 pyramidRecordStreaks[FRONTIER_LVL_MODE_COUNT];
@@ -529,7 +529,7 @@ struct BattleFrontier
     /*0xEB8*/ u16 battlePoints;
     /*0xEBA*/ u16 cardBattlePoints;
     /*0xEBC*/ u32 battlesCount;
-    /*0xEC0*/ u16 domeWinningMoves[DOME_TOURNAMENT_TRAINERS_COUNT];
+    enum Move domeWinningMoves[DOME_TOURNAMENT_TRAINERS_COUNT];
     /*0xEE0*/ u8 trainerFlags;
     /*0xEE1*/ u8 opponentNames[FRONTIER_LVL_MODE_COUNT][PLAYER_NAME_LENGTH + 1];
     /*0xEF1*/ u8 opponentTrainerIds[FRONTIER_LVL_MODE_COUNT][TRAINER_ID_LENGTH];
@@ -891,7 +891,7 @@ struct LilycoveLadyQuiz
     /*0x016*/ u16 playerAnswer;
     /*0x018*/ u8 playerName[PLAYER_NAME_LENGTH + 1];
     /*0x020*/ u16 playerTrainerId[TRAINER_ID_LENGTH];
-    /*0x028*/ u16 prize;
+    enum Item prize;
     /*0x02A*/ bool8 waitingForChallenger;
     /*0x02B*/ u8 questionId;
     /*0x02C*/ u8 prevQuestionId;
@@ -908,7 +908,7 @@ struct LilycoveLadyFavor
     /*0x00C*/ u8 favorId;
     /*0x00D*/ //u8 padding1;
     /*0x00E*/ enum Item itemId;
-    /*0x010*/ u16 bestItem;
+    enum Item bestItem;
     /*0x012*/ u8 language;
     /*0x013*/ //u8 padding2;
 };

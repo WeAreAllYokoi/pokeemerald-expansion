@@ -636,7 +636,7 @@ void HandleAction_UseItem(void)
     gBattle_BG0_Y = 0;
     ClearVariousBattlerFlags(gBattlerAttacker);
 
-    gLastUsedItem = gBattleResources->bufferB[gBattlerAttacker][1] | (gBattleResources->bufferB[gBattlerAttacker][2] << 8);
+    gLastUsedItem = T1_READ_32(&gBattleResources->bufferB[gBattlerAttacker][1]);
     if (X_ITEM_FRIENDSHIP_INCREASE > 0
         && GetItemEffectType(gLastUsedItem) == ITEM_EFFECT_X_ITEM
         && !ShouldSkipFriendshipChange())

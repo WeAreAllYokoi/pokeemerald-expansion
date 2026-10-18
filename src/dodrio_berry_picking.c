@@ -2693,7 +2693,7 @@ static void ResetPickState(void)
     sGame->players[sGame->multiplayerId].comm.pickState = PICK_NONE;
 }
 
-static u16 GetPrizeItemId(void)
+static enum Item GetPrizeItemId(void)
 {
     return BerryTypeToItemId(sGame->berryResults[sGame->multiplayerId][BERRY_PRIZE]);
 }

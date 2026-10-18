@@ -1227,7 +1227,7 @@ static void TossPokeblock(u8 taskId)
         s16 *data;
         u16 *scrollOffset, *selectedRow;
 
-        TryClearPokeblock(gSpecialVar_ItemId);
+        TryClearPokeblock((u8)gSpecialVar_ItemId);
         PlaySE(SE_SELECT);
 
         scrollOffset = &sSavedPokeblockData.scrollOffset;
@@ -1260,7 +1260,7 @@ static void PokeblockAction_UseInBattle(u8 taskId)
     nature_t nature = GetNature(&gParties[B_TRAINER_OPPONENT_A][0]);
     s16 gain = PokeblockGetGain(nature, &gSaveBlock1Ptr->pokeblocks[gSpecialVar_ItemId]);
     StringCopy(gBattleTextBuff1, gPokeblockNames[gSaveBlock1Ptr->pokeblocks[gSpecialVar_ItemId].color]);
-    TryClearPokeblock(gSpecialVar_ItemId);
+    TryClearPokeblock((u8)gSpecialVar_ItemId);
 
     gSpecialVar_ItemId = gSaveBlock1Ptr->pokeblocks[gSpecialVar_ItemId].color << 8;
     if (gain == 0)
@@ -1275,10 +1275,10 @@ static void PokeblockAction_UseInBattle(u8 taskId)
 
 static void PokeblockAction_UseOnPokeblockFeeder(u8 taskId)
 {
-    SafariZoneActivatePokeblockFeeder(gSpecialVar_ItemId);
+    SafariZoneActivatePokeblockFeeder((u8)gSpecialVar_ItemId);
     StringCopy(gStringVar1, gPokeblockNames[gSaveBlock1Ptr->pokeblocks[gSpecialVar_ItemId].color]);
     gSpecialVar_Result = gSpecialVar_ItemId;
-    TryClearPokeblock(gSpecialVar_ItemId);
+    TryClearPokeblock((u8)gSpecialVar_ItemId);
     gSpecialVar_ItemId = 0;
     FadePaletteAndSetTaskToClosePokeblockCase(taskId);
 }
@@ -1287,7 +1287,7 @@ static void PokeblockAction_GiveToContestLady(u8 taskId)
 {
     gSpecialVar_0x8004 = GivePokeblockToContestLady(&gSaveBlock1Ptr->pokeblocks[gSpecialVar_ItemId]);
     gSpecialVar_Result = gSpecialVar_ItemId;
-    TryClearPokeblock(gSpecialVar_ItemId);
+    TryClearPokeblock((u8)gSpecialVar_ItemId);
     gSpecialVar_ItemId = 0;
     FadePaletteAndSetTaskToClosePokeblockCase(taskId);
 }

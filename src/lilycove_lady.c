@@ -249,7 +249,7 @@ bool8 IsFavorLadyThresholdMet(void)
 
 u16 FavorLadyGetPrize(void)
 {
-    u16 prize;
+    enum Item prize;
 
     sFavorLadyPtr = &gSaveBlock1Ptr->lilycoveLady.favor;
     prize = sFavorLady[sFavorLadyPtr->favorId].prize;

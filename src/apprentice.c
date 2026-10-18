@@ -82,7 +82,7 @@ COMMON_DATA struct ApprenticeQuestionData *gApprenticeQuestionData = NULL;
 COMMON_DATA void (*gApprenticeFunc)(void) = NULL;
 
 // This file's functions.
-static u16 GetRandomAlternateMove(u8 monId);
+static enum Move GetRandomAlternateMove(u8 monId);
 static bool8 TrySetMove(u8 monId, enum Move move);
 static void CreateChooseAnswerTask(bool8 noBButton, u8 itemsCount, u8 windowId);
 static u8 CreateAndShowWindow(u8 left, u8 top, u8 width, u8 height);
@@ -315,7 +315,7 @@ static void SetRandomQuestionData(void)
 
 // Get the second move choice for the "Which move" question
 // Unlike the first move choice, this can be either a level up move or a TM/HM move
-static u16 GetRandomAlternateMove(u8 monId)
+static enum Move GetRandomAlternateMove(u8 monId)
 {
     u8 i, j;
     u8 id;

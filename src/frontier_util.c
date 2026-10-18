@@ -3372,7 +3372,7 @@ ADMG_NATIVE_ENTRY u16 GetBattleFacilityTrainerGfxId(u16 trainerId)
     }
 }
 
-ADMG_NATIVE_ENTRY u8 GetFrontierTrainerFrontSpriteId(u16 trainerId)
+ADMG_NATIVE_ENTRY enum TrainerPicID GetFrontierTrainerFrontSpriteId(u16 trainerId)
 {
     struct ADMG_FrontierMetadata metadata = {0};
     if (!ADMG_FrontierMetadataValid(trainerId, TRUE, TRUE, &metadata)) return TRAINER_PIC_NONE;

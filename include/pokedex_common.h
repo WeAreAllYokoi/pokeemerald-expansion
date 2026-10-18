@@ -264,7 +264,7 @@ u16 GetPokemonScaleFromNationalDexNumber(u16 nationalNum);
 u16 GetPokemonOffsetFromNationalDexNumber(u16 nationalNum);
 u16 GetTrainerScaleFromNationalDexNumber(u16 nationalNum);
 u16 GetTrainerOffsetFromNationalDexNumber(u16 nationalNum);
-u16 CreateSizeScreenTrainerPic(u16, s16, s16, s8);
+u16 CreateSizeScreenTrainerPic(u32, s16, s16, s8);
 void Task_SwitchToSearchMenuTopBar(u8);
 void HighlightSelectedSearchTopBarItem(u8);
 void PrintSelectedSearchParameters(u8);

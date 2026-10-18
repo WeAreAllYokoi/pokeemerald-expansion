@@ -684,7 +684,7 @@ static bool8 LoadMonAndSceneGfx(struct Pokemon *mon)
         sPokeblockFeed->loadGfxState++;
         break;
     case 5:
-        SetPokeblockSpritePal(gSpecialVar_ItemId);
+        SetPokeblockSpritePal((u8)gSpecialVar_ItemId);
         LoadSpritePalette(&sPokeblockSpritePal);
         sPokeblockFeed->loadGfxState++;
         break;

@@ -13,6 +13,6 @@ struct ContestEffect
 
 extern const struct ContestEffect gContestEffects[];
 
-bool8 AreMovesContestCombo(u16 lastMove, u16 nextMove);
+bool8 AreMovesContestCombo(enum Move lastMove, enum Move nextMove);
 
 #endif //GUARD_CONTEST_EFFECT_H

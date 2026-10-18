@@ -509,8 +509,8 @@ struct PokemonStorageSystemData
     s8 releaseBoxId;
     s8 releaseBoxPos;
     u16 releaseCheckState;
-    u16 restrictedReleaseMonMoves;
-    u16 restrictedMoveList[8];
+    enum Move restrictedReleaseMonMoves;
+    enum Move restrictedMoveList[8];
     u8 summaryMaxPos;
     u8 summaryStartPos;
     u8 summaryScreenMode;
@@ -6607,7 +6607,7 @@ struct
     {MAP_GROUP(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_2F), MAP_NUM(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_2F), MOVE_ROCK_SMASH},
 };
 
-static void GetRestrictedReleaseMoves(u16 *moves)
+static void GetRestrictedReleaseMoves(enum Move *moves)
 {
     s32 i;
 

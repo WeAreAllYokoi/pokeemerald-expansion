@@ -335,8 +335,8 @@ struct BattleResults
     u8 playerMon2Name[POKEMON_NAME_LENGTH + 1];    // 0x14
     u8 pokeblockThrows;       // 0x1F
     enum Species lastOpponentSpecies;  // 0x20
-    u16 lastUsedMovePlayer;   // 0x22
-    u16 lastUsedMoveOpponent; // 0x24
+    enum Move lastUsedMovePlayer;
+    enum Move lastUsedMoveOpponent;
     enum Species playerMon2Species;    // 0x26
     enum Species caughtMonSpecies;     // 0x28
     u8 caughtMonNick[POKEMON_NAME_LENGTH + 1];     // 0x2A
@@ -457,14 +457,14 @@ struct ZMoveData
     u8 viewing:1;  // if player is viewing the z move name instead of regular moves
     u8 healReplacement:6;
     u8 possibleZMoves[MAX_BATTLERS_COUNT];
-    u16 baseMoves[MAX_BATTLERS_COUNT];
+    enum Move baseMoves[MAX_BATTLERS_COUNT];
 };
 
 struct DynamaxData
 {
     u16 dynamaxTurns[MAX_BATTLERS_COUNT];
-    u16 baseMoves[MAX_BATTLERS_COUNT]; // base move of Max Move
-    u16 lastUsedBaseMove;
+    enum Move baseMoves[MAX_BATTLERS_COUNT]; // base move of Max Move
+    enum Move lastUsedBaseMove;
 };
 
 struct BattleGimmickData
@@ -622,14 +622,14 @@ struct BattleStruct
     u8 chosenMovePositions[MAX_BATTLERS_COUNT];
     u8 stateIdAfterSelScript[MAX_BATTLERS_COUNT];
     u8 prevSelectedPartySlot;
-    u8 stringMoveType;
+    enum Type stringMoveType;
     u8 palaceFlags; // First 4 bits are "is <= 50% HP and not asleep" for each battler, last 4 bits are selected moves to pass to AI
     u8 recordedActionSet; // related to choosing Pokémon?
     u8 wallyBattleState;
     u8 wallyMovesState;
     u8 wallyWaitFrames;
     u8 wallyMoveFrames;
-    u16 lastTakenMove[MAX_BATTLERS_COUNT]; // Last move that a battler was hit with.
+    enum Move lastTakenMove[MAX_BATTLERS_COUNT]; // Last move that a battler was hit with.
     u32 savedBattleTypeFlags;
     enum Ability abilityPreventingSwitchout;
     u8 hpScale;
@@ -643,7 +643,7 @@ struct BattleStruct
     enum Item chosenItem[MAX_BATTLERS_COUNT];
     enum Move choicedMove[MAX_BATTLERS_COUNT];
     u8 switchInBattlerCounter;
-    u16 lastTakenMoveFrom[MAX_BATTLERS_COUNT][MAX_BATTLERS_COUNT]; // a 2-D array [target][attacker]
+    enum Move lastTakenMoveFrom[MAX_BATTLERS_COUNT][MAX_BATTLERS_COUNT]; // Indexed by [target][attacker]
     union {
         struct LinkBattlerHeader linkBattlerHeader;
         struct BattleVideo battleVideo;
@@ -880,7 +880,7 @@ struct BattleScripting
     bool8 monCaught;
     s32 savedDmg;
     u16 unused_0x2c;
-    u16 moveEffect;
+    enum MoveEffect moveEffect;
     u16 unused_0x30;
     u8 illusionNickHack; // To properly display nick in STRINGID_ENEMYABOUTTOSWITCHPKMN.
     bool8 fixedPopup;   // Force ability popup to stick until manually called back
