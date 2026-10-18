@@ -25,4 +25,6 @@ void CB2_DoHallOfFamePC(void);
 // hof_pc.c
 void ReturnFromHallOfFamePC(void);
 
+extern const u32 gHoFSaveBufferSize;
+
 #endif // GUARD_HALL_OF_FAME_H

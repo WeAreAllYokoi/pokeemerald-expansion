@@ -373,12 +373,12 @@ static bool32 RecordedBattleToSave(struct RecordedBattleSave *battleSave, struct
 {
     if (battleSave == NULL || saveSector == NULL || !RecordedTrainerActorsValid(battleSave)) return FALSE;
 
-    memset(saveSector, 0, SECTOR_SIZE);
+    memset(saveSector, 0, sizeof(*saveSector));
     memcpy(saveSector, battleSave, sizeof(*battleSave));
 
     saveSector->checksum = CalcByteArraySum((void *)(saveSector), sizeof(*saveSector) - 4);
 
-    if (TryWriteSpecialSaveSector(SECTOR_ID_RECORDED_BATTLE, (void *)(saveSector)) != SAVE_STATUS_OK)
+    if (TryWriteSpecialSaveSector(SECTOR_ID_RECORDED_BATTLE, (void *)(saveSector), sizeof(*saveSector)) != SAVE_STATUS_OK)
         return FALSE;
     else
         return TRUE;
@@ -403,7 +403,7 @@ bool32 MoveRecordedBattleToSaveData(void)
 
     saveAttempts = 0;
     battleSave = AllocZeroed(sizeof(struct RecordedBattleSave));
-    savSection = AllocZeroed(SECTOR_SIZE);
+    savSection = AllocZeroed(sizeof(struct RecordedBattleSave));
     if (battleSave == NULL || savSection == NULL)
     {
         if (battleSave != NULL) Free(battleSave);
@@ -563,11 +563,11 @@ bool32 MoveRecordedBattleToSaveData(void)
     return ret;
 }
 
-static bool32 TryCopyRecordedBattleSaveData(struct RecordedBattleSave *dst, struct SaveSector *saveBuffer)
+static bool32 TryCopyRecordedBattleSaveData(struct RecordedBattleSave *dst, struct RecordedBattleSave *saveBuffer)
 {
     if (dst == NULL || saveBuffer == NULL) { ADMG_StateAccessRejected(0, __func__); return FALSE; }
 
-    if (TryReadSpecialSaveSector(SECTOR_ID_RECORDED_BATTLE, (void *)(saveBuffer)) != SAVE_STATUS_OK)
+    if (TryReadSpecialSaveSector(SECTOR_ID_RECORDED_BATTLE, (void *)(saveBuffer), sizeof(*saveBuffer)) != SAVE_STATUS_OK)
         return FALSE;
 
     memcpy(dst, saveBuffer, sizeof(struct RecordedBattleSave));
@@ -581,7 +581,7 @@ static bool32 TryCopyRecordedBattleSaveData(struct RecordedBattleSave *dst, stru
 static bool32 CopyRecordedBattleFromSave(struct RecordedBattleSave *dst)
 {
     if (dst == NULL) { ADMG_StateAccessRejected(0, __func__); return FALSE; }
-    struct SaveSector *savBuffer = AllocZeroed(SECTOR_SIZE);
+    struct RecordedBattleSave *savBuffer = AllocZeroed(sizeof(*savBuffer));
     if (savBuffer == NULL) { ADMG_StateAccessRejected(0, __func__); return FALSE; }
     bool32 ret = TryCopyRecordedBattleSaveData(dst, savBuffer);
     Free(savBuffer);

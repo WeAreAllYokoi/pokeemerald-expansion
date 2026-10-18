@@ -351,7 +351,7 @@ static bool8 InitHallOfFameScreen(void)
 static void AllocateHoFTeams(void)
 {
     sHofMonPtr = AllocZeroed(sizeof(*sHofMonPtr));
-    gHoFSaveBuffer = Alloc(SECTOR_SIZE * NUM_HOF_SECTORS);
+    gHoFSaveBuffer = AllocZeroed(gHoFSaveBufferSize);
 }
 
 void CB2_DoHallOfFameScreenFrlg(void)

@@ -38,7 +38,6 @@
 #define HALL_OF_FAME_MAX_TEAMS 30
 #define TAG_CONFETTI 1001
 
-STATIC_ASSERT(sizeof(struct HallofFameTeam) * HALL_OF_FAME_MAX_TEAMS <= SECTOR_DATA_SIZE * NUM_HOF_SECTORS, HallOfFameFreeSpace);
 
 struct HofGfx
 {
@@ -52,6 +51,7 @@ static EWRAM_DATA u32 sHofFadePalettes = 0;
 static EWRAM_DATA struct HallofFameTeam *sHofMonPtr = NULL;
 static EWRAM_DATA struct HofGfx *sHofGfxPtr = NULL;
 EWRAM_DATA struct HallofFameTeam *gHoFSaveBuffer = NULL;
+const u32 gHoFSaveBufferSize = sizeof(struct HallofFameTeam) * HALL_OF_FAME_MAX_TEAMS;
 
 static void ClearVramOamPltt_LoadHofPal(void);
 static void LoadHofGfx(void);
@@ -403,7 +403,7 @@ static bool8 InitHallOfFameScreen(void)
 static void AllocateHoFTeams(void)
 {
     sHofMonPtr = AllocZeroed(sizeof(*sHofMonPtr));
-    gHoFSaveBuffer = Alloc(SECTOR_SIZE * NUM_HOF_SECTORS);
+    gHoFSaveBuffer = AllocZeroed(gHoFSaveBufferSize);
 }
 
 void CB2_DoHallOfFameScreen(void)

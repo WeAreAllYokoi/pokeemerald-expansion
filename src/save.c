@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_native_save.h"
 #include "agb_flash.h"
 #include "gba/flash_internal.h"
 #include "fieldmap.h"
@@ -90,16 +91,39 @@ COMMON_DATA u16 gSaveAttemptStatus = 0;
 
 EWRAM_DATA struct SaveSector gSaveDataBuffer = {0}; // Buffer used for reading/writing sectors
 
+// Describe SaveBlocks 1-3 and, when requested, Pokémon storage
+static u32 GetSaveSlotRegions(struct ADMG_SaveRegion *regions, bool32 withPokemonStorage)
+{
+    u32 count = 0;
+    regions[count++] = (struct ADMG_SaveRegion){ADMG_SAVE_SECTION_SAVEBLOCK2, gSaveBlock2Ptr, sizeof(struct SaveBlock2)};
+    regions[count++] = (struct ADMG_SaveRegion){ADMG_SAVE_SECTION_SAVEBLOCK1, gSaveBlock1Ptr, sizeof(struct SaveBlock1)};
+    regions[count++] = (struct ADMG_SaveRegion){ADMG_SAVE_SECTION_SAVEBLOCK3, &gSaveblock3, sizeof(struct SaveBlock3)};
+    if (withPokemonStorage)
+        regions[count++] = (struct ADMG_SaveRegion){ADMG_SAVE_SECTION_POKEMON_STORAGE, gPokemonStoragePtr, sizeof(struct PokemonStorage)};
+    return count;
+}
+
+static u8 WriteNativeSave(bool32 withPokemonStorage, bool32 withHallOfFame, u32 mode)
+{
+    struct ADMG_SaveRegion regions[5];
+    u32 count;
+    CopyPartyAndObjectsToSave();
+    count = GetSaveSlotRegions(regions, withPokemonStorage);
+    if (withHallOfFame && gHoFSaveBuffer != NULL)
+        regions[count++] = (struct ADMG_SaveRegion){ADMG_SAVE_SECTION_HALL_OF_FAME, gHoFSaveBuffer, gHoFSaveBufferSize};
+    if (ADMG_NativeSaveWrite(regions, count, mode) != SAVE_STATUS_OK)
+    {
+        gDamagedSaveSectors = 1;
+        return SAVE_STATUS_ERROR;
+    }
+    gDamagedSaveSectors = 0;
+    gSaveCounter++;
+    return SAVE_STATUS_OK;
+}
+
 void ClearSaveData(void)
 {
-    u16 i;
-
-    // Clear the full save two sectors at a time
-    for (i = 0; i < SECTORS_COUNT / 2; i++)
-    {
-        EraseFlashSector(i);
-        EraseFlashSector(i + SECTORS_COUNT / 2);
-    }
+    ADMG_NativeSaveErase();
 }
 
 void Save_ResetSaveCounters(void)
@@ -706,58 +730,28 @@ static void UpdateSaveAddresses(void)
 
 u8 HandleSavingData(u8 saveType)
 {
-    u8 i;
     u32 *backupVar = gTrainerHillVBlankCounter;
 
     gTrainerHillVBlankCounter = NULL;
-    UpdateSaveAddresses();
     switch (saveType)
     {
     case SAVE_HALL_OF_FAME_ERASE_BEFORE:
-        // Unused. Erases the special save sectors (HOF, Trainer Hill, Recorded Battle)
-        // before overwriting HOF.
-        for (i = SECTOR_ID_HOF_1; i < SECTORS_COUNT; i++)
-            EraseFlashSector(i);
-        // fallthrough
     case SAVE_HALL_OF_FAME:
         if (GetGameStat(GAME_STAT_ENTERED_HOF) < 999)
             IncrementGameStat(GAME_STAT_ENTERED_HOF);
-
-        // Write the full save slot first
-        CopyPartyAndObjectsToSave();
-        WriteSaveSectorOrSlot(FULL_SAVE_SLOT, gRamSaveSectorLocations);
-
-        // Save the Hall of Fame
-        if (gHoFSaveBuffer != NULL)
-        {
-            u8 *tempAddr = (void *) gHoFSaveBuffer;
-            HandleWriteSectorNBytes(SECTOR_ID_HOF_1, tempAddr, SECTOR_DATA_SIZE);
-            HandleWriteSectorNBytes(SECTOR_ID_HOF_2, tempAddr + SECTOR_DATA_SIZE, SECTOR_DATA_SIZE);
-        }
+        WriteNativeSave(TRUE, TRUE, saveType == SAVE_HALL_OF_FAME_ERASE_BEFORE ? ADMG_SAVE_ERASE_HALL_OF_FAME : ADMG_SAVE_KEEP_OTHER_SECTIONS);
         break;
     case SAVE_NORMAL:
     default:
-        CopyPartyAndObjectsToSave();
-        WriteSaveSectorOrSlot(FULL_SAVE_SLOT, gRamSaveSectorLocations);
+        WriteNativeSave(TRUE, FALSE, ADMG_SAVE_KEEP_OTHER_SECTIONS);
         break;
     case SAVE_LINK:
     case SAVE_EREADER: // Dummied, now duplicate of SAVE_LINK
-        // Used by link / Battle Frontier
-        // Write only SaveBlocks 1 and 2 (skips the PC)
-        CopyPartyAndObjectsToSave();
-        for (i = SECTOR_ID_SAVEBLOCK2; i <= SECTOR_ID_SAVEBLOCK1_END; i++)
-            HandleReplaceSector(i, gRamSaveSectorLocations);
-        for (i = SECTOR_ID_SAVEBLOCK2; i <= SECTOR_ID_SAVEBLOCK1_END; i++)
-            WriteSectorSignatureByte_NoOffset(i, gRamSaveSectorLocations);
+        // Link and Battle Frontier saves write SaveBlocks 1-3 and keep the last saved PC boxes
+        WriteNativeSave(FALSE, FALSE, ADMG_SAVE_KEEP_OTHER_SECTIONS);
         break;
     case SAVE_OVERWRITE_DIFFERENT_FILE:
-        // Erase Hall of Fame
-        for (i = SECTOR_ID_HOF_1; i < SECTORS_COUNT; i++)
-            EraseFlashSector(i);
-
-        // Overwrite save slot
-        CopyPartyAndObjectsToSave();
-        WriteSaveSectorOrSlot(FULL_SAVE_SLOT, gRamSaveSectorLocations);
+        WriteNativeSave(TRUE, FALSE, ADMG_SAVE_ERASE_HALL_OF_FAME);
         break;
     }
     gTrainerHillVBlankCounter = backupVar;
@@ -766,12 +760,6 @@ u8 HandleSavingData(u8 saveType)
 
 u8 TrySavingData(u8 saveType)
 {
-    if (gFlashMemoryPresent != TRUE)
-    {
-        gSaveAttemptStatus = SAVE_STATUS_ERROR;
-        return SAVE_STATUS_ERROR;
-    }
-
     HandleSavingData(saveType);
     if (!gDamagedSaveSectors)
     {
@@ -788,57 +776,30 @@ u8 TrySavingData(u8 saveType)
 
 bool8 LinkFullSave_Init(void)
 {
-    if (gFlashMemoryPresent != TRUE)
-        return TRUE;
-    UpdateSaveAddresses();
-    CopyPartyAndObjectsToSave();
-    RestoreSaveBackupVarsAndIncrement(gRamSaveSectorLocations);
+    WriteNativeSave(TRUE, FALSE, ADMG_SAVE_KEEP_OTHER_SECTIONS);
     return FALSE;
 }
 
 bool8 LinkFullSave_WriteSector(void)
 {
-    u8 status = HandleWriteIncrementalSector(NUM_SECTORS_PER_SLOT, gRamSaveSectorLocations);
     if (gDamagedSaveSectors)
         DoSaveFailedScreen(SAVE_NORMAL);
-
-    // In this case "error" either means that an actual error was encountered
-    // or that the given max sector has been reached (meaning it has finished successfully).
-    // If there was an actual error the save failed screen above will also be shown.
-    if (status == SAVE_STATUS_ERROR)
-        return TRUE;
-    else
-        return FALSE;
+    return TRUE;
 }
 
 bool8 LinkFullSave_ReplaceLastSector(void)
 {
-    HandleReplaceSectorAndVerify(NUM_SECTORS_PER_SLOT, gRamSaveSectorLocations);
-    if (gDamagedSaveSectors)
-        DoSaveFailedScreen(SAVE_NORMAL);
     return FALSE;
 }
 
 bool8 LinkFullSave_SetLastSectorSignature(void)
 {
-    CopySectorSignatureByte(NUM_SECTORS_PER_SLOT, gRamSaveSectorLocations);
-    if (gDamagedSaveSectors)
-        DoSaveFailedScreen(SAVE_NORMAL);
     return FALSE;
 }
 
 bool8 WriteSaveBlock2(void)
 {
-    if (gFlashMemoryPresent != TRUE)
-        return TRUE;
-
-    UpdateSaveAddresses();
-    CopyPartyAndObjectsToSave();
-    RestoreSaveBackupVars(gRamSaveSectorLocations);
-
-    // Because RestoreSaveBackupVars is called immediately prior, gIncrementalSectorId will always be 0 below,
-    // so this function only saves the first sector (SECTOR_ID_SAVEBLOCK2)
-    HandleReplaceSectorAndVerify(gIncrementalSectorId + 1, gRamSaveSectorLocations);
+    WriteNativeSave(FALSE, FALSE, ADMG_SAVE_KEEP_OTHER_SECTIONS);
     return FALSE;
 }
 
@@ -847,45 +808,21 @@ bool8 WriteSaveBlock2(void)
 // It returns TRUE when finished.
 bool8 WriteSaveBlock1Sector(void)
 {
-    bool32 finished = FALSE;
-    u16 sectorId = ++gIncrementalSectorId; // Because WriteSaveBlock2 will have been called prior, this will be SECTOR_ID_SAVEBLOCK1_START
-    if (sectorId <= SECTOR_ID_SAVEBLOCK1_END)
-    {
-        // Write a single sector of SaveBlock1
-        HandleReplaceSectorAndVerify(gIncrementalSectorId + 1, gRamSaveSectorLocations);
-        WriteSectorSignatureByte(sectorId, gRamSaveSectorLocations);
-    }
-    else
-    {
-        // Beyond SaveBlock1, don't write the sector.
-        // Does write 1 byte of the next sector's signature field, but as these
-        // are the same for all valid sectors it doesn't matter.
-        WriteSectorSignatureByte(sectorId, gRamSaveSectorLocations);
-        finished = TRUE;
-    }
-
     if (gDamagedSaveSectors)
         DoSaveFailedScreen(SAVE_LINK);
-
-    return finished;
+    return TRUE;
 }
 
 u8 LoadGameSave(u8 saveType)
 {
+    struct ADMG_SaveRegion regions[5];
     u8 status;
 
-    if (gFlashMemoryPresent != TRUE)
-    {
-        gSaveFileStatus = SAVE_STATUS_NO_FLASH;
-        return SAVE_STATUS_ERROR;
-    }
-
-    UpdateSaveAddresses();
     switch (saveType)
     {
     case SAVE_NORMAL:
     default:
-        status = TryLoadSaveSlot(FULL_SAVE_SLOT, gRamSaveSectorLocations);
+        status = ADMG_NativeSaveRead(regions, GetSaveSlotRegions(regions, TRUE));
         CopyPartyAndObjectsFromSave();
         gSaveFileStatus = status;
         gGameContinueCallback = NULL;
@@ -893,10 +830,8 @@ u8 LoadGameSave(u8 saveType)
     case SAVE_HALL_OF_FAME:
         if (gHoFSaveBuffer != NULL)
         {
-            u8 *hofData = (u8 *) gHoFSaveBuffer;
-            status = TryLoadSaveSector(SECTOR_ID_HOF_1, hofData, SECTOR_DATA_SIZE);
-            if (status == SAVE_STATUS_OK)
-                status = TryLoadSaveSector(SECTOR_ID_HOF_2, &hofData[SECTOR_DATA_SIZE], SECTOR_DATA_SIZE);
+            regions[0] = (struct ADMG_SaveRegion){ADMG_SAVE_SECTION_HALL_OF_FAME, gHoFSaveBuffer, gHoFSaveBufferSize};
+            status = ADMG_NativeSaveRead(regions, 1);
         }
         else
         {
@@ -910,73 +845,31 @@ u8 LoadGameSave(u8 saveType)
 
 u16 GetSaveBlocksPointersBaseOffset(void)
 {
-    u16 i, slotOffset;
-    struct SaveSector *sector;
-
-    sector = gReadWriteSector = &gSaveDataBuffer;
-    if (gFlashMemoryPresent != TRUE)
-        return 0;
-    UpdateSaveAddresses();
-    GetSaveValidStatus(gRamSaveSectorLocations);
-    slotOffset = NUM_SECTORS_PER_SLOT * (gSaveCounter % NUM_SAVE_SLOTS);
-    for (i = 0; i < NUM_SECTORS_PER_SLOT; i++)
-    {
-        ReadFlashSector(i + slotOffset, gReadWriteSector);
-
-        // Base offset for SaveBlock2 is calculated using the trainer id
-        if (gReadWriteSector->id == SECTOR_ID_SAVEBLOCK2)
-            return sector->data[offsetof(struct SaveBlock2, playerTrainerId[0])] +
-                   sector->data[offsetof(struct SaveBlock2, playerTrainerId[1])] +
-                   sector->data[offsetof(struct SaveBlock2, playerTrainerId[2])] +
-                   sector->data[offsetof(struct SaveBlock2, playerTrainerId[3])];
-    }
     return 0;
 }
 
-u32 TryReadSpecialSaveSector(u8 sector, u8 *dst)
+u32 TryReadSpecialSaveSector(u8 sector, u8 *dst, u32 size)
 {
-    s32 i;
-    s32 size;
-    u8 *savData;
-
-    if (sector != SECTOR_ID_TRAINER_HILL && sector != SECTOR_ID_RECORDED_BATTLE)
+    struct ADMG_SaveRegion region;
+    if (sector == SECTOR_ID_TRAINER_HILL)
+        region = (struct ADMG_SaveRegion){ADMG_SAVE_SECTION_TRAINER_HILL, dst, size};
+    else if (sector == SECTOR_ID_RECORDED_BATTLE)
+        region = (struct ADMG_SaveRegion){ADMG_SAVE_SECTION_RECORDED_BATTLE, dst, size};
+    else
         return SAVE_STATUS_ERROR;
-
-    ReadFlash(sector, 0, (u8 *)&gSaveDataBuffer, SECTOR_SIZE);
-    if (*(u32 *)(&gSaveDataBuffer.data[0]) != SPECIAL_SECTOR_SENTINEL)
-        return SAVE_STATUS_ERROR;
-
-    // Copies whole save sector except u32 counter
-    i = 0;
-    size = SECTOR_COUNTER_OFFSET - 1;
-    savData = &gSaveDataBuffer.data[4]; // data[4] to skip past SPECIAL_SECTOR_SENTINEL
-    for (; i <= size; i++)
-        dst[i] = savData[i];
-    return SAVE_STATUS_OK;
+    return ADMG_NativeSaveRead(&region, 1) == SAVE_STATUS_OK ? SAVE_STATUS_OK : SAVE_STATUS_ERROR;
 }
 
-u32 TryWriteSpecialSaveSector(u8 sector, u8 *src)
+u32 TryWriteSpecialSaveSector(u8 sector, u8 *src, u32 size)
 {
-    s32 i;
-    s32 size;
-    u8 *savData;
-    void *savDataBuffer;
-
-    if (sector != SECTOR_ID_TRAINER_HILL && sector != SECTOR_ID_RECORDED_BATTLE)
+    struct ADMG_SaveRegion region;
+    if (sector == SECTOR_ID_TRAINER_HILL)
+        region = (struct ADMG_SaveRegion){ADMG_SAVE_SECTION_TRAINER_HILL, src, size};
+    else if (sector == SECTOR_ID_RECORDED_BATTLE)
+        region = (struct ADMG_SaveRegion){ADMG_SAVE_SECTION_RECORDED_BATTLE, src, size};
+    else
         return SAVE_STATUS_ERROR;
-
-    savDataBuffer = &gSaveDataBuffer;
-    *(u32 *)(savDataBuffer) = SPECIAL_SECTOR_SENTINEL;
-
-    // Copies whole save sector except u32 counter
-    i = 0;
-    size = SECTOR_COUNTER_OFFSET - 1;
-    savData = &gSaveDataBuffer.data[4]; // data[4] to skip past SPECIAL_SECTOR_SENTINEL
-    for (; i <= size; i++)
-        savData[i] = src[i];
-    if (ProgramFlashSectorAndVerify(sector, savDataBuffer) != 0)
-        return SAVE_STATUS_ERROR;
-    return SAVE_STATUS_OK;
+    return ADMG_NativeSaveWrite(&region, 1, ADMG_SAVE_KEEP_OTHER_SECTIONS);
 }
 
 #define tState         data[0]
