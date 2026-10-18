@@ -1301,7 +1301,7 @@ static void HandleSetEffectBeatUpMessage(struct BattleCalcValues *cv, struct Set
     }
     else
     {
-        PREPARE_MON_NICK_WITH_PREFIX_BUFFER(gBattleTextBuff1, cv->battlerAtk, gBattleStruct->beatUpSpecies[gBattleStruct->beatUpSlot])
+        PREPARE_MON_NICK_WITH_PREFIX_BUFFER(gBattleTextBuff1, cv->battlerAtk, (u8)gBattleStruct->beatUpSpecies[gBattleStruct->beatUpSlot])
         BattleScriptPush(se->script);
         gBattlescriptCurrInstr = BattleScript_BeatUpAttackMessage;
     }

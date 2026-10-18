@@ -35,7 +35,7 @@ void RecordKnownMove(enum BattlerId battler, enum Move move)
 
 void RecordAllMoves(enum BattlerId battler)
 {
-    memcpy(gAiPartyData->mons[GetBattlerSide(battler)][gBattlerPartyIndexes[battler]].moves, gBattleMons[battler].moves, MAX_MON_MOVES * sizeof(u16));
+    memcpy(gAiPartyData->mons[GetBattlerSide(battler)][gBattlerPartyIndexes[battler]].moves, gBattleMons[battler].moves, sizeof(gBattleMons[battler].moves));
 }
 
 void RecordAbilityBattle(enum BattlerId battlerId, enum Ability abilityId)

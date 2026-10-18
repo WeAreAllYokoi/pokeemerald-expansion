@@ -1266,7 +1266,7 @@ static void TrySetBattleSeminarShow(void)
     s32 i;
     s32 dmgByMove[MAX_MON_MOVES];
     u16 powerOverride;
-    u16 currMoveSaved;
+    enum Move currMoveSaved;
 
     if (gBattleTypeFlags & (BATTLE_TYPE_DOUBLE | BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK))
         return;

@@ -5752,7 +5752,7 @@ static void Cmd_tryconversiontypechange(void)
 
     u8 validMoves = 0;
     u8 moveChecked = 0;
-    u8 moveType = 0;
+    enum Type moveType = 0;
 
     if (GetActiveGimmick(gBattlerAttacker) == GIMMICK_TERA)
     {

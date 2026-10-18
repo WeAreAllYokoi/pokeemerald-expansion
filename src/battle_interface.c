@@ -1158,7 +1158,8 @@ UNUSED static void PrintSafariMonInfo(u8 healthboxSpriteId, struct Pokemon *mon)
     u8 text[23];
     s32 j, spriteTileNum;
     u8 *barFontGfx;
-    u8 i, var, nature, healthBarSpriteId;
+    u8 i, var, healthBarSpriteId;
+    nature_t nature;
 
     memcpy(text, sEmptyWhiteText_GrayHighlight, sizeof(sEmptyWhiteText_GrayHighlight));
     barFontGfx = &gMonSpritesGfxPtr->barFontGfx[0x520 + (GetBattlerPosition(gSprites[healthboxSpriteId].hMain_Battler) * 384)];
@@ -3002,7 +3003,7 @@ void TryAddLastUsedBallItemSprites(void)
       || (gLastThrownBall != 0 && !CheckBagHasItem(gLastThrownBall, 1)))
     {
         // we're out of the last used ball, so just set it to the first ball in the bag
-        u16 firstBall;
+        enum Item firstBall;
 
         // we have to compact the bag first bc it is typically only compacted when you open it
         CompactItemsInBagPocket(POCKET_POKE_BALLS);

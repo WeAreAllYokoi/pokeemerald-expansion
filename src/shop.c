@@ -88,7 +88,8 @@ struct MartInfo
 {
     void (*callback)(void);
     const struct MenuAction *menuActions;
-    const u16 *itemList;
+    const u32 *itemList;
+    u32 *ownedItemList; // The copy of a script list, freed when the shop closes
     u16 itemCount;
     u8 windowId;
     u8 martType;
@@ -381,18 +382,17 @@ static void SetShopMenuCallback(void (*callback)(void))
     sMartInfo.callback = callback;
 }
 
-static void SetShopItemsForSale(const u16 *items)
+static void FreeShopItemList(void)
+{
+    TRY_FREE_AND_SET_NULL(sMartInfo.ownedItemList);
+}
+
+static void SetShopItemsForSale32(const u32 *items)
 {
     u16 i = 0;
 
     sMartInfo.itemList = items;
     sMartInfo.itemCount = 0;
-
-    assertf(items != NULL, "Shop items list should never be set as NULL")
-    {
-        sMartInfo.itemList = sShopItemsListDummy;
-        return;
-    }
 
     // Read items until ITEM_NONE / DECOR_NONE is reached
     while (sMartInfo.itemList[i])
@@ -400,6 +400,24 @@ static void SetShopItemsForSale(const u16 *items)
         sMartInfo.itemCount++;
         i++;
     }
+}
+
+static void SetShopItemsForSale(const u16 *items)
+{
+    u32 count = 0;
+
+    FreeShopItemList();
+    assertf(items != NULL, "Shop items list should never be set as NULL")
+    {
+        items = sShopItemsListDummy;
+    }
+
+    while (items[count])
+        count++;
+    sMartInfo.ownedItemList = AllocZeroed((count + 1) * sizeof(*sMartInfo.ownedItemList));
+    for (u32 i = 0; i < count; i++)
+        sMartInfo.ownedItemList[i] = items[i];
+    SetShopItemsForSale32(sMartInfo.ownedItemList);
 }
 
 static void Task_ShopMenu(u8 taskId)
@@ -456,6 +474,7 @@ static void Task_HandleShopMenuQuit(u8 taskId)
     TryPutSmartShopperOnAir();
     UnlockPlayerFieldControls();
     DestroyTask(taskId);
+    FreeShopItemList();
 
     if (sMartInfo.callback)
         sMartInfo.callback();
@@ -1315,6 +1334,17 @@ void CreatePokemartMenu(const u16 *itemsForSale)
 {
     CreateShopMenu(MART_TYPE_NORMAL);
     SetShopItemsForSale(itemsForSale);
+    ClearItemPurchases();
+    SetShopMenuCallback(ScriptContext_Enable);
+}
+
+// For native callers: a mart of full-width item IDs, terminated by ITEM_NONE. The list must stay valid
+// while the shop is open.
+void CreatePokemartMenuFromList(const u32 *itemsForSale)
+{
+    CreateShopMenu(MART_TYPE_NORMAL);
+    FreeShopItemList();
+    SetShopItemsForSale32(itemsForSale);
     ClearItemPurchases();
     SetShopMenuCallback(ScriptContext_Enable);
 }

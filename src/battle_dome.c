@@ -6378,7 +6378,7 @@ static u16 GetWinningMove(int winnerTournamentId, int loserTournamentId, u8 roun
         || DOME_TRAINERS[loserTournamentId].trainerId != loserActor)
     { ADMG_StateAccessRejected(roundId, __func__); goto ADMG_reject_winning_tables; }
     if (!ADMG_TryPrepareDomeWinning(winnerTournamentId, loserTournamentId, &input)) goto ADMG_reject_winning_tables;
-    u16 result = ADMG_RunDomeWinningMove(winnerTournamentId, loserTournamentId, roundId, &input);
+    enum Move result = ADMG_RunDomeWinningMove(winnerTournamentId, loserTournamentId, roundId, &input);
     if (!input.failed && ADMG_DomeWinningCurrent(&input)) return result;
 ADMG_reject_winning_tables:
     if (input.textUsed)

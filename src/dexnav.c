@@ -1225,7 +1225,7 @@ static enum Move GetRandomEggMove(enum Species species)
     for (u32 i = 0; eggMoveLearnset[i] != MOVE_UNAVAILABLE; i++)
         numEggMoves++;
 
-    enum Move result = *(const u16 *)(RandomElementArray(RNG_DEXNAV_RANDOM_EGG_MOVE, eggMoveLearnset, sizeof(u16), numEggMoves));
+    enum Move result = *(const enum Move *)(RandomElementArray(RNG_DEXNAV_RANDOM_EGG_MOVE, eggMoveLearnset, sizeof(*eggMoveLearnset), numEggMoves));
     return result;
 }
 

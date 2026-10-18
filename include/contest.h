@@ -162,7 +162,7 @@ struct Contest
     s8 applauseLevel;
     u8 prevTurnOrder[CONTESTANT_COUNT];
     u32 unusedRng;
-    u16 moveHistory[CONTEST_NUM_APPEALS][CONTESTANT_COUNT];
+    enum Move moveHistory[CONTEST_NUM_APPEALS][CONTESTANT_COUNT];
     u8 excitementHistory[CONTEST_NUM_APPEALS][CONTESTANT_COUNT];
     u8 applauseMeterSpriteId;
     u8 contestSetupState;
@@ -272,7 +272,7 @@ struct ContestFinalStandings
 
 struct ContestTV
 {
-    u16 appeals[CONTEST_NUM_APPEALS];
+    enum Move appeals[CONTEST_NUM_APPEALS];
     s16 move;
     u8 winnerFlags;
     u8 loserFlags;

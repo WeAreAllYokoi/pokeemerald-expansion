@@ -641,7 +641,7 @@ bool32 AddPyramidBagItem(enum Item itemId, u16 count)
     u16 i;
 
     enum Item *items = gSaveBlock2Ptr->frontier.pyramidBag.itemId[gSaveBlock2Ptr->frontier.lvlMode];
-    u16 *newItems = Alloc(PYRAMID_BAG_ITEMS_COUNT * sizeof(*newItems));
+    enum Item *newItems = Alloc(PYRAMID_BAG_ITEMS_COUNT * sizeof(*newItems));
 
 #if MAX_PYRAMID_BAG_ITEM_CAPACITY > 255
     u16 *quantities = gSaveBlock2Ptr->frontier.pyramidBag.quantity[gSaveBlock2Ptr->frontier.lvlMode];

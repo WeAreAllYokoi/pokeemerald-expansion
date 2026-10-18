@@ -5755,7 +5755,7 @@ static void CalculateContestLiveUpdateData(void)
     bool32 notLastInRound1, notLastInRound2;
     enum Move appealMoves[CONTEST_NUM_APPEALS + 1];
     u8 numMoveUses[CONTEST_NUM_APPEALS + 1];
-    u16 moveCandidates[CONTEST_NUM_APPEALS];
+    enum Move moveCandidates[CONTEST_NUM_APPEALS];
     u8 winner;
     u8 mostUses;
     u8 numMoveCandidates;

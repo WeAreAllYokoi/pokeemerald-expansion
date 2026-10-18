@@ -2372,7 +2372,7 @@ void CreateCaughtBall(bool16 owned, u8 x, u8 y, u16 unused)
         FillWindowPixelRect(0, PIXEL_FILL(0), x * xMultiplier, y * 8, 8, 16);
 }
 
-u8 CreateMonName(u16 num, u8 left, u8 top)
+u8 CreateMonName(u32 num, u8 left, u8 top)
 {
     const u8 *str;
 
@@ -4696,7 +4696,7 @@ static void UNUSED UnusedPrintNum(u8 windowId, u16 num, u8 left, u8 top)
     PrintInfoSubMenuText(windowId, str, left, top);
 }
 
-u8 PrintCryScreenSpeciesName(u8 windowId, u16 num, u8 left, u8 top)
+u8 PrintCryScreenSpeciesName(u8 windowId, u32 num, u8 left, u8 top)
 {
     u8 str[POKEMON_NAME_BUFFER_SIZE];
     u8 i;
@@ -4884,7 +4884,7 @@ u16 CreateMonSpriteFromNationalDexNumber(enum NationalDexOrder nationalNum, s16 
     return CreateMonPicSprite(species, FALSE, GetPokedexMonPersonality(species), TRUE, x, y, paletteSlot, TAG_NONE);
 }
 
-u16 GetPokemonScaleFromNationalDexNumber(u16 nationalNum)
+u16 GetPokemonScaleFromNationalDexNumber(u32 nationalNum)
 {
     nationalNum = NationalPokedexNumToSpeciesForm(nationalNum);
     return gSpeciesInfo[nationalNum].pokemonScale;

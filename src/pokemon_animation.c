@@ -550,7 +550,9 @@ void StartMonSummaryAnimation(struct Sprite *sprite, enum AnimFunctionIDs frontA
 
 void LaunchAnimationTaskForBackSprite(struct Sprite *sprite, enum BackAnim backAnimSet)
 {
-    nature_t nature, taskId, battler;
+    nature_t nature;
+    u8 taskId;
+    enum BattlerId battler;
     enum AnimFunctionIDs animId;
 
     taskId = CreateTask(Task_HandleMonAnimation, 128);

@@ -2759,8 +2759,9 @@ static void Task_RunUnionRoom(u8 taskId)
         break;
     case UR_STATE_SEND_TRADE_REQUST:
         uroom->playerSendBuffer[0] = ACTIVITY_TRADE | IN_UNION_ROOM;
-        uroom->playerSendBuffer[1] = sUnionRoomTrade.species;
-        uroom->playerSendBuffer[2] = sUnionRoomTrade.level;
+        uroom->playerSendBuffer[1] = sUnionRoomTrade.species & 0xFFFF;
+        uroom->playerSendBuffer[2] = sUnionRoomTrade.species >> 16;
+        uroom->playerSendBuffer[3] = sUnionRoomTrade.level;
         Rfu_SendPacket(uroom->playerSendBuffer);
         uroom->state = UR_STATE_WAIT_FOR_RESPONSE_TO_REQUEST;
         break;
@@ -3255,6 +3256,7 @@ static void ReceiveUnionRoomActivityPacket(struct WirelessLink_URoom *data)
         {
             data->recvActivityRequest[1] = gRecvCmds[1][2];
             data->recvActivityRequest[2] = gRecvCmds[1][3];
+            data->recvActivityRequest[3] = gRecvCmds[1][4];
         }
     }
 }
@@ -4262,9 +4264,9 @@ static s32 GetChatLeaderActionRequestMessage(u8 *dst, u32 gender, u16 *activityD
         {
             if (gRfuLinkStatus->partner[i].serialNo == RFU_SERIAL_GAME)
             {
-                ConvertIntToDecimalStringN(uroom->activityRequestStrbufs[2], activityData[2], STR_CONV_MODE_LEFT_ALIGN, 3);
-                StringCopy(uroom->activityRequestStrbufs[3], GetSpeciesName(activityData[1]));
-                species = activityData[1];
+                species = activityData[1] | ((u32)activityData[2] << 16);
+                ConvertIntToDecimalStringN(uroom->activityRequestStrbufs[2], activityData[3], STR_CONV_MODE_LEFT_ALIGN, 3);
+                StringCopy(uroom->activityRequestStrbufs[3], GetSpeciesName(species));
                 break;
             }
         }

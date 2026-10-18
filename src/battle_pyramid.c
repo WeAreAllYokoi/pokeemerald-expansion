@@ -1567,15 +1567,15 @@ void GenerateBattlePyramidWildMon(enum Species forceSpecies)
     const struct BattlePyramidRequirement *reqs = &sBattlePyramidRequirementsByRound[round];
     enum Species species = forceSpecies;
     u32 bstLim;
-    u16 *moves = NULL;
-    u16 *abilities = NULL;
+    enum Move *moves = NULL;
+    enum Ability *abilities = NULL;
     int moveCount = 0, abilityCount = 0;
 
     if (reqs->nMoves != 0)
-        moves = AllocZeroed(sizeof(u16) * reqs->nMoves);
+        moves = AllocZeroed(sizeof(*moves) * reqs->nMoves);
 
     if (reqs->nAbilities != 0)
-        abilities = AllocZeroed(sizeof(u16) * reqs->nAbilities);
+        abilities = AllocZeroed(sizeof(*abilities) * reqs->nAbilities);
 
     if (round >= TOTAL_PYRAMID_ROUNDS)
         round = TOTAL_PYRAMID_ROUNDS - 1;

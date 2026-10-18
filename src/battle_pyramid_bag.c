@@ -722,7 +722,7 @@ static void CreatePyramidBagInputTask(void)
 
 static void SwapItems(u8 id1, u8 id2)
 {
-    u16 temp;
+    enum Item temp;
     enum Item *itemIds = gSaveBlock2Ptr->frontier.pyramidBag.itemId[gSaveBlock2Ptr->frontier.lvlMode];
 #if MAX_PYRAMID_BAG_ITEM_CAPACITY > 255
     u16 *quantities = gSaveBlock2Ptr->frontier.pyramidBag.quantity[gSaveBlock2Ptr->frontier.lvlMode];
@@ -746,7 +746,7 @@ static void MovePyramidBagItemSlotInList(u8 from, u8 to)
     if (from != to)
     {
         s16 i;
-        u16 firstSlotItemId = itemIds[from];
+        enum Item firstSlotItemId = itemIds[from];
         u8 firstSlotQuantity = quantities[from];
 
         if (to > from)

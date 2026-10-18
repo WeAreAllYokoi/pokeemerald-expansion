@@ -247,7 +247,7 @@ bool8 IsFavorLadyThresholdMet(void)
     return numItemsGiven < LILYCOVE_LADY_GIFT_THRESHOLD ? FALSE : TRUE;
 }
 
-u16 FavorLadyGetPrize(void)
+enum Item FavorLadyGetPrize(void)
 {
     enum Item prize;
 

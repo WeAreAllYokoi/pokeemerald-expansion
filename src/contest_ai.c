@@ -818,7 +818,7 @@ static void ContestAICmd_check_most_appealing_move(void)
 
     for (i = 0; i < MAX_MON_MOVES; i++)
     {
-        u16 newMove = gContestMons[eContestAI.contestantId].moves[i];
+        enum Move newMove = gContestMons[eContestAI.contestantId].moves[i];
         if (newMove != 0 && appeal < gContestEffects[GetMoveContestEffect(newMove)].appeal)
             break;
     }

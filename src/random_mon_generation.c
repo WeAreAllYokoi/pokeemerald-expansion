@@ -436,7 +436,7 @@ static bool32 MoveOrder(enum Move moveA, enum Move moveB)
 
 static void SortMoves(enum Move *moves)
 {
-    u16 temp;
+    enum Move temp;
 
     for (u32 i = 0; i < MAX_MON_MOVES; i++)
     {

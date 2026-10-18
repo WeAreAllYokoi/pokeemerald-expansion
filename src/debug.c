@@ -1174,13 +1174,13 @@ static void DebugNativeStep_CloseDebugWindow(u8 taskId)
 
 static void DebugSelection_SetData(u8 taskId, u32 index, u32 value)
 {
-    u16 *stepsData = (u16 *)GetWordTaskArg(taskId, STEPS_DATA_PTR_ARG);
+    u32 *stepsData = (u32 *)GetWordTaskArg(taskId, STEPS_DATA_PTR_ARG);
     stepsData[index] = value;
 }
 
-static u16 DebugSelection_GetData(u8 taskId, u32 index)
+static u32 DebugSelection_GetData(u8 taskId, u32 index)
 {
-    u16 *stepsData = (u16 *)GetWordTaskArg(taskId, STEPS_DATA_PTR_ARG);
+    u32 *stepsData = (u32 *)GetWordTaskArg(taskId, STEPS_DATA_PTR_ARG);
     return stepsData[index];
 }
 
@@ -1291,7 +1291,7 @@ static void Debug_Selection_StepsDataInit(u8 taskId, const struct DebugSelection
         else
             dataSize += 1;
     }
-    u16 *stepsData = AllocZeroed(dataSize * sizeof(u16));
+    u32 *stepsData = AllocZeroed(dataSize * sizeof(*stepsData));
     SetWordTaskArg(taskId, STEPS_DATA_PTR_ARG, (u32) stepsData);
 }
 
@@ -3523,7 +3523,7 @@ static const struct DebugSelectionStep sTeraTypeSelectionStep = {
 
 static bool32 DebugSelection_GiveComplexPokemon_OnComplete(u8 taskId)
 {
-    u16 *monData = (u16 *)GetWordTaskArg(taskId, STEPS_DATA_PTR_ARG);
+    u32 *monData = (u32 *)GetWordTaskArg(taskId, STEPS_DATA_PTR_ARG);
     struct Pokemon mon;
     enum Species species = monData[0];
     u8 level = monData[1];
@@ -3836,7 +3836,8 @@ static void DebugAction_PCBag_Fill_PocketPokeBalls(u8 taskId)
 
 static void DebugAction_PCBag_Fill_PocketTMHM(u8 taskId)
 {
-    u16 index, itemId;
+    u16 index;
+    enum Item itemId;
 
     for (index = 0; index < NUM_ALL_MACHINES; index++)
     {

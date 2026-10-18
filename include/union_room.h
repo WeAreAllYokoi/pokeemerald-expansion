@@ -125,7 +125,7 @@ struct WirelessLink_URoom
     u16 playerSendBuffer[6];
     u8 activityRequestStrbufs[4][16];
     u16 partnerYesNoResponse;
-    u16 recvActivityRequest[3];
+    u16 recvActivityRequest[4]; // Activity, then for trades: species low half, species high half and level
     struct UnionRoomObject objects[MAX_UNION_ROOM_LEADERS];
     u8 trainerCardStrBuffer[12][15];
     u8 trainerCardColorStrBuffer[48];

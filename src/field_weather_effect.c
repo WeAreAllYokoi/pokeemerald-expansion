@@ -2626,7 +2626,7 @@ static const struct DynamicWeatherPool sDynamicWeatherPools[] =
 
 static const u8 *GetDynamicWeatherPool(u8 *count)
 {
-    u16 mapSec = gMapHeader.regionMapSectionId;
+    mapsec_u16_t mapSec = gMapHeader.regionMapSectionId;
 
     for (u32 i = 0; i < ARRAY_COUNT(sDynamicWeatherPools); i++)
     {

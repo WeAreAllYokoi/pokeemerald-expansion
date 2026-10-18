@@ -82,7 +82,7 @@ static void ShowArenaResultsWindow(void);
 static void ShowPyramidResultsWindow(void);
 static void ShowLinkContestResultsWindow(void);
 static void CopyFrontierBrainText(bool8 playerWonText);
-static u16 *MakeCaughtBannedSpeciesList(u32 totalBannedSpecies);
+static u32 *MakeCaughtBannedSpeciesList(u32 totalBannedSpecies);
 static void PrintBannedSpeciesName(u8 windowId, u32 itemId, u8 y);
 static void Task_BannedSpeciesWindowInput(u8 taskId);
 
@@ -3817,10 +3817,10 @@ u16 FacilityClassToGraphicsId(u8 facilityClass)
 #define tScrollOffset data[3]
 #define tListPointerElemId 4
 
-static u16 *MakeCaughtBannedSpeciesList(u32 totalBannedSpecies)
+static u32 *MakeCaughtBannedSpeciesList(u32 totalBannedSpecies)
 {
     u32 count = 0;
-    u16 *list = AllocZeroed(sizeof(u16) * totalBannedSpecies);
+    u32 *list = AllocZeroed(sizeof(*list) * totalBannedSpecies);
     for (enum Species i = 0; i < NUM_SPECIES; i++)
     {
         if (!IsSpeciesEnabled(i))
@@ -3867,7 +3867,7 @@ void ShowBattleFrontierCaughtBannedSpecies(void)
     DrawStdWindowFrame(windowId, FALSE);
     listTemplate.windowId = windowId;
 
-    u16 *listItems = MakeCaughtBannedSpeciesList(totalCaughtBanned);
+    u32 *listItems = MakeCaughtBannedSpeciesList(totalCaughtBanned);
     u32 inputTaskId = CreateTask(Task_BannedSpeciesWindowInput, 3);
     gTasks[inputTaskId].tWindowId = windowId;
     gSpecialVar_0x8006 = inputTaskId;

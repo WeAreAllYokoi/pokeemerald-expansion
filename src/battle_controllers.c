@@ -1029,7 +1029,7 @@ void BtlController_EmitMoveAnimation(enum BattlerId battler, u32 bufferId, enum 
 {
     gBattleResources->transferBuffer[0] = CONTROLLER_MOVEANIMATION;
     // Move ID layout: low 16 bits in bytes 1-2, high 16 bits in bytes 14-15
-    gBattleResources->transferBuffer[1] = move;
+    gBattleResources->transferBuffer[1] = move & 0xFF;
     gBattleResources->transferBuffer[2] = (move & 0xFF00) >> 8;
     gBattleResources->transferBuffer[3] = turnOfMove;
     gBattleResources->transferBuffer[4] = movePower;

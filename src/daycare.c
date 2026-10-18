@@ -365,7 +365,7 @@ static enum Species TakeSelectedPokemonMonFromDaycareShiftSlots(struct DayCare *
     return species;
 }
 
-u16 TakePokemonFromDaycare(void)
+enum Species TakePokemonFromDaycare(void)
 {
     return TakeSelectedPokemonMonFromDaycareShiftSlots(&gSaveBlock1Ptr->daycare, gSpecialVar_0x8004);
 }

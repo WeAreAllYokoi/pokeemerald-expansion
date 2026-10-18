@@ -657,7 +657,8 @@ static void BuildSendCmd(u16 command)
         break;
     case LINKCMD_SEND_ITEM:
         gSendCmd[0] = LINKCMD_SEND_ITEM;
-        gSendCmd[1] = gSpecialVar_ItemId;
+        gSendCmd[1] = gSpecialVar_ItemId & 0xFFFF;
+        gSendCmd[2] = gSpecialVar_ItemId >> 16;
         break;
     case LINKCMD_SEND_BLOCK_REQ:
         gSendCmd[0] = LINKCMD_SEND_BLOCK_REQ;

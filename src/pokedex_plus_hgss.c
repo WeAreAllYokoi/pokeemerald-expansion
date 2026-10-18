@@ -3389,7 +3389,7 @@ static u8 PrintPreEvolutions(u8 taskId, enum Species species)
     u8 base_y = 51;
     u8 base_y_offset = 9;
 
-    u16 preEvolutionOne = 0;
+    enum Species preEvolutionOne = 0;
     u16 preEvolutionTwo = 0;
     u8 numPreEvolutions = 0;
 
@@ -4209,7 +4209,7 @@ static void PrintForms(u8 taskId, enum Species species)
 {
     u8 i;
     u8 j = 1;
-    u16 speciesForm;
+    enum Species speciesForm;
 
     u8 base_x = 5;
     u8 base_y = 52;

@@ -1631,7 +1631,7 @@ static void InitFrontierMapSprites(void)
 {
     struct SpriteTemplate sprite;
     u8 spriteId;
-    u8 id;
+    mapsec_u8_t id;
     s16 x = 0, y;
 
     FreeAllSpritePalettes();

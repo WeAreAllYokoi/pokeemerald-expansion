@@ -502,7 +502,7 @@ void ReadMail(struct Mail *mail, MainCallback exitCallback, bool8 hasText)
 
 static bool8 MailReadBuildGraphics(void)
 {
-    u16 icon;
+    enum Species icon;
 
     switch (gMain.state)
     {

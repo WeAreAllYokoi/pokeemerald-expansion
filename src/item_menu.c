@@ -3013,7 +3013,7 @@ static s32 CompareItemsByType(enum Pocket pocketId, struct ItemSlot item1, struc
 
 static s32 CompareItemsByIndex(enum Pocket pocketId, struct ItemSlot item1, struct ItemSlot item2)
 {
-    u16 index1 = 0, index2 = 0;
+    u32 index1 = 0, index2 = 0;
 
     if (item1.itemId == ITEM_NONE)
         return 1;
