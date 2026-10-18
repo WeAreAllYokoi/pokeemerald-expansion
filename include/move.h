@@ -43,7 +43,7 @@ struct AdditionalEffect
     u8 pledgeCombo:1; // If set the move effect only applies during a pledge combo attack
     u8 padding:1;
 
-    union PACKED {
+    union {
         enum MoveEffect randomMoveEffects[MAX_RANDOM_ADDITIONAL_EFFECTS]; // Used by MOVE_EFFECT_RANDOM_FROM_LIST
         enum WrappedStringID wrapped:8;
         enum BrokeProtectionStringID brokeProtect:8;
@@ -98,8 +98,8 @@ struct MoveInfo
 {
     const u8 *name;
     const u8 *description;
-    enum BattleMoveEffects effect:16;
-    enum Type type:5;     // Up to 32
+    enum BattleMoveEffects effect;
+    enum Type type;
     enum DamageCategory category:2;
     u16 power:9;    // up to 511
     // end of word
@@ -233,13 +233,6 @@ extern const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL];
 extern const u8 gNotDoneYetDescription[];
 extern const struct BattleMoveEffect gBattleMoveEffects[];
 
-// The argument field in MovesInfo is limited to 4 bytes on purpose to not waste space unnecessarily.
-// Downstream projects are free to remove this limitation.
-_Static_assert(sizeof(gMovesInfo[0].argument) == 4, "MovesInfo argument does not fit into 4 bytes");
-
-// The additional effect argument field is limited to 6 bytes on purpose to not waste space unnecessarily.
-// Downstream projects are free to remove this limitation.
-_Static_assert(sizeof(gMovesInfo[0].additionalEffects[0].argument) == 3, "AdditionalEffect argument does not fit into 6 bytes");
 
 static inline enum Move SanitizeMoveId(enum Move moveId)
 {

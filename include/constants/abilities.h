@@ -1,7 +1,7 @@
 #ifndef GUARD_CONSTANTS_ABILITIES_H
 #define GUARD_CONSTANTS_ABILITIES_H
 
-enum __attribute__((packed)) Ability
+enum Ability
 {
     ABILITY_NONE = 0,
     ABILITY_STENCH = 1,

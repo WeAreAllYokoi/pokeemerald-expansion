@@ -17,7 +17,7 @@
 #define TRAINER_LINK_OPPONENT               0xFF01
 #define TRAINER_UNION_ROOM                  0xFF02
 
-enum __attribute__((packed)) TrainerPicID
+enum TrainerPicID
 {
     TRAINER_PIC_NONE,
     TRAINER_PIC_BRENDAN, // The player back pics are assumed to alternate according to the gender values (MALE/FEMALE)

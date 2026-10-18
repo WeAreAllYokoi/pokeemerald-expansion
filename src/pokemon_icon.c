@@ -254,7 +254,8 @@ enum Species GetIconSpeciesNoPersonality(enum Species species)
 {
     species = SanitizeSpeciesId(species);
 
-    if (MailSpeciesToSpecies(species, &species) == SPECIES_UNOWN)
+    u16 unownLetter;
+    if (MailSpeciesToSpecies(species, &unownLetter) == SPECIES_UNOWN)
         return species += SPECIES_UNOWN_B; // TODO
     return GetIconSpecies(species, 0);
 }

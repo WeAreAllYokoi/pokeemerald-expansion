@@ -49,9 +49,9 @@
 //
 // If you choose to widen Map Sections, be aware that Met Locations (below)
 // are based on Map Sections and will also be widened.
-typedef u8  mapsec_u8_t;
-typedef u16 mapsec_u16_t;
-typedef s16 mapsec_s16_t;
+typedef u32 mapsec_u8_t;
+typedef u32 mapsec_u16_t;
+typedef s32 mapsec_s16_t;
 typedef s32 mapsec_s32_t;
 
 // Met Locations for caught Pokemon use the same values as Map Sections,

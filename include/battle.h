@@ -191,7 +191,7 @@ struct AI_SavedBattleMon
     enum Ability ability;
     enum Move moves[MAX_MON_MOVES];
     enum Item heldItem;
-    enum Species species:15;
+    enum Species species;
     u16 saved:1;
     enum Type types[3];
 };
@@ -480,7 +480,7 @@ struct BattleGimmickData
 
 struct LostItem
 {
-    enum Item originalItem:15;
+    enum Item originalItem;
     u16 stolen:1;
 };
 
@@ -530,7 +530,7 @@ struct BattlerState
     u32 canPickupItem:1;
     u32 ateBoost:1;
     u32 wasAboveHalfHp:1; // For Berserk, Emergency Exit, Wimp Out and Anger Shell.
-    enum Species commanderSpecies:11;
+    enum Species commanderSpecies;
     u32 selectionScriptFinished:1;
     u32 lastMoveTarget:3; // The last target on which each mon used a move, for the sake of Instruct
     // End of Word
@@ -552,7 +552,7 @@ struct PartyState
     u32 transformZeroToHero:1;
     u32 supersweetSyrup:1;
     u32 timesGotHit:8;
-    enum Species changedSpecies:11; // For forms when multiple mons can change into the same Pokémon.
+    enum Species changedSpecies; // For forms when multiple mons can change into the same Pokémon.
     u32 sentOut:1;
     u32 isKnockedOff:1;
     u32 freezeTurns:2;
@@ -694,7 +694,7 @@ struct BattleStruct
     u8 beatUpSlot:3;
     enum PledgeCombo pledgeState:2;
     enum DamageCategory dynamicMoveCategory:3;
-    enum Item flingItem:14;
+    enum Item flingItem;
     enum FlungItem flungItem:2;
     u8 itemPartyIndex[MAX_BATTLERS_COUNT];
     u8 itemMoveIndex[MAX_BATTLERS_COUNT];
@@ -761,7 +761,7 @@ struct TerrainInfo
 {
     const u8 *secretPowerAnimation;
     u16 secretPowerEffect:10;
-    enum Type type:6;
+    enum Type type;
     enum Move naturePowerMove;
     u8 battleBackground;
     enum Stat seedStat:4;

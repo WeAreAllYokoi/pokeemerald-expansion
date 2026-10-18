@@ -45,8 +45,8 @@ struct BattleCalcValues
 {
     enum BattlerId battlerAtk:3;
     enum BattlerId battlerDef:3;
-    enum Move move:16;
-    enum BattleMoveEffects moveEffect:10;
+    enum Move move;
+    enum BattleMoveEffects moveEffect;
     enum Ability abilities[MAX_BATTLERS_COUNT];
     enum HoldEffect holdEffects[MAX_BATTLERS_COUNT];
 };

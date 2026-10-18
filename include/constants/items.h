@@ -5,7 +5,7 @@
 #include "constants/tms_hms.h"
 #include "constants/berries.h"
 
-enum __attribute__((packed)) Item
+enum Item
 {
     ITEM_NONE = 0,
 

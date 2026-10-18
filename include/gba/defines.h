@@ -8,6 +8,9 @@
 
 #define IWRAM_DATA __attribute__((section(".bss")))
 #define EWRAM_DATA __attribute__((section(".sbss")))
+// Zero-initialized data in native memory, starting at 0x10000000
+// Use this for enlarged data that won't fit in the GBA's 256 KiB of EWRAM
+#define NATIVE_DATA __attribute__((section(".native_bss")))
 #define IWRAM_INIT __attribute__((section(".iwram")))
 #define EWRAM_INIT __attribute__((section(".ewram")))
 #define COMMON_DATA __attribute__((section("common_data")))

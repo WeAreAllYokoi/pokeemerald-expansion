@@ -6,7 +6,7 @@
 // Discussion: https://github.com/rh-hideout/pokeemerald-expansion/pull/5075#issuecomment-2384088602
 // Showdown: https://github.com/smogon/Pokemon-Showdown/blob/master/data/pokedex.ts
 
-enum __attribute__((packed)) Species
+enum Species
 {
     SPECIES_NONE = 0,
     SPECIES_BULBASAUR = 1,

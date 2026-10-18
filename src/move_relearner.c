@@ -62,7 +62,7 @@ struct RelearnType
 static EWRAM_DATA struct
 {
     u8 heartSpriteIds[16];
-    u16 movesToLearn[MAX_RELEARNER_MOVES];
+    enum Move movesToLearn[MAX_RELEARNER_MOVES];
     struct ListMenuItem menuItems[MAX_RELEARNER_MOVES + 1];
     u8 mainTask;
     u8 numMenuChoices;
@@ -264,16 +264,16 @@ static bool32 HasRelearnerLevelUpMoves(struct BoxPokemon *boxMon);
 static bool32 HasRelearnerEggMoves(struct BoxPokemon *boxMon);
 static bool32 HasRelearnerTMMoves(struct BoxPokemon *boxMon);
 static bool32 HasRelearnerTutorMoves(struct BoxPokemon *boxMon);
-static u32 GetRelearnerLevelUpMoves(struct BoxPokemon *mon, u16 *moves);
-static u32 GetRelearnerEggMoves(struct BoxPokemon *mon, u16 *moves);
-static u32 GetRelearnerTMMoves(struct BoxPokemon *mon, u16 *moves);
-static u32 GetRelearnerTutorMoves(struct BoxPokemon *mon, u16 *moves);
+static u32 GetRelearnerLevelUpMoves(struct BoxPokemon *mon, enum Move *moves);
+static u32 GetRelearnerEggMoves(struct BoxPokemon *mon, enum Move *moves);
+static u32 GetRelearnerTMMoves(struct BoxPokemon *mon, enum Move *moves);
+static u32 GetRelearnerTutorMoves(struct BoxPokemon *mon, enum Move *moves);
 
 static void Task_MoveRelearner_HandleInput(u8 taskId);
 static void Task_MoveRelearner_LearnMove(u8 taskId);
 static void Task_MoveRelearner_Quit(u8 taskId);
-static void SortMovesAlphabetically(u16 *moves, u32 numMoves);
-static void QuickSortMoves(u16 *moves, s32 left, s32 right);
+static void SortMovesAlphabetically(enum Move *moves, u32 numMoves);
+static void QuickSortMoves(enum Move *moves, s32 left, s32 right);
 
 static const struct RelearnType sRelearnTypes[MOVE_RELEARNER_COUNT] =
 {
@@ -867,12 +867,12 @@ void MoveRelearnerShowHideCategoryIcon(s32 moveId)
     }
 }
 
-static void QuickSortMoves(u16 *moves, s32 left, s32 right)
+static void QuickSortMoves(enum Move *moves, s32 left, s32 right)
 {
     if (left >= right)
         return;
 
-    u16 pivot = moves[(left + right) / 2];
+    enum Move pivot = moves[(left + right) / 2];
     s32 i = left, j = right;
 
     while (i <= j)
@@ -884,7 +884,7 @@ static void QuickSortMoves(u16 *moves, s32 left, s32 right)
 
         if (i <= j)
         {
-            u16 temp = moves[i];
+            enum Move temp = moves[i];
             moves[i] = moves[j];
             moves[j] = temp;
             i++;
@@ -896,7 +896,7 @@ static void QuickSortMoves(u16 *moves, s32 left, s32 right)
     QuickSortMoves(moves, i, right);
 }
 
-static void SortMovesAlphabetically(u16 *moves, u32 numMoves)
+static void SortMovesAlphabetically(enum Move *moves, u32 numMoves)
 {
     if (numMoves > 1)
         QuickSortMoves(moves, 0, numMoves - 1);
@@ -911,7 +911,7 @@ static bool32 IsTmAvailable(enum Item item)
     return CheckBagHasItem(item, 1);
 }
 
-static u32 GetRelearnerLevelUpMoves(struct BoxPokemon *mon, u16 *moves)
+static u32 GetRelearnerLevelUpMoves(struct BoxPokemon *mon, enum Move *moves)
 {
     enum Species species = GetBoxMonData(mon, MON_DATA_SPECIES);
     u32 level = (P_ENABLE_ALL_LEVEL_UP_MOVES ? MAX_LEVEL : GetLevelFromBoxMonExp(mon));
@@ -944,7 +944,7 @@ static u32 GetRelearnerLevelUpMoves(struct BoxPokemon *mon, u16 *moves)
     return numMoves;
 }
 
-static u32 GetRelearnerEggMoves(struct BoxPokemon *mon, u16 *moves)
+static u32 GetRelearnerEggMoves(struct BoxPokemon *mon, enum Move *moves)
 {
     enum Species species = GetBoxMonData(mon, MON_DATA_SPECIES);
     u32 numMoves = 0;
@@ -965,7 +965,7 @@ static u32 GetRelearnerEggMoves(struct BoxPokemon *mon, u16 *moves)
     return numMoves;
 }
 
-static u32 GetRelearnerTMMoves(struct BoxPokemon *mon, u16 *moves)
+static u32 GetRelearnerTMMoves(struct BoxPokemon *mon, enum Move *moves)
 {
     enum Species species = GetBoxMonData(mon, MON_DATA_SPECIES);
     u32 numMoves = 0;
@@ -991,7 +991,7 @@ static u32 GetRelearnerTMMoves(struct BoxPokemon *mon, u16 *moves)
     return numMoves;
 }
 
-static u32 GetRelearnerTutorMoves(struct BoxPokemon *mon, u16 *moves)
+static u32 GetRelearnerTutorMoves(struct BoxPokemon *mon, enum Move *moves)
 {
     enum Species species = GetBoxMonData(mon, MON_DATA_SPECIES);
     u32 numMoves = 0;

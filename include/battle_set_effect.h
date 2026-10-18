@@ -8,7 +8,7 @@ struct SetEffect
     const u8 *script;
     const struct AdditionalEffect *additionalEffect;
 
-    enum MoveEffect moveEffect:8;
+    enum MoveEffect moveEffect;
     enum BattlerId effectBattler:3;
 
     u16 primary:1;

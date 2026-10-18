@@ -1439,7 +1439,7 @@ u32 TrySetCantSelectMoveBattleScript(enum BattlerId battler)
     u8 moveId = gBattleResources->bufferB[battler][2] & ~RET_GIMMICK;
     enum Move move = gBattleMons[battler].moves[moveId];
     enum HoldEffect holdEffect = GetBattlerHoldEffect(battler);
-    u16 *choicedMove = &gBattleStruct->choicedMove[battler];
+    enum Move *choicedMove = &gBattleStruct->choicedMove[battler];
     enum BattleMoveEffects moveEffect = GetMoveEffect(move);
 
     // Dynamax bypasses all selection prevention except Taunt and Assault Vest.
@@ -1631,7 +1631,7 @@ u32 CheckMoveLimitations(enum BattlerId battler, u8 unusableMoves, u32 check)
     enum Move move;
     enum BattleMoveEffects moveEffect;
     enum HoldEffect holdEffect = GetBattlerHoldEffect(battler);
-    u16 *choicedMove = &gBattleStruct->choicedMove[battler];
+    enum Move *choicedMove = &gBattleStruct->choicedMove[battler];
     s32 i;
 
     gPotentialItemEffectBattler = battler;
@@ -10249,7 +10249,8 @@ ARM_FUNC u32 GetBattlerVolatile(enum BattlerId battler, enum Volatile _volatile)
 
 // Sets the value of a volatile status flag for a certain battler
 // Primarily used for the debug menu and scripts. Outside of it explicit references are preferred
-void SetMonVolatile(enum BattlerId battler, enum Volatile _volatile, u32 newValue)
+// Uses Arm for the same Thumb compiler bug as GetBattlerVolatile, which full-width fields trigger here too
+ARM_FUNC void SetMonVolatile(enum BattlerId battler, enum Volatile _volatile, u32 newValue)
 {
     switch (_volatile)
     {

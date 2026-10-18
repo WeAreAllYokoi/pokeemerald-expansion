@@ -2,7 +2,7 @@
 #define GUARD_CONSTANTS_POKEMON_H
 
 // Pokémon types
-enum __attribute__((packed)) Type
+enum Type
 {
     TYPE_NONE = 0,
     TYPE_NORMAL = 1,

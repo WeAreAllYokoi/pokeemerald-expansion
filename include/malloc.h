@@ -26,7 +26,7 @@ struct MemBlock
     u16 magic;
 
     // Size of the block (not including this header struct).
-    u32 size:18;
+    u32 size;
 
     // Low 14 bits of location pointer.
     u32 locationLo:14;
@@ -41,7 +41,8 @@ struct MemBlock
     u8 data[0];
 };
 
-#define HEAP_SIZE 0x1C500
+// Give the heap 16 MiB in native memory to make room for added content
+#define HEAP_SIZE 0x1000000
 extern u8 gHeap[HEAP_SIZE];
 
 #if TESTING || !defined(NDEBUG)

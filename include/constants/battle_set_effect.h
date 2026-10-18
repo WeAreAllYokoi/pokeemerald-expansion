@@ -2,7 +2,7 @@
 #define GUARD_CONSTANTS_BATTLE_SET_EFFECT_H
 
 // Explicit numbers until frostbite because those shouldn't be shifted
-enum __attribute__((packed)) MoveEffect
+enum MoveEffect
 {
     MOVE_EFFECT_NONE = 0,
     MOVE_EFFECT_SLEEP = 1,

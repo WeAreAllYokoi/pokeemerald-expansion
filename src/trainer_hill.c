@@ -1321,7 +1321,7 @@ static u8 GetPrizeListId(bool8 allowTMs)
 static enum Item GetPrizeItemId(void)
 {
     u8 i;
-    const u16 *prizeList;
+    const enum Item *prizeList;
     s32 trainerNumSum = 0, prizeListSetId, minutes, id;
 
     // First determine which set of prize lists to use. The sets of lists only differ in

@@ -51,7 +51,7 @@ struct SwitchAiContext
 {
     enum BattlerId battler:3;
     enum BattlerId opposingBattler:3;
-    enum Move incomingMove:16;
+    enum Move incomingMove;
     u32 lastId:6;
     u32 padding1:4;
 

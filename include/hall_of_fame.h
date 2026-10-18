@@ -6,7 +6,7 @@ struct HallofFameMon
     u32 tid;
     u32 personality;
     u16 isShiny:1;
-    enum Species species:15;
+    enum Species species;
     u8 lvl;
     u8 nickname[POKEMON_NAME_LENGTH];
 };

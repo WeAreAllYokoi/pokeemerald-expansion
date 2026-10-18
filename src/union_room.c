@@ -1746,7 +1746,7 @@ static void Task_StartActivity(u8 taskId)
 static void Task_RunScriptAndFadeToActivity(u8 taskId)
 {
     s16 *data = gTasks[taskId].data;
-    u16 *sendBuff = (u16 *)(gBlockSendBuffer);
+    enum Species *sendBuff = (enum Species *)(gBlockSendBuffer);
 
     switch (data[0])
     {
@@ -1817,7 +1817,7 @@ static void Task_RunScriptAndFadeToActivity(u8 taskId)
         if (GetBlockReceivedStatus() == 3)
         {
             ResetBlockReceivedFlags();
-            if (AreBattleTowerLinkSpeciesSame(gBlockRecvBuffer[0], gBlockRecvBuffer[1]))
+            if (AreBattleTowerLinkSpeciesSame((enum Species *)gBlockRecvBuffer[0], (enum Species *)gBlockRecvBuffer[1]))
             {
                 gSpecialVar_Result = LINKUP_FAILED_BATTLE_TOWER;
                 data[0] = 7;

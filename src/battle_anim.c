@@ -2418,9 +2418,9 @@ static void Cmd_stopsound(void)
 
 static void Cmd_jumpifmovetypeequal(void)
 {
-    const enum Type *type = sBattleAnimScriptPtr + 1;
+    enum Type type = sBattleAnimScriptPtr[1];
     sBattleAnimScriptPtr += 2;
-    if (*type != GetBattleMoveType(gCurrentMove))
+    if (type != GetBattleMoveType(gCurrentMove))
         sBattleAnimScriptPtr += 4;
     else
         sBattleAnimScriptPtr = T2_READ_PTR(sBattleAnimScriptPtr);

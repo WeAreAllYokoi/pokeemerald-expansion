@@ -9,6 +9,7 @@ MEMORY
     EWRAM (rwx) : ORIGIN = 0x2000000, LENGTH = 256K
     IWRAM (rwx) : ORIGIN = 0x3000000, LENGTH = 32K
     ROM    (rx) : ORIGIN = 0x8000000, LENGTH = 32M
+    NATIVE (rw) : ORIGIN = 0x10000000, LENGTH = 0x70000000
 }
 
 SECTIONS {
@@ -47,6 +48,16 @@ SECTIONS {
         *libc.a:*.o(COMMON);
         *libnosys.a:*.o(COMMON);
     } > IWRAM
+
+    /* Native BSS; __native_start and __native_end mark the range for the runtime */
+    .native (NOLOAD) :
+    ALIGN(16)
+    {
+        __native_start = .;
+        *.o(.native_bss*);
+        . = ALIGN(16);
+        __native_end = .;
+    } > NATIVE
 
     /* BEGIN ROM DATA */
 

@@ -145,7 +145,7 @@ static void Task_DexNavMain(u8 taskId);
 static void PrintCurrentSpeciesInfo(void);
 // SEARCH
 static bool8 TryStartHiddenMonFieldEffect(enum EncounterType environment, u8 xSize, u8 ySize, bool8 smallScan);
-static void DexNavGenerateMoveset(enum Species species, u8 searchLevel, u8 encounterLevel, u16 *moveDst);
+static void DexNavGenerateMoveset(enum Species species, u8 searchLevel, u8 encounterLevel, enum Move *moveDst);
 static enum Item DexNavGenerateHeldItem(enum Species species, u8 searchLevel);
 static u8 DexNavGetAbilityNum(enum Species species, u8 searchLevel);
 static u8 DexNavGeneratePotential(u8 searchLevel);
@@ -1229,7 +1229,7 @@ static enum Move GetRandomEggMove(enum Species species)
     return result;
 }
 
-static void DexNavGenerateMoveset(enum Species species, u8 searchLevel, u8 encounterLevel, u16 *moveDst)
+static void DexNavGenerateMoveset(enum Species species, u8 searchLevel, u8 encounterLevel, enum Move *moveDst)
 {
     bool8 genMove = FALSE;
     u16 randVal = Random() % 100;

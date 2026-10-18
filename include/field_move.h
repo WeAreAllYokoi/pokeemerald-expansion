@@ -24,7 +24,7 @@ struct FieldMoveInfo
 {
     bool32 (*fieldMoveFunc)(void);
     enum FieldMoveUnlockType unlockType:3;
-    enum Move moveID:11;
+    enum Move moveID;
     u32 partyMsgID:7;
     u32 arg:8;
     u32 hideIfLocked:1;

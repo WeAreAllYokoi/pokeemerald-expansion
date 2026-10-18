@@ -31,12 +31,12 @@ struct LoadedSaveData
 };
 
 // EWRAM DATA
-EWRAM_DATA struct SaveBlock3 gSaveblock3 = {};
-EWRAM_DATA struct SaveBlock2ASLR gSaveblock2 = {0};
-EWRAM_DATA struct SaveBlock1ASLR gSaveblock1 = {0};
-EWRAM_DATA struct PokemonStorageASLR gPokemonStorage = {0};
+NATIVE_DATA struct SaveBlock3 gSaveblock3 = {};
+NATIVE_DATA struct SaveBlock2ASLR gSaveblock2 = {0};
+NATIVE_DATA struct SaveBlock1ASLR gSaveblock1 = {0};
+NATIVE_DATA struct PokemonStorageASLR gPokemonStorage = {0};
 
-EWRAM_DATA struct LoadedSaveData gLoadedSaveData = {0};
+NATIVE_DATA struct LoadedSaveData gLoadedSaveData = {0};
 EWRAM_DATA u32 gLastEncryptionKey = 0;
 
 // IWRAM common

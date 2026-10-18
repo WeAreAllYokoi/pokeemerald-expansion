@@ -1,7 +1,7 @@
 #ifndef GUARD_CONSTANTS_MOVES_H
 #define GUARD_CONSTANTS_MOVES_H
 
-enum __attribute__((packed)) Move
+enum Move
 {
     MOVE_NONE = 0,
     MOVE_POUND = 1,

@@ -1653,7 +1653,7 @@ bool32 CanAIFaintTarget(enum BattlerId battlerAtk, enum BattlerId battlerDef, u3
 {
     struct AiLogicData *aiData = gAiLogicData;
     s32 dmg;
-    u16 *moves = gBattleMons[battlerAtk].moves;
+    enum Move *moves = gBattleMons[battlerAtk].moves;
     u32 moveLimitations = aiData->moveLimitations[battlerAtk];
 
     for (u32 moveIndex = 0; moveIndex < MAX_MON_MOVES; moveIndex++)
