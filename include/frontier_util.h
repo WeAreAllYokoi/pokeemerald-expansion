@@ -63,7 +63,7 @@ struct FrontierBrainMon
     enum Species species;
     enum Item heldItem;
     u8 fixedIV;
-    u8 nature;
+    nature_t nature;
     u8 evs[NUM_STATS];
     enum Move moves[MAX_MON_MOVES];
 };

@@ -64,4 +64,7 @@ typedef s32 mapsec_s32_t;
 // how much more space a wider Met Location would consume.
 typedef mapsec_u8_t metloc_u8_t;
 
+// Keep nature IDs 32-bit, like species and move IDs
+typedef u32 nature_t;
+
 #endif //GUARD_GAMETYPES_H

@@ -38,14 +38,14 @@ const struct Fusion *const gFusionTablePointers[NUM_SPECIES] =
 #if P_FUSION_FORMS
 #if P_FAMILY_KYUREM
 #if P_FAMILY_RESHIRAM
-const u16 gKyuremWhiteSwapMoveTable[][2] =
+const enum Move gKyuremWhiteSwapMoveTable[][2] =
 {
     {MOVE_SCARY_FACE, MOVE_FUSION_FLARE},
     {MOVE_GLACIATE, MOVE_ICE_BURN},
 };
 #endif //P_FAMILY_RESHIRAM
 #if P_FAMILY_ZEKROM
-const u16 gKyuremBlackSwapMoveTable[][2] =
+const enum Move gKyuremBlackSwapMoveTable[][2] =
 {
     {MOVE_SCARY_FACE, MOVE_FUSION_BOLT},
     {MOVE_GLACIATE, MOVE_FREEZE_SHOCK},

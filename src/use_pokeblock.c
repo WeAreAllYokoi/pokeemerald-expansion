@@ -1378,7 +1378,7 @@ static bool8 LoadUsePokeblockMenuGfx(void)
 static void UpdateMonInfoText(u16 loadId, bool8 firstPrint)
 {
     u8 partyIndex;
-    u8 nature;
+    nature_t nature;
     u8 *str;
 
     FillWindowPixelBuffer(WIN_NAME, PIXEL_FILL(0));

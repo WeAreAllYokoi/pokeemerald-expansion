@@ -79,7 +79,7 @@ def prepare_output(all_learnables: dict[str, set[str]], tms: list[str], tutors: 
 
     cursor = 0
     new = header + dedent("""
-    static const u16 sNoneTeachableLearnset[] = {
+    static const enum Move sNoneTeachableLearnset[] = {
         MOVE_UNAVAILABLE,
     };
     """)
@@ -91,7 +91,7 @@ def prepare_output(all_learnables: dict[str, set[str]], tms: list[str], tutors: 
             continue
         species = species_data["name"]
         teaching_type = species_data["teaching_type"]
-        new += f"static const u16 s{species}TeachableLearnset[] = "
+        new += f"static const enum Move s{species}TeachableLearnset[] = "
         new += "{\n"
         species_upper =  SNAKIFY_PAT.sub(r"_\1", species).upper()
         if teaching_type == "ALL_TEACHABLES":

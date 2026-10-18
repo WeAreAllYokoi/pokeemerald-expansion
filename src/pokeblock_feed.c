@@ -58,7 +58,7 @@ struct PokeblockFeed
     enum Species species;
     u16 monAnimLength;
     u16 timer;
-    u8 nature;
+    nature_t nature;
     u8 monSpriteId_; // Duplicated unnecessarily
     u8 unused3;
     u8 monSpriteId;

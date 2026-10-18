@@ -68,9 +68,9 @@ s8 GetFirstFreePokeblockSlot(void);
 bool32 AddPokeblock(const struct Pokeblock *pokeblock);
 bool32 TryClearPokeblock(u8 pkblId);
 s16 GetPokeblockData(const struct Pokeblock *pokeblock, u8 field);
-s16 PokeblockGetGain(u8 nature, const struct Pokeblock *pokeblock);
+s16 PokeblockGetGain(nature_t nature, const struct Pokeblock *pokeblock);
 void PokeblockCopyName(const struct Pokeblock *pokeblock, u8 *dest);
-bool8 CopyMonFavoritePokeblockName(u8 nature, u8 *dest);
+bool8 CopyMonFavoritePokeblockName(nature_t nature, u8 *dest);
 u8 GetPokeblocksFlavor(const struct Pokeblock *pokeblock);
 
 #endif // GUARD_POKEBLOCK_H

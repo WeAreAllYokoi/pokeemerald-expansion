@@ -4934,7 +4934,7 @@ static void DisplayTrainerInfoOnCard(u8 flags, u8 trainerTourneyId)
     struct TextPrinterTemplate textPrinter;
     int i, j, k;
     int trainerId = 0;
-    u8 nature = 0;
+    nature_t nature = 0;
     int arrId = 0;
     int windowId = WIN_TRAINER_NAME;
     int x = 0, y = 0;

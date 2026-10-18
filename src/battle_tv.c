@@ -76,7 +76,7 @@ enum {
 };
 
 // const rom data
-static const u16 sVariableDmgMoves[] =
+static const enum Move sVariableDmgMoves[] =
 {
     MOVE_COUNTER, MOVE_FISSURE, MOVE_BIDE, MOVE_MIRROR_COAT,
     MOVE_HORN_DRILL, MOVE_FLAIL, MOVE_REVERSAL, MOVE_HIDDEN_POWER,

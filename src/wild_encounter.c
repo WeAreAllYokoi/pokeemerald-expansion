@@ -500,7 +500,7 @@ static u8 PickWildMonNature(enum Species species)
 {
     u8 i;
     struct Pokeblock *safariPokeblock;
-    u8 natures[NUM_NATURES];
+    nature_t natures[NUM_NATURES];
 
     if (GetSafariZoneFlag() == TRUE && Random() % 100 < 80)
     {

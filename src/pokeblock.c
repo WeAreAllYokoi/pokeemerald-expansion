@@ -1257,7 +1257,7 @@ static void CloseTossPokeblockWindow(u8 taskId)
 
 static void PokeblockAction_UseInBattle(u8 taskId)
 {
-    u8 nature = GetNature(&gParties[B_TRAINER_OPPONENT_A][0]);
+    nature_t nature = GetNature(&gParties[B_TRAINER_OPPONENT_A][0]);
     s16 gain = PokeblockGetGain(nature, &gSaveBlock1Ptr->pokeblocks[gSpecialVar_ItemId]);
     StringCopy(gBattleTextBuff1, gPokeblockNames[gSaveBlock1Ptr->pokeblocks[gSpecialVar_ItemId].color]);
     TryClearPokeblock(gSpecialVar_ItemId);
@@ -1406,7 +1406,7 @@ s16 GetPokeblockData(const struct Pokeblock *pokeblock, u8 field)
     return 0;
 }
 
-s16 PokeblockGetGain(u8 nature, const struct Pokeblock *pokeblock)
+s16 PokeblockGetGain(nature_t nature, const struct Pokeblock *pokeblock)
 {
     enum Flavor flavor;
     s16 curGain, totalGain = 0;
@@ -1427,7 +1427,7 @@ void PokeblockCopyName(const struct Pokeblock *pokeblock, u8 *dest)
     StringCopy(dest, gPokeblockNames[color]);
 }
 
-bool8 CopyMonFavoritePokeblockName(u8 nature, u8 *dest)
+bool8 CopyMonFavoritePokeblockName(nature_t nature, u8 *dest)
 {
     u8 i;
 

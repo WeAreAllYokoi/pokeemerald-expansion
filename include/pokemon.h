@@ -20,7 +20,7 @@
 #include "constants/trainers.h"
 
 #define GET_BASE_SPECIES_ID(speciesId) (GetFormSpeciesId(speciesId, 0))
-#define FORM_SPECIES_END (0xffff)
+#define FORM_SPECIES_END (0xFFFFFFFF)
 
 // Property labels for Get(Box)MonData / Set(Box)MonData
 enum MonData {
@@ -261,7 +261,7 @@ struct BoxPokemon
     u32 otId;
     u8 nickname[min(10, POKEMON_NAME_LENGTH)];
     u8 language:3;
-    u8 hiddenNatureModifier:5; // 31 natures.
+    nature_t hiddenNatureModifier;
     u8 isBadEgg:1;
     u8 hasSpecies:1;
     u8 isEgg:1;
@@ -378,15 +378,15 @@ struct BattlePokemon
 struct EvolutionParam
 {
     u16 condition;
-    u16 arg1;
-    u16 arg2;
-    u16 arg3;
+    u32 arg1;
+    u32 arg2;
+    u32 arg3;
 };
 
 struct Evolution
 {
     u16 method;
-    u16 param;
+    u32 param; // Method-specific value; keep item IDs full-width
     enum Species targetSpecies;
     const struct EvolutionParam *params;
 };
@@ -503,10 +503,10 @@ struct SpeciesInfo /*0xC4*/
     enum EggIds eggId:12;
     // Move Data
     const struct LevelUpMove *levelUpLearnset;
-    const u16 *teachableLearnset;
-    const u16 *eggMoveLearnset;
+    const enum Move *teachableLearnset;
+    const enum Move *eggMoveLearnset;
     const struct Evolution *evolutions;
-    const u16 *formSpeciesIdTable;
+    const enum Species *formSpeciesIdTable;
     const struct FormChange *formChangeTable;
 #if OW_POKEMON_OBJECT_EVENTS
     struct ObjectEventGraphicsInfo overworldData;
@@ -648,10 +648,10 @@ struct FormChange
 {
     enum FormChanges method:16;
     enum Species targetSpecies;
-    u16 param1;
-    u16 param2;
-    u16 param3;
-    u16 param4;
+    u32 param1;
+    u32 param2;
+    u32 param3;
+    u32 param4;
 };
 
 struct FormChangeContext
@@ -696,10 +696,10 @@ extern const struct Fusion *const gFusionTablePointers[NUM_SPECIES];
 #if P_FUSION_FORMS
 #if P_FAMILY_KYUREM
 #if P_FAMILY_RESHIRAM
-extern const u16 gKyuremWhiteSwapMoveTable[][2];
+extern const enum Move gKyuremWhiteSwapMoveTable[][2];
 #endif //P_FAMILY_RESHIRAM
 #if P_FAMILY_ZEKROM
-extern const u16 gKyuremBlackSwapMoveTable[][2];
+extern const enum Move gKyuremBlackSwapMoveTable[][2];
 #endif //P_FAMILY_ZEKROM
 #endif //P_FAMILY_KYUREM
 #endif //P_FUSION_FORMS
@@ -772,7 +772,7 @@ void ZeroMonData(struct Pokemon *mon);
 void ZeroPartyMons(struct Pokemon *party);
 void ZeroPlayerPartyMons(void);
 void ZeroEnemyPartyMons(void);
-u32 GetMonPersonality(enum Species species, u8 gender, u8 nature, u8 unownLetter);
+u32 GetMonPersonality(enum Species species, u8 gender, nature_t nature, u8 unownLetter);
 bool32 ComputePlayerShinyOdds(u32 personality, u32 value);
 void CreateMon(struct Pokemon *mon, enum Species species, u8 level, u32 personality, struct OriginalTrainerId);
 void CreateRandomMon(struct Pokemon *mon, enum Species species, u8 level);
@@ -795,9 +795,9 @@ void CalculateMonStatsCont(struct Pokemon *mon, bool32 updateSpeedStat);
 void BoxMonToMon(const struct BoxPokemon *src, struct Pokemon *dest);
 u8 GetLevelFromMonExp(struct Pokemon *mon);
 u8 GetLevelFromBoxMonExp(struct BoxPokemon *boxMon);
-u16 GiveMoveToMon(struct Pokemon *mon, enum Move move);
-u16 GiveMoveToBoxMon(struct BoxPokemon *boxMon, enum Move move);
-u16 GiveMoveToBattleMon(struct BattlePokemon *mon, enum Move move);
+enum Move GiveMoveToMon(struct Pokemon *mon, enum Move move);
+enum Move GiveMoveToBoxMon(struct BoxPokemon *boxMon, enum Move move);
+enum Move GiveMoveToBattleMon(struct BattlePokemon *mon, enum Move move);
 void SetMonMoveSlot(struct Pokemon *mon, enum Move move, u8 slot);
 void SetBoxMonMoveSlot(struct BoxPokemon *mon, enum Move move, u8 slot);
 void SetBattleMonMoveSlot(struct BattlePokemon *mon, enum Move move, u8 slot);
@@ -864,11 +864,11 @@ u32 GetSpeciesBaseSpeed(enum Species species);
 u32 GetSpeciesBaseStat(enum Species species, u32 statIndex);
 u32 GetSpeciesBaseStatTotal(enum Species species);
 const struct LevelUpMove *GetSpeciesLevelUpLearnset(enum Species species);
-const u16 *GetSpeciesTeachableLearnset(enum Species species);
-const u16 *GetSpeciesEggMoves(enum Species species);
+const enum Move *GetSpeciesTeachableLearnset(enum Species species);
+const enum Move *GetSpeciesEggMoves(enum Species species);
 bool32 SpeciesHasEggMove(enum Species species, enum Move move);
 const struct Evolution *GetSpeciesEvolutions(enum Species species);
-const u16 *GetSpeciesFormTable(enum Species species);
+const enum Species *GetSpeciesFormTable(enum Species species);
 const struct FormChange *GetSpeciesFormChanges(enum Species species);
 u8 CalculatePPWithBonus(enum Move move, u8 ppBonuses, u8 moveIndex);
 void RemoveMonPPBonus(struct Pokemon *mon, u8 moveIndex);
@@ -879,8 +879,8 @@ bool8 ExecuteTableBasedItemEffect(struct Pokemon *mon, enum Item item, u8 partyI
 bool8 PokemonUseItemEffects(struct Pokemon *mon, enum Item item, u8 partyIndex, u8 moveIndex, u8 usedByAI);
 bool8 HealStatusConditions(struct Pokemon *mon, u32 healMask, enum BattlerId battler);
 u8 GetItemEffectParamOffset(enum BattlerId battler, enum Item itemId, u8 effectByte, u8 effectBit);
-u8 GetNature(struct Pokemon *mon);
-u8 GetNatureFromPersonality(u32 personality);
+nature_t GetNature(struct Pokemon *mon);
+nature_t GetNatureFromPersonality(u32 personality);
 enum Species GetGMaxTargetSpecies(enum Species species);
 bool32 DoesMonMeetAdditionalConditions(struct Pokemon *mon, const struct EvolutionParam *params, struct Pokemon *tradePartner, u32 partyId, bool32 *canStopEvo, enum EvoState evoState);
 enum Species GetEvolutionTargetSpecies(struct Pokemon *mon, enum EvolutionMode mode, enum Item evolutionItem, struct Pokemon *tradePartner, bool32 *canStopEvo, enum EvoState evoState);
@@ -901,7 +901,7 @@ u8 GetPlayerFlankId(void);
 u16 GetLinkTrainerFlankId(u8 linkPlayerId);
 s32 GetBattlerMultiplayerId(u16 id);
 u8 GetTrainerEncounterMusicId(u16 trainerOpponentId);
-u16 ModifyStatByNature(u8 nature, u16 stat, enum Stat statIndex);
+u16 ModifyStatByNature(nature_t nature, u16 stat, enum Stat statIndex);
 void AdjustFriendship(struct Pokemon *mon, u8 event);
 s32 CalculateFriendshipBonuses(struct Pokemon *mon, s32 modifier, enum HoldEffect itemHoldEffect);
 void MonGainEVs(struct Pokemon *mon, enum Species defeatedSpecies);

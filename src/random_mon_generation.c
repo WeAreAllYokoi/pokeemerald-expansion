@@ -147,7 +147,7 @@ static bool32 IsRandomSpeciesFormTableException(enum Species species)
     }
 }
 
-static bool32 IsRandomSpeciesInFormChangeTables(enum Species species, const u16 *formTable)
+static bool32 IsRandomSpeciesInFormChangeTables(enum Species species, const enum Species *formTable)
 {
     for (u32 i = 0; formTable[i] != FORM_SPECIES_END; i++)
     {
@@ -163,7 +163,7 @@ static bool32 IsRandomSpeciesInFormChangeTables(enum Species species, const u16 
     return FALSE;
 }
 
-static bool32 IsRandomSpeciesInFusionTables(enum Species species, const u16 *formTable)
+static bool32 IsRandomSpeciesInFusionTables(enum Species species, const enum Species *formTable)
 {
     for (u32 i = 0; formTable[i] != FORM_SPECIES_END; i++)
     {
@@ -181,13 +181,13 @@ static bool32 IsRandomSpeciesInFusionTables(enum Species species, const u16 *for
     return FALSE;
 }
 
-static bool32 IsRandomSpeciesInFormOrFusionTables(enum Species species, const u16 *formTable)
+static bool32 IsRandomSpeciesInFormOrFusionTables(enum Species species, const enum Species *formTable)
 {
     return IsRandomSpeciesInFormChangeTables(species, formTable)
         || IsRandomSpeciesInFusionTables(species, formTable);
 }
 
-static bool32 IsRandomSpeciesFormAllowed(enum Species species, const u16 *formTable)
+static bool32 IsRandomSpeciesFormAllowed(enum Species species, const enum Species *formTable)
 {
     const struct SpeciesInfo *speciesInfo;
     enum Species baseSpecies = GET_BASE_SPECIES_ID(species);
@@ -221,7 +221,7 @@ static bool32 IsRandomSpeciesFormAllowed(enum Species species, const u16 *formTa
 
 static enum Species GetSpeciesCandidateForm(enum Species species, const struct RandomSpeciesGeneratorOptions *options, const struct FilterFuncArgs *filterFuncArgs)
 {
-    const u16 *formTable = GetSpeciesFormTable(species);
+    const enum Species *formTable = GetSpeciesFormTable(species);
     u16 validFormsCount = 0;
     u16 validForms[RANDOM_MON_MAX_FORMS];
 
@@ -484,7 +484,7 @@ static void AssignDefaultMove(enum Species species, u32 level, enum Move *moves,
 static void AssignRandomTeachableMove(enum Species species, enum Move *moves, u32 i)
 {
     u32 teachableCount = 0;
-    const u16 *teachableLearnset = GetSpeciesTeachableLearnset(species);
+    const enum Move *teachableLearnset = GetSpeciesTeachableLearnset(species);
 
     while (teachableLearnset[teachableCount] != MOVE_UNAVAILABLE)
         teachableCount++;

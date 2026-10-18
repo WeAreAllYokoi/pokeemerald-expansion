@@ -790,7 +790,7 @@ struct BattleTestData
     u8 currentPartyIndex;
     struct Pokemon *currentMon;
     u8 gender;
-    u8 nature;
+    nature_t nature;
     bool8 isShiny;
     enum Ability forcedAbilities[MAX_BATTLE_TRAINERS][PARTY_SIZE];
     u8 chosenGimmick[MAX_BATTLE_TRAINERS][PARTY_SIZE];

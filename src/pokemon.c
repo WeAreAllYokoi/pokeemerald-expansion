@@ -1055,7 +1055,7 @@ static void CleanIncompatibleGenderSpecies(enum Species species, u8 *gender)
         *gender = MON_GENDER_RANDOM;
 }
 
-u32 GetMonPersonality(enum Species species, u8 gender, u8 nature, u8 unownLetter)
+u32 GetMonPersonality(enum Species species, u8 gender, nature_t nature, u8 unownLetter)
 {
     u32 personality, actualLetter;
 
@@ -1392,7 +1392,7 @@ void CalculateMonStatsCont(struct Pokemon *mon, bool32 updateSpeedStat)
     s32 level = GetLevelFromMonExp(mon);
     s32 newMaxHP;
 
-    u8 nature = GetMonData(mon, MON_DATA_HIDDEN_NATURE);
+    nature_t nature = GetMonData(mon, MON_DATA_HIDDEN_NATURE);
 
     SetMonData(mon, MON_DATA_LEVEL, &level);
 
@@ -1501,12 +1501,12 @@ u8 GetLevelFromBoxMonExp(struct BoxPokemon *boxMon)
     return level - 1;
 }
 
-u16 GiveMoveToMon(struct Pokemon *mon, enum Move move)
+enum Move GiveMoveToMon(struct Pokemon *mon, enum Move move)
 {
     return GiveMoveToBoxMon(&mon->box, move);
 }
 
-u16 GiveMoveToBoxMon(struct BoxPokemon *boxMon, enum Move move)
+enum Move GiveMoveToBoxMon(struct BoxPokemon *boxMon, enum Move move)
 {
     s32 i;
     for (i = 0; i < MAX_MON_MOVES; i++)
@@ -1525,7 +1525,7 @@ u16 GiveMoveToBoxMon(struct BoxPokemon *boxMon, enum Move move)
     return MON_HAS_MAX_MOVES;
 }
 
-u16 GiveMoveToBattleMon(struct BattlePokemon *mon, enum Move move)
+enum Move GiveMoveToBattleMon(struct BattlePokemon *mon, enum Move move)
 {
     s32 i;
 
@@ -3294,17 +3294,17 @@ const struct LevelUpMove *GetSpeciesLevelUpLearnset(enum Species species)
     return learnset;
 }
 
-const u16 *GetSpeciesTeachableLearnset(enum Species species)
+const enum Move *GetSpeciesTeachableLearnset(enum Species species)
 {
-    const u16 *learnset = gSpeciesInfo[SanitizeSpeciesId(species)].teachableLearnset;
+    const enum Move *learnset = gSpeciesInfo[SanitizeSpeciesId(species)].teachableLearnset;
     if (learnset == NULL)
         return gSpeciesInfo[SPECIES_NONE].teachableLearnset;
     return learnset;
 }
 
-const u16 *GetSpeciesEggMoves(enum Species species)
+const enum Move *GetSpeciesEggMoves(enum Species species)
 {
-    const u16 *learnset = gSpeciesInfo[SanitizeSpeciesId(species)].eggMoveLearnset;
+    const enum Move *learnset = gSpeciesInfo[SanitizeSpeciesId(species)].eggMoveLearnset;
     if (learnset == NULL)
         return gSpeciesInfo[SPECIES_NONE].eggMoveLearnset;
     return learnset;
@@ -3313,7 +3313,7 @@ const u16 *GetSpeciesEggMoves(enum Species species)
 //only used in test assumptions at the moment
 bool32 SpeciesHasEggMove(enum Species species, enum Move move)
 {
-    const u16 *learnset = GetSpeciesEggMoves(species);
+    const enum Move *learnset = GetSpeciesEggMoves(species);
     for (u32 i = 0; learnset[i] != MOVE_UNAVAILABLE; i++)
     {
         if (learnset[i] == move)
@@ -3330,9 +3330,9 @@ const struct Evolution *GetSpeciesEvolutions(enum Species species)
     return evolutions;
 }
 
-const u16 *GetSpeciesFormTable(enum Species species)
+const enum Species *GetSpeciesFormTable(enum Species species)
 {
-    const u16 *formTable = gSpeciesInfo[SanitizeSpeciesId(species)].formSpeciesIdTable;
+    const enum Species *formTable = gSpeciesInfo[SanitizeSpeciesId(species)].formSpeciesIdTable;
     if (formTable == NULL)
         return gSpeciesInfo[SPECIES_NONE].formSpeciesIdTable;
     return formTable;
@@ -4065,12 +4065,12 @@ u8 GetItemEffectParamOffset(enum BattlerId battler, enum Item itemId, u8 effectB
     return offset;
 }
 
-u8 GetNature(struct Pokemon *mon)
+nature_t GetNature(struct Pokemon *mon)
 {
     return GetMonData(mon, MON_DATA_PERSONALITY, 0) % NUM_NATURES;
 }
 
-u8 GetNatureFromPersonality(u32 personality)
+nature_t GetNatureFromPersonality(u32 personality)
 {
     return personality % NUM_NATURES;
 }
@@ -4814,7 +4814,7 @@ u8 GetTrainerEncounterMusicId(u16 trainerOpponentId)
     return trainer->encounterMusic;
 }
 
-u16 ModifyStatByNature(u8 nature, u16 stat, enum Stat statIndex)
+u16 ModifyStatByNature(nature_t nature, u16 stat, enum Stat statIndex)
 {
     // Don't modify HP, Accuracy, or Evasion by nature
     if (statIndex <= STAT_HP || statIndex > NUM_NATURE_STATS || gNaturesInfo[nature].statUp == gNaturesInfo[nature].statDown)
@@ -5036,7 +5036,7 @@ bool8 TryIncrementMonLevel(struct Pokemon *mon)
 
 bool32 CanLearnTeachableMove(enum Species species, enum Move move)
 {
-    const u16 *teachableLearnset = GetSpeciesTeachableLearnset(species);
+    const enum Move *teachableLearnset = GetSpeciesTeachableLearnset(species);
     if (species == SPECIES_EGG)
         return FALSE;
     for (u32 i = 0; teachableLearnset[i] != MOVE_UNAVAILABLE; i++)
@@ -5318,13 +5318,13 @@ bool8 IsMonSpriteNotFlipped(enum Species species)
 
 s8 GetMonFlavorRelation(struct Pokemon *mon, enum Flavor flavor)
 {
-    u8 nature = GetNature(mon);
+    nature_t nature = GetNature(mon);
     return gPokeblockFlavorCompatibilityTable[nature * FLAVOR_COUNT + flavor];
 }
 
 s8 GetFlavorRelationByPersonality(u32 personality, enum Flavor flavor)
 {
-    u8 nature = GetNatureFromPersonality(personality);
+    nature_t nature = GetNatureFromPersonality(personality);
     return gPokeblockFlavorCompatibilityTable[nature * FLAVOR_COUNT + flavor];
 }
 
@@ -6627,7 +6627,7 @@ bool32 IsSpeciesRegionalFormFromRegion(enum Species species, enum Region region)
 bool32 SpeciesHasRegionalForm(enum Species species)
 {
     u32 formId;
-    const u16 *formTable = GetSpeciesFormTable(species);
+    const enum Species *formTable = GetSpeciesFormTable(species);
     for (formId = 0; formTable != NULL && formTable[formId] != FORM_SPECIES_END; formId++)
     {
         if (IsSpeciesRegionalForm(formTable[formId]))
@@ -6640,7 +6640,7 @@ enum Species GetRegionalFormByRegion(enum Species species, enum Region region)
 {
     u32 formId = 0;
     enum Species firstFoundSpecies = 0;
-    const u16 *formTable = GetSpeciesFormTable(species);
+    const enum Species *formTable = GetSpeciesFormTable(species);
 
     if (formTable != NULL)
     {

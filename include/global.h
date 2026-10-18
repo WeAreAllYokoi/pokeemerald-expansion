@@ -428,7 +428,7 @@ struct DomeMonData
 {
     enum Move moves[MAX_MON_MOVES];
     u8 evs[NUM_STATS];
-    u8 nature;
+    nature_t nature;
     //u8 padding;
 };
 
@@ -1112,7 +1112,7 @@ struct SaveBlock1
     /*0x238*/ struct Pokemon playerParty[PARTY_SIZE];
     /*0x490*/ u32 money;
     /*0x494*/ u16 coins;
-    /*0x496*/ u16 registeredItem; // registered for use with SELECT button
+    enum Item registeredItem; // registered for use with SELECT button
     /*0x498*/ struct ItemSlot pcItems[PC_ITEMS_COUNT];
     /*0x560 -> 0x848 is bag storage*/
     /*0x560*/ struct Bag bag;
@@ -1154,7 +1154,7 @@ struct SaveBlock1
     /*0x2B94*/ u8 outbreakPokemonLevel;
     /*0x2B95*/ u8 outbreakUnused1;
     /*0x2B96*/ u16 outbreakUnused2;
-    /*0x2B98*/ u16 outbreakPokemonMoves[MAX_MON_MOVES];
+    enum Move outbreakPokemonMoves[MAX_MON_MOVES];
     /*0x2BA0*/ u8 outbreakUnused3;
     /*0x2BA1*/ u8 outbreakPokemonProbability;
     /*0x2BA2*/ u16 outbreakDaysLeft;

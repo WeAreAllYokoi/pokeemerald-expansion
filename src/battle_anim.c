@@ -184,7 +184,7 @@ static void (*const sScriptCmdTable[])(void) =
     Cmd_unloadallspritepals,        // 0x35
 };
 
-static const u16 sMovesWithQuietBGM[] =
+static const enum Move sMovesWithQuietBGM[] =
 {
     MOVE_SING, MOVE_PERISH_SONG, MOVE_GRASS_WHISTLE
 };

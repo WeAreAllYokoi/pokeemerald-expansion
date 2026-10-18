@@ -2175,7 +2175,7 @@ static void PrintStatsScreen_DestroyMoveItemIcon(u8 taskId)
 static u32 CountSpeciesEggMoves(enum Species species)
 {
     u32 numEggMoves = 0;
-    const u16 *eggMoveLearnset = GetSpeciesEggMoves(species);
+    const enum Move *eggMoveLearnset = GetSpeciesEggMoves(species);
     for (u32 i = 0; eggMoveLearnset[i] != MOVE_UNAVAILABLE; i++)
         numEggMoves++;
 
@@ -2207,7 +2207,7 @@ static bool8 CalculateMoves(void)
         numLevelUpMoves++;
 
     // TM and Tutor moves
-    const u16 *teachableLearnset = GetSpeciesTeachableLearnset(species);
+    const enum Move *teachableLearnset = GetSpeciesTeachableLearnset(species);
     for (i = 0; teachableLearnset[i] != MOVE_UNAVAILABLE; i++)
         numTeachableMoves++;
 

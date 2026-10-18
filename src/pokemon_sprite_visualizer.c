@@ -1441,7 +1441,7 @@ static void UpdateSubmenuOneOptionValue(u8 taskId, bool8 increment)
         {
             struct PokemonSpriteVisualizerModifyArrows *modArrows = &data->modifyArrows;
             u8 formId = GetFormIdFromFormSpeciesId(species);
-            const u16 *formTable = GetSpeciesFormTable(species);
+            const enum Species *formTable = GetSpeciesFormTable(species);
             if (increment)
             {
                 if (formTable[formId + 1] != FORM_SPECIES_END)

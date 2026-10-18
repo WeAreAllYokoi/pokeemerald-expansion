@@ -1,7 +1,7 @@
 #ifndef GUARD_BATTLE_Z_MOVE_H
 #define GUARD_BATTLE_Z_MOVE_H
 
-#define MOVE_Z_STATUS   0xFFFF
+#define MOVE_Z_STATUS   0xFFFFFFFF
 
 struct SignatureZMove
 {

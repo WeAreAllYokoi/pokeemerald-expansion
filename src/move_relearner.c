@@ -951,7 +951,7 @@ static u32 GetRelearnerEggMoves(struct BoxPokemon *mon, enum Move *moves)
     while (GetSpeciesPreEvolution(species) != SPECIES_NONE)
         species = GetSpeciesPreEvolution(species);
 
-    const u16 *eggMoves = GetSpeciesEggMoves(species);
+    const enum Move *eggMoves = GetSpeciesEggMoves(species);
 
     if (eggMoves[0] == MOVE_UNAVAILABLE)
         return 0;
@@ -1064,7 +1064,7 @@ static bool32 HasRelearnerEggMoves(struct BoxPokemon *boxMon)
     while (GetSpeciesPreEvolution(species) != SPECIES_NONE)
         species = GetSpeciesPreEvolution(species);
 
-    const u16 *eggMoves = GetSpeciesEggMoves(species);
+    const enum Move *eggMoves = GetSpeciesEggMoves(species);
 
     if (eggMoves[0] == MOVE_UNAVAILABLE)
         return FALSE;

@@ -159,13 +159,13 @@ static EWRAM_DATA struct PokemonSummaryScreenData
         enum Item item; // 0x2E
         u16 friendship; // 0x30
         u8 OTGender; // 0x32
-        u8 nature; // 0x33
+        nature_t nature;
         u8 ppBonuses; // 0x34
         u8 sanity; // 0x35
         u8 OTName[17]; // 0x36
         u32 OTID; // 0x48
         enum Type teraType;
-        u8 mintNature;
+        nature_t mintNature;
     } summary;
     u16 bgTilemapBuffers[PSS_PAGE_COUNT][2][0x400];
     u8 mode;

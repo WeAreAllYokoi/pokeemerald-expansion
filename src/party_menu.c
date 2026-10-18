@@ -5967,7 +5967,7 @@ static void DisplayLevelUpStatsPg2(u8 taskId)
 
 static void Task_TryLearnNewMoves(u8 taskId)
 {
-    u16 learnMove;
+    u32 learnMove;
 
     if (WaitFanfare(FALSE) && ((JOY_NEW(A_BUTTON)) || (JOY_NEW(B_BUTTON))))
     {
@@ -6001,7 +6001,7 @@ static void Task_TryLearnNewMoves(u8 taskId)
 
 static void Task_TryLearningNextMove(u8 taskId)
 {
-    u16 result;
+    u32 result;
     for (; sInitialLevel <= sFinalLevel; sInitialLevel++)
     {
         SetMonData(&gParties[B_TRAINER_PLAYER][gPartyMenu.slotId], MON_DATA_LEVEL, &sInitialLevel);
@@ -6435,7 +6435,7 @@ static void DeleteInvalidFusionMoves(struct Pokemon *mon, enum Species species)
         }
         if (!toDelete)
             continue;
-        const u16 *learnset2 = GetSpeciesTeachableLearnset(species);
+        const enum Move *learnset2 = GetSpeciesTeachableLearnset(species);
         for (u32 j = 0; learnset2[j] != MOVE_UNAVAILABLE;j++)
         {
             if (learnset2[j] == move)
@@ -6446,7 +6446,7 @@ static void DeleteInvalidFusionMoves(struct Pokemon *mon, enum Species species)
         }
         if (!toDelete)
             continue;
-        const u16 *learnset3 = GetSpeciesEggMoves(species);
+        const enum Move *learnset3 = GetSpeciesEggMoves(species);
         for (u32 j = 0; learnset3[j] != MOVE_UNAVAILABLE;j++)
         {
             if (learnset3[j] == move)
@@ -6461,7 +6461,7 @@ static void DeleteInvalidFusionMoves(struct Pokemon *mon, enum Species species)
 }
 
 #if P_FUSION_FORMS
-static void SwapFusionMonMoves(struct Pokemon *mon, const u16 moveTable[][2], u32 mode)
+static void SwapFusionMonMoves(struct Pokemon *mon, const enum Move moveTable[][2], u32 mode)
 {
     u32 oldMoveIndex, newMoveIndex;
     if (mode == FUSE_MON)

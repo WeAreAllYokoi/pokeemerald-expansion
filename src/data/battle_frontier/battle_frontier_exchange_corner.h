@@ -1,4 +1,4 @@
-static const u16 sFrontierExchangeCorner_Decor1[] =
+static const u32 sFrontierExchangeCorner_Decor1[] =
 {
     DECOR_KISS_POSTER,
     DECOR_KISS_CUSHION,
@@ -13,7 +13,7 @@ static const u16 sFrontierExchangeCorner_Decor1[] =
     ITEM_LIST_END
 };
 
-static const u16 sFrontierExchangeCorner_Decor2[] =
+static const u32 sFrontierExchangeCorner_Decor2[] =
 {
     DECOR_LAPRAS_DOLL,
     DECOR_SNORLAX_DOLL,

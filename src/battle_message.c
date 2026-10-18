@@ -61,9 +61,9 @@ struct BattleWindowText
 };
 
 #if TESTING
-EWRAM_DATA u16 sBattlerAbilities[MAX_BATTLERS_COUNT] = {0};
+EWRAM_DATA enum Ability sBattlerAbilities[MAX_BATTLERS_COUNT] = {0};
 #else
-static EWRAM_DATA u16 sBattlerAbilities[MAX_BATTLERS_COUNT] = {0};
+static EWRAM_DATA enum Ability sBattlerAbilities[MAX_BATTLERS_COUNT] = {0};
 #endif
 EWRAM_DATA struct BattleMsgData *gBattleMsgDataPtr = NULL;
 
