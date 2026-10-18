@@ -1200,11 +1200,18 @@ static u32 GetBgType(u32 bg)
     return BG_TYPE_NONE;
 }
 
+// ADMG-101 native memory (ld_script_modern.ld), where the heap and every buffer allocated from it are
+extern u8 __native_start[], __native_end[];
+
 bool32 IsTileMapOutsideWram(u32 bg)
 {
-    if (sGpuBgConfigs2[bg].tilemap > (void *)IWRAM_END)
+    const u8 *tilemap = sGpuBgConfigs2[bg].tilemap;
+
+    if (tilemap == NULL)
         return TRUE;
-    else if (sGpuBgConfigs2[bg].tilemap == NULL)
+    else if (tilemap >= __native_start && tilemap < __native_end)
+        return FALSE;
+    else if (tilemap > (const u8 *)IWRAM_END)
         return TRUE;
     else
         return FALSE;
