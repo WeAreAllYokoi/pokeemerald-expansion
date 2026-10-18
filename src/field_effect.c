@@ -1030,8 +1030,8 @@ u8 AddNewGameBirchObject(s16 x, s16 y, u8 subpriority)
 
 u8 CreateMonSprite_PicBox(enum Species species, s16 x, s16 y, u8 subpriority)
 {
-    s32 spriteId = CreateMonPicSprite(species, FALSE, 0x8000, TRUE, x, y, 0, species);
-    PreservePaletteInWeather(IndexOfSpritePaletteTag(species) + 0x10);
+    s32 spriteId = CreateMonPicSprite(species, FALSE, 0x8000, TRUE, x, y, 0, SpeciesSpriteTag(species));
+    PreservePaletteInWeather(IndexOfSpritePaletteTag(SpeciesSpriteTag(species)) + 0x10);
     if (spriteId == 0xFFFF)
         return MAX_SPRITES;
     else
@@ -1040,7 +1040,7 @@ u8 CreateMonSprite_PicBox(enum Species species, s16 x, s16 y, u8 subpriority)
 
 u8 CreateMonSprite_FieldMove(enum Species species, bool8 isShiny, u32 personality, s16 x, s16 y, u8 subpriority)
 {
-    u16 spriteId = CreateMonPicSprite(species, isShiny, personality, TRUE, x, y, 0, species);
+    u16 spriteId = CreateMonPicSprite(species, isShiny, personality, TRUE, x, y, 0, SpeciesSpriteTag(species));
     PreservePaletteInWeather(gSprites[spriteId].oam.paletteNum + 0x10);
     if (spriteId == 0xFFFF)
         return MAX_SPRITES;

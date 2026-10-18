@@ -1276,12 +1276,12 @@ void CB2_Pokemon_Sprite_Visualizer(void)
 
         //Palettes
         palette = GetMonSpritePalFromSpecies(species, data->isShiny, data->isFemale);
-        LoadSpritePaletteWithTag(palette, species);
+        LoadSpritePaletteWithTag(palette, SpeciesSpriteTag(species));
         //Front
         HandleLoadSpecialPokePic(TRUE, gMonSpritesGfxPtr->spritesGfx[1], species, (data->isFemale ? FEMALE_PERSONALITY : MALE_PERSONALITY));
         BattleLoadOpponentMonSpriteGfxCustom(species, data->isFemale, data->isShiny, 1);
         SetMultiuseSpriteTemplateToPokemon(species, 1);
-        gMultiuseSpriteTemplate.paletteTag = species;
+        gMultiuseSpriteTemplate.paletteTag = SpeciesSpriteTag(species);
         front_y = GetBattlerSpriteFinal_YCustom(species, 0, 0);
         data->frontspriteId = CreateSprite(&gMultiuseSpriteTemplate, front_x, front_y, 0);
         gSprites[data->frontspriteId].oam.paletteNum = 1;
@@ -2019,12 +2019,12 @@ static void ReloadPokemonSprites(struct PokemonSpriteVisualizer *data)
 
     //Palettes
     palette = GetMonSpritePalFromSpecies(species, data->isShiny, data->isFemale);
-    LoadSpritePaletteWithTag(palette, species);
+    LoadSpritePaletteWithTag(palette, SpeciesSpriteTag(species));
     //Front
     HandleLoadSpecialPokePic(TRUE, gMonSpritesGfxPtr->spritesGfx[1], species, (data->isFemale ? FEMALE_PERSONALITY : MALE_PERSONALITY));
     BattleLoadOpponentMonSpriteGfxCustom(species, data->isFemale, data->isShiny, 1);
     SetMultiuseSpriteTemplateToPokemon(species, 1);
-    gMultiuseSpriteTemplate.paletteTag = species;
+    gMultiuseSpriteTemplate.paletteTag = SpeciesSpriteTag(species);
     front_y = GetBattlerSpriteFinal_YCustom(species, 0, 0);
     data->frontspriteId = CreateSprite(&gMultiuseSpriteTemplate, front_x, front_y, 0);
     gSprites[data->frontspriteId].oam.paletteNum = 1;

@@ -2311,16 +2311,14 @@ static u32 LoadDynamicFollowerPalette(enum Species species, bool32 shiny, bool32
     else
 #endif //OW_POKEMON_OBJECT_EVENTS == TRUE && OW_PKMN_OBJECTS_SHARE_PALETTES == FALSE
     {
-        // Note that the shiny palette tag is `species + SPECIES_SHINY_TAG`, which must be increased with more Pokémon
-        // so that palette tags do not overlap
         const u16 *palette = GetMonSpritePalFromSpecies(species, shiny, female); //ETODO
         // palette already loaded
-        if ((paletteNum = IndexOfSpritePaletteTag(species)) < 16)
+        if ((paletteNum = IndexOfSpritePaletteTag(SpeciesSpriteTag(species))) < 16)
             return paletteNum;
         // Use matching front sprite's normal/shiny palettes
         // Load compressed palette
-        LoadSpritePaletteWithTag(palette, species);
-        paletteNum = IndexOfSpritePaletteTag(species); // Tag is always present
+        LoadSpritePaletteWithTag(palette, SpeciesSpriteTag(species));
+        paletteNum = IndexOfSpritePaletteTag(SpeciesSpriteTag(species)); // 0xFF if no palette slot was available
     }
 
     if (gWeatherPtr->currWeather != WEATHER_FOG_HORIZONTAL) // don't want to weather blend in fog

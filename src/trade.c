@@ -2778,7 +2778,7 @@ static void LoadTradeMonPic(struct Pokemon *mon, u8 state)
 
         HandleLoadSpecialPokePic(TRUE, gMonSpritesGfxPtr->spritesGfx[whichParty * 2 + B_POSITION_OPPONENT_LEFT], species, personality);
 
-        LoadSpritePaletteWithTag(GetMonFrontSpritePal(mon), species);
+        LoadSpritePaletteWithTag(GetMonFrontSpritePal(mon), SpeciesSpriteTag(species));
         sTradeAnim->monSpecies[whichParty] = species;
         sTradeAnim->monPersonalities[whichParty] = personality;
         break;

@@ -815,7 +815,15 @@ u8 GetBoxMonGender(struct BoxPokemon *boxMon);
 u8 GetGenderFromSpeciesAndPersonality(enum Species species, u32 personality);
 bool32 IsPersonalityFemale(enum Species species, u32 personality);
 enum Species GetUnownSpeciesId(u32 personality);
-void SetMultiuseSpriteTemplateToPokemon(enum Species speciesTag, enum BattlerPosition battlerPosition);
+void SetMultiuseSpriteTemplateToPokemon(enum Species species, enum BattlerPosition battlerPosition);
+
+// Use the species ID as its palette tag through SPECIES_EGG
+// For IDs above SPECIES_EGG, set bit 31 to give added species their own tag range
+#define SPECIES_SPRITE_TAG_BASE 0x80000000
+static inline u32 SpeciesSpriteTag(enum Species species)
+{
+    return species <= SPECIES_EGG ? species : (SPECIES_SPRITE_TAG_BASE | species);
+}
 void SetMultiuseSpriteTemplateToTrainerBack(enum TrainerPicID trainerPicId, enum BattlerPosition battlerPosition);
 void SetMultiuseSpriteTemplateToTrainerFront(enum TrainerPicID trainerPicId, enum BattlerPosition battlerPosition);
 

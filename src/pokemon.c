@@ -1837,7 +1837,7 @@ enum Species GetUnownSpeciesId(u32 personality)
     return unownLetter + SPECIES_UNOWN_B - 1;
 }
 
-void SetMultiuseSpriteTemplateToPokemon(enum Species speciesTag, enum BattlerPosition battlerPosition)
+void SetMultiuseSpriteTemplateToPokemon(enum Species species, enum BattlerPosition battlerPosition)
 {
     if (gMonSpritesGfxPtr != NULL)
         gMultiuseSpriteTemplate = gMonSpritesGfxPtr->templates[battlerPosition];
@@ -1848,17 +1848,14 @@ void SetMultiuseSpriteTemplateToPokemon(enum Species speciesTag, enum BattlerPos
     else
         gMultiuseSpriteTemplate = gBattlerSpriteTemplates[battlerPosition];
 
-    gMultiuseSpriteTemplate.paletteTag = speciesTag;
+    gMultiuseSpriteTemplate.paletteTag = SpeciesSpriteTag(species);
     if (battlerPosition == B_POSITION_PLAYER_LEFT || battlerPosition == B_POSITION_PLAYER_RIGHT)
         gMultiuseSpriteTemplate.anims = gAnims_MonPic;
     else
     {
-        if (speciesTag > SPECIES_SHINY_TAG)
-            speciesTag = speciesTag - SPECIES_SHINY_TAG;
-
-        speciesTag = SanitizeSpeciesId(speciesTag);
-        if (gSpeciesInfo[speciesTag].frontAnimFrames != NULL)
-            gMultiuseSpriteTemplate.anims = gSpeciesInfo[speciesTag].frontAnimFrames;
+        species = SanitizeSpeciesId(species);
+        if (gSpeciesInfo[species].frontAnimFrames != NULL)
+            gMultiuseSpriteTemplate.anims = gSpeciesInfo[species].frontAnimFrames;
         else
             gMultiuseSpriteTemplate.anims = gSpeciesInfo[SPECIES_NONE].frontAnimFrames;
     }
