@@ -355,7 +355,7 @@ void SetTeraType(struct ScriptContext *ctx)
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
-    if (type < NUMBER_OF_MON_TYPES && partyIndex < PARTY_SIZE)
+    if (IsTypeIdValid(type) && partyIndex < PARTY_SIZE)
         SetMonData(&gParties[B_TRAINER_PLAYER][partyIndex], MON_DATA_TERA_TYPE, &type);
 }
 

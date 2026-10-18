@@ -393,7 +393,7 @@ static u32 OpponentGetTrainerPicId(enum BattlerId battlerId)
         TRAINER_BATTLE_PARAM.opponentA, TRAINER_BATTLE_PARAM.opponentB, gPartnerTrainerId)) return 0;
     if (identity != (useSecond ? TRAINER_BATTLE_PARAM.opponentB : TRAINER_BATTLE_PARAM.opponentA))
     { ADMG_StateAccessRejected(identity, __func__); return 0; }
-    if ((u32)trainerPicId >= TRAINER_PIC_COUNT)
+    if (!IsTrainerPicIdValid(trainerPicId))
     { ADMG_StateAccessRejected((u32)trainerPicId, __func__); return 0; }
     return trainerPicId;
 }

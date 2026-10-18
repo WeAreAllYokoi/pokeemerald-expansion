@@ -1076,7 +1076,7 @@ bool8 ADMG_TryAdmitBattlePrint(enum BattlerId battler, u32 bufferId, enum String
         || !ADMG_TryValidateBattleTrainerActors(gBattleTypeFlags, TRAINER_BATTLE_PARAM.opponentA,
             TRAINER_BATTLE_PARAM.opponentB, gPartnerTrainerId))
     { ADMG_StateAccessRejected((u32)stringID, operation); return FALSE; }
-    if (indexedMove && (u32)gCurrentMove >= MOVES_COUNT_ALL)
+    if (indexedMove && !IsMoveIdValid(gCurrentMove))
     { ADMG_StateAccessRejected((u32)gCurrentMove, operation); return FALSE; }
     return TRUE;
 }
@@ -2275,10 +2275,10 @@ static void Controller_HandleTrainerSlideBack(enum BattlerId battler)
     if (!ADMG_TryGetControllerTrainerSprite(battler, &sprite)) return;
     if ((*sprite).callback == SpriteCallbackDummy)
     {
-        if (!IsOnPlayerSide(battler) && sprite->oam.affineParam >= TRAINER_PIC_COUNT)
-        { ADMG_StateAccessRejected(sprite->oam.affineParam, __func__); return; }
+        if (!IsOnPlayerSide(battler) && !IsTrainerPicIdValid(sprite->contentId))
+        { ADMG_StateAccessRejected(sprite->contentId, __func__); return; }
         if (!IsOnPlayerSide(battler))
-            FreeTrainerFrontPicPalette((*sprite).oam.affineParam);
+            FreeTrainerFrontPicPalette((*sprite).contentId);
         FreeSpriteOamMatrix(sprite);
         DestroySprite(sprite);
         BtlController_Complete(battler);
@@ -2554,7 +2554,7 @@ void BtlController_HandleReturnMonToBall(enum BattlerId battler)
 
 void BtlController_HandleDrawTrainerPic(enum BattlerId battler, enum TrainerPicID trainerPicId, bool32 isFrontPic, s16 xPos, s16 yPos, s32 subpriority)
 {
-    if ((u32)battler >= MAX_BATTLERS_COUNT || gBattleStruct == NULL || (u32)trainerPicId >= TRAINER_PIC_COUNT)
+    if ((u32)battler >= MAX_BATTLERS_COUNT || gBattleStruct == NULL || !IsTrainerPicIdValid(trainerPicId))
     { ADMG_StateAccessRejected((u32)battler, __func__); return; }
 
     if (!IsOnPlayerSide(battler)) // Always the front sprite for the opponent.
@@ -2630,7 +2630,7 @@ void BtlController_HandleDrawTrainerPic(enum BattlerId battler, enum TrainerPicI
 
 void BtlController_HandleTrainerSlide(enum BattlerId battler, enum TrainerPicID trainerPicId)
 {
-    if ((u32)battler >= MAX_BATTLERS_COUNT || gBattleStruct == NULL || (u32)trainerPicId >= TRAINER_PIC_COUNT)
+    if ((u32)battler >= MAX_BATTLERS_COUNT || gBattleStruct == NULL || !IsTrainerPicIdValid(trainerPicId))
     { ADMG_StateAccessRejected((u32)battler, __func__); return; }
 
     /* Reuse the existing player-side front-picture constructor. Named partners
@@ -3237,7 +3237,7 @@ static void SpriteCB_FreePlayerSpriteLoadMonSprite(struct Sprite *sprite)
 
 static void SpriteCB_FreeOpponentSprite(struct Sprite *sprite)
 {
-    FreeTrainerFrontPicPalette(sprite->oam.affineParam);
+    FreeTrainerFrontPicPalette(sprite->contentId);
     FreeSpriteOamMatrix(sprite);
     DestroySprite(sprite);
 }

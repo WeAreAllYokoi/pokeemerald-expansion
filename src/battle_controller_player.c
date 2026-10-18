@@ -1880,7 +1880,7 @@ enum TrainerPicID LinkPlayerGetTrainerPicId(u32 multiplayerId)
     if (!ADMG_EndStateAccessCheck(generation)) return TRAINER_PIC_NONE;
     if (gender != gLinkPlayers[multiplayerId].gender
         || version != (gLinkPlayers[multiplayerId].version & 0xFF)
-        || (u32)picture >= TRAINER_PIC_COUNT)
+        || !IsTrainerPicIdValid(picture))
     { ADMG_StateAccessRejected(multiplayerId, __func__); return TRAINER_PIC_NONE; }
     return picture;
 }
@@ -1908,7 +1908,7 @@ static enum TrainerPicID PlayerGetTrainerBackPicId(void)
     if (!ADMG_EndStateAccessCheck(generation)) return TRAINER_PIC_NONE;
     if (gBattleTypeFlags != flags || (!(flags & BATTLE_TYPE_LINK)
         && (gSaveBlock2Ptr != save || save->playerGender != gender))
-        || (u32)picture >= TRAINER_PIC_COUNT)
+        || !IsTrainerPicIdValid(picture))
     { ADMG_StateAccessRejected((u32)picture, __func__); return TRAINER_PIC_NONE; }
     return picture;
 }
@@ -1939,7 +1939,7 @@ static bool8 ADMG_TryGetPlayerControllerPicture(enum BattlerId battler, bool8 dr
     u32 gender = saveUsed ? save->playerGender : 0;
     enum TrainerPicID pic = draw && TESTING ? TRAINER_PIC_BRENDAN : PlayerGetTrainerBackPicId();
     if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
-    if ((u32)pic >= TRAINER_PIC_COUNT)
+    if (!IsTrainerPicIdValid(pic))
     { ADMG_StateAccessRejected((u32)pic, __func__); return FALSE; }
     s16 xpos = 80, ypos = 0;
     u32 position = 0;
@@ -1972,7 +1972,7 @@ static bool8 ADMG_TryGetPlayerControllerPicture(enum BattlerId battler, bool8 dr
         || (positionUsed && GetBattlerPosition(battler) != position))
     { ADMG_StateAccessRejected(partner, __func__); return FALSE; }
     if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
-    if ((u32)pic >= TRAINER_PIC_COUNT)
+    if (!IsTrainerPicIdValid(pic))
     { ADMG_StateAccessRejected((u32)pic, __func__); return FALSE; }
     *picture = pic; *front = useFront; *x = xpos; *y = ypos;
     return TRUE;

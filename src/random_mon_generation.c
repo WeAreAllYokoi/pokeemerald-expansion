@@ -406,7 +406,7 @@ enum Item GetRandomItem(u32 optionId, const struct FilterFuncArgs *filterFuncArg
     }
     else
     {
-        poolSize = ITEMS_COUNT - 1;
+        poolSize = RUNTIME_ITEMS_COUNT - 1;
     }
 
     if (poolSize <= EXHAUSTIVE_SEARCH_POOL_MAX_SIZE)
@@ -524,7 +524,7 @@ void ResolveMoves(enum Species species, u32 level, const u16 *movesTemplate, enu
 
     for (u32 i = 0; i < MAX_MON_MOVES; i++)
     {
-        if (moves[i] < MOVES_COUNT)
+        if (IsRegularMoveId(moves[i]))
         {
             assertf(!IS_DUPLICATE_MOVE(moves[i]), "move %d was assigned twice", moves[i])
             {

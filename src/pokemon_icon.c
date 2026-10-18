@@ -160,7 +160,7 @@ u8 CreateMonIconIsEgg(enum Species species, void (*callback)(struct Sprite *), s
         else
             iconTemplate.paletteTag = POKE_ICON_BASE_PAL_TAG + gSpeciesInfo[SPECIES_EGG].iconPalIndex;
     }
-    else if (species > NUM_SPECIES)
+    else if (!IsSpeciesIdValid(species))
     {
         iconTemplate.paletteTag = POKE_ICON_BASE_PAL_TAG;
     }
@@ -339,7 +339,7 @@ const u8 *GetMonIconTilesIsEgg(enum Species species, u32 personality, bool32 isE
 {
     const u8 *iconSprite;
 
-    if (species > NUM_SPECIES)
+    if (!IsSpeciesIdValid(species))
         species = SPECIES_NONE;
 
     if (isEgg)

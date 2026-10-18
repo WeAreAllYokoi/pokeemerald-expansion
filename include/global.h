@@ -1228,4 +1228,6 @@ extern bool32 gCountAllocs;
 extern s32 gSpriteAllocs;
 #endif // TESTING
 
+#include "admg_registry.h"
+
 #endif // GUARD_GLOBAL_H

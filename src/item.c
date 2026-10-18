@@ -787,7 +787,7 @@ bool32 RemovePyramidBagItem(enum Item itemId, u16 count)
 
 static enum Item SanitizeItemId(enum Item itemId)
 {
-    assertf(itemId < ITEMS_COUNT, "invalid item: %d", itemId)
+    assertf(IsItemIdValid(itemId), "invalid item: %d", itemId)
     {
         return ITEM_NONE;
     }

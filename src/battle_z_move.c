@@ -246,7 +246,7 @@ enum Move GetTypeBasedZMove(enum Move move)
 {
     enum Type moveType = GetMoveType(move);
 
-    if (moveType >= NUMBER_OF_MON_TYPES)
+    if (!IsTypeIdValid(moveType))
         moveType = TYPE_MYSTERY;
 
     // Z-Weather Ball changes types, however Revelation Dance, -ate ability affected moves, and Hidden Power do not

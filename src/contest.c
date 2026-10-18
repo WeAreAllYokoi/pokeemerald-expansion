@@ -1920,7 +1920,7 @@ static void Task_DoAppeals(u8 taskId)
         {
             ContestClearGeneralTextWindow();
             CopyNicknameToFit(gStringVar1, contestant);
-            if (eContestantStatus[contestant].currMove < MOVES_COUNT)
+            if (IsRegularMoveId(eContestantStatus[contestant].currMove))
                 StringCopy(gStringVar2, GetMoveName(eContestantStatus[contestant].currMove));
             else
                 StringCopy(gStringVar2, gContestCategoryInfo[eContestantStatus[contestant].moveCategory].generic);
@@ -5361,7 +5361,7 @@ static void Task_WaitForSliderHeartAnim(u8 taskId)
 
 static enum Move SanitizeMove(enum Move move)
 {
-    assertf(move < MOVES_COUNT, "invalid move: %d", move)
+    assertf(IsRegularMoveId(move), "invalid move: %d", move)
     {
         return MOVE_POUND;
     }
@@ -5371,7 +5371,7 @@ static enum Move SanitizeMove(enum Move move)
 
 static enum Species SanitizeSpecies(enum Species species)
 {
-    assertf(species < NUM_SPECIES, "invalid species: %d", species)
+    assertf(IsSpeciesIdValid(species) && species != SPECIES_EGG, "invalid species: %d", species)
     {
         return SPECIES_NONE;
     }

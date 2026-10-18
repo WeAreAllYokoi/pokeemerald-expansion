@@ -603,7 +603,7 @@ static void GenerateInitialRentalMons(void)
 static void GetOpponentMostCommonMonType(void)
 {
     u8 i;
-    u8 typeCounts[NUMBER_OF_MON_TYPES];
+    u8 typeCounts[RUNTIME_TYPES_COUNT];
     u8 mostCommonTypes[2];
 
     const struct TrainerMon *rows[FRONTIER_PARTY_SIZE];
@@ -634,7 +634,7 @@ static void GetOpponentMostCommonMonType(void)
     // its count is equal to the most-common type.
     mostCommonTypes[0] = 0;
     mostCommonTypes[1] = 0;
-    for (i = 1; i < NUMBER_OF_MON_TYPES; i++)
+    for (i = 1; i < RUNTIME_TYPES_COUNT; i = NEXT_TYPE_ID(i))
     {
         if (typeCounts[mostCommonTypes[0]] < typeCounts[i])
             mostCommonTypes[0] = i;

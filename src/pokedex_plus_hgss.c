@@ -1687,11 +1687,16 @@ static void SetTypeIconPosAndPal(enum Type typeId, u8 x, u8 y, u8 spriteArrayId)
     struct Sprite *sprite;
 
     sprite = &gSprites[sPokedexView->typeIconSpriteIds[spriteArrayId]];
-    SetTypeIconSpriteAnim(sprite, typeId);
-    if (typeId < NUMBER_OF_MON_TYPES)
-        sprite->oam.paletteNum = gTypesInfo[typeId].palette + TYPE_INFO_PALETTE_NUM_OFFSET;
+    if (typeId & TYPE_ICON_CONTEST_CATEGORY_FLAG)
+    {
+        StartSpriteAnim(sprite, NUMBER_OF_MON_TYPES + (typeId & ~TYPE_ICON_CONTEST_CATEGORY_FLAG));
+        sprite->oam.paletteNum = gContestCategoryInfo[typeId & ~TYPE_ICON_CONTEST_CATEGORY_FLAG].palette  + TYPE_INFO_PALETTE_NUM_OFFSET;
+    }
     else
-        sprite->oam.paletteNum = gContestCategoryInfo[typeId - NUMBER_OF_MON_TYPES].palette  + TYPE_INFO_PALETTE_NUM_OFFSET;
+    {
+        SetTypeIconSpriteAnim(sprite, typeId);
+        sprite->oam.paletteNum = gTypesInfo[typeId].palette + TYPE_INFO_PALETTE_NUM_OFFSET;
+    }
     sprite->x = x + 16;
     sprite->y = y + 8;
     SetSpriteInvisibility(spriteArrayId, FALSE);
@@ -2307,7 +2312,7 @@ static void PrintStatsScreen_Moves_Top(u8 taskId)
     }
     else
     {
-        SetTypeIconPosAndPal(NUMBER_OF_MON_TYPES + GetMoveContestCategory(move), moves_x + 146, moves_y + 17, 1);
+        SetTypeIconPosAndPal(TYPE_ICON_CONTEST_CATEGORY(GetMoveContestCategory(move)), moves_x + 146, moves_y + 17, 1);
         SetSpriteInvisibility(0, TRUE);
     }
 
@@ -3422,7 +3427,7 @@ static u8 PrintPreEvolutions(u8 taskId, enum Species species)
     }
 
     //Calculate previous evolution
-    for (i = 0; i < NUM_SPECIES; i++)
+    for (i = 0; i < RUNTIME_SPECIES_COUNT; i = NEXT_SPECIES_ID(i))
     {
         if (!IsSpeciesEnabled(i))
             continue;
@@ -3471,7 +3476,7 @@ static u8 PrintPreEvolutions(u8 taskId, enum Species species)
     //Calculate if previous evolution also has a previous evolution
     if (numPreEvolutions != 0)
     {
-        for (i = 0; i < NUM_SPECIES; i++)
+        for (i = 0; i < RUNTIME_SPECIES_COUNT; i = NEXT_SPECIES_ID(i))
         {
             if (!IsSpeciesEnabled(i))
                 continue;

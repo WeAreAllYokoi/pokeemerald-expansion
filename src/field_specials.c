@@ -5641,7 +5641,7 @@ static enum Species SampleResortGorgeousMon(void)
     enum Species species;
     for (i = 0; i < 100; i++)
     {
-        species = (Random() % (NUM_SPECIES - 1)) + 1;
+        species = ADMG_RandomSpecies(1, NUM_SPECIES);
         if (GetSetPokedexFlag(SpeciesToNationalPokedexNum(species), 0) == TRUE)
             return species;
     }

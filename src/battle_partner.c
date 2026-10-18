@@ -77,7 +77,7 @@ static bool8 ADMG_RunPartnerParty(u32 trainerId, bool8 admissionOnly)
         memcpy(&admittedPartner, checkedPartner, sizeof(admittedPartner));
         admittedLastIndex = admissionOnly ? 0 : (AreMultiPartiesFullTeams() ? PARTY_SIZE : MULTI_PARTY_SIZE);
         if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
-        if (admittedPartner.trainerClass >= TRAINER_CLASS_COUNT
+        if (!IsTrainerClassIdValid(admittedPartner.trainerClass)
          || (admittedPartner.partySize != 0 && admittedPartner.party == NULL))
         { ADMG_StateAccessRejected(trainerId, __func__); return FALSE; }
     }

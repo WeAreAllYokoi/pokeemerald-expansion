@@ -381,7 +381,7 @@ static bool8 ADMG_TryGetLinkOpponentPicture(enum BattlerId battler, enum Trainer
      || (facility && identity != (position == B_POSITION_OPPONENT_LEFT
         ? TRAINER_BATTLE_PARAM.opponentA : TRAINER_BATTLE_PARAM.opponentB)))
     { ADMG_StateAccessRejected(identity, __func__); return FALSE; }
-    if ((u32)trainerPicId >= TRAINER_PIC_COUNT)
+    if (!IsTrainerPicIdValid(trainerPicId))
     { ADMG_StateAccessRejected((u32)trainerPicId, __func__); return FALSE; }
     *picture = trainerPicId; *x = xPos;
     return TRUE;

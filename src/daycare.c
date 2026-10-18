@@ -482,7 +482,7 @@ enum Species GetEggSpecies(enum Species species)
     for (i = 0; i < 5; i++)
     {
         found = FALSE;
-        for (j = 1; j < NUM_SPECIES; j++)
+        for (j = 1; j < RUNTIME_SPECIES_COUNT; j = NEXT_SPECIES_ID(j))
         {
             if (!IsSpeciesEnabled(j))
                 continue;
@@ -503,7 +503,7 @@ enum Species GetEggSpecies(enum Species species)
                 break;
         }
 
-        if (j == NUM_SPECIES)
+        if (j >= RUNTIME_SPECIES_COUNT)
             break;
     }
 

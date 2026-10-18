@@ -24,7 +24,7 @@
 #define HIGH_BRIDGE_PAL_TAG (PAL_RAW_REFLECTION_OFFSET + 0x10)
 STATIC_ASSERT(NUM_SPECIES <= PAL_TAG_REFLECTION_OFFSET, TooManySpeciesForReflectionPaletteTags);
 // Build a unique tag for reflection's palette based on based tag, or paletteNum
-#define REFLECTION_PAL_TAG(tag, num) ((tag) == TAG_NONE ? (num) + PAL_RAW_REFLECTION_OFFSET : (tag) + PAL_TAG_REFLECTION_OFFSET)
+#define REFLECTION_PAL_TAG(tag, num) ((tag) == TAG_NONE ? (num) + PAL_RAW_REFLECTION_OFFSET : ((tag) & SPECIES_SPRITE_TAG_BASE) ? ((tag) | 0x40000000) : (tag) + PAL_TAG_REFLECTION_OFFSET)
 
 static void UpdateObjectReflectionSprite(struct Sprite *);
 static void LoadObjectReflectionPalette(struct ObjectEvent *objectEvent, struct Sprite *sprite);

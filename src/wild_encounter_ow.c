@@ -377,7 +377,7 @@ void StartWildBattleWithOWE(struct ScriptContext *ctx)
         return;
     }
 
-    ADMG_SCRIPT_REQUIRE_INDEX(ctx, OW_SPECIES(owe), NUM_SPECIES);
+    ADMG_SCRIPT_REQUIRE_INDEX(ctx, OW_SPECIES(owe), RUNTIME_SPECIES_COUNT);
     Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
 
     if (category < ROAMER_COUNT && StartWildBattleWithOWE_CheckRoamer(category))
@@ -425,7 +425,7 @@ void SetOverworldObjectSpecies(struct ScriptContext *ctx)
         speciesId = OW_SPECIES(object);
 
     assertf(speciesId != SPECIES_NONE, "species was not found for specified object. localid: %d", localId);
-    ADMG_SCRIPT_REQUIRE_INDEX(ctx, speciesId, NUM_SPECIES);
+    ADMG_SCRIPT_REQUIRE_INDEX(ctx, speciesId, RUNTIME_SPECIES_COUNT);
     Script_RequestEffects(SCREFF_V1);
     Script_RequestWriteVar(varId);
     if (!VarSet(varId, speciesId))
@@ -1609,7 +1609,7 @@ void OWEApproachForBattle(struct ScriptContext *ctx)
     struct ObjectEvent *owe = &gObjectEvents[objectEventId];
 
     if (IS_OW_MON_OBJ(owe))
-        ADMG_SCRIPT_REQUIRE_INDEX(ctx, OW_SPECIES(owe), NUM_SPECIES);
+        ADMG_SCRIPT_REQUIRE_INDEX(ctx, OW_SPECIES(owe), RUNTIME_SPECIES_COUNT);
     Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
     
     if (!WE_OWE_APPROACH_FOR_BATTLE || !IsOverworldWildEncounter(owe, OWE_ANY))
@@ -1815,7 +1815,7 @@ static bool32 CheckValidOWESpecies(enum Species speciesId)
     if (speciesId == SPECIES_NONE)
         return FALSE;
 
-    if (speciesId >= NUM_SPECIES)
+    if (!IsSpeciesIdValid(speciesId) || speciesId == SPECIES_EGG)
         return FALSE;
 
     if (!IsSpeciesEnabled(speciesId))

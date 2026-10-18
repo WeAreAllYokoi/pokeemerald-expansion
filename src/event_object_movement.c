@@ -2235,7 +2235,7 @@ const struct ObjectEventGraphicsInfo *SpeciesToGraphicsInfo(enum Species species
     const struct ObjectEventGraphicsInfo *graphicsInfo = NULL;
 #if OW_POKEMON_OBJECT_EVENTS
     /* Bound the common species lookup before any table access. */
-    if (species >= NUM_SPECIES)
+    if (!IsSpeciesIdValid(species) || species == SPECIES_EGG)
     {
         ADMG_StateAccessRejected(species, "object graphics species");
         return OW_SUBSTITUTE_PLACEHOLDER ? &gSpeciesInfo[SPECIES_NONE].overworldData : NULL;

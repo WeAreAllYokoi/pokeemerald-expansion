@@ -4631,10 +4631,10 @@ enum Species NationalPokedexNumToSpecies(enum NationalDexOrder nationalNum)
 
     species = 1;
 
-    while (species < (NUM_SPECIES) && gSpeciesInfo[species].natDexNum != nationalNum)
+    while (species < RUNTIME_SPECIES_COUNT && (species == SPECIES_EGG || gSpeciesInfo[species].natDexNum != nationalNum))
         species++;
 
-    if (species == NUM_SPECIES)
+    if (species >= RUNTIME_SPECIES_COUNT)
         return SPECIES_NONE;
 
     return GET_BASE_SPECIES_ID(species);
@@ -6376,7 +6376,7 @@ bool32 TryBoxMonFormChange(struct BoxPokemon *boxMon, enum FormChanges method)
 
 enum Species SanitizeSpeciesId(enum Species species)
 {
-    assertf(species <= NUM_SPECIES, "invalid species: %d", species)
+    assertf(IsSpeciesIdValid(species), "invalid species: %d", species)
     {
         return SPECIES_NONE;
     }
@@ -6538,7 +6538,7 @@ enum Species GetSpeciesPreEvolution(enum Species species)
 {
     int i, j;
 
-    for (i = SPECIES_BULBASAUR; i < NUM_SPECIES; i++)
+    for (i = SPECIES_BULBASAUR; i < RUNTIME_SPECIES_COUNT; i = NEXT_SPECIES_ID(i))
     {
         if (!IsSpeciesEnabled(i))
             continue;
@@ -6927,7 +6927,7 @@ static bool32 ResolveIsEgg(u32 isEggTemplate)
 
 static bool32 ResolveTeraType(u32 teraTypeTemplate)
 {
-    assertf(teraTypeTemplate != TYPE_NONE && teraTypeTemplate != TYPE_MYSTERY && teraTypeTemplate < NUMBER_OF_MON_TYPES, "using invalid tera type %d when creating pokemon", teraTypeTemplate)
+    assertf(teraTypeTemplate != TYPE_NONE && teraTypeTemplate != TYPE_MYSTERY && IsTypeIdValid(teraTypeTemplate), "using invalid tera type %d when creating pokemon", teraTypeTemplate)
     {
         return TYPE_STELLAR;
     }
@@ -6936,7 +6936,7 @@ static bool32 ResolveTeraType(u32 teraTypeTemplate)
 
 static enum Item ResolveHeldItem(u32 heldItemTemplate)
 {
-    assertf(heldItemTemplate < ITEMS_COUNT,"using invalid item %d when creating pokemon", heldItemTemplate)
+    assertf(IsItemIdValid(heldItemTemplate),"using invalid item %d when creating pokemon", heldItemTemplate)
     {
         return ITEM_NONE;
     }

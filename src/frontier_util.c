@@ -2382,7 +2382,7 @@ static void CheckPartyIneligibility(void)
         u32 totalPartyBanned = 0;
         u32 partyBanned[PARTY_SIZE] = {0};
 
-        for (i = 0; i < NUM_SPECIES; i++)
+        for (i = 0; i < RUNTIME_SPECIES_COUNT; i = NEXT_SPECIES_ID(i))
         {
             if (!IsSpeciesEnabled(i))
                 continue;
@@ -3433,7 +3433,7 @@ ADMG_NATIVE_ENTRY enum TrainerClassID GetFrontierOpponentClass(u16 trainerId)
     {
         const struct Trainer *native;
         if (!ADMG_TryGetTrainerStruct(trainerId, &native)) return 0;
-        if (native->trainerClass >= TRAINER_CLASS_COUNT)
+        if (!IsTrainerClassIdValid(native->trainerClass))
         { ADMG_StateAccessRejected(native->trainerClass, __func__); return 0; }
         return native->trainerClass;
     }
@@ -3459,7 +3459,7 @@ ADMG_NATIVE_ENTRY enum TrainerClassID GetFrontierOpponentClass(u16 trainerId)
         ADMG_StateAccessRejected(trainerId, __func__);
         return 0;
     }
-    if (partner != NULL && partner->trainerClass >= TRAINER_CLASS_COUNT)
+    if (partner != NULL && !IsTrainerClassIdValid(partner->trainerClass))
     { ADMG_StateAccessRejected(partner->trainerClass, __func__); return 0; }
     if (!ADMG_FrontierMetadataContextCurrent(&metadata, trainerId, FALSE)) return 0;
     SetFacilityPtrsGetLevel();
@@ -3821,7 +3821,7 @@ static u32 *MakeCaughtBannedSpeciesList(u32 totalBannedSpecies)
 {
     u32 count = 0;
     u32 *list = AllocZeroed(sizeof(*list) * totalBannedSpecies);
-    for (enum Species i = 0; i < NUM_SPECIES; i++)
+    for (enum Species i = 0; i < RUNTIME_SPECIES_COUNT; i = NEXT_SPECIES_ID(i))
     {
         if (!IsSpeciesEnabled(i))
             continue;

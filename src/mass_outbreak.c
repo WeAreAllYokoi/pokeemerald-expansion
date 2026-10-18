@@ -224,7 +224,7 @@ void ScrCmd_setdynamicoutbreak(struct ScriptContext *ctx)
     }
     for (u32 i = 0; i < MAX_MON_MOVES; i++)
     {
-        assertf(moves[i] < MOVES_COUNT, "Trying to call setdynamicoutbreak with invalid move %d", moves[i])
+        assertf(IsRegularMoveId(moves[i]), "Trying to call setdynamicoutbreak with invalid move %d", moves[i])
         {
             return;
         }
@@ -287,7 +287,7 @@ void ScrCmd_editoutbreak(struct ScriptContext *ctx)
     {
         if (moves[i] != MOVES_COUNT)
         {
-            if (moves[i] < MOVES_COUNT)
+            if (IsRegularMoveId(moves[i]))
                 gSaveBlock1Ptr->outbreakPokemonMoves[i] = moves[i];
             else
                 errorf("Trying to call editoutbreak with invalid move %d", moves[i]);

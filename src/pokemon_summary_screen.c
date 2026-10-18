@@ -4325,11 +4325,16 @@ static void CreateMoveTypeIcons(void)
 void SetTypeSpritePosAndPal(enum Type typeId, u8 x, u8 y, u8 spriteArrayId)
 {
     struct Sprite *sprite = &gSprites[sMonSummaryScreen->spriteIds[spriteArrayId]];
-    SetTypeIconSpriteAnim(sprite, typeId);
-    if (typeId < NUMBER_OF_MON_TYPES)
-        sprite->oam.paletteNum = gTypesInfo[typeId].palette;
+    if (typeId & TYPE_ICON_CONTEST_CATEGORY_FLAG)
+    {
+        StartSpriteAnim(sprite, NUMBER_OF_MON_TYPES + (typeId & ~TYPE_ICON_CONTEST_CATEGORY_FLAG));
+        sprite->oam.paletteNum = gContestCategoryInfo[typeId & ~TYPE_ICON_CONTEST_CATEGORY_FLAG].palette;
+    }
     else
-        sprite->oam.paletteNum = gContestCategoryInfo[typeId - NUMBER_OF_MON_TYPES].palette;
+    {
+        SetTypeIconSpriteAnim(sprite, typeId);
+        sprite->oam.paletteNum = gTypesInfo[typeId].palette;
+    }
     sprite->x = x + 16;
     sprite->y = y + 8;
     SetSpriteInvisibility(spriteArrayId, FALSE);
@@ -4422,7 +4427,7 @@ static void SetContestMoveTypeIcons(void)
     for (i = 0; i < MAX_MON_MOVES; i++)
     {
         if (summary->moves[i] != MOVE_NONE)
-            SetTypeSpritePosAndPal(NUMBER_OF_MON_TYPES + GetMoveContestCategory(summary->moves[i]), 85, 32 + (i * 16), i + SPRITE_ARR_ID_TYPE);
+            SetTypeSpritePosAndPal(TYPE_ICON_CONTEST_CATEGORY(GetMoveContestCategory(summary->moves[i])), 85, 32 + (i * 16), i + SPRITE_ARR_ID_TYPE);
         else
             SetSpriteInvisibility(i + SPRITE_ARR_ID_TYPE, TRUE);
     }
@@ -4446,7 +4451,7 @@ static void SetNewMoveTypeIcon(void)
         }
         else
         {
-            SetTypeSpritePosAndPal(NUMBER_OF_MON_TYPES + GetMoveContestCategory(sMonSummaryScreen->newMove), 85, 96, SPRITE_ARR_ID_TYPE + 4);
+            SetTypeSpritePosAndPal(TYPE_ICON_CONTEST_CATEGORY(GetMoveContestCategory(sMonSummaryScreen->newMove)), 85, 96, SPRITE_ARR_ID_TYPE + 4);
         }
     }
 }

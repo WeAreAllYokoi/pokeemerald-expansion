@@ -315,7 +315,7 @@ static inline const u8 *GetTrainerClassNameFromId(u16 trainerId)
     u64 generation = ADMG_BeginStateAccessCheck();
     u32 trainerClass = GetTrainerClassFromId(trainerId);
     if (!ADMG_EndStateAccessCheck(generation)) return gTrainerClasses[0].name;
-    if (trainerClass >= TRAINER_CLASS_COUNT)
+    if (!IsTrainerClassIdValid(trainerClass))
     { ADMG_StateAccessRejected(trainerClass, __func__); return gTrainerClasses[0].name; }
     return gTrainerClasses[trainerClass].name;
 }
@@ -372,7 +372,7 @@ static inline const u64 GetTrainerAIFlagsFromId(u16 trainerId)
 
 static inline enum TrainerPicID SanitizeTrainerPic(enum TrainerPicID trainerPicId)
 {
-    assertf(trainerPicId < TRAINER_PIC_COUNT, "trainerPicId %d out of range", trainerPicId)
+    assertf(IsTrainerPicIdValid(trainerPicId), "trainerPicId %d out of range", trainerPicId)
     {
         return TRAINER_PIC_NONE;
     };

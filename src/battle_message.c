@@ -2730,7 +2730,7 @@ void BufferStringBattle(enum StringID stringID, enum BattlerId battler)
         }
         break;
     case STRINGID_USEDMOVE: // Pokémon used a move msg
-        if (gBattleMsgDataPtr->currentMove >= MOVES_COUNT
+        if (!IsRegularMoveId(gBattleMsgDataPtr->currentMove)
          && !IsZMove(gBattleMsgDataPtr->currentMove)
          && !IsMaxMove(gBattleMsgDataPtr->currentMove))
             StringCopy(gBattleTextBuff3, gTypesInfo[*(&gBattleStruct->stringMoveType)].generic);
@@ -2970,7 +2970,7 @@ bool8 ADMG_TryGetBattleRefereeString(u32 id, const u8 **text)
 
 static const u8 *ADMG_BattleClassName(u32 trainerClass)
 {
-    if (trainerClass >= TRAINER_CLASS_COUNT)
+    if (!IsTrainerClassIdValid(trainerClass))
     { ADMG_StateAccessRejected(trainerClass, __func__); return sText_EmptyString4; }
     if (!DoesStringProperlyTerminate(gTrainerClasses[trainerClass].name, sizeof(gTrainerClasses[trainerClass].name)))
     { ADMG_StateAccessRejected(trainerClass, __func__); return sText_EmptyString4; }
@@ -3380,11 +3380,11 @@ u32 BattleStringExpandPlaceholders(const u8 *src, u8 *dst, u32 dstSize)
                 break;
             case B_TXT_CURRENT_MOVE: // current move name
                 if (gBattleMsgDataPtr == NULL || gBattleStruct == NULL) goto ADMG_reject;
-                if (gBattleMsgDataPtr->currentMove >= MOVES_COUNT
+                if (!IsRegularMoveId(gBattleMsgDataPtr->currentMove)
                  && !IsZMove(gBattleMsgDataPtr->currentMove)
                  && !IsMaxMove(gBattleMsgDataPtr->currentMove))
                 {
-                    if ((u32)gBattleStruct->stringMoveType >= NUMBER_OF_MON_TYPES) goto ADMG_reject;
+                    if (!IsTypeIdValid(gBattleStruct->stringMoveType)) goto ADMG_reject;
                     toCpy = gTypesInfo[gBattleStruct->stringMoveType].generic;
                 }
                 else
@@ -3392,11 +3392,11 @@ u32 BattleStringExpandPlaceholders(const u8 *src, u8 *dst, u32 dstSize)
                 break;
             case B_TXT_LAST_MOVE: // originally used move name
                 if (gBattleMsgDataPtr == NULL || gBattleStruct == NULL) goto ADMG_reject;
-                if (gBattleMsgDataPtr->originallyUsedMove >= MOVES_COUNT
+                if (!IsRegularMoveId(gBattleMsgDataPtr->originallyUsedMove)
                  && !IsZMove(gBattleMsgDataPtr->currentMove)
                  && !IsMaxMove(gBattleMsgDataPtr->currentMove))
                 {
-                    if ((u32)gBattleStruct->stringMoveType >= NUMBER_OF_MON_TYPES) goto ADMG_reject;
+                    if (!IsTypeIdValid(gBattleStruct->stringMoveType)) goto ADMG_reject;
                     toCpy = gTypesInfo[gBattleStruct->stringMoveType].generic;
                 }
                 else
@@ -3450,27 +3450,27 @@ u32 BattleStringExpandPlaceholders(const u8 *src, u8 *dst, u32 dstSize)
                 }
                 break;
             case B_TXT_LAST_ABILITY: // last used ability
-                if ((u32)gLastUsedAbility >= ABILITIES_COUNT) goto ADMG_reject;
+                if (!IsAbilityIdValid(gLastUsedAbility)) goto ADMG_reject;
                 toCpy = gAbilitiesInfo[gLastUsedAbility].name;
                 break;
             case B_TXT_ATK_ABILITY: // attacker ability
                 if (!ADMG_BattleTextBattler((u32)gBattlerAttacker)) goto ADMG_reject;
-                if ((u32)sBattlerAbilities[gBattlerAttacker] >= ABILITIES_COUNT) goto ADMG_reject;
+                if (!IsAbilityIdValid(sBattlerAbilities[gBattlerAttacker])) goto ADMG_reject;
                 toCpy = gAbilitiesInfo[sBattlerAbilities[gBattlerAttacker]].name;
                 break;
             case B_TXT_DEF_ABILITY: // target ability
                 if (!ADMG_BattleTextBattler((u32)gBattlerTarget)) goto ADMG_reject;
-                if ((u32)sBattlerAbilities[gBattlerTarget] >= ABILITIES_COUNT) goto ADMG_reject;
+                if (!IsAbilityIdValid(sBattlerAbilities[gBattlerTarget])) goto ADMG_reject;
                 toCpy = gAbilitiesInfo[sBattlerAbilities[gBattlerTarget]].name;
                 break;
             case B_TXT_SCR_ACTIVE_ABILITY: // scripting active ability
                 if (!ADMG_BattleTextBattler((u32)gBattleScripting.battler)) goto ADMG_reject;
-                if ((u32)sBattlerAbilities[gBattleScripting.battler] >= ABILITIES_COUNT) goto ADMG_reject;
+                if (!IsAbilityIdValid(sBattlerAbilities[gBattleScripting.battler])) goto ADMG_reject;
                 toCpy = gAbilitiesInfo[sBattlerAbilities[gBattleScripting.battler]].name;
                 break;
             case B_TXT_EFF_ABILITY: // effect battler ability
                 if (!ADMG_BattleTextBattler((u32)gEffectBattler)) goto ADMG_reject;
-                if ((u32)sBattlerAbilities[gEffectBattler] >= ABILITIES_COUNT) goto ADMG_reject;
+                if (!IsAbilityIdValid(sBattlerAbilities[gEffectBattler])) goto ADMG_reject;
                 toCpy = gAbilitiesInfo[sBattlerAbilities[gEffectBattler]].name;
                 break;
             case B_TXT_TRAINER1_CLASS: // trainer class name
@@ -3935,14 +3935,14 @@ static bool8 ADMG_BattleBufferOperands(const u8 *src, u32 size)
         case B_BUFF_STRING:
             if (operand >= STRINGID_COUNT || gBattleStringsTable[operand] == NULL) return FALSE;
             break;
-        case B_BUFF_MOVE: if (operand >= MOVES_COUNT_ALL) return FALSE; break;
-        case B_BUFF_TYPE: if (operand >= NUMBER_OF_MON_TYPES) return FALSE; break;
+        case B_BUFF_MOVE: if (!IsMoveIdValid(operand)) return FALSE; break;
+        case B_BUFF_TYPE: if (!IsTypeIdValid(operand)) return FALSE; break;
         case B_BUFF_STAT: if (operand >= ARRAY_COUNT(gStatNamesTable)) return FALSE; break;
-        case B_BUFF_SPECIES: if (operand >= NUM_SPECIES) return FALSE; break;
+        case B_BUFF_SPECIES: if (!IsSpeciesIdValid(operand) || operand == SPECIES_EGG) return FALSE; break;
         case B_BUFF_NEGATIVE_FLAVOR: if (operand >= ARRAY_COUNT(gPokeblockWasTooXStringTable)) return FALSE; break;
-        case B_BUFF_ABILITY: if (operand >= ABILITIES_COUNT) return FALSE; break;
+        case B_BUFF_ABILITY: if (!IsAbilityIdValid(operand)) return FALSE; break;
         case B_BUFF_ITEM:
-            if (operand >= ITEMS_COUNT) return FALSE;
+            if (!IsItemIdValid(operand)) return FALSE;
             if (operand == ITEM_ENIGMA_BERRY_E_READER && (gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK)))
             {
                 if ((u32)gPotentialItemEffectBattler >= MAX_BATTLERS_COUNT

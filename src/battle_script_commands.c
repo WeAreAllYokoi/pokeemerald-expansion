@@ -4102,7 +4102,7 @@ static u32 GetTrainerMoneyToGive(u16 trainerId)
         u32 partySize = trainer->partySize;
         if (partySize == 0) { ADMG_StateAccessRejected(partySize, __func__); return 0; }
         u32 trainerClass = trainer->trainerClass;
-        if (trainerClass >= TRAINER_CLASS_COUNT)
+        if (!IsTrainerClassIdValid(trainerClass))
         { ADMG_StateAccessRejected(trainerClass, __func__); return 0; }
         lastMonLevel = party[partySize - 1].lvl;
         trainerMoney = gTrainerClasses[trainerClass].money ?: 5;
@@ -6347,7 +6347,7 @@ static void Cmd_settypetorandomresistance(void)
     {
         u32 i, resistTypes = 0;
 
-        for (i = 0; i < NUMBER_OF_MON_TYPES; i++) // Find all types that resist.
+        for (i = 0; i < RUNTIME_TYPES_COUNT; i = NEXT_TYPE_ID(i)) // Find all types that resist.
         {
             switch (GetTypeModifier(typeToCheck, i))
             {
@@ -6360,7 +6360,10 @@ static void Cmd_settypetorandomresistance(void)
 
         while (resistTypes != 0)
         {
-            i = Random() % NUMBER_OF_MON_TYPES;
+            // Draw from the base and added types, skipping the reserved base-count ID
+            i = Random() % (NUMBER_OF_MON_TYPES + (RUNTIME_TYPES_COUNT > FIRST_ADDED_TYPE ? RUNTIME_TYPES_COUNT - FIRST_ADDED_TYPE : 0));
+            if (i >= NUMBER_OF_MON_TYPES)
+                i = i - NUMBER_OF_MON_TYPES + FIRST_ADDED_TYPE;
             if (resistTypes & 1u << i)
             {
                 if (IS_BATTLER_OF_TYPE(gBattlerAttacker, i))

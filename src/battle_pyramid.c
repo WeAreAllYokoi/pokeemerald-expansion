@@ -1523,7 +1523,7 @@ static void MarkPyramidTrainerAsBattled(u16 trainerId)
 static bool32 CheckBattlePyramidEvoRequirement(enum Species species, const u16 *evoItems, u8 nItems)
 {
     u32 i, j, k;
-    for (i = 0; i < NUM_SPECIES; i++)
+    for (i = 0; i < RUNTIME_SPECIES_COUNT; i = NEXT_SPECIES_ID(i))
     {
         if (!IsSpeciesEnabled(i))
             continue;
@@ -1586,7 +1586,7 @@ void GenerateBattlePyramidWildMon(enum Species forceSpecies)
     while (1)
     {
         if (!forceSpecies)
-            species = Random() % NUM_SPECIES;
+            species = ADMG_RandomSpecies(0, NUM_SPECIES);
 
         // check if base species
         if (GET_BASE_SPECIES_ID(species) != species)

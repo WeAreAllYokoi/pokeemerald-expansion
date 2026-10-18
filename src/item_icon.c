@@ -158,7 +158,7 @@ const void *GetItemIconPic(enum Item itemId)
 {
     if (itemId == ITEM_LIST_END)
         return gItemIcon_ReturnToFieldArrow; // Use last icon, the "return to field" arrow
-    if (itemId >= ITEMS_COUNT)
+    if (!IsItemIdValid(itemId))
         return gItemsInfo[0].iconPic;
     if (gItemsInfo[itemId].pocket == POCKET_TM_HM)
     {
@@ -174,7 +174,7 @@ const u16 *GetItemIconPalette(enum Item itemId)
 {
     if (itemId == ITEM_LIST_END)
         return gItemIconPalette_ReturnToFieldArrow;
-    if (itemId >= ITEMS_COUNT)
+    if (!IsItemIdValid(itemId))
         return gItemsInfo[0].iconPalette;
     if (gItemsInfo[itemId].pocket == POCKET_TM_HM)
         return gTypesInfo[GetMoveType(GetItemTMHMMoveId(itemId))].paletteTMHM;

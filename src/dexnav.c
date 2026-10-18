@@ -1956,7 +1956,7 @@ static void DexNavLoadEncounterData(void)
 
 static void TryDrawIconInSlot(enum Species species, s16 x, s16 y)
 {
-    if (species == SPECIES_NONE || species > NUM_SPECIES)
+    if (species == SPECIES_NONE || !IsSpeciesIdValid(species))
         CreateNoDataIcon(x, y);   //'X' in slot
     else if (!GetSetPokedexFlag(SpeciesToNationalPokedexNum(species), FLAG_GET_SEEN))
         CreateMonIcon(SPECIES_NONE, SpriteCB_MonIcon, x, y, 0, 0xFFFFFFFF); //question mark
@@ -1994,7 +1994,7 @@ static void DrawSpeciesIcons(void)
         y = ROW_HIDDEN_ICON_Y;
         if (FlagGet(DN_FLAG_DETECTOR_MODE))
             TryDrawIconInSlot(species, x, y);
-       else if (species == SPECIES_NONE || species > NUM_SPECIES)
+       else if (species == SPECIES_NONE || !IsSpeciesIdValid(species))
             CreateNoDataIcon(x, y);
         else
             CreateMonIcon(SPECIES_NONE, SpriteCB_MonIcon, x, y, 0, 0xFFFFFFFF); //question mark if detector mode inactive
@@ -2069,7 +2069,7 @@ static void SetTypeIconPosAndPal(enum Type typeId, u8 x, u8 y, u8 spriteArrayId)
 
     sprite = &gSprites[sDexNavUiDataPtr->typeIconSpriteIds[spriteArrayId]];
     SetTypeIconSpriteAnim(sprite, typeId);
-    sprite->oam.paletteNum = sMoveTypeToOamPaletteNum[typeId];
+    sprite->oam.paletteNum = sMoveTypeToOamPaletteNum[typeId < NUMBER_OF_MON_TYPES ? typeId : TYPE_MYSTERY];
     sprite->x = x + 16;
     sprite->y = y + 8;
     SetSpriteInvisibility(spriteArrayId, FALSE);

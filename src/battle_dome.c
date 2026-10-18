@@ -4716,7 +4716,7 @@ static bool32 IsDomeRareMove(enum Move move)
 {
     u16 i, j;
     enum Species species = SPECIES_NONE;
-    for (i = 0; i < NUM_SPECIES; i++)
+    for (i = 0; i < RUNTIME_SPECIES_COUNT; i = NEXT_SPECIES_ID(i))
     {
         if (!IsSpeciesEnabled(i))
             continue;
@@ -4729,7 +4729,7 @@ static bool32 IsDomeRareMove(enum Move move)
                 break;
             }
         }
-        if (species >= NUM_SPECIES / 20) // At least 5% of all mons can learn this move
+        if (species >= (RUNTIME_SPECIES_COUNT - 1) / 20) // Compare the learner count with one-twentieth of the registered non-Egg species count
             return FALSE;
     }
     return TRUE;
@@ -4865,7 +4865,7 @@ static u32 ADMG_DomeCardSpecies(const struct ADMG_DomeCardView *view, u32 slot, 
         species = row->species;
     }
     /* CreateMonIcon reads the palette field before its species sanitization. */
-    if (species > NUM_SPECIES) { ADMG_StateAccessRejected(species, __func__); return SPECIES_NONE; }
+    if (!IsSpeciesIdValid(species)) { ADMG_StateAccessRejected(species, __func__); return SPECIES_NONE; }
     return species;
 }
 
@@ -4916,7 +4916,7 @@ static bool8 ADMG_TryPrepareDomeCard(struct ADMG_DomeCardView *view,
                 if (stats && view->actors[i] == TRAINER_PLAYER)
                     ADMG_DomeCardNature(view->save->frontier.domePlayerPartyData[j].nature);
             }
-            if (species > NUM_SPECIES) { ADMG_StateAccessRejected(species, __func__); return FALSE; }
+            if (!IsSpeciesIdValid(species)) { ADMG_StateAccessRejected(species, __func__); return FALSE; }
             if (!ADMG_DomeCardCurrent(view)) return FALSE;
         }
     }

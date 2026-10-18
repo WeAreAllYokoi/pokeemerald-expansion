@@ -5708,9 +5708,9 @@ enum Type GetDynamicMoveType(struct Pokemon *mon, enum Move move, enum BattlerId
                         | ((GetMonData(mon, MON_DATA_SPDEF_IV) & 1) << 5);
             }
 
-            u32 hpTypes[NUMBER_OF_MON_TYPES] = {0};
+            u32 hpTypes[RUNTIME_TYPES_COUNT];
             u32 i, hpTypeCount = 0;
-            for (i = 0; i < NUMBER_OF_MON_TYPES; i++)
+            for (i = 0; i < RUNTIME_TYPES_COUNT; i = NEXT_TYPE_ID(i))
             {
                 if (gTypesInfo[i].isHiddenPowerType)
                     hpTypes[hpTypeCount++] = i;

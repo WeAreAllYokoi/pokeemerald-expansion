@@ -1210,7 +1210,7 @@ static void SetTrainerHillMonLevel(struct Pokemon *mon, u8 level)
     u64 generation = ADMG_BeginStateAccessCheck();
     u32 species = GetMonData(mon, MON_DATA_SPECIES);
     if (!ADMG_EndStateAccessCheck(generation)) return;
-    if (species >= NUM_SPECIES || gSpeciesInfo[species].growthRate >= gADMG_ExperienceTableCount)
+    if (!IsSpeciesIdValid(species) || species == SPECIES_EGG || gSpeciesInfo[species].growthRate >= gADMG_ExperienceTableCount)
     { ADMG_StateAccessRejected(species, __func__); return; }
     u32 exp = gExperienceTables[gSpeciesInfo[species].growthRate][level];
 

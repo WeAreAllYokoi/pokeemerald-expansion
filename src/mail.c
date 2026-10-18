@@ -475,7 +475,7 @@ void ReadMail(struct Mail *mail, MainCallback exitCallback, bool8 hasText)
         break;
     }
     species = MailSpeciesToSpecies(mail->species, buffer);
-    if (species > SPECIES_NONE && species < NUM_SPECIES)
+    if (species > SPECIES_NONE && IsSpeciesIdValid(species) && species != SPECIES_EGG)
     {
         switch (sMailRead->mailType)
         {
