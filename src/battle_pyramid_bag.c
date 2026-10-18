@@ -731,7 +731,10 @@ static void SwapItems(u8 id1, u8 id2)
 #endif
 
     SWAP(itemIds[id1], itemIds[id2], temp);
-    SWAP(quantities[id1], quantities[id2], temp);
+    {
+        u32 quantity;
+        SWAP(quantities[id1], quantities[id2], quantity);
+    }
 }
 
 static void MovePyramidBagItemSlotInList(u8 from, u8 to)

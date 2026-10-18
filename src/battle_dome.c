@@ -157,7 +157,7 @@ static void SetDomeOpponentId(void);
 static void SetDomeOpponentGraphicsId(void);
 static void ShowNonInteractiveDomeTourneyTree(void);
 static void ResolveDomeRoundWinners(void);
-static u16 GetWinningMove(int, int, u8);
+static enum Move GetWinningMove(int, int, u8);
 static void SaveDomeChallenge(void);
 static void IncrementDomeStreaks(void);
 static void ResetSketchedMoves(void);
@@ -6351,7 +6351,7 @@ ADMG_winning_reject:
     return MOVE_NONE;
 }
 
-static u16 GetWinningMove(int winnerTournamentId, int loserTournamentId, u8 roundId)
+static enum Move GetWinningMove(int winnerTournamentId, int loserTournamentId, u8 roundId)
 {
     if ((u32)winnerTournamentId >= DOME_TOURNAMENT_TRAINERS_COUNT
         || (u32)loserTournamentId >= DOME_TOURNAMENT_TRAINERS_COUNT || roundId >= DOME_ROUNDS_COUNT)

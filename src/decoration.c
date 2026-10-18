@@ -2125,7 +2125,7 @@ static u8 gpu_pal_decompress_alloc_tag_and_upload(struct PlaceDecorationGraphics
     return CreateSprite(&sDecorationSelectorSpriteTemplate, 0, 0, 0);
 }
 
-static u8 AddDecorationIconObjectFromIconTable(u16 tilesTag, u16 paletteTag, u8 decor)
+static u8 AddDecorationIconObjectFromIconTable(u16 tilesTag, u16 paletteTag, u32 decor)
 {
     struct SpriteSheet sheet;
     struct SpritePalette palette;
@@ -2170,7 +2170,7 @@ static const u16 *GetDecorationIconPalette(u16 decor)
     return gDecorations[decor].icon.pal;
 }
 
-static u8 AddDecorationIconObjectFromObjectEvent(u16 tilesTag, u16 paletteTag, u8 decor)
+static u8 AddDecorationIconObjectFromObjectEvent(u16 tilesTag, u16 paletteTag, u32 decor)
 {
     u8 spriteId;
     struct SpriteSheet sheet;
@@ -2206,7 +2206,7 @@ static u8 AddDecorationIconObjectFromObjectEvent(u16 tilesTag, u16 paletteTag, u
     return spriteId;
 }
 
-u8 AddDecorationIconObject(u8 decor, s16 x, s16 y, u8 priority, u16 tilesTag, u16 paletteTag)
+u8 AddDecorationIconObject(u32 decor, s16 x, s16 y, u8 priority, u16 tilesTag, u16 paletteTag)
 {
     u8 spriteId;
 

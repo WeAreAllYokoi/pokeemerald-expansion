@@ -273,7 +273,7 @@ struct ContestFinalStandings
 struct ContestTV
 {
     enum Move appeals[CONTEST_NUM_APPEALS];
-    s16 move;
+    enum Move move;
     u8 winnerFlags;
     u8 loserFlags;
     bool8 madeAppeal:1;

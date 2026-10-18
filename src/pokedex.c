@@ -4890,19 +4890,19 @@ u16 GetPokemonScaleFromNationalDexNumber(u32 nationalNum)
     return gSpeciesInfo[nationalNum].pokemonScale;
 }
 
-u16 GetPokemonOffsetFromNationalDexNumber(u16 nationalNum)
+u16 GetPokemonOffsetFromNationalDexNumber(u32 nationalNum)
 {
     nationalNum = NationalPokedexNumToSpeciesForm(nationalNum);
     return gSpeciesInfo[nationalNum].pokemonOffset;
 }
 
-u16 GetTrainerScaleFromNationalDexNumber(u16 nationalNum)
+u16 GetTrainerScaleFromNationalDexNumber(u32 nationalNum)
 {
     nationalNum = NationalPokedexNumToSpeciesForm(nationalNum);
     return gSpeciesInfo[nationalNum].trainerScale;
 }
 
-u16 GetTrainerOffsetFromNationalDexNumber(u16 nationalNum)
+u16 GetTrainerOffsetFromNationalDexNumber(u32 nationalNum)
 {
     nationalNum = NationalPokedexNumToSpeciesForm(nationalNum);
     return gSpeciesInfo[nationalNum].trainerOffset;
