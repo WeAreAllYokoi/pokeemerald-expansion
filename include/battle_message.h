@@ -124,17 +124,22 @@
 {                                                                           \
     textVar[0] = B_BUFF_PLACEHOLDER_BEGIN;                                  \
     textVar[1] = B_BUFF_ABILITY;                                            \
-    textVar[2] = abilityId;                                                 \
-    textVar[3] = (abilityId & 0xFF00) >> 8;                                 \
-    textVar[4] = B_BUFF_EOS;                                                \
+    textVar[2] = (abilityId) & 0xFF;                                        \
+    textVar[3] = ((abilityId) >> 8) & 0xFF;                                 \
+    textVar[4] = ((abilityId) >> 16) & 0xFF;                                \
+    textVar[5] = ((abilityId) >> 24) & 0xFF;                                \
+    textVar[6] = B_BUFF_EOS;                                                \
 }
 
 #define PREPARE_TYPE_BUFFER(textVar, typeId)                                \
 {                                                                           \
     textVar[0] = B_BUFF_PLACEHOLDER_BEGIN;                                  \
     textVar[1] = B_BUFF_TYPE;                                               \
-    textVar[2] = typeId;                                                    \
-    textVar[3] = B_BUFF_EOS;                                                \
+    textVar[2] = (typeId) & 0xFF;                                           \
+    textVar[3] = ((typeId) >> 8) & 0xFF;                                    \
+    textVar[4] = ((typeId) >> 16) & 0xFF;                                   \
+    textVar[5] = ((typeId) >> 24) & 0xFF;                                   \
+    textVar[6] = B_BUFF_EOS;                                                \
 }
 
 #define PREPARE_BYTE_NUMBER_BUFFER(textVar, maxDigits, number)  \
@@ -184,27 +189,33 @@
 {                                                               \
     textVar[0] = B_BUFF_PLACEHOLDER_BEGIN;                      \
     textVar[1] = B_BUFF_MOVE;                                   \
-    textVar[2] = (move & 0xFF);                                 \
-    textVar[3] = (move & 0xFF00) >> 8;                          \
-    textVar[4] = B_BUFF_EOS;                                    \
+    textVar[2] = (move) & 0xFF;                                 \
+    textVar[3] = ((move) >> 8) & 0xFF;                          \
+    textVar[4] = ((move) >> 16) & 0xFF;                         \
+    textVar[5] = ((move) >> 24) & 0xFF;                         \
+    textVar[6] = B_BUFF_EOS;                                    \
 }
 
 #define PREPARE_ITEM_BUFFER(textVar, item)                      \
 {                                                               \
     textVar[0] = B_BUFF_PLACEHOLDER_BEGIN;                      \
     textVar[1] = B_BUFF_ITEM;                                   \
-    textVar[2] = item;                                          \
-    textVar[3] = (item & 0xFF00) >> 8;                          \
-    textVar[4] = B_BUFF_EOS;                                    \
+    textVar[2] = (item) & 0xFF;                                 \
+    textVar[3] = ((item) >> 8) & 0xFF;                          \
+    textVar[4] = ((item) >> 16) & 0xFF;                         \
+    textVar[5] = ((item) >> 24) & 0xFF;                         \
+    textVar[6] = B_BUFF_EOS;                                    \
 }
 
 #define PREPARE_SPECIES_BUFFER(textVar, species)                \
 {                                                               \
     textVar[0] = B_BUFF_PLACEHOLDER_BEGIN;                      \
     textVar[1] = B_BUFF_SPECIES;                                \
-    textVar[2] = species;                                       \
-    textVar[3] = (species & 0xFF00) >> 8;                       \
-    textVar[4] = B_BUFF_EOS;                                    \
+    textVar[2] = (species) & 0xFF;                              \
+    textVar[3] = ((species) >> 8) & 0xFF;                       \
+    textVar[4] = ((species) >> 16) & 0xFF;                      \
+    textVar[5] = ((species) >> 24) & 0xFF;                      \
+    textVar[6] = B_BUFF_EOS;                                    \
 }
 
 #define PREPARE_MON_NICK_WITH_PREFIX_BUFFER(textVar, battler, partyId)      \

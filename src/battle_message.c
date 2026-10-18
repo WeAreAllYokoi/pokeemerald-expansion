@@ -3914,10 +3914,12 @@ static bool8 ADMG_BattleBufferOperands(const u8 *src, u32 size)
         u32 step;
         switch (src[pos])
         {
-        case B_BUFF_TYPE: case B_BUFF_STAT: case B_BUFF_NEGATIVE_FLAVOR: step = 2; break;
-        case B_BUFF_STRING: case B_BUFF_MOVE: case B_BUFF_SPECIES: case B_BUFF_ABILITY:
-        case B_BUFF_ITEM: case B_BUFF_MON_NICK: case B_BUFF_MON_NICK_WITH_PREFIX:
+        case B_BUFF_STAT: case B_BUFF_NEGATIVE_FLAVOR: step = 2; break;
+        case B_BUFF_STRING: case B_BUFF_MON_NICK: case B_BUFF_MON_NICK_WITH_PREFIX:
         case B_BUFF_MON_NICK_WITH_PREFIX_LOWER: step = 3; break;
+        // One byte for the placeholder kind, then four for the content ID
+        case B_BUFF_TYPE: case B_BUFF_MOVE: case B_BUFF_SPECIES: case B_BUFF_ABILITY:
+        case B_BUFF_ITEM: step = 5; break;
         case B_BUFF_NUMBER:
             if (size - pos < 3) return FALSE;
             if ((src[pos + 1] != 1 && src[pos + 1] != 2 && src[pos + 1] != 4)
@@ -3927,7 +3929,7 @@ static bool8 ADMG_BattleBufferOperands(const u8 *src, u32 size)
         default: return FALSE;
         }
         if (step > size - pos) return FALSE;
-        u32 operand = step == 2 ? src[pos + 1] : T1_READ_16(&src[pos + 1]);
+        u32 operand = step == 2 ? src[pos + 1] : step == 5 ? (u32)T1_READ_32(&src[pos + 1]) : T1_READ_16(&src[pos + 1]);
         switch (src[pos])
         {
         case B_BUFF_STRING:
@@ -3978,6 +3980,7 @@ void ExpandBattleTextBuffPlaceholders(const u8 *src, u8 *dst)
     u32 value = 0;
     u8 nickname[POKEMON_NAME_LENGTH + 1];
     u16 hword;
+    u32 itemId;
 
     *dst = EOS;
     while (src[srcID] != B_BUFF_EOS)
@@ -4011,12 +4014,12 @@ void ExpandBattleTextBuffPlaceholders(const u8 *src, u8 *dst)
             srcID += src[srcID + 1] + 3;
             break;
         case B_BUFF_MOVE: // move name
-            do { if (!ADMG_BattleBufferAppend(dst, dstSize, &length, generation, GetMoveName(T1_READ_16(&src[srcID + 1])))) goto ADMG_reject; } while (0);
-            srcID += 3;
+            do { if (!ADMG_BattleBufferAppend(dst, dstSize, &length, generation, GetMoveName(T1_READ_32(&src[srcID + 1])))) goto ADMG_reject; } while (0);
+            srcID += 5;
             break;
         case B_BUFF_TYPE: // type name
-            do { if (!ADMG_BattleBufferAppend(dst, dstSize, &length, generation, gTypesInfo[src[srcID + 1]].name)) goto ADMG_reject; } while (0);
-            srcID += 2;
+            do { if (!ADMG_BattleBufferAppend(dst, dstSize, &length, generation, gTypesInfo[T1_READ_32(&src[srcID + 1])].name)) goto ADMG_reject; } while (0);
+            srcID += 5;
             break;
         case B_BUFF_MON_NICK_WITH_PREFIX: // poke nick with prefix
         case B_BUFF_MON_NICK_WITH_PREFIX_LOWER: // poke nick with lowercase prefix
@@ -4048,8 +4051,8 @@ void ExpandBattleTextBuffPlaceholders(const u8 *src, u8 *dst)
             break;
         case B_BUFF_SPECIES: // species name
             length = 0;
-            if (!ADMG_BattleBufferAppend(dst, dstSize, &length, generation, GetSpeciesName(T1_READ_16(&src[srcID + 1])))) goto ADMG_reject;
-            srcID += 3;
+            if (!ADMG_BattleBufferAppend(dst, dstSize, &length, generation, GetSpeciesName(T1_READ_32(&src[srcID + 1])))) goto ADMG_reject;
+            srcID += 5;
             break;
         case B_BUFF_MON_NICK: // poke nick without prefix
             if (src[srcID + 2] == gBattlerPartyIndexes[src[srcID + 1]])
@@ -4077,14 +4080,14 @@ void ExpandBattleTextBuffPlaceholders(const u8 *src, u8 *dst)
             srcID += 2;
             break;
         case B_BUFF_ABILITY: // ability names
-            do { if (!ADMG_BattleBufferAppend(dst, dstSize, &length, generation, gAbilitiesInfo[T1_READ_16(&src[srcID + 1])].name)) goto ADMG_reject; } while (0);
-            srcID += 3;
+            do { if (!ADMG_BattleBufferAppend(dst, dstSize, &length, generation, gAbilitiesInfo[T1_READ_32(&src[srcID + 1])].name)) goto ADMG_reject; } while (0);
+            srcID += 5;
             break;
         case B_BUFF_ITEM: // item name
-            hword = T1_READ_16(&src[srcID + 1]);
+            itemId = T1_READ_32(&src[srcID + 1]);
             if (gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK))
             {
-                if (hword == ITEM_ENIGMA_BERRY_E_READER)
+                if (itemId == ITEM_ENIGMA_BERRY_E_READER)
                 {
                     if (gLinkPlayers[gBattleScripting.multiplayerId].id == gPotentialItemEffectBattler)
                     {
@@ -4099,7 +4102,7 @@ void ExpandBattleTextBuffPlaceholders(const u8 *src, u8 *dst)
                 }
                 else
                 {
-                    CopyItemName(hword, output);
+                    CopyItemName(itemId, output);
                     length = 0;
                     if (!ADMG_EndStateAccessCheck(generation)
                         || !ADMG_BattleBufferAppend(dst, dstSize, &length, generation, output)) goto ADMG_reject;
@@ -4107,12 +4110,12 @@ void ExpandBattleTextBuffPlaceholders(const u8 *src, u8 *dst)
             }
             else
             {
-                CopyItemName(hword, output);
+                CopyItemName(itemId, output);
                     length = 0;
                     if (!ADMG_EndStateAccessCheck(generation)
                         || !ADMG_BattleBufferAppend(dst, dstSize, &length, generation, output)) goto ADMG_reject;
             }
-            srcID += 3;
+            srcID += 5;
             break;
         }
         if (!ADMG_EndStateAccessCheck(generation)
