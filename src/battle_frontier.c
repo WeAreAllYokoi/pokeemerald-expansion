@@ -23,7 +23,7 @@
 #include "constants/battle_frontier.h"
 #include "constants/battle_frontier_mons.h"
 
-ADMG_NATIVE_ENTRY void FillTrainerParty(u16 trainerId, enum BattleTrainer trainer, u8 monCount);
+ADMG_NATIVE_ENTRY void FillTrainerParty(enum TrainerId trainerId, enum BattleTrainer trainer, u8 monCount);
 
 // EWRAM vars.
 EWRAM_DATA const struct BattleFrontierTrainer *gFacilityTrainers = NULL;
@@ -73,7 +73,7 @@ struct ADMG_FacilityBattleInput
     struct SaveBlock2 *save;
     enum FrontierLevelMode levelMode;
     u16 battleMode;
-    u16 opponentA, opponentB, partner;
+    enum TrainerId opponentA, opponentB, partner;
     bool8 useA, useB, usePartner, partnerPublished;
     struct ADMG_FactoryPartyInput factory;
 };
@@ -163,10 +163,13 @@ static bool8 ADMG_TryAdmitFacilityBattle(u32 facility, struct ADMG_FacilityBattl
 enum ADMG_FacilityTransitionTaskData
 {
     ADMG_FT_SAVE = 0, ADMG_FT_FLAGS = 2, ADMG_FT_PREVIOUS_FLAGS = 4,
-    ADMG_FT_A = 6, ADMG_FT_B, ADMG_FT_PARTNER, ADMG_FT_PREVIOUS_PARTNER,
-    ADMG_FT_FACILITY, ADMG_FT_PREVIOUS_FACILITY, ADMG_FT_LEVEL,
+    ADMG_FT_PARTNER = 6, ADMG_FT_PREVIOUS_PARTNER = 8, // trainer IDs, as words
+    ADMG_FT_FACILITY = 10, ADMG_FT_PREVIOUS_FACILITY, ADMG_FT_LEVEL,
     ADMG_FT_USES, ADMG_FT_TAG,
 };
+
+// The opponents' trainer IDs are in the task's content slots.
+enum { ADMG_FT_CONTENT_A, ADMG_FT_CONTENT_B };
 
 static void Task_StartBattleAfterTransition(u8 taskId);
 
@@ -185,8 +188,8 @@ static bool8 ADMG_FacilityTransitionContextCurrent(u8 taskId, u64 generation)
     struct ADMG_FacilityBattleInput input = {0};
     input.save = (struct SaveBlock2 *)GetWordTaskArg(taskId, ADMG_FT_SAVE);
     input.levelMode = (u16)data[ADMG_FT_LEVEL];
-    input.opponentA = data[ADMG_FT_A]; input.opponentB = data[ADMG_FT_B];
-    input.partner = data[ADMG_FT_PARTNER];
+    input.opponentA = gTasks[taskId].contentIds[ADMG_FT_CONTENT_A]; input.opponentB = gTasks[taskId].contentIds[ADMG_FT_CONTENT_B];
+    input.partner = GetWordTaskArg(taskId, ADMG_FT_PARTNER);
     input.useA = (data[ADMG_FT_USES] & 1) != 0;
     input.useB = (data[ADMG_FT_USES] & 2) != 0;
     input.usePartner = (data[ADMG_FT_USES] & 4) != 0;
@@ -198,7 +201,7 @@ static bool8 ADMG_FacilityTransitionContextCurrent(u8 taskId, u64 generation)
 }
 
 static bool8 ADMG_QueueFacilityBattleTransition(const struct ADMG_FacilityBattleInput *input,
-    u32 previousFlags, u16 previousPartner, u8 previousFacility)
+    u32 previousFlags, enum TrainerId previousPartner, u8 previousFacility)
 {
     /* CreateTask returns zero on exhaustion; establish a free slot first. */
     u32 freeSlot;
@@ -213,9 +216,9 @@ static bool8 ADMG_QueueFacilityBattleTransition(const struct ADMG_FacilityBattle
     SetWordTaskArg(taskId, ADMG_FT_FLAGS, gBattleTypeFlags);
     SetWordTaskArg(taskId, ADMG_FT_PREVIOUS_FLAGS, previousFlags);
     s16 *data = gTasks[taskId].data;
-    data[ADMG_FT_A] = input->opponentA; data[ADMG_FT_B] = input->opponentB;
-    data[ADMG_FT_PARTNER] = input->partner;
-    data[ADMG_FT_PREVIOUS_PARTNER] = previousPartner;
+    gTasks[taskId].contentIds[ADMG_FT_CONTENT_A] = input->opponentA; gTasks[taskId].contentIds[ADMG_FT_CONTENT_B] = input->opponentB;
+    SetWordTaskArg(taskId, ADMG_FT_PARTNER, input->partner);
+    SetWordTaskArg(taskId, ADMG_FT_PREVIOUS_PARTNER, previousPartner);
     data[ADMG_FT_FACILITY] = gBattleScripting.specialTrainerBattleType;
     data[ADMG_FT_PREVIOUS_FACILITY] = previousFacility;
     data[ADMG_FT_LEVEL] = input->levelMode;
@@ -241,7 +244,7 @@ rejected:
     /* Do not alter another task if the callback's slot was destroyed or reused. */
     if (!ADMG_FacilityTransitionTaskOwned(taskId)) return;
     gBattleTypeFlags = GetWordTaskArg(taskId, ADMG_FT_PREVIOUS_FLAGS);
-    gPartnerTrainerId = gTasks[taskId].data[ADMG_FT_PREVIOUS_PARTNER];
+    gPartnerTrainerId = GetWordTaskArg(taskId, ADMG_FT_PREVIOUS_PARTNER);
     gBattleScripting.specialTrainerBattleType = gTasks[taskId].data[ADMG_FT_PREVIOUS_FACILITY];
     DestroyTask(taskId);
     SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);
@@ -573,7 +576,7 @@ static void ADMG_FillAdmittedFacilityParty(const struct ADMG_FacilityPartyInput 
     }
 }
 
-void ADMG_FillFacilityPartyFromArgs(u16 identity, enum BattleTrainer target,
+void ADMG_FillFacilityPartyFromArgs(enum TrainerId identity, enum BattleTrainer target,
     u8 count, bool8 tent, u8 firstMon)
 {
     struct ADMG_FacilityPartyInput local;
@@ -594,7 +597,7 @@ void ADMG_FillFacilityPartyFromArgs(u16 identity, enum BattleTrainer target,
 
 void FillFrontierTrainerParty(u8 monsCount)
 {
-    u16 a = TRAINER_BATTLE_PARAM.opponentA;
+    enum TrainerId a = TRAINER_BATTLE_PARAM.opponentA;
     struct ADMG_FacilityPartyInput admittedA;
     if (!ADMG_TryPrepareFacilityParty(a, B_TRAINER_OPPONENT_A, monsCount, FALSE, 0, &admittedA)) return;
     ZeroEnemyPartyMons();
@@ -605,9 +608,9 @@ void FillFrontierTrainerParty(u8 monsCount)
 
 void FillFrontierTrainersParties(u8 monsCount)
 {
-    u16 a = TRAINER_BATTLE_PARAM.opponentA;
+    enum TrainerId a = TRAINER_BATTLE_PARAM.opponentA;
     struct ADMG_FacilityPartyInput admittedA;
-    u16 b = TRAINER_BATTLE_PARAM.opponentB;
+    enum TrainerId b = TRAINER_BATTLE_PARAM.opponentB;
     struct ADMG_FacilityPartyInput admittedB;
     if (!ADMG_TryAdmitFacilityParty(a, B_TRAINER_OPPONENT_A, monsCount, FALSE, 0, &admittedA)) return;
     if (!ADMG_TryAdmitFacilityParty(b, B_TRAINER_OPPONENT_B, monsCount, FALSE, 0, &admittedB)) return;
@@ -621,7 +624,7 @@ void FillFrontierTrainersParties(u8 monsCount)
     ADMG_BorrowFacilityParty(previous);
 }
 
-ADMG_NATIVE_ENTRY void FillTrainerParty(u16 trainerId, enum BattleTrainer trainer, u8 monCount)
+ADMG_NATIVE_ENTRY void FillTrainerParty(enum TrainerId trainerId, enum BattleTrainer trainer, u8 monCount)
 {
     ADMG_FillFacilityPartyFromArgs(trainerId, trainer, monCount, FALSE, 0);
 }

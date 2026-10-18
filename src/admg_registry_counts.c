@@ -11,5 +11,6 @@ const struct ADMG_RegistryCounts gADMG_RegistryCounts =
     .natures = NUM_NATURES,
     .trainerClasses = TRAINER_CLASS_COUNT,
     .trainerPics = TRAINER_PIC_COUNT,
-    .trainers = TRAINERS_COUNT,
+    .addedTrainers = 0,
+    .nationalDex = NATIONAL_DEX_COUNT + 1,
 };

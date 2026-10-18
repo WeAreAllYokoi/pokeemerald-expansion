@@ -2510,7 +2510,7 @@ bool8 ScrCmd_gotobeatenscript(struct ScriptContext *ctx)
 bool8 ScrCmd_checktrainerflag(struct ScriptContext *ctx)
 {
     u16 index = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
-    u16 flagId;
+    u32 flagId;
     if (!ADMG_TryGetTrainerDefeatFlagId(index, &flagId))
     {
         ADMG_StopInvalidStateCommand(ctx);
@@ -2526,7 +2526,7 @@ bool8 ScrCmd_checktrainerflag(struct ScriptContext *ctx)
 bool8 ScrCmd_settrainerflag(struct ScriptContext *ctx)
 {
     u16 index = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
-    u16 flagId;
+    u32 flagId;
     if (!ADMG_TryGetTrainerDefeatFlagId(index, &flagId))
     {
         ADMG_StopInvalidStateCommand(ctx);
@@ -2542,7 +2542,7 @@ bool8 ScrCmd_settrainerflag(struct ScriptContext *ctx)
 bool8 ScrCmd_cleartrainerflag(struct ScriptContext *ctx)
 {
     u16 index = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
-    u16 flagId;
+    u32 flagId;
     if (!ADMG_TryGetTrainerDefeatFlagId(index, &flagId))
     {
         ADMG_StopInvalidStateCommand(ctx);

@@ -13,7 +13,7 @@ static bool8 RejectRematch(u32 id, const char *operation)
     return FALSE;
 }
 
-bool8 ADMG_TryFindNativeRematch(u32 trainerId, bool8 baseOnly, u16 *family, u8 *position)
+bool8 ADMG_TryFindNativeRematch(u32 trainerId, bool8 baseOnly, u32 *family, u8 *position)
 {
     struct ADMG_TrainerRef ref;
     u32 i, j;
@@ -43,9 +43,9 @@ bool8 ADMG_TryFindNativeRematch(u32 trainerId, bool8 baseOnly, u16 *family, u8 *
     return FALSE;
 }
 
-bool8 ADMG_TryGetNativeRematchProgress(u32 baseTrainerId, u16 *family, u8 *position)
+bool8 ADMG_TryGetNativeRematchProgress(u32 baseTrainerId, u32 *family, u8 *position)
 {
-    u16 found, flagId;
+    u32 found, flagId;
     u8 basePosition, i;
     bool8 fought;
     if (family == NULL || position == NULL)
@@ -89,7 +89,7 @@ static u8 ApplyNativeEligibility(u16 family, u8 position, u32 permittedStages)
 
 bool8 ADMG_TrySelectNativeRematch(u32 baseTrainerId, u32 permittedStages, u16 *trainerId)
 {
-    u16 family;
+    u32 family;
     u8 position;
     if (trainerId == NULL || (permittedStages & ~0x3Fu))
         return RejectRematch(baseTrainerId, __func__);
@@ -116,7 +116,7 @@ bool8 ADMG_TryGetNativeRematchTrainer(u32 baseTrainerId, u16 *trainerId)
          * and not the distinct Kanto FLAG_SYS_GAME_CLEAR authority. */
         ADMG_KANTO_FLAG_IS_CHAMPION,
     };
-    u16 family;
+    u32 family;
     u8 position;
     bool8 permitted;
     if (trainerId == NULL)

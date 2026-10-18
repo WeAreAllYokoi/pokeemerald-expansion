@@ -4068,7 +4068,7 @@ static void Cmd_hitanimation(void)
     gBattlescriptCurrInstr = cmd->nextInstr;
 }
 
-static u32 GetTrainerMoneyToGive(u16 trainerId)
+static u32 GetTrainerMoneyToGive(enum TrainerId trainerId)
 {
     if (gBattleStruct == NULL)
     { ADMG_StateAccessRejected(trainerId, __func__); return 0; }
@@ -4150,7 +4150,7 @@ static void Cmd_getmoneyreward(void)
         struct SaveBlock2 *save2 = gSaveBlock2Ptr;
         struct BattleStruct *battle = gBattleStruct;
         u32 flags = gBattleTypeFlags;
-        u16 opponentA = TRAINER_BATTLE_PARAM.opponentA, opponentB = TRAINER_BATTLE_PARAM.opponentB;
+        enum TrainerId opponentA = TRAINER_BATTLE_PARAM.opponentA, opponentB = TRAINER_BATTLE_PARAM.opponentB;
         u64 generation = ADMG_BeginStateAccessCheck();
         money = GetTrainerMoneyToGive(opponentA);
         if (!ADMG_EndStateAccessCheck(generation)) return;

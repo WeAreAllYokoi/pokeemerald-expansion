@@ -14,7 +14,7 @@ bool8 ADMG_TryGetNativeRematchResponse(const struct ADMG_RematchContext *context
     u32 *response, u8 *position)
 {
     u32 i, j, action;
-    u16 flagId, family;
+    u32 flagId, family;
     u8 next;
     bool8 fought;
     struct ADMG_TrainerRef ref;

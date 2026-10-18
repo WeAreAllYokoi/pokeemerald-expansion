@@ -230,10 +230,12 @@ u32 VarGetObjectEventGraphicsId(u8 id)
     return VarGet(VAR_OBJ_GFX_ID_0 + id);
 }
 
-u8 *GetFlagPointer(u16 id)
+u8 *GetFlagPointer(u32 id)
 {
     if (id == 0)
         return NULL;
+    if (id > 0xFFFF)
+        return ADMG_GetExtendedFlagPointer(id);
     if (id < FLAGS_COUNT)
         return gSaveBlock1Ptr != NULL ? &gSaveBlock1Ptr->flags[id / 8] : NULL;
     if (id >= SPECIAL_FLAGS_START && id <= SPECIAL_FLAGS_END)
@@ -245,7 +247,7 @@ u8 *GetFlagPointer(u16 id)
     return ADMG_GetRegionalFlagPointer(id);
 }
 
-u8 FlagSet(u16 id)
+u8 FlagSet(u32 id)
 {
     u8 *ptr = GetFlagPointer(id);
     if (ptr)
@@ -255,7 +257,7 @@ u8 FlagSet(u16 id)
     return 0;
 }
 
-u8 FlagToggle(u16 id)
+u8 FlagToggle(u32 id)
 {
     u8 *ptr = GetFlagPointer(id);
     if (ptr)
@@ -265,7 +267,7 @@ u8 FlagToggle(u16 id)
     return 0;
 }
 
-u8 FlagClear(u16 id)
+u8 FlagClear(u32 id)
 {
     u8 *ptr = GetFlagPointer(id);
     if (ptr)
@@ -275,7 +277,7 @@ u8 FlagClear(u16 id)
     return 0;
 }
 
-bool8 FlagGet(u16 id)
+bool8 FlagGet(u32 id)
 {
     u8 *ptr = GetFlagPointer(id);
 

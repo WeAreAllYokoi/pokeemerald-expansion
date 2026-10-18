@@ -421,7 +421,7 @@ struct SpeciesInfo /*0xC4*/
     u8 categoryName[13];
     u8 speciesName[POKEMON_NAME_LENGTH + 1];
     enum PokemonCry cryId:16;
-    enum NationalDexOrder natDexNum:16;
+    enum NationalDexOrder natDexNum;
     u16 height; //in decimeters
     u16 weight; //in hectograms
     u16 pokemonScale;
@@ -782,7 +782,7 @@ void CreateMaleMon(struct Pokemon *mon, enum Species species, u8 level);
 void CreateMonWithIVsPersonality(struct Pokemon *mon, enum Species species, u8 level, u32 ivs, u32 personality);
 void CreateBattleTowerMon(struct Pokemon *mon, struct BattleTowerPokemon *src);
 void CreateBattleTowerMon_HandleLevel(struct Pokemon *mon, struct BattleTowerPokemon *src, bool8 lvl50);
-void CreateApprenticeMon(struct Pokemon *mon, const struct Apprentice *src, u8 monId);
+void CreateApprenticeMon(struct Pokemon *mon, const struct Apprentice *src, enum TrainerId monId);
 void ConvertPokemonToBattleTowerPokemon(struct Pokemon *mon, struct BattleTowerPokemon *dest);
 enum TrainerPicID GetUnionRoomTrainerPic(void);
 enum TrainerClassID GetUnionRoomTrainerClass(void);
@@ -914,7 +914,7 @@ void EvolutionRenameMon(struct Pokemon *mon, enum Species oldSpecies, enum Speci
 u8 GetPlayerFlankId(void);
 u16 GetLinkTrainerFlankId(u8 linkPlayerId);
 s32 GetBattlerMultiplayerId(u16 id);
-u8 GetTrainerEncounterMusicId(u16 trainerOpponentId);
+u8 GetTrainerEncounterMusicId(enum TrainerId trainerOpponentId);
 u16 ModifyStatByNature(nature_t nature, u16 stat, enum Stat statIndex);
 void AdjustFriendship(struct Pokemon *mon, u8 event);
 s32 CalculateFriendshipBonuses(struct Pokemon *mon, s32 modifier, enum HoldEffect itemHoldEffect);

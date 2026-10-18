@@ -1923,7 +1923,7 @@ static bool8 ADMG_TryGetPlayerControllerPicture(enum BattlerId battler, bool8 dr
     { ADMG_StateAccessRejected((u32)battler, __func__); return FALSE; }
     u64 generation = ADMG_BeginStateAccessCheck();
     u32 flags = gBattleTypeFlags;
-    u16 partner = gPartnerTrainerId;
+    enum TrainerId partner = gPartnerTrainerId;
     bool8 partnerUsed = draw && (flags & BATTLE_TYPE_INGAME_PARTNER);
     bool8 useFront = FALSE;
     if (partnerUsed)

@@ -135,7 +135,7 @@ static void DisplayMatchInfoOnCard(u8, u8);
 static void DisplayTrainerInfoOnCard(u8, u8);
 static int BufferDomeWinString(u8, u8 *);
 static bool8 ADMG_TryBufferDomeMatchPair(u32, u8 *, int *);
-static void CopyDomeTrainerName(u8 *, u16);
+static void CopyDomeTrainerName(u8 *, enum TrainerId);
 static void HblankCb_TourneyTree(void);
 static void VblankCb_TourneyTree(void);
 static u8 UpdateTourneyTreeCursor(u8);
@@ -2423,7 +2423,7 @@ static void BufferDomeOpponentName(void)
 
 /* Only the selected native roster/mon coordinates are borrowed here. */
 static bool8 ADMG_DomePartyInputCurrent(struct SaveBlock2 *save, u64 generation,
-    u16 identity, u32 slot, const u16 *mons)
+    enum TrainerId identity, u32 slot, const u16 *mons)
 {
     if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
     if (save == NULL || gSaveBlock2Ptr != save || TRAINER_BATTLE_PARAM.opponentA != identity)
@@ -2439,9 +2439,9 @@ static bool8 ADMG_DomePartyInputCurrent(struct SaveBlock2 *save, u64 generation,
     return TRUE;
 }
 
-static void ADMG_RunDomeOpponentParty(u16 identity, u32 slot, struct SaveBlock2 *save,
+static void ADMG_RunDomeOpponentParty(enum TrainerId identity, u32 slot, struct SaveBlock2 *save,
     u64 generation) __attribute__((noinline));
-static void ADMG_RunDomeOpponentParty(u16 identity, u32 slot, struct SaveBlock2 *save,
+static void ADMG_RunDomeOpponentParty(enum TrainerId identity, u32 slot, struct SaveBlock2 *save,
     u64 generation)
 {
     if (!ADMG_DomePartyInputCurrent(save, generation, identity, slot, NULL)) return;
@@ -2466,7 +2466,7 @@ ADMG_reject:
 
 static void InitDomeOpponentParty(void)
 {
-    u16 identity = TRAINER_BATTLE_PARAM.opponentA;
+    enum TrainerId identity = TRAINER_BATTLE_PARAM.opponentA;
     struct SaveBlock2 *save = gSaveBlock2Ptr;
     u64 generation = ADMG_BeginStateAccessCheck();
     u32 slot;
@@ -7363,7 +7363,7 @@ static void DecideRoundWinners(u8 roundId)
     if (!ADMG_RunDomeRound(roundId, &frame) || !ADMG_DomeRoundCurrent(&frame)) ADMG_RestoreDomeRound(&frame);
 }
 
-static void CopyDomeTrainerName(u8 *str, u16 trainerId)
+static void CopyDomeTrainerName(u8 *str, enum TrainerId trainerId)
 {
     const struct BattleFrontierTrainer *trainer = NULL;
     if (str == NULL) { ADMG_StateAccessRejected(trainerId, __func__); return; }

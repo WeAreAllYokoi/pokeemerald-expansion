@@ -15,9 +15,9 @@ struct RecordedBattleSave
     u8 playersLanguage[MAX_LINK_PLAYERS];
     rng_value_t rngSeed;
     u32 battleFlags;
-    u16 opponentA;
-    u16 opponentB;
-    u16 partnerId;
+    enum TrainerId opponentA;
+    enum TrainerId opponentB;
+    enum TrainerId partnerId;
     u16 frontierFacility:4; // 7 Frontier facilities + Union Room + E-reader
     u16 frontierBrainSymbol:1;
     u16 lvlMode:2;

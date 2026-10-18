@@ -1212,7 +1212,7 @@ void CreateBattleTowerMon_HandleLevel(struct Pokemon *mon, struct BattleTowerPok
     CalculateMonStats(mon);
 }
 
-void CreateApprenticeMon(struct Pokemon *mon, const struct Apprentice *src, u8 monId)
+void CreateApprenticeMon(struct Pokemon *mon, const struct Apprentice *src, enum TrainerId monId)
 {
     s32 i;
     u16 evAmount;
@@ -4722,11 +4722,11 @@ s32 GetBattlerMultiplayerId(u16 id)
     return multiplayerId;
 }
 
-u8 GetTrainerEncounterMusicId(u16 trainerOpponentId)
+u8 GetTrainerEncounterMusicId(enum TrainerId trainerOpponentId)
 {
     const struct Trainer *trainer;
     u64 generation;
-    u16 sanitizedTrainerId;
+    enum TrainerId sanitizedTrainerId;
     enum DifficultyLevel difficulty;
     if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
         return GetTrainerEncounterMusicIdInBattlePyramid(trainerOpponentId);

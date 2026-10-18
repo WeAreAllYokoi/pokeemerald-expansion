@@ -624,7 +624,7 @@ static u32 GetGameProgressFlags()
     return numGameProgressFlags;
 }
 
-u16 GetRematchTrainerIdVSSeeker(u16 trainerId)
+u16 GetRematchTrainerIdVSSeeker(enum TrainerId trainerId)
 {
     struct ADMG_TrainerRef ref;
     u16 selected;
@@ -955,7 +955,7 @@ static bool8 NativeVsSeekerActorCurrent(u32 index)
      || gSaveBlock1Ptr->objectEventTemplates[info->templateIndex].localId != info->localId
      || actor->visible > TRUE || (actor->visible && info->objectEventId == ADMG_REMATCH_NO_OBJECT))
         return FALSE;
-    u16 current;
+    enum TrainerId current;
     if (!ADMG_TryGetNativeRematchNpcTrainer(sVsSeeker->nativeContext.mapGroup,
             sVsSeeker->nativeContext.mapNum, info->localId, &current) || current != info->trainerIdx)
         return FALSE;
@@ -981,7 +981,7 @@ static bool8 NativeVsSeekerHasFightableTrainers(void)
     if (!NativeVsSeekerRosterCurrent()) {sVsSeeker->nativeFailed = TRUE; return FALSE;}
     for (u32 i = 0; i < sVsSeeker->trainerCount; ++i)
     {
-        u16 flag, family;
+        u32 flag, family;
         u8 position;
         bool8 fought;
         if (!sVsSeeker->nativeActors[i].visible) continue;
@@ -1090,7 +1090,7 @@ static bool8 NativeVsSeekerStartIdleMovements(void)
             const struct VsSeekerTrainerInfo *info = &sVsSeeker->trainerInfo[j];
             if (info->trainerIdx != sVsSeeker->trainerIdxArray[i]) continue;
             u8 position, movement = sVsSeeker->runningBehaviourEtcArray[i];
-            u16 family;
+            u32 family;
             if (!ADMG_TryGetNativeRematchProgress(info->trainerIdx, &family, &position)
              || !NativeVsSeekerActorCurrent(j)) return FALSE;
             if (info->objectEventId < OBJECT_EVENTS_COUNT)
@@ -1142,7 +1142,7 @@ ADMG_NATIVE_ENTRY bool8 ADMG_TryClearNativeRematchFamilyMovement(u32 trainerId)
 {
     struct ADMG_RematchContext context;
     u32 talked;
-    u16 family;
+    u32 family;
     u8 position;
     u8 objectIds[OBJECT_EVENT_TEMPLATES_COUNT];
     bool8 matches[OBJECT_EVENT_TEMPLATES_COUNT] = {FALSE};
@@ -1158,7 +1158,7 @@ ADMG_NATIVE_ENTRY bool8 ADMG_TryClearNativeRematchFamilyMovement(u32 trainerId)
         struct ObjectEventTemplate *saved = &gSaveBlock1Ptr->objectEventTemplates[i];
         if (!ADMG_TryGetDeclaredObjectTemplate(context.mapGroup, context.mapNum, saved->localId, &declared)) return FALSE;
         if (declared->trainerType != TRAINER_TYPE_NORMAL && declared->trainerType != TRAINER_TYPE_BURIED) continue;
-        u16 id = GetTrainerFlagFromScript(declared->script), npcFamily;
+        u32 id = GetTrainerFlagFromScript(declared->script), npcFamily;
         if (!ADMG_TryResolveTrainer(id, &ref)) return FALSE;
         if (ref.owner != ADMG_TRAINER_KANTO) continue;
         u64 generation = ADMG_BeginStateAccessCheck();

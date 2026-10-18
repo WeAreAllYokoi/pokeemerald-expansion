@@ -468,7 +468,7 @@ struct BattleFrontier
               //u8 padding1:4;
     /*0xCAA*/ u16 selectedPartyMons[MAX_FRONTIER_PARTY_SIZE];
     /*0xCB2*/ u16 curChallengeBattleNum; // Battle number / room number (Pike) / floor number (Pyramid)
-    /*0xCB4*/ u16 trainerIds[20];
+    /*0xCB4*/ enum TrainerId trainerIds[20];
     /*0xCDC*/ u32 winStreakActiveFlags;
     /*0xCE0*/ u16 towerWinStreaks[4][FRONTIER_LVL_MODE_COUNT];
     /*0xCF0*/ u16 towerRecordWinStreaks[4][FRONTIER_LVL_MODE_COUNT];
@@ -1229,5 +1229,6 @@ extern s32 gSpriteAllocs;
 #endif // TESTING
 
 #include "admg_registry.h"
+#include "admg_extended.h"
 
 #endif // GUARD_GLOBAL_H

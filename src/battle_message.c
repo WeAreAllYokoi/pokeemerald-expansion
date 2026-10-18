@@ -2995,7 +2995,7 @@ static bool8 ADMG_BattleNameActorValid(u32 trainerId)
     return ADMG_TryClassifyTrainerActor(trainerId, domain, ADMG_ACTOR_OPPONENT, &actor);
 }
 
-static const u8 *BattleStringGetOpponentNameByTrainerId(u16 trainerId, u8 *text, u8 multiplayerId, enum BattlerId battler)
+static const u8 *BattleStringGetOpponentNameByTrainerId(enum TrainerId trainerId, u8 *text, u8 multiplayerId, enum BattlerId battler)
 {
     if ((u32)battler >= MAX_BATTLERS_COUNT)
     { ADMG_StateAccessRejected((u32)battler, __func__); return sText_EmptyString4; }
@@ -3185,7 +3185,7 @@ static const u8 *BattleStringGetTrainerName(u8 *text, u8 multiplayerId, enum Bat
         return BattleStringGetOpponentName(text, multiplayerId, battler);
 }
 
-static const u8 *BattleStringGetOpponentClassByTrainerId(u16 trainerId)
+static const u8 *BattleStringGetOpponentClassByTrainerId(enum TrainerId trainerId)
 {
     if (!ADMG_BattleNameActorValid(trainerId)) return sText_EmptyString4;
 

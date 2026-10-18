@@ -67,7 +67,7 @@ static void SaveCurrentWinStreak(void);
 static void ValidateApprenticesChecksums(void);
 static void SetNextBattleTentOpponent(void);
 static void ClearBattleTowerRecord(struct EmeraldBattleTowerRecord *record);
-ADMG_NATIVE_ENTRY void FillTentTrainerParty_(u16 trainerId, u8 firstMonId, u8 monCount);
+ADMG_NATIVE_ENTRY void FillTentTrainerParty_(enum TrainerId trainerId, u8 firstMonId, u8 monCount);
 
 #include "data/battle_frontier/battle_frontier_trainer_mons.h"
 #include "data/battle_frontier/battle_frontier_trainers.h"
@@ -1025,7 +1025,7 @@ void PutNewBattleTowerRecord(struct EmeraldBattleTowerRecord *newRecordEm)
 
 void FillTentTrainerParty(u8 monsCount)
 {
-    u16 identity = TRAINER_BATTLE_PARAM.opponentA;
+    enum TrainerId identity = TRAINER_BATTLE_PARAM.opponentA;
     struct ADMG_FacilityPartyInput admitted;
     if (!ADMG_TryPrepareFacilityParty(identity, B_TRAINER_OPPONENT_A, monsCount, TRUE, 0, &admitted)) return;
     ZeroEnemyPartyMons();
@@ -1036,7 +1036,7 @@ void FillTentTrainerParty(u8 monsCount)
 
 static void GetOpponentIntroSpeech(void)
 {
-    u16 trainerId;
+    enum TrainerId trainerId;
 
     if (gSpecialVar_0x8005)
         trainerId = TRAINER_BATTLE_PARAM.opponentB;
@@ -1252,12 +1252,12 @@ static bool8 ADMG_TrySelectStoredPartnerPair(u32 identity, u32 kind, u32 offset)
     return TRUE;
 }
 
-ADMG_NATIVE_ENTRY void GetApprenticeMultiPartnerParty(u16 trainerId)
+ADMG_NATIVE_ENTRY void GetApprenticeMultiPartnerParty(enum TrainerId trainerId)
 {
     ADMG_TrySelectStoredPartnerPair(trainerId, ADMG_ACTOR_APPRENTICE, 0);
 }
 
-ADMG_NATIVE_ENTRY void GetRecordMixFriendMultiPartnerParty(u16 trainerId)
+ADMG_NATIVE_ENTRY void GetRecordMixFriendMultiPartnerParty(enum TrainerId trainerId)
 {
     ADMG_TrySelectStoredPartnerPair(trainerId, ADMG_ACTOR_RECORD_FRIEND, 2);
 }
@@ -1267,7 +1267,7 @@ ADMG_NATIVE_ENTRY void LoadMultiPartnerCandidatesData(void)
     s32 i, j, k;
     u32 spArray[BATTLE_TOWER_RECORD_COUNT > APPRENTICE_COUNT ? BATTLE_TOWER_RECORD_COUNT : APPRENTICE_COUNT];
     s32 r10;
-    u16 trainerId;
+    enum TrainerId trainerId;
     u16 monId;
     enum FrontierLevelMode lvlMode;
     u32 battleMode;
@@ -1280,7 +1280,7 @@ ADMG_NATIVE_ENTRY void LoadMultiPartnerCandidatesData(void)
     if (mapSave == NULL) { ADMG_StateAccessRejected(0, __func__); return; }
     if (!ADMG_TryCaptureTowerContext(&save, &lvlMode, &battleMode)) return;
     if (gSaveBlock1Ptr != mapSave) { ADMG_StateAccessRejected(battleMode, __func__); return; }
-    u16 ids[ARRAY_COUNT(save->frontier.trainerIds)];
+    enum TrainerId ids[ARRAY_COUNT(save->frontier.trainerIds)];
     u16 graphics[9];
     u16 temp[ARRAY_COUNT(gFrontierTempParty)];
     if (ARRAY_COUNT(mapSave->objectEventTemplates) < ARRAY_COUNT(graphics))
@@ -1523,7 +1523,7 @@ static bool8 ADMG_TryCapturePartnerDescription(u32 identity, u32 monId, u32 mess
     return TRUE;
 }
 
-ADMG_NATIVE_ENTRY void GetPotentialPartnerMoveAndSpecies(u16 trainerId, u16 monId)
+ADMG_NATIVE_ENTRY void GetPotentialPartnerMoveAndSpecies(enum TrainerId trainerId, u16 monId)
 {
     struct ADMG_PartnerDescription input;
     if (!ADMG_TryCapturePartnerDescription(trainerId, monId, gSpecialVar_0x8005, &input)) return;
@@ -1561,7 +1561,7 @@ ADMG_NATIVE_ENTRY void ShowPartnerCandidateMessage(void)
     if (save == NULL || talked < 2 || talked - 2 >= 8 || message > PARTNER_MSGID_REJECT)
     { ADMG_StateAccessRejected(talked, __func__); return; }
     u32 slot = talked - 2;
-    u16 trainerId = save->frontier.trainerIds[slot];
+    enum TrainerId trainerId = save->frontier.trainerIds[slot];
     struct ADMG_TrainerActorRef actor;
     if (!ADMG_TryClassifyTrainerActor(trainerId, ADMG_ACTOR_FACILITY, ADMG_ACTOR_PARTNER, &actor)) return;
     if (actor.kind != ADMG_ACTOR_FRONTIER && actor.kind != ADMG_ACTOR_RECORD_FRIEND
@@ -1650,7 +1650,7 @@ ADMG_NATIVE_ENTRY void ShowPartnerCandidateMessage(void)
         GetPotentialPartnerMoveAndSpecies(trainerId, monId);
         break;
     case PARTNER_MSGID_ACCEPT:
-        u16 selectedPair[2];
+        enum TrainerId selectedPair[2];
         if (trainerId < FRONTIER_TRAINERS_COUNT)
         {
             if (9 + slot * 2 >= ARRAY_COUNT(save->frontier.trainerIds))
@@ -1781,7 +1781,7 @@ ADMG_NATIVE_ENTRY void LoadLinkMultiOpponentsData(void)
     case 1:
         if ((GetBlockReceivedStatus() & 3) == 3)
         {
-            u16 selected[ARRAY_COUNT(save->frontier.trainerIds)];
+            enum TrainerId selected[ARRAY_COUNT(save->frontier.trainerIds)];
             for (u32 slot = 0; slot < ARRAY_COUNT(selected); ++slot) selected[slot] = save->frontier.trainerIds[slot];
 
             if (gBlockRecvBuffer[0][0] > gBlockRecvBuffer[1][0])
@@ -1869,7 +1869,7 @@ ADMG_NATIVE_ENTRY void SetMultiPartnerGfx(void)
     struct SaveBlock2 *save = gSaveBlock2Ptr;
     if (save == NULL) { ADMG_StateAccessRejected(0, __func__); return; }
     struct ADMG_TrainerActorRef actor;
-    u16 identity = save->frontier.trainerIds[17];
+    enum TrainerId identity = save->frontier.trainerIds[17];
     if (!ADMG_TryClassifyTrainerActor(identity, ADMG_ACTOR_FACILITY, ADMG_ACTOR_PARTNER, &actor)) return;
     // 0xF below means use VAR_OBJ_GFX_ID_E.
     SetBattleFacilityTrainerGfxId(identity, 0xF);
@@ -1884,7 +1884,7 @@ ADMG_NATIVE_ENTRY void SetTowerInterviewData(void)
     if (mode != FRONTIER_MODE_SINGLES) return;
     if (save == NULL || gSaveBlock2Ptr != save)
     { ADMG_StateAccessRejected(mode, __func__); return; }
-    u16 identity = TRAINER_BATTLE_PARAM.opponentA;
+    enum TrainerId identity = TRAINER_BATTLE_PARAM.opponentA;
     struct ADMG_TrainerActorRef actor;
     // The existing name/language interfaces also support disjoint native Kanto
     // content. Preserve that caller surface without interpreting facility
@@ -2211,7 +2211,7 @@ static void ValidateApprenticesChecksums(void)
     }
 }
 
-ADMG_NATIVE_ENTRY void GetBattleTowerTrainerLanguage(u8 *dst, u16 trainerId)
+ADMG_NATIVE_ENTRY void GetBattleTowerTrainerLanguage(u8 *dst, enum TrainerId trainerId)
 {
     if (dst == NULL) { ADMG_StateAccessRejected(trainerId, __func__); return; }
     struct ADMG_TrainerActorRef actor;
@@ -2420,7 +2420,7 @@ static void SetNextBattleTentOpponent(void)
        gSaveBlock2Ptr->frontier.trainerIds[gSaveBlock2Ptr->frontier.curChallengeBattleNum] = TRAINER_BATTLE_PARAM.opponentA;
 }
 
-ADMG_NATIVE_ENTRY void FillTentTrainerParty_(u16 trainerId, u8 firstMonId, u8 monCount)
+ADMG_NATIVE_ENTRY void FillTentTrainerParty_(enum TrainerId trainerId, u8 firstMonId, u8 monCount)
 {
     /* This original private entry reads the opponent-A transport authority;
      * its trainerId argument was unused and stays non-authoritative. */

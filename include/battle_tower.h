@@ -40,7 +40,7 @@ void TryHideBattleTowerReporter(void);
 bool32 RubyBattleTowerRecordToEmerald(struct RSBattleTowerRecord *src, struct EmeraldBattleTowerRecord *dst);
 bool32 EmeraldBattleTowerRecordToRuby(struct EmeraldBattleTowerRecord *src, struct RSBattleTowerRecord *dst);
 void CalcApprenticeChecksum(struct Apprentice *apprentice);
-void GetBattleTowerTrainerLanguage(u8 *dst, u16 trainerId);
+void GetBattleTowerTrainerLanguage(u8 *dst, enum TrainerId trainerId);
 bool8 ADMG_TrySelectFacilityTrainerTables(bool8 tent, const struct BattleFrontierTrainer **trainers, const struct TrainerMon **mons, u32 *count);
 bool8 ADMG_TryGetFacilityTrainerRow(u32 trainerId, const struct BattleFrontierTrainer **trainer);
 bool8 ADMG_TryGetFacilityTrainerRowFromTable(const struct BattleFrontierTrainer *table, u32 count, u32 trainerId, const struct BattleFrontierTrainer **trainer);
@@ -75,7 +75,7 @@ ADMG_NATIVE_ENTRY bool8 ADMG_TryAdmitFacilityParty(u32 identity, u32 target, u32
 bool8 ADMG_TryPrepareFacilityParty(u32 identity, u32 target, u32 count, bool8 tent, u32 firstMon, struct ADMG_FacilityPartyInput *input);
 const struct ADMG_FacilityPartyInput *ADMG_GetBorrowedFacilityParty(void);
 const struct ADMG_FacilityPartyInput *ADMG_BorrowFacilityParty(const struct ADMG_FacilityPartyInput *input);
-void ADMG_FillFacilityPartyFromArgs(u16 identity, enum BattleTrainer target, u8 count, bool8 tent, u8 firstMon);
+void ADMG_FillFacilityPartyFromArgs(enum TrainerId identity, enum BattleTrainer target, u8 count, bool8 tent, u8 firstMon);
 
 u8 SetTentPtrsGetLevel(void);
 void TrySetLinkBattleTowerEnemyPartyLevel(void);

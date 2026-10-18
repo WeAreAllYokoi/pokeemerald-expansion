@@ -320,7 +320,7 @@ static u32 OpponentGetTrainerPicId(enum BattlerId battlerId)
         TRAINER_BATTLE_PARAM.opponentB, gPartnerTrainerId, &snapshot)) return 0;
     bool8 useSecond = (gBattleTypeFlags & (BATTLE_TYPE_TWO_OPPONENTS | BATTLE_TYPE_TOWER_LINK_MULTI))
         && !BATTLE_TWO_VS_ONE_OPPONENT && battlerId != 1;
-    u16 identity = useSecond ? TRAINER_BATTLE_PARAM.opponentB : TRAINER_BATTLE_PARAM.opponentA;
+    enum TrainerId identity = useSecond ? TRAINER_BATTLE_PARAM.opponentB : TRAINER_BATTLE_PARAM.opponentA;
     u32 domain = gBattleTypeFlags & (BATTLE_TYPE_FRONTIER | BATTLE_TYPE_TRAINER_HILL)
         ? ADMG_ACTOR_FACILITY : ADMG_ACTOR_CONTENT;
     if (domain == ADMG_ACTOR_CONTENT

@@ -95,7 +95,7 @@ static void InitPyramidBagItems(enum FrontierLevelMode lvlMode);
 static u8 GetPyramidFloorTemplateId(void);
 static u8 GetPostBattleDirectionHintTextIndex(int *, u8, u8);
 static void Task_SetPyramidFloorPalette(u8);
-static void MarkPyramidTrainerAsBattled(u16);
+static void MarkPyramidTrainerAsBattled(enum TrainerId);
 static void GetPyramidFloorLayoutOffsets(u8 *);
 static void GetPyramidEntranceAndExitSquareIds(u8 *, u8 *);
 static void SetPyramidObjectPositionsUniformly(u8);
@@ -1078,7 +1078,7 @@ static void ShowPostBattleHintText(void)
     const struct BattleFrontierTrainer *table = gFacilityTrainers;
     struct ObjectEventTemplate *events = save1->objectEventTemplates;
     u64 generation = ADMG_BeginStateAccessCheck();
-    u16 trainerId = LocalIdToPyramidTrainerId(localId);
+    enum TrainerId trainerId = LocalIdToPyramidTrainerId(localId);
     const struct BattleFrontierTrainer *trainer;
     if (!ADMG_EndStateAccessCheck(generation) || !ADMG_TryGetActiveFacilityTrainerRow(trainerId, &trainer)) return;
 
@@ -1384,12 +1384,12 @@ static bool8 ADMG_TryGetPyramidLocalSlot(u32 localId, u32 *slot)
     return TRUE;
 }
 
-u16 LocalIdToPyramidTrainerId(u8 localId)
+enum TrainerId LocalIdToPyramidTrainerId(u8 localId)
 {
     u32 slot;
     const struct BattleFrontierTrainer *trainer;
     if (!ADMG_TryGetPyramidLocalSlot(localId, &slot)) return 0;
-    u16 identity = gSaveBlock2Ptr->frontier.trainerIds[slot];
+    enum TrainerId identity = gSaveBlock2Ptr->frontier.trainerIds[slot];
     if (!ADMG_TryGetActiveFacilityTrainerRow(identity, &trainer)) return 0;
     return identity;
 }
@@ -1460,7 +1460,7 @@ static bool8 ADMG_TryCapturePyramidMarking(bool8 two, u32 a, u32 b, struct ADMG_
 bool8 ADMG_TryAdmitPyramidTrainerMarking(bool8 two)
 {
     struct ADMG_PyramidMarkingInput input;
-    u16 a = TRAINER_BATTLE_PARAM.opponentA, b = TRAINER_BATTLE_PARAM.opponentB;
+    enum TrainerId a = TRAINER_BATTLE_PARAM.opponentA, b = TRAINER_BATTLE_PARAM.opponentB;
     if (!ADMG_TryCapturePyramidMarking(two, a, b, &input)) return FALSE;
     if (TRAINER_BATTLE_PARAM.opponentA != a || (two && TRAINER_BATTLE_PARAM.opponentB != b))
     { ADMG_StateAccessRejected(a, __func__); return FALSE; }
@@ -1469,7 +1469,7 @@ bool8 ADMG_TryAdmitPyramidTrainerMarking(bool8 two)
 
 void MarkApproachingPyramidTrainersAsBattled(void)
 {
-    u16 a = TRAINER_BATTLE_PARAM.opponentA, b = TRAINER_BATTLE_PARAM.opponentB;
+    enum TrainerId a = TRAINER_BATTLE_PARAM.opponentA, b = TRAINER_BATTLE_PARAM.opponentB;
     struct ADMG_PyramidMarkingInput input;
     if (!ADMG_TryCapturePyramidMarking((gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS) != 0, a, b, &input)) return;
     typeof(input.save2->frontier.pyramidTrainerFlags) flags = input.save2->frontier.pyramidTrainerFlags;
@@ -1499,7 +1499,7 @@ ADMG_reject:
     gSelectedObjectEvent = input.objectA;
 }
 
-static void MarkPyramidTrainerAsBattled(u16 trainerId)
+static void MarkPyramidTrainerAsBattled(enum TrainerId trainerId)
 {
     struct ADMG_PyramidMarkingInput input;
     if (!ADMG_TryCapturePyramidMarking(FALSE, trainerId, 0, &input)) return;
@@ -1843,7 +1843,7 @@ void SoftResetInBattlePyramid(void)
         DoSoftReset();
 }
 
-void CopyPyramidTrainerSpeechBefore(u16 trainerId)
+void CopyPyramidTrainerSpeechBefore(enum TrainerId trainerId)
 {
     const struct BattleFrontierTrainer *trainer;
     if (!ADMG_TryGetActiveFacilityTrainerRow(trainerId, &trainer)) return;
@@ -1851,7 +1851,7 @@ void CopyPyramidTrainerSpeechBefore(u16 trainerId)
     FrontierSpeechToString(trainer->speechBefore);
 }
 
-u8 GetTrainerEncounterMusicIdInBattlePyramid(u16 trainerId)
+u8 GetTrainerEncounterMusicIdInBattlePyramid(enum TrainerId trainerId)
 {
     const struct BattleFrontierTrainer *trainer;
     if (!ADMG_TryGetActiveFacilityTrainerRow(trainerId, &trainer)) return TRAINER_ENCOUNTER_MUSIC_MALE;
@@ -1885,7 +1885,7 @@ static u16 GetUniqueTrainerId(u8 objectEventId)
     u32 streak = save->frontier.pyramidWinStreaks[level];
     u32 challenge = streak / FRONTIER_STAGES_PER_CHALLENGE;
     u32 floor = save->frontier.curChallengeBattleNum;
-    u16 previous[MAX_PYRAMID_TRAINERS];
+    enum TrainerId previous[MAX_PYRAMID_TRAINERS];
     for (u32 i = 0; i < objectEventId; i++) previous[i] = save->frontier.trainerIds[i];
     /* Preserve the original native argument narrowing and floor-seven rule. */
     u8 nativeChallenge = challenge + (floor == FRONTIER_STAGES_PER_CHALLENGE);

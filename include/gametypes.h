@@ -67,4 +67,11 @@ typedef mapsec_u8_t metloc_u8_t;
 // Keep nature IDs 32-bit, like species and move IDs
 typedef u32 nature_t;
 
+// Trainer IDs (TRAINER_* in constants/opponents.h, Kanto trainers, partners and the special IDs of other battle
+// kinds) are content IDs too. The enum only gives them a 32-bit type of their own, so a narrowing is visible.
+enum TrainerId
+{
+    TRAINER_ID_MAX = 0xFFFFFFFF,
+};
+
 #endif //GUARD_GAMETYPES_H

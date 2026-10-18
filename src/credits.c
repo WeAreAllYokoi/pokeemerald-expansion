@@ -66,7 +66,7 @@ enum {
 
 struct CreditsData
 {
-    u16 monToShow[NUM_MON_SLIDES]; // List of Pokémon species ids that will show during the credits
+    enum NationalDexOrder monToShow[NUM_MON_SLIDES]; // National Pokédex numbers of the Pokémon shown during the credits
     u16 imgCounter; //how many mon images have been shown
     u16 nextImgPos; //if the next image spawns left/center/right
     u16 currShownMon; //index into monToShow

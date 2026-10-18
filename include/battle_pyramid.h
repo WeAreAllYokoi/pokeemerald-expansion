@@ -4,7 +4,7 @@
 #include "constants/battle_pyramid.h"
 
 void CallBattlePyramidFunction(void);
-u16 LocalIdToPyramidTrainerId(u8 localId);
+enum TrainerId LocalIdToPyramidTrainerId(u8 localId);
 bool8 GetBattlePyramidTrainerFlag(u8 eventId);
 /* Internal admission only; no marking or persistent layout. */
 bool8 ADMG_TryAdmitPyramidTrainerMarking(bool8 two);
@@ -15,8 +15,8 @@ u8 CurrentBattlePyramidLocation(void);
 bool8 InBattlePyramid(void);
 void PausePyramidChallenge(void);
 void SoftResetInBattlePyramid(void);
-void CopyPyramidTrainerSpeechBefore(u16 trainerId);
-u8 GetTrainerEncounterMusicIdInBattlePyramid(u16 trainerId);
+void CopyPyramidTrainerSpeechBefore(enum TrainerId trainerId);
+u8 GetTrainerEncounterMusicIdInBattlePyramid(enum TrainerId trainerId);
 void GenerateBattlePyramidFloorLayout(u16 *backupMapData, bool8 setPlayerPosition);
 void LoadBattlePyramidObjectEventTemplates(void);
 void LoadBattlePyramidFloorObjectEventScripts(void);

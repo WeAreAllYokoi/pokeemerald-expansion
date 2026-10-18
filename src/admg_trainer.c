@@ -4,6 +4,9 @@
 #include "admg_trainer.h"
 #include "constants/battle.h"
 #include "constants/flags.h"
+#include "admg_extended.h"
+
+const struct Trainer gADMG_AddedTrainers[DIFFICULTY_COUNT] = {0};
 
 static bool8 ADMG_RejectTrainer(u32 identifier, const char *operation)
 {
@@ -14,10 +17,15 @@ static bool8 ADMG_RejectTrainer(u32 identifier, const char *operation)
 ADMG_NATIVE_ENTRY bool8 ADMG_TryResolveTrainer(u32 trainerId, struct ADMG_TrainerRef *ref)
 {
     struct ADMG_TrainerRef resolved;
-    if (ref == NULL || trainerId > 0xFFFF)
+    if (ref == NULL)
         return ADMG_RejectTrainer(trainerId, __func__);
     resolved.canonicalId = trainerId;
-    if (trainerId < TRAINERS_COUNT_EMERALD)
+    if (trainerId >= FIRST_ADDED_TRAINER && trainerId - FIRST_ADDED_TRAINER < RUNTIME_ADDED_TRAINERS_COUNT)
+    {
+        resolved.owner = ADMG_TRAINER_ADDED;
+        resolved.nativeIndex = trainerId - FIRST_ADDED_TRAINER;
+    }
+    else if (trainerId < TRAINERS_COUNT_EMERALD)
     {
         resolved.owner = ADMG_TRAINER_HOENN;
         resolved.nativeIndex = trainerId;
@@ -61,6 +69,11 @@ ADMG_NATIVE_ENTRY bool8 ADMG_TryGetOwnedTrainer(u32 owner, u32 index, u32 diffic
         if (index >= PARTNER_COUNT)
             return ADMG_RejectTrainer(index, __func__);
         selected = &gBattlePartners[difficulty][index];
+        break;
+    case ADMG_TRAINER_ADDED:
+        if (index >= RUNTIME_ADDED_TRAINERS_COUNT)
+            return ADMG_RejectTrainer(index, __func__);
+        selected = &gADMG_AddedTrainers[difficulty * RUNTIME_ADDED_TRAINERS_COUNT + index];
         break;
     default:
         return ADMG_RejectTrainer(owner, __func__);
@@ -116,11 +129,20 @@ ADMG_NATIVE_ENTRY bool8 ADMG_TryGetTrainerStruct(u32 trainerId, const struct Tra
     return TRUE;
 }
 
-ADMG_NATIVE_ENTRY bool8 ADMG_TryGetTrainerDefeatFlagId(u32 trainerId, u16 *flagId)
+ADMG_NATIVE_ENTRY bool8 ADMG_TryGetTrainerDefeatFlagId(u32 trainerId, u32 *flagId)
 {
     u32 first, index, count;
-    if (flagId == NULL || trainerId > 0xFFFF)
+    u16 baseFlagId;
+    if (flagId == NULL)
         return ADMG_RejectTrainer(trainerId, __func__);
+    if (trainerId >= FIRST_ADDED_TRAINER)
+    {
+        /* An added trainer's defeat flag is in the extended flag range (admg_extended.h). */
+        if (trainerId - FIRST_ADDED_TRAINER >= RUNTIME_ADDED_TRAINERS_COUNT)
+            return ADMG_RejectTrainer(trainerId, __func__);
+        *flagId = ADMG_ADDED_TRAINER_FLAGS_START + (trainerId - FIRST_ADDED_TRAINER);
+        return TRUE;
+    }
     if (trainerId < MAX_TRAINERS_COUNT_EMERALD)
     {
         first = TRAINER_FLAGS_START;
@@ -135,5 +157,8 @@ ADMG_NATIVE_ENTRY bool8 ADMG_TryGetTrainerDefeatFlagId(u32 trainerId, u16 *flagI
     }
     else
         return ADMG_RejectTrainer(trainerId, __func__);
-    return ADMG_TryGetIndexedFlagId(first, index, count, 1, flagId);
+    if (!ADMG_TryGetIndexedFlagId(first, index, count, 1, &baseFlagId))
+        return FALSE;
+    *flagId = baseFlagId;
+    return TRUE;
 }

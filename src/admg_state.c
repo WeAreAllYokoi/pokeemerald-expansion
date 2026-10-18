@@ -89,7 +89,7 @@ void ADMG_StateAccessRejected(u32 id, const char *operation)
 
 bool8 ADMG_IsFlagIdValid(u32 id)
 {
-    return id <= 0xFFFF && (id == 0 || GetFlagPointer((u16)id) != NULL);
+    return id == 0 || GetFlagPointer(id) != NULL;
 }
 
 bool8 ADMG_TryReadFlag(u32 id, bool8 *value)
@@ -99,7 +99,7 @@ bool8 ADMG_TryReadFlag(u32 id, bool8 *value)
         ADMG_StateAccessRejected(id, "flag read");
         return FALSE;
     }
-    *value = FlagGet((u16)id);
+    *value = FlagGet(id);
     return TRUE;
 }
 

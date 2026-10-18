@@ -43,7 +43,7 @@ static bool8 ADMG_RunPartnerParty(u32 trainerId, bool8 admissionOnly)
     struct Trainer admittedPartner;
     const struct BattleFrontierTrainer *admittedFacility = NULL;
     const struct TrainerMon *admittedMons[FRONTIER_MULTI_PARTY_SIZE] = {0};
-    u16 admittedSlots[FRONTIER_MULTI_PARTY_SIZE] = {0};
+    enum TrainerId admittedSlots[FRONTIER_MULTI_PARTY_SIZE] = {0};
     bool8 admittedGender[FRONTIER_MULTI_PARTY_SIZE] = {0};
     struct EmeraldBattleTowerRecord admittedRecord;
     struct Apprentice admittedApprentice;
@@ -217,7 +217,7 @@ bool8 ADMG_TryAdmitPartnerParty(u32 trainerId)
     return ADMG_RunPartnerParty(trainerId, TRUE);
 }
 
-ADMG_NATIVE_ENTRY void FillPartnerParty(u16 trainerId)
+ADMG_NATIVE_ENTRY void FillPartnerParty(enum TrainerId trainerId)
 {
     ADMG_RunPartnerParty(trainerId, FALSE);
 }

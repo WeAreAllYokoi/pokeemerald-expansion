@@ -36,12 +36,12 @@ typedef union PACKED TrainerBattleParameter
         u8 earlyRival:1;
         u8 skipFlagCheck:1;
         u8 objEventLocalIdA;
-        u16 opponentA;
+        enum TrainerId opponentA;
         u8 *introTextA;
         u8 *defeatTextA;
         u8 *battleScriptRetAddrA;
         u8 objEventLocalIdB;
-        u16 opponentB;
+        enum TrainerId opponentB;
         u8 *introTextB;
         u8 *defeatTextB;
         u8 *battleScriptRetAddrB;
@@ -55,7 +55,7 @@ typedef union PACKED TrainerBattleParameter
 extern const struct RematchTrainer gRematchTable[REMATCH_TABLE_ENTRIES];
 
 extern TrainerBattleParameter gTrainerBattleParameter;
-extern u16 gPartnerTrainerId;
+extern enum TrainerId gPartnerTrainerId;
 
 #define TRAINER_BATTLE_PARAM gTrainerBattleParameter.params
 
@@ -127,7 +127,7 @@ void IncrementRematchStepCounter(void);
 void TryUpdateRandomTrainerRematches(u16 mapGroup, u16 mapNum);
 u16 GetLastBeatenRematchTrainerId(u16 trainerId);
 bool8 ShouldTryRematchBattle(void);
-bool8 ShouldTryRematchBattleForTrainerId(u16 trainerId);
+bool8 ShouldTryRematchBattleForTrainerId(enum TrainerId trainerId);
 bool8 IsTrainerReadyForRematch(void);
 void ShouldTryGetTrainerScript(void);
 u16 CountMaxPossibleRematch(u16 trainerId);
@@ -138,15 +138,15 @@ void InitTrainerBattleParameter(void);
 
 void DoStandardWildBattle_Debug(void);
 void BattleSetup_StartTrainerBattle_Debug(void);
-s32 TrainerIdToRematchTableId(const struct RematchTrainer *table, u16 trainerId);
-s32 FirstBattleTrainerIdToRematchTableId(const struct RematchTrainer *table, u16 trainerId);
-u16 GetRematchTrainerIdFromTable(const struct RematchTrainer *table, u16 firstBattleTrainerId);
+s32 TrainerIdToRematchTableId(const struct RematchTrainer *table, enum TrainerId trainerId);
+s32 FirstBattleTrainerIdToRematchTableId(const struct RematchTrainer *table, enum TrainerId trainerId);
+u16 GetRematchTrainerIdFromTable(const struct RematchTrainer *table, enum TrainerId firstBattleTrainerId);
 u8 GetRivalBattleFlags(void);
 
 void CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer *trainer);
 
 /* Retained named selector; compilation does not enable automatic rematches. */
-u16 GetRematchTrainerId(u16 trainerId);
+u16 GetRematchTrainerId(enum TrainerId trainerId);
 
 /* Native family cleanup before the return fade; old dispatch remains named. */
 void ADMG_ClearNativeTrainerBattleRematches(void);

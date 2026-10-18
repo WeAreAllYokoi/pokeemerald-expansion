@@ -25,11 +25,11 @@ ADMG_NATIVE_ENTRY u32 VarGet(u16 id);
 ADMG_NATIVE_ENTRY u32 VarGetIfExist(u16 id);
 ADMG_NATIVE_ENTRY bool8 VarSet(u16 id, u32 value);
 ADMG_NATIVE_ENTRY u32 VarGetObjectEventGraphicsId(u8 id);
-ADMG_NATIVE_ENTRY u8 *GetFlagPointer(u16 id);
-ADMG_NATIVE_ENTRY u8 FlagSet(u16 id);
-ADMG_NATIVE_ENTRY u8 FlagToggle(u16 id);
-ADMG_NATIVE_ENTRY u8 FlagClear(u16 id);
-ADMG_NATIVE_ENTRY bool8 FlagGet(u16 id);
+ADMG_NATIVE_ENTRY u8 *GetFlagPointer(u32 id);
+ADMG_NATIVE_ENTRY u8 FlagSet(u32 id);
+ADMG_NATIVE_ENTRY u8 FlagToggle(u32 id);
+ADMG_NATIVE_ENTRY u8 FlagClear(u32 id);
+ADMG_NATIVE_ENTRY bool8 FlagGet(u32 id);
 
 extern u32 gSpecialVar_0x8000;
 extern u32 gSpecialVar_0x8001;

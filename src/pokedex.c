@@ -4491,6 +4491,20 @@ s8 GetSetPokedexFlag(enum NationalDexOrder nationalDexNo, u8 caseID)
     u32 index, bit, mask;
     s8 retVal = 0;
 
+    if (nationalDexNo >= FIRST_ADDED_NATIONAL_DEX)
+    {
+        // A number added at run time: its flags are in the extended stores
+        enum ADMG_ExtendedStore store = (caseID == FLAG_GET_SEEN || caseID == FLAG_SET_SEEN) ? ADMG_EXTENDED_DEX_SEEN : ADMG_EXTENDED_DEX_CAUGHT;
+        u8 *byte = ADMG_GetExtendedBitPointer(store, nationalDexNo - FIRST_ADDED_NATIONAL_DEX);
+        if (byte == NULL)
+            return 0;
+        mask = 1 << ((nationalDexNo - FIRST_ADDED_NATIONAL_DEX) % 8);
+        if (caseID == FLAG_GET_SEEN || caseID == FLAG_GET_CAUGHT)
+            return (*byte & mask) != 0;
+        *byte |= mask;
+        return 0;
+    }
+
     nationalDexNo--;
     index = nationalDexNo / 8;
     bit = nationalDexNo % 8;
@@ -4518,9 +4532,10 @@ s8 GetSetPokedexFlag(enum NationalDexOrder nationalDexNo, u8 caseID)
 u16 GetNationalPokedexCount(u8 caseID)
 {
     u16 count = 0;
-    u16 i;
+    u32 i;
 
-    for (i = 0; i < NATIONAL_DEX_COUNT; i++)
+    // National Pokédex numbers are dense: the added ones follow the base game's
+    for (i = 0; i < RUNTIME_NATIONAL_DEX_COUNT - 1; i++)
     {
         switch (caseID)
         {

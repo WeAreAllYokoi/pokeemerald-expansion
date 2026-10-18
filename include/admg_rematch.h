@@ -11,8 +11,8 @@
  * The original eligibility provider and explicit selection are separate.
  * A caller may supply every stage bit without imposing campaign predicates. */
 extern const u16 gADMG_KantoRematchFamilies[ADMG_NATIVE_REMATCH_FAMILIES][ADMG_NATIVE_REMATCH_SLOTS];
-ADMG_NATIVE_ENTRY bool8 ADMG_TryFindNativeRematch(u32 trainerId, bool8 baseOnly, u16 *family, u8 *position);
-ADMG_NATIVE_ENTRY bool8 ADMG_TryGetNativeRematchProgress(u32 baseTrainerId, u16 *family, u8 *position);
+ADMG_NATIVE_ENTRY bool8 ADMG_TryFindNativeRematch(u32 trainerId, bool8 baseOnly, u32 *family, u8 *position);
+ADMG_NATIVE_ENTRY bool8 ADMG_TryGetNativeRematchProgress(u32 baseTrainerId, u32 *family, u8 *position);
 ADMG_NATIVE_ENTRY bool8 ADMG_TrySelectNativeRematch(u32 baseTrainerId, u32 permittedStages, u16 *trainerId);
 ADMG_NATIVE_ENTRY bool8 ADMG_TryGetNativeRematchTrainer(u32 baseTrainerId, u16 *trainerId);
 
@@ -31,6 +31,6 @@ ADMG_NATIVE_ENTRY bool8 ADMG_TryGetRematchNpcTemplate(u32 mapGroup, u32 mapNum, 
 ADMG_NATIVE_ENTRY bool8 ADMG_TryGetDeclaredRematchNpcTemplate(u32 mapGroup, u32 mapNum, u32 localId,
                                                           const struct ObjectEventTemplate **template);
 ADMG_NATIVE_ENTRY bool8 ADMG_TryGetNativeRematchNpcTrainer(u32 mapGroup, u32 mapNum, u32 localId,
-                                                       u16 *trainerId);
+                                                       enum TrainerId *trainerId);
 
 #endif

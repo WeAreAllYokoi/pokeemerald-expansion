@@ -20,7 +20,7 @@ struct ADMG_TrainerActorRef { u16 identifier; u16 index; enum ADMG_TrainerActorK
 bool8 ADMG_TryClassifyTrainerActor(u32 identifier, u32 domain, u32 role, struct ADMG_TrainerActorRef *actor);
 bool8 ADMG_TryValidateOrdinaryTrainerOperands(u32 opponentA, u32 opponentB);
 /* Internal ephemeral operand snapshot; no save representation or public SDK. */
-struct ADMG_BattleTrainerActors { u32 flags; u16 opponentA, opponentB, partner; u8 uses; };
+struct ADMG_BattleTrainerActors { u32 flags; enum TrainerId opponentA, opponentB, partner; u8 uses; };
 bool8 ADMG_TryCaptureBattleTrainerActors(u32 flags, u32 opponentA, u32 opponentB, u32 partner,
     struct ADMG_BattleTrainerActors *snapshot);
 bool8 ADMG_BattleTrainerActorsCurrent(const struct ADMG_BattleTrainerActors *snapshot,

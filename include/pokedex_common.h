@@ -105,7 +105,7 @@ enum
 
 struct PokedexListItem
 {
-    u16 dexNum;
+    enum NationalDexOrder dexNum;
     u16 seen:1;
     u16 owned:1;
 };

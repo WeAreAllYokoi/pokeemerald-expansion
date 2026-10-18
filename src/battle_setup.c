@@ -91,19 +91,19 @@ static void SaveChangesToPlayerParty(void);
 static void HandleBattleVariantEndParty(void);
 static void CB2_EndTrainerBattle(void);
 static bool32 IsPlayerDefeated(u32 battleOutcome);
-u16 GetRematchTrainerId(u16 trainerId);
+u16 GetRematchTrainerId(enum TrainerId trainerId);
 static void RegisterTrainerInMatchCall(void);
 static void HandleRematchVarsOnBattleEnd(void);
 static const u8 *GetIntroSpeechOfApproachingTrainer(void);
 static const u8 *GetTrainerCantBattleSpeech(void);
-static void CreateNPCTrainerParty(struct Pokemon *party, u16 trainerNum);
+static void CreateNPCTrainerParty(struct Pokemon *party, enum TrainerId trainerNum);
 static void DoTrainerBattle(void);
 static bool8 IsNativeTrainerContent(u32 trainerId);
 static bool8 IsNativeTrainerBattleContent(u32 trainerId);
 static bool8 NativeBattleDefeatPairValid(void);
 
 EWRAM_DATA TrainerBattleParameter gTrainerBattleParameter = {0};
-EWRAM_DATA u16 gPartnerTrainerId = 0;
+EWRAM_DATA enum TrainerId gPartnerTrainerId = 0;
 EWRAM_DATA static u8 *sTrainerBattleEndScript = NULL;
 EWRAM_DATA static bool8 sShouldCheckTrainerBScript = FALSE;
 EWRAM_DATA static u8 sNoOfPossibleTrainerRetScripts = 0;
@@ -253,14 +253,17 @@ const struct RematchTrainer gRematchTable[REMATCH_TABLE_ENTRIES] =
 /* Original task state/transition stay in data[0..1]; the rest is transient. */
 enum ADMG_FieldBattleTaskData
 {
-    ADMG_FB_FLAGS = 2, ADMG_FB_A = 4, ADMG_FB_B, ADMG_FB_PARTNER,
-    ADMG_FB_USES, ADMG_FB_SAVED_CALLBACK, ADMG_FB_TAG = 10,
+    ADMG_FB_FLAGS = 2, ADMG_FB_USES = 4, ADMG_FB_PARTNER = 6, // the partner's trainer ID, as a word
+    ADMG_FB_SAVED_CALLBACK = 8, ADMG_FB_TAG = 10,
 };
+
+// The opponents' trainer IDs are in the task's content slots.
+enum { ADMG_FB_CONTENT_A, ADMG_FB_CONTENT_B };
 
 static void Task_BattleStart(u8 taskId);
 static void Task_BattleStart_Debug(u8 taskId);
 
-static bool8 ADMG_TrySelectFieldBattlePartner(bool8 prepareFollower, u16 *identity, bool8 *deferred)
+static bool8 ADMG_TrySelectFieldBattlePartner(bool8 prepareFollower, enum TrainerId *identity, bool8 *deferred)
 {
     *deferred = prepareFollower && (gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER)
         && FollowerNPCIsBattlePartner();
@@ -277,7 +280,7 @@ static bool8 ADMG_TrySelectFieldBattlePartner(bool8 prepareFollower, u16 *identi
 
 static bool8 ADMG_FieldBattleActorsCurrent(const struct ADMG_BattleTrainerActors *snapshot)
 {
-    u16 partner; bool8 deferred;
+    enum TrainerId partner; bool8 deferred;
     if (!ADMG_TrySelectFieldBattlePartner(TRUE, &partner, &deferred)) return FALSE;
     return ADMG_BattleTrainerActorsCurrent(snapshot, gBattleTypeFlags,
         TRAINER_BATTLE_PARAM.opponentA, TRAINER_BATTLE_PARAM.opponentB, partner);
@@ -299,9 +302,9 @@ static bool8 ADMG_FieldBattleContextCurrent(u8 taskId, u64 generation)
     { ADMG_StateAccessRejected((u16)data[0], __func__); return FALSE; }
     struct ADMG_BattleTrainerActors snapshot;
     snapshot.flags = GetWordTaskArg(taskId, ADMG_FB_FLAGS);
-    snapshot.opponentA = data[ADMG_FB_A]; snapshot.opponentB = data[ADMG_FB_B];
-    snapshot.partner = data[ADMG_FB_PARTNER]; snapshot.uses = data[ADMG_FB_USES] & 7;
-    u16 partner; bool8 deferred;
+    snapshot.opponentA = gTasks[taskId].contentIds[ADMG_FB_CONTENT_A]; snapshot.opponentB = gTasks[taskId].contentIds[ADMG_FB_CONTENT_B];
+    snapshot.partner = GetWordTaskArg(taskId, ADMG_FB_PARTNER); snapshot.uses = data[ADMG_FB_USES] & 7;
+    enum TrainerId partner; bool8 deferred;
     if (!ADMG_TrySelectFieldBattlePartner(gTasks[taskId].func == Task_BattleStart, &partner, &deferred)) return FALSE;
     if (deferred != ((data[ADMG_FB_USES] & 8) != 0)
      || (deferred && partner != snapshot.partner)
@@ -325,7 +328,7 @@ static bool8 ADMG_QueueFieldBattleTask(TaskFunc func, enum BattleTransition tran
 {
     u64 generation = ADMG_BeginStateAccessCheck();
     struct ADMG_BattleTrainerActors snapshot;
-    u16 partner; bool8 deferred;
+    enum TrainerId partner; bool8 deferred;
     if (!ADMG_TrySelectFieldBattlePartner(func == Task_BattleStart, &partner, &deferred)
      || !ADMG_TryCaptureBattleTrainerActors(gBattleTypeFlags, TRAINER_BATTLE_PARAM.opponentA,
         TRAINER_BATTLE_PARAM.opponentB, partner, &snapshot)
@@ -339,9 +342,9 @@ static bool8 ADMG_QueueFieldBattleTask(TaskFunc func, enum BattleTransition tran
     { ADMG_StateAccessRejected(taskId, __func__); return FALSE; }
     gTasks[taskId].tTransition = transition;
     SetWordTaskArg(taskId, ADMG_FB_FLAGS, snapshot.flags);
-    gTasks[taskId].data[ADMG_FB_A] = snapshot.opponentA;
-    gTasks[taskId].data[ADMG_FB_B] = snapshot.opponentB;
-    gTasks[taskId].data[ADMG_FB_PARTNER] = snapshot.partner;
+    gTasks[taskId].contentIds[ADMG_FB_CONTENT_A] = snapshot.opponentA;
+    gTasks[taskId].contentIds[ADMG_FB_CONTENT_B] = snapshot.opponentB;
+    SetWordTaskArg(taskId, ADMG_FB_PARTNER, snapshot.partner);
     gTasks[taskId].data[ADMG_FB_USES] = snapshot.uses | (deferred << 3);
     SetWordTaskArg(taskId, ADMG_FB_SAVED_CALLBACK, (u32)gMain.savedCallback);
     gTasks[taskId].data[ADMG_FB_TAG] = 0x4B35;
@@ -632,7 +635,7 @@ static void DoTrainerBattle(void)
 {
     u64 generation = ADMG_BeginStateAccessCheck();
     struct ADMG_BattleTrainerActors snapshot;
-    u16 partner; bool8 deferred;
+    enum TrainerId partner; bool8 deferred;
     if (!ADMG_TrySelectFieldBattlePartner(TRUE, &partner, &deferred)
      || !ADMG_TryCaptureBattleTrainerActors(gBattleTypeFlags, TRAINER_BATTLE_PARAM.opponentA,
         TRAINER_BATTLE_PARAM.opponentB, partner, &snapshot)
@@ -1219,13 +1222,13 @@ static void TryUpdateGymLeaderRematchFromTrainer(void)
 
 static u16 GetTrainerAFlag(void)
 {
-    u16 id;
+    u32 id;
     return ADMG_TryGetTrainerDefeatFlagId(TRAINER_BATTLE_PARAM.opponentA, &id) ? id : 0xFFFF;
 }
 
 static u16 GetTrainerBFlag(void)
 {
-    u16 id;
+    u32 id;
     return ADMG_TryGetTrainerDefeatFlagId(TRAINER_BATTLE_PARAM.opponentB, &id) ? id : 0xFFFF;
 }
 
@@ -1533,7 +1536,7 @@ void ConfigureApproachingTrainerBattle(struct ApproachingTrainer *approachingTra
 static void SetFacilityOpponent(u8 facility, u8 localId, bool8 isTrainerA)
 {
     u64 generation = ADMG_BeginStateAccessCheck();
-    u16 trainerId = TRAINER_NONE;
+    enum TrainerId trainerId = TRAINER_NONE;
 
     switch (facility) {
         case FACILITY_BATTLE_PYRAMID:
@@ -1685,7 +1688,7 @@ ADMG_reject:
 bool32 GetTrainerFlagFromScriptPointer(const u8 *data)
 {
     TrainerBattleParameter *temp = (TrainerBattleParameter*)(data + TRAINERBATTLE_OPCODE_OFFSET);
-    u16 id;
+    u32 id;
     if (!ADMG_TryGetTrainerDefeatFlagId(temp->params.opponentA, &id))
         return FALSE;
     return FlagGet(id);
@@ -1750,7 +1753,7 @@ static void UNUSED SetBattledTrainerFlag(void)
 
 bool8 HasTrainerBeenFought(u16 trainerId)
 {
-    u16 id;
+    u32 id;
     if (!ADMG_TryGetTrainerDefeatFlagId(trainerId, &id))
         return FALSE;
     return FlagGet(id);
@@ -1758,21 +1761,21 @@ bool8 HasTrainerBeenFought(u16 trainerId)
 
 void SetTrainerFlag(u16 trainerId)
 {
-    u16 id;
+    u32 id;
     if (ADMG_TryGetTrainerDefeatFlagId(trainerId, &id))
         FlagSet(id);
 }
 
 void ClearTrainerFlag(u16 trainerId)
 {
-    u16 id;
+    u32 id;
     if (ADMG_TryGetTrainerDefeatFlagId(trainerId, &id))
         FlagClear(id);
 }
 
 bool8 ADMG_TryReadLegacyTrainerFlag(u32 trainerId, bool8 *value)
 {
-    u16 id;
+    u32 id;
     if (value == NULL || !ADMG_TryGetTrainerDefeatFlagId(trainerId, &id))
         return FALSE;
     *value = HasTrainerBeenFought((u16)trainerId);
@@ -1781,7 +1784,7 @@ bool8 ADMG_TryReadLegacyTrainerFlag(u32 trainerId, bool8 *value)
 
 bool8 ADMG_TryReadCurrentTrainerFlag(bool8 *value)
 {
-    u16 id;
+    u32 id;
     if (value == NULL)
         return FALSE;
     /* Existing facility dispatch owns its separate flag domain. */
@@ -1791,7 +1794,7 @@ bool8 ADMG_TryReadCurrentTrainerFlag(bool8 *value)
     u64 generation = ADMG_BeginStateAccessCheck();
     struct SaveBlock1 *save1 = gSaveBlock1Ptr;
     struct SaveBlock2 *save2 = gSaveBlock2Ptr;
-    u16 identity = TRAINER_BATTLE_PARAM.opponentA;
+    enum TrainerId identity = TRAINER_BATTLE_PARAM.opponentA;
     u16 localId = TRAINER_BATTLE_PARAM.objEventLocalIdA;
     u8 selected = gSelectedObjectEvent;
     u8 selectedLocal = selected < OBJECT_EVENTS_COUNT ? gObjectEvents[selected].localId : 0;
@@ -1808,7 +1811,7 @@ bool8 ADMG_TryReadCurrentTrainerFlag(bool8 *value)
 bool8 ADMG_TryReadTrainerFlagFromScript(const u8 *data, bool8 *value)
 {
     const TrainerBattleParameter *params;
-    u16 id;
+    u32 id;
     if (data == NULL || value == NULL)
         return FALSE;
     params = (const TrainerBattleParameter *)(data + TRAINERBATTLE_OPCODE_OFFSET);
@@ -1825,7 +1828,8 @@ struct ADMG_PyramidTrainerBattleInput
     struct SaveBlock2 *save2;
     u64 generation;
     u32 mode, previousFlags;
-    u16 a, b, lastTalked;
+    enum TrainerId a, b;
+    u16 lastTalked;
     u8 count, selectedA, selectedCurrent, localA, approachB, localB;
     bool8 actorsReady, countersPublished, musicTouched, bPublished, marked;
     struct ADMG_BattleTrainerActors actors;
@@ -1932,7 +1936,7 @@ struct ADMG_HillTrainerBattleInput
     struct SaveBlock2 *save2;
     u64 generation;
     u32 layout, previousFlags, currentFlags;
-    u16 a, b;
+    enum TrainerId a, b;
     u8 count, previousTrainerFlags, markMask;
     bool8 bPublished, marked, countersPublished, actorsReady;
     struct ADMG_BattleTrainerActors actors;
@@ -2081,7 +2085,7 @@ static void ADMG_RunTrainerBattleStart(struct ADMG_PyramidTrainerBattleInput *ad
         }
         if (admitted != NULL)
         {
-            u16 partner; bool8 deferred;
+            enum TrainerId partner; bool8 deferred;
             if (!ADMG_TrySelectFieldBattlePartner(TRUE, &partner, &deferred)
                 || !ADMG_TryCaptureBattleTrainerActors(gBattleTypeFlags, TRAINER_BATTLE_PARAM.opponentA,
                     TRAINER_BATTLE_PARAM.opponentB, partner, &admitted->actors)) goto ADMG_reject;
@@ -2127,7 +2131,7 @@ static void ADMG_RunTrainerBattleStart(struct ADMG_PyramidTrainerBattleInput *ad
 
         if (hill != NULL)
         {
-            u16 partner; bool8 deferred;
+            enum TrainerId partner; bool8 deferred;
             if (!ADMG_TrySelectFieldBattlePartner(TRUE, &partner, &deferred)
                 || !ADMG_TryCaptureBattleTrainerActors(gBattleTypeFlags, TRAINER_BATTLE_PARAM.opponentA,
                     TRAINER_BATTLE_PARAM.opponentB, partner, &hill->actors)) goto ADMG_reject;
@@ -2427,7 +2431,7 @@ void ShowTrainerIntroSpeech(void)
         if (localId > UCHAR_MAX)
         { ADMG_StateAccessRejected(localId, __func__); return; }
         u64 generation = ADMG_BeginStateAccessCheck();
-        u16 trainerId = LocalIdToPyramidTrainerId(localId);
+        enum TrainerId trainerId = LocalIdToPyramidTrainerId(localId);
         if (!ADMG_EndStateAccessCheck(generation)) return;
         CopyPyramidTrainerSpeechBefore(trainerId);
         if (!ADMG_EndStateAccessCheck(generation)) return;
@@ -2453,7 +2457,7 @@ void ShowTrainerIntroSpeech(void)
         if (localId > UCHAR_MAX)
         { ADMG_StateAccessRejected(localId, __func__); return; }
         u64 generation = ADMG_BeginStateAccessCheck();
-        u16 trainerId = LocalIdToHillTrainerId(localId);
+        enum TrainerId trainerId = LocalIdToHillTrainerId(localId);
         if (!ADMG_EndStateAccessCheck(generation)) return;
         if (gNoOfApproachingTrainers != count
             || (count <= 1 && gSpecialVar_LastTalked != localId)
@@ -2515,7 +2519,7 @@ void ShowTrainerCantBattleSpeech(void)
 
 void PlayTrainerEncounterMusic(void)
 {
-    u16 trainerId;
+    enum TrainerId trainerId;
     u16 music;
 
     if (gApproachingTrainerId == 0)
@@ -2630,7 +2634,7 @@ static const u8 *GetTrainerCantBattleSpeech(void)
     return ReturnEmptyStringIfNull(TRAINER_BATTLE_PARAM.cannotBattleText);
 }
 
-s32 FirstBattleTrainerIdToRematchTableId(const struct RematchTrainer *table, u16 trainerId)
+s32 FirstBattleTrainerIdToRematchTableId(const struct RematchTrainer *table, enum TrainerId trainerId)
 {
     s32 i;
 
@@ -2643,7 +2647,7 @@ s32 FirstBattleTrainerIdToRematchTableId(const struct RematchTrainer *table, u16
     return -1;
 }
 
-s32 TrainerIdToRematchTableId(const struct RematchTrainer *table, u16 trainerId)
+s32 TrainerIdToRematchTableId(const struct RematchTrainer *table, enum TrainerId trainerId)
 {
     s32 i, j;
 
@@ -2743,7 +2747,7 @@ void UpdateRematchIfDefeated(s32 rematchTableId)
         SetRematchIdForTrainer(gRematchTable, rematchTableId);
 }
 
-static bool8 IsFirstTrainerIdReadyForRematch(const struct RematchTrainer *table, u16 firstBattleTrainerId)
+static bool8 IsFirstTrainerIdReadyForRematch(const struct RematchTrainer *table, enum TrainerId firstBattleTrainerId)
 {
     s32 tableId = FirstBattleTrainerIdToRematchTableId(table, firstBattleTrainerId);
 
@@ -2759,7 +2763,7 @@ static bool8 IsFirstTrainerIdReadyForRematch(const struct RematchTrainer *table,
     return TRUE;
 }
 
-static bool8 IsTrainerReadyForRematch_(const struct RematchTrainer *table, u16 trainerId)
+static bool8 IsTrainerReadyForRematch_(const struct RematchTrainer *table, enum TrainerId trainerId)
 {
     s32 tableId = TrainerIdToRematchTableId(table, trainerId);
 
@@ -2775,7 +2779,7 @@ static bool8 IsTrainerReadyForRematch_(const struct RematchTrainer *table, u16 t
     return TRUE;
 }
 
-u16 GetRematchTrainerIdFromTable(const struct RematchTrainer *table, u16 firstBattleTrainerId)
+u16 GetRematchTrainerIdFromTable(const struct RematchTrainer *table, enum TrainerId firstBattleTrainerId)
 {
     const struct RematchTrainer *trainerEntry;
     s32 i;
@@ -2817,7 +2821,7 @@ static u16 GetLastBeatenRematchTrainerIdFromTable(const struct RematchTrainer *t
     return trainerEntry->trainerIds[REMATCHES_COUNT - 1]; // already beaten at max stage
 }
 
-static void ClearTrainerWantRematchState(const struct RematchTrainer *table, u16 firstBattleTrainerId)
+static void ClearTrainerWantRematchState(const struct RematchTrainer *table, enum TrainerId firstBattleTrainerId)
 {
 #if FREE_MATCH_CALL == FALSE
     s32 tableId = TrainerIdToRematchTableId(table, firstBattleTrainerId);
@@ -2866,7 +2870,7 @@ static void RegisterTrainerInMatchCall(void)
     }
 }
 
-static bool8 WasSecondRematchWon(const struct RematchTrainer *table, u16 firstBattleTrainerId)
+static bool8 WasSecondRematchWon(const struct RematchTrainer *table, enum TrainerId firstBattleTrainerId)
 {
     s32 tableId = FirstBattleTrainerIdToRematchTableId(table, firstBattleTrainerId);
 
@@ -2936,7 +2940,7 @@ void TryUpdateRandomTrainerRematches(u16 mapGroup, u16 mapNum)
 }
 #endif //FREE_MATCH_CALL
 
-ADMG_NATIVE_ENTRY u16 GetRematchTrainerId(u16 trainerId)
+ADMG_NATIVE_ENTRY u16 GetRematchTrainerId(enum TrainerId trainerId)
 {
     struct ADMG_TrainerRef ref;
     u16 selected;
@@ -2964,7 +2968,7 @@ bool8 ShouldTryRematchBattle(void)
     return ShouldTryRematchBattleForTrainerId(TRAINER_BATTLE_PARAM.opponentA);
 }
 
-bool8 ShouldTryRematchBattleForTrainerId(u16 trainerId)
+bool8 ShouldTryRematchBattleForTrainerId(enum TrainerId trainerId)
 {
     struct ADMG_TrainerRef ref;
     struct ADMG_RematchContext context;
@@ -2996,7 +3000,7 @@ bool8 IsTrainerReadyForRematch(void)
     struct ADMG_TrainerRef ref;
     struct ADMG_RematchContext context;
     bool8 result;
-    u16 trainerId = TRAINER_BATTLE_PARAM.opponentA;
+    enum TrainerId trainerId = TRAINER_BATTLE_PARAM.opponentA;
 
     if (!ADMG_TryResolveTrainer(trainerId, &ref))
         return FALSE;
@@ -3073,7 +3077,7 @@ void SetMultiTrainerBattle(struct ScriptContext *ctx)
     /* event.inc writes two halfword/word pairs followed by a partner ordinal.
      * The battle mode is assigned afterwards; trainer words remain transport
      * until the existing mode-aware consumer admits their used roles. */
-    const u32 partnerOffset = 2 * sizeof(u16) + 2 * sizeof(u32);
+    const u32 partnerOffset = 2 * sizeof(enum TrainerId) + 2 * sizeof(u32);
     struct ScriptContext partnerContext = *ctx;
     partnerContext.scriptPtr += partnerOffset;
     u32 partnerOrdinal = ScriptPeekHalfword(&partnerContext);
@@ -3082,9 +3086,9 @@ void SetMultiTrainerBattle(struct ScriptContext *ctx)
 
     InitTrainerBattleParameter();
 
-    TRAINER_BATTLE_PARAM.opponentA = ScriptReadHalfword(ctx);
+    TRAINER_BATTLE_PARAM.opponentA = ScriptReadWord(ctx);
     TRAINER_BATTLE_PARAM.defeatTextA = (u8*)ScriptReadWord(ctx);
-    TRAINER_BATTLE_PARAM.opponentB = ScriptReadHalfword(ctx);
+    TRAINER_BATTLE_PARAM.opponentB = ScriptReadWord(ctx);
     TRAINER_BATTLE_PARAM.defeatTextB = (u8*)ScriptReadWord(ctx);
     gPartnerTrainerId = TRAINER_PARTNER(ScriptReadHalfword(ctx));
 };
@@ -3116,7 +3120,7 @@ void CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Traine
     Free(trainerGen);
 }
 
-static void CreateNPCTrainerParty(struct Pokemon *party, u16 trainerNum)
+static void CreateNPCTrainerParty(struct Pokemon *party, enum TrainerId trainerNum)
 {
     const struct Trainer *trainer, *origTrainer;
     struct Trainer tempTrainer;
@@ -3169,7 +3173,7 @@ static bool8 IsNativeTrainerBattleContent(u32 trainerId)
  * same validation boundary before changing the captured NPC's readiness. */
 static bool8 NativeBattleDefeatPairValid(void)
 {
-    u16 first, second = 0;
+    u32 first, second = 0;
     if (!ADMG_TryGetTrainerDefeatFlagId(TRAINER_BATTLE_PARAM.opponentA, &first))
         return FALSE;
     if (TRAINER_BATTLE_PARAM.opponentB != TRAINER_NONE && TRAINER_BATTLE_PARAM.opponentB != 0xFFFF

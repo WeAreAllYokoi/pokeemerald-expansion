@@ -727,7 +727,7 @@ static void DoTrainerTowerBattle(void)
     if (!ADMG_TryReadTrainerTowerPartyInput(&input, TRUE)) return;
     const struct ADMG_TrainerTowerPartyInput *previousInput = sADMG_TrainerTowerPartyInput;
     u32 previousFlags = gBattleTypeFlags;
-    u16 previousOpponent = TRAINER_BATTLE_PARAM.opponentA;
+    enum TrainerId previousOpponent = TRAINER_BATTLE_PARAM.opponentA;
     sADMG_TrainerTowerPartyInput = &input;
 
     gBattleTypeFlags = BATTLE_TYPE_TRAINER | BATTLE_TYPE_TRAINER_TOWER;

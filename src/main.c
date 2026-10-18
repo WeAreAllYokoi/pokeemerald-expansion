@@ -112,6 +112,7 @@ void AgbMain(void)
     ResetBgs();
     SetDefaultFontsPointer();
     InitHeap(gHeap, HEAP_SIZE);
+    ADMG_InitExtendedStores();
 
     gSoftResetDisabled = FALSE;
 

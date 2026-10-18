@@ -1962,7 +1962,7 @@ static bool8 ADMG_CopyRecordedFrontierSpeech(struct SaveBlock2 *save, u32 record
     return TRUE;
 }
 
-void CopyFrontierTrainerText(u8 whichText, u16 trainerId)
+void CopyFrontierTrainerText(u8 whichText, enum TrainerId trainerId)
 {
     struct SaveBlock2 *save = gSaveBlock2Ptr;
     u32 recorded = gBattleTypeFlags & BATTLE_TYPE_RECORDED;
@@ -3197,7 +3197,7 @@ ADMG_NATIVE_ENTRY void GetRandomScaledFrontierTrainerIdRange(u8 challengeNum, u8
     *trainerIdPtr = first; *rangePtr = count;
 }
 
-ADMG_NATIVE_ENTRY void SetBattleFacilityTrainerGfxId(u16 trainerId, u8 tempVarId)
+ADMG_NATIVE_ENTRY void SetBattleFacilityTrainerGfxId(enum TrainerId trainerId, u8 tempVarId)
 {
     struct ADMG_FrontierMetadata metadata = {0};
     if (!ADMG_FrontierMetadataValid(trainerId, FALSE, TRUE, &metadata)) return ;
@@ -3304,7 +3304,7 @@ ADMG_NATIVE_ENTRY void SetBattleFacilityTrainerGfxId(u16 trainerId, u8 tempVarId
     }
 }
 
-ADMG_NATIVE_ENTRY u16 GetBattleFacilityTrainerGfxId(u16 trainerId)
+ADMG_NATIVE_ENTRY u16 GetBattleFacilityTrainerGfxId(enum TrainerId trainerId)
 {
     struct ADMG_FrontierMetadata metadata = {0};
     if (!ADMG_FrontierMetadataValid(trainerId, FALSE, TRUE, &metadata)) return OBJ_EVENT_GFX_BOY_1;
@@ -3372,7 +3372,7 @@ ADMG_NATIVE_ENTRY u16 GetBattleFacilityTrainerGfxId(u16 trainerId)
     }
 }
 
-ADMG_NATIVE_ENTRY enum TrainerPicID GetFrontierTrainerFrontSpriteId(u16 trainerId)
+ADMG_NATIVE_ENTRY enum TrainerPicID GetFrontierTrainerFrontSpriteId(enum TrainerId trainerId)
 {
     struct ADMG_FrontierMetadata metadata = {0};
     if (!ADMG_FrontierMetadataValid(trainerId, TRUE, TRUE, &metadata)) return TRAINER_PIC_NONE;
@@ -3419,7 +3419,7 @@ ADMG_NATIVE_ENTRY enum TrainerPicID GetFrontierTrainerFrontSpriteId(u16 trainerI
     }
 }
 
-ADMG_NATIVE_ENTRY enum TrainerClassID GetFrontierOpponentClass(u16 trainerId)
+ADMG_NATIVE_ENTRY enum TrainerClassID GetFrontierOpponentClass(enum TrainerId trainerId)
 {
     struct ADMG_FrontierMetadata metadata = {0};
     if (IsPartnerTrainerId(trainerId)
@@ -3511,7 +3511,7 @@ ADMG_NATIVE_ENTRY enum TrainerClassID GetFrontierOpponentClass(u16 trainerId)
     return trainerClass;
 }
 
-ADMG_NATIVE_ENTRY u8 GetFrontierTrainerFacilityClass(u16 trainerId)
+ADMG_NATIVE_ENTRY u8 GetFrontierTrainerFacilityClass(enum TrainerId trainerId)
 {
     struct ADMG_FrontierMetadata metadata = {0};
     if (!ADMG_FrontierMetadataValid(trainerId, TRUE, TRUE, &metadata)) return 0;
@@ -3557,7 +3557,7 @@ ADMG_NATIVE_ENTRY u8 GetFrontierTrainerFacilityClass(u16 trainerId)
     return facilityClass;
 }
 
-ADMG_NATIVE_ENTRY void GetFrontierTrainerName(u8 *dst, u16 trainerId)
+ADMG_NATIVE_ENTRY void GetFrontierTrainerName(u8 *dst, enum TrainerId trainerId)
 {
     struct ADMG_FrontierMetadata metadata = {0};
     if (IsPartnerTrainerId(trainerId)
@@ -3678,7 +3678,7 @@ ADMG_NATIVE_ENTRY void GetFrontierTrainerName(u8 *dst, u16 trainerId)
     ADMG_PublishTrainerName(destination, staged, sizeof(staged), i + 1, trainerId, outputGeneration, &metadata);
 }
 
-u16 GetRandomFrontierMonFromSet(u16 trainerId)
+u16 GetRandomFrontierMonFromSet(enum TrainerId trainerId)
 {
     struct SaveBlock2 *save = gSaveBlock2Ptr;
     if (save == NULL)

@@ -312,7 +312,7 @@ struct ADMG_TentMonChoices { const u16 *set; u32 count; };
 
 static bool8 ADMG_TryPrepareSlateportOpponent(struct SaveBlock2 *save,
     const struct TrainerMon *mons, u32 monCount, struct ADMG_TentMonChoices *choices,
-    enum Species *rentalSpecies, u16 *history, u32 *historyCount)
+    enum Species *rentalSpecies, enum TrainerId *history, u32 *historyCount)
 {
     u32 count = save->frontier.curChallengeBattleNum;
     if (count > ARRAY_COUNT(save->frontier.trainerIds))
@@ -423,7 +423,7 @@ static void GenerateOpponentMons(void)
     u32 monCount, historyCount;
     struct ADMG_TentMonChoices choices[NUM_BATTLE_TENT_TRAINERS];
     enum Species rentalSpecies[ARRAY_COUNT(((struct SaveBlock2 *)0)->frontier.rentalMons)];
-    u16 history[ARRAY_COUNT(((struct SaveBlock2 *)0)->frontier.trainerIds)];
+    enum TrainerId history[ARRAY_COUNT(((struct SaveBlock2 *)0)->frontier.trainerIds)];
     u16 selectedParty[FRONTIER_PARTY_SIZE];
     if (!ADMG_TryPrepareSlateportMons(&save, &mons, &monCount)
      || !ADMG_TryPrepareSlateportOpponent(save, mons, monCount, choices, rentalSpecies, history, &historyCount)) return;

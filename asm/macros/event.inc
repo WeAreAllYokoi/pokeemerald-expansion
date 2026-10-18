@@ -777,12 +777,12 @@
 	.ifgt \skipFlagCheck; .set trainerbattle_flags, trainerbattle_flags | (1 << 7); .endif
 	.byte trainerbattle_flags
 	.byte \localIdA             @ objEventLocalIdA
-	.2byte \trainer_a           @ opponentA
+	.4byte \trainer_a           @ opponentA
 	.4byte \intro_text_a        @ introTextA
 	.4byte \lose_text_a         @ defeatTextA
 	.4byte \event_script_a      @ retAddrA
 	.byte  \localIdB            @ objEventLocalIdB
-	.2byte \trainer_b           @ opponentB
+	.4byte \trainer_b           @ opponentB
 	.4byte \intro_text_b        @ introTextB
 	.4byte \lose_text_b         @ defeatTextB
 	.4byte \event_script_b      @ retAddrB
@@ -2682,9 +2682,9 @@
 
 	.macro setmultitrainerbattle trainer_a:req, lose_text_a:req, trainer_b:req, lose_text_b:req, partnerId:req
 	callnative SetMultiTrainerBattle
-	.2byte \trainer_a
+	.4byte \trainer_a
 	.4byte \lose_text_a
-	.2byte \trainer_b
+	.4byte \trainer_b
 	.4byte \lose_text_b
 	.2byte \partnerId
 	.endm

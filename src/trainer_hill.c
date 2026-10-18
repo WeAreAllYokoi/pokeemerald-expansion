@@ -369,7 +369,7 @@ static bool8 ADMG_TryHillTrainerFacilityClass(u32 identifier, u32 *facilityClass
     return TRUE;
 }
 
-enum TrainerClassID GetTrainerHillOpponentClass(u16 trainerId)
+enum TrainerClassID GetTrainerHillOpponentClass(enum TrainerId trainerId)
 {
     u32 slot;
     if (!ADMG_TryHillTrainerSlot(trainerId, &slot)) return TRAINER_CLASS_PKMN_TRAINER_1;
@@ -378,7 +378,7 @@ enum TrainerClassID GetTrainerHillOpponentClass(u16 trainerId)
     return gFacilityClassToTrainerClass[sFloorTrainers->facilityClass[slot]];
 }
 
-void GetTrainerHillTrainerName(u8 *dst, u16 trainerId)
+void GetTrainerHillTrainerName(u8 *dst, enum TrainerId trainerId)
 {
     u32 slot;
     if (dst == NULL || !ADMG_TryHillTrainerSlot(trainerId, &slot))
@@ -389,7 +389,7 @@ void GetTrainerHillTrainerName(u8 *dst, u16 trainerId)
         dst[i] = sFloorTrainers->name[slot][i];
 }
 
-u8 GetTrainerHillTrainerFrontSpriteId(u16 trainerId)
+u8 GetTrainerHillTrainerFrontSpriteId(enum TrainerId trainerId)
 {
     u32 facilityClass;
     if (!ADMG_TryHillTrainerFacilityClass(trainerId, &facilityClass)) return TRAINER_PIC_HIKER;
@@ -486,7 +486,7 @@ static void FreeDataStruct(void)
     TRY_FREE_AND_SET_NULL(sHillData);
 }
 
-void CopyTrainerHillTrainerText(u8 which, u16 localId)
+void CopyTrainerHillTrainerText(u8 which, enum TrainerId localId)
 {
     u32 slot;
     if (!ADMG_TryHillTrainerSlot(localId, &slot)) return;
@@ -962,12 +962,12 @@ static bool8 ADMG_TryHillMapSlot(u32 localId, u32 *slot, u32 *bit)
     return TRUE;
 }
 
-u16 LocalIdToHillTrainerId(u8 localId)
+enum TrainerId LocalIdToHillTrainerId(u8 localId)
 {
     u32 slot;
     if (gSaveBlock2Ptr == NULL || !ADMG_TryHillTrainerSlot(localId, &slot))
     { if (gSaveBlock2Ptr == NULL) ADMG_StateAccessRejected(localId, __func__); return 0; }
-    u16 identity = gSaveBlock2Ptr->frontier.trainerIds[slot];
+    enum TrainerId identity = gSaveBlock2Ptr->frontier.trainerIds[slot];
     u32 nativeSlot;
     if (!ADMG_TryHillTrainerSlot(identity, &nativeSlot)) return 0;
     return identity;
@@ -1193,7 +1193,7 @@ void FillHillTrainersParties(void)
     ADMG_FillHillParties(TRUE);
 }
 
-u8 GetTrainerEncounterMusicIdInTrainerHill(u16 trainerId)
+u8 GetTrainerEncounterMusicIdInTrainerHill(enum TrainerId trainerId)
 {
     u32 facilityClass;
     if (!ADMG_TryHillTrainerFacilityClass(trainerId, &facilityClass)) return 0;

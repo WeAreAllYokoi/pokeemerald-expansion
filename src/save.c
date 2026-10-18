@@ -100,12 +100,13 @@ static u32 GetSaveSlotRegions(struct ADMG_SaveRegion *regions, bool32 withPokemo
     regions[count++] = (struct ADMG_SaveRegion){ADMG_SAVE_SECTION_SAVEBLOCK3, &gSaveblock3, sizeof(struct SaveBlock3)};
     if (withPokemonStorage)
         regions[count++] = (struct ADMG_SaveRegion){ADMG_SAVE_SECTION_POKEMON_STORAGE, gPokemonStoragePtr, sizeof(struct PokemonStorage)};
+    count += ADMG_GetExtendedSaveRegions(&regions[count]);
     return count;
 }
 
 static u8 WriteNativeSave(bool32 withPokemonStorage, bool32 withHallOfFame, u32 mode)
 {
-    struct ADMG_SaveRegion regions[5];
+    struct ADMG_SaveRegion regions[ADMG_SAVE_MAX_REGIONS];
     u32 count;
     CopyPartyAndObjectsToSave();
     count = GetSaveSlotRegions(regions, withPokemonStorage);
@@ -815,7 +816,7 @@ bool8 WriteSaveBlock1Sector(void)
 
 u8 LoadGameSave(u8 saveType)
 {
-    struct ADMG_SaveRegion regions[5];
+    struct ADMG_SaveRegion regions[ADMG_SAVE_MAX_REGIONS];
     u8 status;
 
     switch (saveType)

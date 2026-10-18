@@ -290,7 +290,7 @@ static bool8 ADMG_TryGetLinkOpponentPicture(enum BattlerId battler, enum Trainer
     { ADMG_StateAccessRejected((u32)position, __func__); return FALSE; }
 
     bool8 facility = (gBattleTypeFlags & BATTLE_TYPE_MULTI) && (gBattleTypeFlags & BATTLE_TYPE_BATTLE_TOWER);
-    u16 identity = position == B_POSITION_OPPONENT_LEFT
+    enum TrainerId identity = position == B_POSITION_OPPONENT_LEFT
         ? TRAINER_BATTLE_PARAM.opponentA : TRAINER_BATTLE_PARAM.opponentB;
     if (facility)
     {

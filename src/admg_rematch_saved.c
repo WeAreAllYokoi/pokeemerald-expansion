@@ -12,7 +12,7 @@ static bool8 RejectBinding(u32 id, const char *operation)
     return FALSE;
 }
 
-bool8 ADMG_TryGetNativeRematchNpcTrainer(u32 group, u32 number, u32 localId, u16 *trainerId)
+bool8 ADMG_TryGetNativeRematchNpcTrainer(u32 group, u32 number, u32 localId, enum TrainerId *trainerId)
 {
     const struct ObjectEventTemplate *npc;
     const u8 *operand;
@@ -41,7 +41,8 @@ bool8 ADMG_TryGetNativeRematchNpcTrainer(u32 group, u32 number, u32 localId, u16
 bool8 ADMG_TryValidateNativeRematchBindings(void)
 {
     u32 i, group, number;
-    u16 trainer, family;
+    enum TrainerId trainer;
+    u32 family;
     u8 position;
     if (gSaveBlock1Ptr == NULL
      || (gADMG_KantoVsSeekerCounter & 0xFF) > 100

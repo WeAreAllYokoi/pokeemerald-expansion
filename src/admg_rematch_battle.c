@@ -17,7 +17,8 @@ static bool8 RejectNpcBattle(u32 id, const char *operation)
 static bool8 ReadAssociatedReadiness(const struct ADMG_RematchContext *context,
     u32 trainerId, u32 localId, bool8 baseOnly, bool8 *associated, u8 *value)
 {
-    u16 family, npcFamily, npcTrainer;
+    u32 family, npcFamily;
+    enum TrainerId npcTrainer;
     u8 position;
     u64 generation;
     bool8 found;
@@ -63,7 +64,7 @@ bool8 ADMG_TryShouldRematchNativeNpc(const struct ADMG_RematchContext *context,
 {
     bool8 associated, fought;
     u8 value;
-    u16 flag;
+    u32 flag;
     if (shouldRematch == NULL)
         return RejectNpcBattle(baseTrainerId, __func__);
     if (!ReadAssociatedReadiness(context, baseTrainerId, localId, TRUE, &associated, &value))
@@ -119,7 +120,7 @@ bool8 ADMG_TryBindNativeBattleNpc(const struct ADMG_RematchContext *context,
 {
     bool8 associated;
     u8 value, position;
-    u16 family;
+    u32 family;
     ADMG_DiscardNativeBattleAssociation();
     if (!ReadAssociatedReadiness(context, trainerId, localId, FALSE, &associated, &value))
         return FALSE;
@@ -138,7 +139,7 @@ bool8 ADMG_TryBindNativeBattleNpc(const struct ADMG_RematchContext *context,
 bool8 ADMG_TryGetNativeBattleNpc(u32 trainerId,
     struct ADMG_RematchContext *context, u32 *localId)
 {
-    u16 family;
+    u32 family;
     u8 position;
     if (!sNativeBattleBound)
         return FALSE;

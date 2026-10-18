@@ -206,8 +206,8 @@ void BattleAI_SetupItems(void)
             TRAINER_BATTLE_PARAM.opponentB, gPartnerTrainerId)) return;
     struct BattleHistory *history = gBattleHistory;
     u32 battleFlags = gBattleTypeFlags;
-    u16 opponentA = TRAINER_BATTLE_PARAM.opponentA, opponentB = TRAINER_BATTLE_PARAM.opponentB;
-    u16 partner = gPartnerTrainerId;
+    enum TrainerId opponentA = TRAINER_BATTLE_PARAM.opponentA, opponentB = TRAINER_BATTLE_PARAM.opponentB;
+    enum TrainerId partner = gPartnerTrainerId;
     /* Preserve the original eligibility predicate. Excluded modes must not
      * interpret opaque network/facility words as ordinary trainer rows. */
     bool32 usesItems = (gBattleTypeFlags & BATTLE_TYPE_TRAINER)
@@ -270,7 +270,7 @@ static bool32 IsSmartBattle(void)
     return gBattleTypeFlags & BATTLE_TYPE_HAS_AI || IsWildMonSmart();
 }
 
-static u64 GetAiFlags(u16 trainerId, enum BattlerId battler)
+static u64 GetAiFlags(enum TrainerId trainerId, enum BattlerId battler)
 {
     if ((u32)battler >= MAX_BATTLERS_COUNT)
     { ADMG_StateAccessRejected((u32)battler, __func__); return 0; }
@@ -330,8 +330,8 @@ void BattleAI_SetupFlags(void)
             TRAINER_BATTLE_PARAM.opponentB, gPartnerTrainerId)) return;
     struct AiThinkingStruct *thinking = gAiThinkingStruct;
     u32 battleFlags = gBattleTypeFlags;
-    u16 opponentA = TRAINER_BATTLE_PARAM.opponentA, opponentB = TRAINER_BATTLE_PARAM.opponentB;
-    u16 partner = gPartnerTrainerId;
+    enum TrainerId opponentA = TRAINER_BATTLE_PARAM.opponentA, opponentB = TRAINER_BATTLE_PARAM.opponentB;
+    enum TrainerId partner = gPartnerTrainerId;
     u64 generation = ADMG_BeginStateAccessCheck();
     u64 admitted[MAX_BATTLERS_COUNT];
     for (u32 battler = 0; battler < MAX_BATTLERS_COUNT; ++battler)

@@ -294,7 +294,8 @@ static void GenerateOpponentMons(void)
     u32 historyCount = save->frontier.curChallengeBattleNum;
     if (historyCount > ARRAY_COUNT(save->frontier.trainerIds))
     { ADMG_StateAccessRejected(historyCount, __func__); return; }
-    u16 history[ARRAY_COUNT(save->frontier.trainerIds)], selected[FRONTIER_PARTY_SIZE];
+    enum TrainerId history[ARRAY_COUNT(save->frontier.trainerIds)];
+    u16 selected[FRONTIER_PARTY_SIZE]; // facility Pokémon
     enum Species rentals[ARRAY_COUNT(save->frontier.rentalMons)];
     for (u32 slot = 0; slot < historyCount; ++slot) history[slot] = save->frontier.trainerIds[slot];
     for (u32 slot = 0; slot < ARRAY_COUNT(rentals); ++slot)
@@ -918,7 +919,7 @@ static void ADMG_FillAdmittedFactoryParty(const struct ADMG_FactoryPartyInput *i
             &gParties[B_TRAINER_OPPONENT_A][input->firstMon + i]);
 }
 
-static void ADMG_FillFactoryPartyFromArgs(u16 identity, bool8 tent, u8 firstMon)
+static void ADMG_FillFactoryPartyFromArgs(enum TrainerId identity, bool8 tent, u8 firstMon)
 {
     struct ADMG_FactoryPartyInput local;
     const struct ADMG_FactoryPartyInput *input = sADMG_BorrowedFactoryParty;
@@ -1062,12 +1063,12 @@ u64 GetAiScriptsInBattleFactory(void)
     }
 }
 
-ADMG_NATIVE_ENTRY void FillFactoryFrontierTrainerParty(u16 trainerId, u8 firstMonId)
+ADMG_NATIVE_ENTRY void FillFactoryFrontierTrainerParty(enum TrainerId trainerId, u8 firstMonId)
 {
     ADMG_FillFactoryPartyFromArgs(trainerId, FALSE, firstMonId);
 }
 
-ADMG_NATIVE_ENTRY void FillFactoryTentTrainerParty(u16 trainerId, u8 firstMonId)
+ADMG_NATIVE_ENTRY void FillFactoryTentTrainerParty(enum TrainerId trainerId, u8 firstMonId)
 {
     ADMG_FillFactoryPartyFromArgs(trainerId, TRUE, firstMonId);
 }
@@ -1076,7 +1077,7 @@ ADMG_NATIVE_ENTRY void FillFactoryTrainerParty(void)
 {
     struct SaveBlock2 *save = gSaveBlock2Ptr;
     if (save == NULL) { ADMG_StateAccessRejected(0, __func__); return; }
-    u16 identity = TRAINER_BATTLE_PARAM.opponentA;
+    enum TrainerId identity = TRAINER_BATTLE_PARAM.opponentA;
     bool8 tent = save->frontier.lvlMode == FRONTIER_LVL_TENT;
     struct ADMG_FactoryPartyInput admitted;
     const struct ADMG_FactoryPartyInput *input = sADMG_BorrowedFactoryParty;

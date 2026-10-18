@@ -12,6 +12,7 @@
 #include "constants/items.h"
 #include "constants/abilities.h"
 #include "constants/trainers.h"
+#include "constants/pokedex.h"
 
 struct ADMG_RegistryCounts
 {
@@ -23,7 +24,8 @@ struct ADMG_RegistryCounts
     u32 natures;        // Rows of gNaturesInfo
     u32 trainerClasses; // Rows of gTrainerClasses
     u32 trainerPics;    // Rows of gTrainerPicInfo
-    u32 trainers;       // Rows of gTrainers per difficulty
+    u32 addedTrainers;  // Rows per difficulty of gADMG_AddedTrainers: the trainers added at run time
+    u32 nationalDex;    // National Pokédex numbers, including NATIONAL_DEX_NONE
 };
 
 // Keep the defaults in a separate source file so callers read the counts from ROM
@@ -37,7 +39,8 @@ extern const struct ADMG_RegistryCounts gADMG_RegistryCounts;
 #define RUNTIME_NATURES_COUNT          (gADMG_RegistryCounts.natures)
 #define RUNTIME_TRAINER_CLASSES_COUNT  (gADMG_RegistryCounts.trainerClasses)
 #define RUNTIME_TRAINER_PICS_COUNT     (gADMG_RegistryCounts.trainerPics)
-#define RUNTIME_TRAINERS_COUNT         (gADMG_RegistryCounts.trainers)
+#define RUNTIME_ADDED_TRAINERS_COUNT   (gADMG_RegistryCounts.addedTrainers)
+#define RUNTIME_NATIONAL_DEX_COUNT     (gADMG_RegistryCounts.nationalDex)
 
 #define FIRST_ADDED_SPECIES        (NUM_SPECIES + 1)
 #define FIRST_ADDED_MOVE           (MOVES_COUNT_ALL + 1)
@@ -47,6 +50,10 @@ extern const struct ADMG_RegistryCounts gADMG_RegistryCounts;
 #define FIRST_ADDED_NATURE         (NUM_NATURES + 1)
 #define FIRST_ADDED_TRAINER_CLASS  (TRAINER_CLASS_COUNT + 1)
 #define FIRST_ADDED_TRAINER_PIC    (TRAINER_PIC_COUNT + 1)
+// Trainer IDs share 16 bits with partners and the special IDs of other battle kinds, so added trainers start above
+// all of them.
+#define FIRST_ADDED_TRAINER        0x10000
+#define FIRST_ADDED_NATIONAL_DEX   (NATIONAL_DEX_COUNT + 1)
 
 static inline bool32 IsSpeciesIdValid(u32 species) { return species < RUNTIME_SPECIES_COUNT; }
 static inline bool32 IsMoveIdValid(u32 move) { return move < RUNTIME_MOVES_COUNT && move != MOVES_COUNT_ALL; }

@@ -17,7 +17,13 @@ enum ADMG_SaveSection
     ADMG_SAVE_SECTION_HALL_OF_FAME = 5,
     ADMG_SAVE_SECTION_TRAINER_HILL = 6,
     ADMG_SAVE_SECTION_RECORDED_BATTLE = 7,
+    ADMG_SAVE_SECTION_EXTENDED_TRAINER_DEFEATS = 8, // admg_extended.h: bytes of a bit store, as many as it has
+    ADMG_SAVE_SECTION_EXTENDED_DEX_SEEN = 9,
+    ADMG_SAVE_SECTION_EXTENDED_DEX_CAUGHT = 10,
 };
+
+// The most regions one save hands over: the save slot, the Hall of Fame and every extended store.
+#define ADMG_SAVE_MAX_REGIONS 8
 
 struct ADMG_SaveRegion
 {

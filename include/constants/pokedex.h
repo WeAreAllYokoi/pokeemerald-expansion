@@ -1040,6 +1040,7 @@ enum NationalDexOrder
     NATIONAL_DEX_IRON_CROWN,
     NATIONAL_DEX_TERAPAGOS,
     NATIONAL_DEX_PECHARUNT,
+    NATIONAL_DEX_ID_MAX = 0xFFFFFFFF, // Only makes the enum 32 bits wide
 };
 
 #define JOHTO_DEX_COUNT     NATIONAL_DEX_CELEBI

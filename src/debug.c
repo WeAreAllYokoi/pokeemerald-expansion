@@ -2460,14 +2460,14 @@ static void DebugAction_Trainers_SwitchDoublesFlag(u8 taskId)
 static void DebugAction_Trainers_SetRematch(u8 taskId)
 {
     s32 rematchId;
-    u16 flagIds[REMATCHES_COUNT];
+    u32 flagIds[REMATCHES_COUNT];
     u32 count = 0;
     if (sDebugMenuListData == NULL)
         return;
     rematchId = sDebugMenuListData->data[1];
     if (rematchId == -1)
     {
-        u16 flagId;
+        u32 flagId;
         if (ADMG_TryGetTrainerDefeatFlagId((u32)sDebugMenuListData->data[0], &flagId))
             FlagToggle(flagId);
         return;
