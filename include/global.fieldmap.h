@@ -1,6 +1,8 @@
 #ifndef GUARD_GLOBAL_FIELDMAP_H
 #define GUARD_GLOBAL_FIELDMAP_H
 
+#include "constants/map_types.h"
+
 // Masks/shifts for blocks in the map grid
 // Map grid blocks consist of a 10 bit metatile id, a 2 bit collision value, and a 4 bit elevation value
 // This is the data stored in each data/layouts/*/map.bin file
@@ -232,20 +234,22 @@ struct MapHeader
     /* 0x10 */ u16 music;
     /* 0x12 */ u16 mapLayoutId;
     /* 0x14 */ mapsec_u8_t regionMapSectionId;
-    /* 0x15 */ u8 weather;
-    /* 0x16 */ u8 mapType;
-    /* 0x17 */ s8 floorNumber;
-    /* 0x18 */ u16 nightMusic;
+    /* 0x18 */ u8 weather;
+    /* 0x19 */ u8 mapType;
+    /* 0x1A */ s8 floorNumber;
+    /* 0x1C */ u16 nightMusic;
                // fields correspond to the arguments in the map_header_flags macro
-    /* 0x1A */ bool8 allowCycling:1;
+    /* 0x1E */ bool8 allowCycling:1;
                bool8 allowEscaping:1; // Escape Rope and Dig
                bool8 allowRunning:1;
                bool8 showMapName:1;
                bool8 writeSpecialVarIsEffect:1;
                bool8 cave:1;
                bool8 unused:2;
-    /* 0x1B */ u8 battleType;
+    /* 0x1F */ u8 battleType;
 };
+
+STATIC_ASSERT(sizeof(struct MapHeader) == MAP_HEADER_SIZE, MapHeaderMatchesGeneratedHeaders);
 
 
 struct ObjectEvent

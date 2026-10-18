@@ -1,6 +1,10 @@
 #ifndef GUARD_CONSTANTS_MAP_TYPES_H
 #define GUARD_CONSTANTS_MAP_TYPES_H
 
+// The size of struct MapHeader. Map headers are generated as assembly (tools/mapjson), so the C struct and the
+// generated data both check it.
+#define MAP_HEADER_SIZE 32
+
 enum MapType
 {
     MAP_TYPE_NONE,

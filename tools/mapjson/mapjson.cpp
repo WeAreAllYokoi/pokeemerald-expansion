@@ -170,7 +170,7 @@ string generate_map_header_text(Json map_data, Json layouts_data) {
     text << "\t.2byte " << json_to_string(map_data, "music") << "\n";
 
     text << "\t.2byte " << json_to_string(layout, "id") << "\n"
-         << "\t.byte "  << json_to_string(map_data, "region_map_section") << "\n"
+         << "\t.4byte " << json_to_string(map_data, "region_map_section") << "\n"
          << "\t.byte "  << json_to_string(map_data, "weather") << "\n"
          << "\t.byte "  << json_to_string(map_data, "map_type") << "\n";
 
@@ -179,6 +179,7 @@ string generate_map_header_text(Json map_data, Json layouts_data) {
         text << "\t.byte 0\n";
     else
         text << "\t.byte " << floor_number << "\n";
+    text << "\t.byte 0\n"; // padding before nightMusic
 
     if (!map_data["night_music"].is_null())
         text << "\t.2byte " << json_to_string(map_data, "night_music") << "\n";
@@ -201,7 +202,10 @@ string generate_map_header_text(Json map_data, Json layouts_data) {
         text << "requires_flash=" << json_to_string(map_data, "requires_flash") << "\n";
     }
 
-     text << "\t.byte " << json_to_string(map_data, "battle_scene") << "\n\n";
+     text << "\t.byte " << json_to_string(map_data, "battle_scene") << "\n";
+     text << "\t.if . - " << mapName << " != MAP_HEADER_SIZE\n"
+          << "\t.error \"" << mapName << ": the generated map header does not match struct MapHeader\"\n"
+          << "\t.endif\n\n";
 
     return text.str();
 }
