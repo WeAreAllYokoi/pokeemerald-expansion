@@ -1594,9 +1594,10 @@ static void RestoreMonHeldItems(void)
 
     for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
     {
+        enum Item heldItem = gSaveBlock2Ptr->frontier.pikeHeldItemsBackup[i];
         SetMonData(&gParties[B_TRAINER_PLAYER][gSaveBlock2Ptr->frontier.selectedPartyMons[i] - 1],
                    MON_DATA_HELD_ITEM,
-                   &gSaveBlock2Ptr->frontier.pikeHeldItemsBackup[i]);
+                   &heldItem);
     }
 }
 

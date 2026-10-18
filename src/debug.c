@@ -3560,7 +3560,8 @@ static bool32 DebugSelection_GiveComplexPokemon_OnComplete(u8 taskId)
 
     SetMonData(&mon, MON_DATA_DYNAMAX_LEVEL, &monData[22]);
     SetMonData(&mon, MON_DATA_GIGANTAMAX_FACTOR, &monData[23]);
-    SetMonData(&mon, MON_DATA_TERA_TYPE, &monData[24]);
+    enum Type teraType = monData[24];
+    SetMonData(&mon, MON_DATA_TERA_TYPE, &teraType);
 
     CalculateMonStats(&mon);
     GiveScriptedMonToPlayer(&mon, PARTY_SIZE);

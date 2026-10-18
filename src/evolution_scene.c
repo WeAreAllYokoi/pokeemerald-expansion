@@ -156,8 +156,9 @@ static void CB2_BeginEvolutionScene(void)
 }
 
 #define tState              data[0]
-#define tPreEvoSpecies      data[1]
-#define tPostEvoSpecies     data[2]
+// SetWordTaskArg stores each 32-bit species ID in two adjacent task data slots
+#define TASK_ARG_PRE_EVO_SPECIES  11
+#define TASK_ARG_POST_EVO_SPECIES 13
 #define tCanStop            data[3]
 #define tBits               data[3]
 #define tLearnsFirstMove    data[4]
@@ -187,7 +188,7 @@ static void Task_BeginEvolutionScene(u8 taskId)
             u8 partyId;
 
             mon = &gParties[B_TRAINER_PLAYER][gTasks[taskId].tPartyId];
-            postEvoSpecies = gTasks[taskId].tPostEvoSpecies;
+            postEvoSpecies = GetWordTaskArg(taskId, TASK_ARG_POST_EVO_SPECIES);
             canStopEvo = gTasks[taskId].tCanStop;
             partyId = gTasks[taskId].tPartyId;
 
@@ -202,7 +203,7 @@ void BeginEvolutionScene(struct Pokemon *mon, enum Species postEvoSpecies, bool3
 {
     u8 taskId = CreateTask(Task_BeginEvolutionScene, 0);
     gTasks[taskId].tState = 0;
-    gTasks[taskId].tPostEvoSpecies = postEvoSpecies;
+    SetWordTaskArg(taskId, TASK_ARG_POST_EVO_SPECIES, postEvoSpecies);
     gTasks[taskId].tCanStop = canStopEvo;
     gTasks[taskId].tPartyId = partyId;
     SetMainCallback2(CB2_BeginEvolutionScene);
@@ -293,8 +294,8 @@ void EvolutionScene(struct Pokemon *mon, enum Species postEvoSpecies, bool32 can
 
     sEvoStructPtr->evoTaskId = id = CreateTask(Task_EvolutionScene, 0);
     gTasks[id].tState = 0;
-    gTasks[id].tPreEvoSpecies = currSpecies;
-    gTasks[id].tPostEvoSpecies = postEvoSpecies;
+    SetWordTaskArg(id, TASK_ARG_PRE_EVO_SPECIES, currSpecies);
+    SetWordTaskArg(id, TASK_ARG_POST_EVO_SPECIES, postEvoSpecies);
     gTasks[id].tCanStop = canStopEvo;
     gTasks[id].tLearnsFirstMove = TRUE;
     gTasks[id].tEvoWasStopped = FALSE;
@@ -318,7 +319,7 @@ static void CB2_EvolutionSceneLoadGraphics(void)
     struct Pokemon *mon = &gParties[B_TRAINER_PLAYER][gTasks[sEvoStructPtr->evoTaskId].tPartyId];
     bool32 isShiny;
 
-    postEvoSpecies = gTasks[sEvoStructPtr->evoTaskId].tPostEvoSpecies;
+    postEvoSpecies = GetWordTaskArg(sEvoStructPtr->evoTaskId, TASK_ARG_POST_EVO_SPECIES);
     isShiny = GetMonData(mon, MON_DATA_IS_SHINY);
     personality = GetMonData(mon, MON_DATA_PERSONALITY);
 
@@ -387,7 +388,7 @@ static void CB2_TradeEvolutionSceneLoadGraphics(void)
         mon = &gParties[B_TRAINER_OPPONENT_A][TRADEMON_FROM_PC];
     else
         mon = &gParties[B_TRAINER_PLAYER][gTasks[sEvoStructPtr->evoTaskId].tPartyId];
-    enum Species postEvoSpecies = gTasks[sEvoStructPtr->evoTaskId].tPostEvoSpecies;
+    enum Species postEvoSpecies = GetWordTaskArg(sEvoStructPtr->evoTaskId, TASK_ARG_POST_EVO_SPECIES);
 
     switch (gMain.state)
     {
@@ -510,8 +511,8 @@ void TradeEvolutionScene(struct Pokemon *mon, enum Species postEvoSpecies, u8 pr
 
     sEvoStructPtr->evoTaskId = id = CreateTask(Task_TradeEvolutionScene, 0);
     gTasks[id].tState = 0;
-    gTasks[id].tPreEvoSpecies = currSpecies;
-    gTasks[id].tPostEvoSpecies = postEvoSpecies;
+    SetWordTaskArg(id, TASK_ARG_PRE_EVO_SPECIES, currSpecies);
+    SetWordTaskArg(id, TASK_ARG_POST_EVO_SPECIES, postEvoSpecies);
     gTasks[id].tLearnsFirstMove = TRUE;
     gTasks[id].tEvoWasStopped = FALSE;
     gTasks[id].tPartyId = partyId;
@@ -691,7 +692,7 @@ static void Task_EvolutionScene(u8 taskId)
     case EVOSTATE_INTRO_MON_ANIM:
         if (!IsTextPrinterActiveOnWindow(0))
         {
-            EvoScene_DoMonAnimAndCry(sEvoStructPtr->preEvoSpriteId, gTasks[taskId].tPreEvoSpecies);
+            EvoScene_DoMonAnimAndCry(sEvoStructPtr->preEvoSpriteId, GetWordTaskArg(taskId, TASK_ARG_PRE_EVO_SPECIES));
             gTasks[taskId].tState++;
         }
         break;
@@ -749,7 +750,7 @@ static void Task_EvolutionScene(u8 taskId)
     case EVOSTATE_SPARKLE_SPRAY:
         if (!gTasks[sEvoGraphicsTaskId].isActive)
         {
-            sEvoGraphicsTaskId = EvolutionSparkles_SprayAndFlash(gTasks[taskId].tPostEvoSpecies);
+            sEvoGraphicsTaskId = EvolutionSparkles_SprayAndFlash(GetWordTaskArg(taskId, TASK_ARG_POST_EVO_SPECIES));
             gTasks[taskId].tState++;
         }
         break;
@@ -773,7 +774,7 @@ static void Task_EvolutionScene(u8 taskId)
     case EVOSTATE_EVO_MON_ANIM:
         if (!gPaletteFade.active)
         {
-            EvoScene_DoMonAnimAndCry(sEvoStructPtr->postEvoSpriteId, gTasks[taskId].tPostEvoSpecies);
+            EvoScene_DoMonAnimAndCry(sEvoStructPtr->postEvoSpriteId, GetWordTaskArg(taskId, TASK_ARG_POST_EVO_SPECIES));
             gTasks[taskId].tState++;
         }
         break;
@@ -785,12 +786,12 @@ static void Task_EvolutionScene(u8 taskId)
             BattlePutTextOnWindow(gStringVar4, B_WIN_MSG);
             PlayBGM(MUS_EVOLVED);
             gTasks[taskId].tState++;
-            SetMonData(mon, MON_DATA_SPECIES, (void *)(&gTasks[taskId].tPostEvoSpecies));
+            { enum Species postEvoSpecies_ = GetWordTaskArg(taskId, TASK_ARG_POST_EVO_SPECIES); SetMonData(mon, MON_DATA_SPECIES, &postEvoSpecies_); }
             SetMonData(mon, MON_DATA_EVOLUTION_TRACKER, &zero);
             CalculateMonStats(mon);
-            EvolutionRenameMon(mon, gTasks[taskId].tPreEvoSpecies, gTasks[taskId].tPostEvoSpecies);
-            GetSetPokedexFlag(SpeciesToNationalPokedexNum(gTasks[taskId].tPostEvoSpecies), FLAG_SET_SEEN);
-            GetSetPokedexFlag(SpeciesToNationalPokedexNum(gTasks[taskId].tPostEvoSpecies), FLAG_SET_CAUGHT);
+            EvolutionRenameMon(mon, GetWordTaskArg(taskId, TASK_ARG_PRE_EVO_SPECIES), GetWordTaskArg(taskId, TASK_ARG_POST_EVO_SPECIES));
+            GetSetPokedexFlag(SpeciesToNationalPokedexNum(GetWordTaskArg(taskId, TASK_ARG_POST_EVO_SPECIES)), FLAG_SET_SEEN);
+            GetSetPokedexFlag(SpeciesToNationalPokedexNum(GetWordTaskArg(taskId, TASK_ARG_POST_EVO_SPECIES)), FLAG_SET_CAUGHT);
             IncrementGameStat(GAME_STAT_EVOLVED_POKEMON);
         }
         break;
@@ -838,7 +839,7 @@ static void Task_EvolutionScene(u8 taskId)
             }
 
             if (!gTasks[taskId].tEvoWasStopped)
-                CreateShedinja(gTasks[taskId].tPreEvoSpecies, gTasks[taskId].tPostEvoSpecies, mon);
+                CreateShedinja(GetWordTaskArg(taskId, TASK_ARG_PRE_EVO_SPECIES), GetWordTaskArg(taskId, TASK_ARG_POST_EVO_SPECIES), mon);
 
             DestroyTask(taskId);
             FreeMonSpritesGfx();
@@ -858,7 +859,7 @@ static void Task_EvolutionScene(u8 taskId)
     case EVOSTATE_CANCEL_MON_ANIM:
         if (!gPaletteFade.active)
         {
-            EvoScene_DoMonAnimAndCry(sEvoStructPtr->preEvoSpriteId, gTasks[taskId].tPreEvoSpecies);
+            EvoScene_DoMonAnimAndCry(sEvoStructPtr->preEvoSpriteId, GetWordTaskArg(taskId, TASK_ARG_PRE_EVO_SPECIES));
             gTasks[taskId].tState++;
         }
         break;
@@ -1123,7 +1124,7 @@ static void Task_TradeEvolutionScene(u8 taskId)
     case T_EVOSTATE_INTRO_CRY:
         if (!IsTextPrinterActiveOnWindow(0))
         {
-            PlayCry_Normal(gTasks[taskId].tPreEvoSpecies, 0);
+            PlayCry_Normal(GetWordTaskArg(taskId, TASK_ARG_PRE_EVO_SPECIES), 0);
             gTasks[taskId].tState++;
         }
         break;
@@ -1183,7 +1184,7 @@ static void Task_TradeEvolutionScene(u8 taskId)
     case T_EVOSTATE_SPARKLE_SPRAY:
         if (!gTasks[sEvoGraphicsTaskId].isActive)
         {
-            sEvoGraphicsTaskId = EvolutionSparkles_SprayAndFlash_Trade(gTasks[taskId].tPostEvoSpecies);
+            sEvoGraphicsTaskId = EvolutionSparkles_SprayAndFlash_Trade(GetWordTaskArg(taskId, TASK_ARG_POST_EVO_SPECIES));
             gTasks[taskId].tState++;
         }
         break;
@@ -1199,7 +1200,7 @@ static void Task_TradeEvolutionScene(u8 taskId)
         {
             // Restore bg, do mon anim/cry
             Free(sBgAnimPal);
-            EvoScene_DoMonAnimAndCry(sEvoStructPtr->postEvoSpriteId, gTasks[taskId].tPostEvoSpecies);
+            EvoScene_DoMonAnimAndCry(sEvoStructPtr->postEvoSpriteId, GetWordTaskArg(taskId, TASK_ARG_POST_EVO_SPECIES));
             memcpy(&gPlttBufferUnfaded[BG_PLTT_ID(2)], sEvoStructPtr->savedPalette, sizeof(sEvoStructPtr->savedPalette));
             gTasks[taskId].tState++;
         }
@@ -1212,12 +1213,12 @@ static void Task_TradeEvolutionScene(u8 taskId)
             DrawTextOnTradeWindow(0, gStringVar4, 1);
             PlayFanfare(MUS_EVOLVED);
             gTasks[taskId].tState++;
-            SetMonData(mon, MON_DATA_SPECIES, (&gTasks[taskId].tPostEvoSpecies));
+            { enum Species postEvoSpecies_ = GetWordTaskArg(taskId, TASK_ARG_POST_EVO_SPECIES); SetMonData(mon, MON_DATA_SPECIES, &postEvoSpecies_); }
             SetMonData(mon, MON_DATA_EVOLUTION_TRACKER, &zero);
             CalculateMonStats(mon);
-            EvolutionRenameMon(mon, gTasks[taskId].tPreEvoSpecies, gTasks[taskId].tPostEvoSpecies);
-            GetSetPokedexFlag(SpeciesToNationalPokedexNum(gTasks[taskId].tPostEvoSpecies), FLAG_SET_SEEN);
-            GetSetPokedexFlag(SpeciesToNationalPokedexNum(gTasks[taskId].tPostEvoSpecies), FLAG_SET_CAUGHT);
+            EvolutionRenameMon(mon, GetWordTaskArg(taskId, TASK_ARG_PRE_EVO_SPECIES), GetWordTaskArg(taskId, TASK_ARG_POST_EVO_SPECIES));
+            GetSetPokedexFlag(SpeciesToNationalPokedexNum(GetWordTaskArg(taskId, TASK_ARG_POST_EVO_SPECIES)), FLAG_SET_SEEN);
+            GetSetPokedexFlag(SpeciesToNationalPokedexNum(GetWordTaskArg(taskId, TASK_ARG_POST_EVO_SPECIES)), FLAG_SET_CAUGHT);
             IncrementGameStat(GAME_STAT_EVOLVED_POKEMON);
         }
         break;
@@ -1269,7 +1270,7 @@ static void Task_TradeEvolutionScene(u8 taskId)
     case T_EVOSTATE_CANCEL_MON_ANIM:
         if (!gPaletteFade.active)
         {
-            EvoScene_DoMonAnimAndCry(sEvoStructPtr->preEvoSpriteId, gTasks[taskId].tPreEvoSpecies);
+            EvoScene_DoMonAnimAndCry(sEvoStructPtr->preEvoSpriteId, GetWordTaskArg(taskId, TASK_ARG_PRE_EVO_SPECIES));
             gTasks[taskId].tState++;
         }
         break;

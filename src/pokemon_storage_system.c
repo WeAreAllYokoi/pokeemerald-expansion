@@ -9556,7 +9556,7 @@ u32 GetBoxMonDataAt(u8 boxId, u8 boxPosition, s32 request)
 void SetBoxMonDataAt(u8 boxId, u8 boxPosition, s32 request, const void *value)
 {
     if (boxId < TOTAL_BOXES_COUNT && boxPosition < IN_BOX_COUNT)
-        SetBoxMonData(&gPokemonStoragePtr->boxes[boxId][boxPosition], request, value);
+        (SetBoxMonData)(&gPokemonStoragePtr->boxes[boxId][boxPosition], request, value);
 }
 
 u32 GetCurrentBoxMonData(u8 boxPosition, s32 request)

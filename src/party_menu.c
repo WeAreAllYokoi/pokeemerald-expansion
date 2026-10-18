@@ -2106,16 +2106,15 @@ static void DisplaySwitchedHeldItemMessage(enum Item item, enum Item item2, bool
 
 static void GiveItemToMon(struct Pokemon *mon, enum Item item)
 {
-    u8 itemBytes[2];
+    u32 itemBytes;
 
     if (ItemIsMail(item) == TRUE)
     {
         if (GiveMailToMonByItemId(mon, item) == MAIL_NONE)
             return;
     }
-    itemBytes[0] = item;
-    itemBytes[1] = item >> 8;
-    SetMonData(mon, MON_DATA_HELD_ITEM, itemBytes);
+    itemBytes = item;
+    SetMonData(mon, MON_DATA_HELD_ITEM, &itemBytes);
     TryItemHoldFormChange(&gParties[B_TRAINER_PLAYER][gPartyMenu.slotId], gPartyMenu.slotId, B_TRAINER_PLAYER);
 }
 
@@ -5206,7 +5205,10 @@ void Task_Mint(u8 taskId)
             tState++;
         break;
     case 5:
-        SetMonData(&gParties[B_TRAINER_PLAYER][tMonId], MON_DATA_HIDDEN_NATURE, &tNewNature);
+    {
+        nature_t newNature = tNewNature;
+        SetMonData(&gParties[B_TRAINER_PLAYER][tMonId], MON_DATA_HIDDEN_NATURE, &newNature);
+    }
         CalculateMonStats(&gParties[B_TRAINER_PLAYER][tMonId]);
         RemoveBagItem(gSpecialVar_ItemId, 1);
         gTasks[taskId].func = Task_ClosePartyMenu;

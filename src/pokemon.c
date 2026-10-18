@@ -1335,10 +1335,9 @@ void CreateEnemyEventMon(void)
     CreateEventMon(&gParties[B_TRAINER_OPPONENT_A][0], species, level, Random32(), OTID_STRUCT_PLAYER_ID);
     if (itemId)
     {
-        u8 heldItem[2];
-        heldItem[0] = itemId;
-        heldItem[1] = itemId >> 8;
-        SetMonData(&gParties[B_TRAINER_OPPONENT_A][0], MON_DATA_HELD_ITEM, heldItem);
+        u32 heldItem;
+        heldItem = itemId;
+        SetMonData(&gParties[B_TRAINER_OPPONENT_A][0], MON_DATA_HELD_ITEM, &heldItem);
     }
 }
 
@@ -2531,7 +2530,7 @@ u32 GetBoxMonData2(struct BoxPokemon *boxMon, s32 field)
           SET32(lhs); \
    } while (0)
 
-void SetMonData(struct Pokemon *mon, s32 field, const void *dataArg)
+void (SetMonData)(struct Pokemon *mon, s32 field, const void *dataArg)
 {
     const u8 *data = dataArg;
 
@@ -2584,12 +2583,12 @@ void SetMonData(struct Pokemon *mon, s32 field, const void *dataArg)
     case MON_DATA_SPECIES_OR_EGG:
         break;
     default:
-        SetBoxMonData(&mon->box, field, data);
+        (SetBoxMonData)(&mon->box, field, data);
         break;
     }
 }
 
-void SetBoxMonData(struct BoxPokemon *boxMon, s32 field, const void *dataArg)
+void (SetBoxMonData)(struct BoxPokemon *boxMon, s32 field, const void *dataArg)
 {
     const u8 *data = dataArg;
 
@@ -2630,7 +2629,7 @@ void SetBoxMonData(struct BoxPokemon *boxMon, s32 field, const void *dataArg)
         case MON_DATA_SPECIES:
         {
             struct PokemonSubstruct0 *substruct0 = GetSubstruct0(boxMon);
-            SET16(substruct0->species);
+            SET32(substruct0->species);
             if (substruct0->species)
                 boxMon->hasSpecies = TRUE;
             else
@@ -2638,7 +2637,7 @@ void SetBoxMonData(struct BoxPokemon *boxMon, s32 field, const void *dataArg)
             break;
         }
         case MON_DATA_HELD_ITEM:
-            SET16(GetSubstruct0(boxMon)->heldItem);
+            SET32(GetSubstruct0(boxMon)->heldItem);
             break;
         case MON_DATA_EXP:
             SET32(GetSubstruct0(boxMon)->experience);
@@ -2650,16 +2649,16 @@ void SetBoxMonData(struct BoxPokemon *boxMon, s32 field, const void *dataArg)
             SET8(GetSubstruct0(boxMon)->friendship);
             break;
         case MON_DATA_MOVE1:
-            SET16(GetSubstruct1(boxMon)->move1);
+            SET32(GetSubstruct1(boxMon)->move1);
             break;
         case MON_DATA_MOVE2:
-            SET16(GetSubstruct1(boxMon)->move2);
+            SET32(GetSubstruct1(boxMon)->move2);
             break;
         case MON_DATA_MOVE3:
-            SET16(GetSubstruct1(boxMon)->move3);
+            SET32(GetSubstruct1(boxMon)->move3);
             break;
         case MON_DATA_MOVE4:
-            SET16(GetSubstruct1(boxMon)->move4);
+            SET32(GetSubstruct1(boxMon)->move4);
             break;
         case MON_DATA_PP1:
             SET8(GetSubstruct1(boxMon)->pp1);
@@ -2719,7 +2718,7 @@ void SetBoxMonData(struct BoxPokemon *boxMon, s32 field, const void *dataArg)
             GetSubstruct3(boxMon)->pokerus = (GetSubstruct3(boxMon)->pokerus & 0xF0) | *data;
             break;
         case MON_DATA_MET_LOCATION:
-            SET8(GetSubstruct3(boxMon)->metLocation);
+            SET32(GetSubstruct3(boxMon)->metLocation);
             break;
         case MON_DATA_MET_LEVEL:
             SET8(GetSubstruct3(boxMon)->metLevel);
@@ -2728,7 +2727,7 @@ void SetBoxMonData(struct BoxPokemon *boxMon, s32 field, const void *dataArg)
             SET8(GetSubstruct3(boxMon)->metGame);
             break;
         case MON_DATA_POKEBALL:
-            SET8(GetSubstruct0(boxMon)->pokeball);
+            SET32(GetSubstruct0(boxMon)->pokeball);
             break;
         case MON_DATA_OT_GENDER:
             SET8(GetSubstruct3(boxMon)->otGender);
@@ -2853,7 +2852,7 @@ void SetBoxMonData(struct BoxPokemon *boxMon, s32 field, const void *dataArg)
             SET8(GetSubstruct3(boxMon)->gigantamaxFactor);
             break;
         case MON_DATA_TERA_TYPE:
-            SET8(GetSubstruct0(boxMon)->teraType);
+            SET32(GetSubstruct0(boxMon)->teraType);
             break;
         case MON_DATA_EVOLUTION_TRACKER:
         {
@@ -2925,7 +2924,7 @@ void SetBoxMonData(struct BoxPokemon *boxMon, s32 field, const void *dataArg)
         {
             u32 nature = GetNatureFromPersonality(boxMon->personality);
             u32 hiddenNature;
-            SET8(hiddenNature);
+            SET32(hiddenNature);
             boxMon->hiddenNatureModifier = nature ^ hiddenNature;
             break;
         }

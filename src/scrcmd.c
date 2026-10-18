@@ -3073,7 +3073,7 @@ bool8 ScrCmd_warpspinenter(struct ScriptContext *ctx)
 bool8 ScrCmd_setmonmetlocation(struct ScriptContext *ctx)
 {
     u16 partyIndex = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
-    u8 location = ScriptReadByte(ctx);
+    metloc_u8_t location = ScriptReadByte(ctx);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 

@@ -123,7 +123,7 @@ bool8 DoesPartyHaveEnigmaBerry(void)
 
 void CreateScriptedWildMon(enum Species species, u8 level, enum Item item)
 {
-    u8 heldItem[2];
+    u32 heldItem;
 
     ZeroEnemyPartyMons();
     u32 personality = GetMonPersonality(species,
@@ -134,15 +134,14 @@ void CreateScriptedWildMon(enum Species species, u8 level, enum Item item)
     GiveMonInitialMoveset(&gParties[B_TRAINER_OPPONENT_A][0]);
     if (item)
     {
-        heldItem[0] = item;
-        heldItem[1] = item >> 8;
-        SetMonData(&gParties[B_TRAINER_OPPONENT_A][0], MON_DATA_HELD_ITEM, heldItem);
+        heldItem = item;
+        SetMonData(&gParties[B_TRAINER_OPPONENT_A][0], MON_DATA_HELD_ITEM, &heldItem);
     }
 }
 void CreateScriptedDoubleWildMon(enum Species species1, u8 level1, enum Item item1, enum Species species2, u8 level2, enum Item item2)
 {
-    u8 heldItem1[2];
-    u8 heldItem2[2];
+    u32 heldItem1;
+    u32 heldItem2;
 
     ZeroEnemyPartyMons();
     u32 personality = GetMonPersonality(species1,
@@ -153,9 +152,8 @@ void CreateScriptedDoubleWildMon(enum Species species1, u8 level1, enum Item ite
     GiveMonInitialMoveset(&gParties[B_TRAINER_OPPONENT_A][0]);
     if (item1)
     {
-        heldItem1[0] = item1;
-        heldItem1[1] = item1 >> 8;
-        SetMonData(&gParties[B_TRAINER_OPPONENT_A][0], MON_DATA_HELD_ITEM, heldItem1);
+        heldItem1 = item1;
+        SetMonData(&gParties[B_TRAINER_OPPONENT_A][0], MON_DATA_HELD_ITEM, &heldItem1);
     }
 
     personality = GetMonPersonality(species2,
@@ -166,9 +164,8 @@ void CreateScriptedDoubleWildMon(enum Species species1, u8 level1, enum Item ite
     GiveMonInitialMoveset(&gParties[B_TRAINER_OPPONENT_A][1]);
     if (item2)
     {
-        heldItem2[0] = item2;
-        heldItem2[1] = item2 >> 8;
-        SetMonData(&gParties[B_TRAINER_OPPONENT_A][1], MON_DATA_HELD_ITEM, heldItem2);
+        heldItem2 = item2;
+        SetMonData(&gParties[B_TRAINER_OPPONENT_A][1], MON_DATA_HELD_ITEM, &heldItem2);
     }
 }
 
@@ -386,14 +383,13 @@ u32 ScriptGiveMonParameterized(u8 side, u8 slot, struct PokemonTemplate *monTemp
 u32 ScriptGiveMon(enum Species species, u8 level, enum Item item)
 {
     struct Pokemon mon;
-    u8 heldItem[2];
+    u32 heldItem;
 
     CreateRandomMon(&mon, species, level);
     if (item)
     {
-        heldItem[0] = item;
-        heldItem[1] = item >> 8;
-        SetMonData(&mon, MON_DATA_HELD_ITEM, heldItem);
+        heldItem = item;
+        SetMonData(&mon, MON_DATA_HELD_ITEM, &heldItem);
     }
 
     return GiveScriptedMonToPlayer(&mon, PARTY_SIZE);

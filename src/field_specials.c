@@ -1578,7 +1578,7 @@ void SetShoalItemFlag(u16 unused)
 
 void LoadWallyZigzagoon(void)
 {
-    u16 monData;
+    u32 monData;
     CreateRandomMon(&gParties[B_TRAINER_PLAYER][0], SPECIES_ZIGZAGOON, 7);
     monData = TRUE;
     SetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_ABILITY_NUM, &monData);

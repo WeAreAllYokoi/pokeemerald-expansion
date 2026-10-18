@@ -140,7 +140,7 @@ struct PokemonSubstruct0
     u32 unused_04:3;
     u8 ppBonuses;
     u8 friendship;
-    u16 pokeball:6; // 63 balls.
+    u32 pokeball;
     u16 nickname12:8; // 12th character of nickname.
     u16 unused_0A:2;
 };
@@ -186,7 +186,7 @@ struct PokemonSubstruct2
 struct PokemonSubstruct3
 {
     u8 pokerus;
-    u8 metLocation;
+    metloc_u8_t metLocation;
     u16 metLevel:7;
     u16 metGame:4;
     u16 dynamaxLevel:4;
@@ -831,8 +831,17 @@ u32 GetMonData2(struct Pokemon *mon, s32 field);
 u32 GetBoxMonData3(struct BoxPokemon *boxMon, s32 field, u8 *data);
 u32 GetBoxMonData2(struct BoxPokemon *boxMon, s32 field);
 
-void SetMonData(struct Pokemon *mon, s32 field, const void *dataArg);
-void SetBoxMonData(struct BoxPokemon *boxMon, s32 field, const void *dataArg);
+void (SetMonData)(struct Pokemon *mon, s32 field, const void *dataArg);
+void (SetBoxMonData)(struct BoxPokemon *boxMon, s32 field, const void *dataArg);
+
+// SetMonData and SetBoxMonData read four bytes for these content ID fields
+// When the field is a compile-time constant, the macros below require a pointer
+// to a four-byte value, so the setter won't read past a narrower argument
+#define MON_DATA_IS_ID_FIELD(field) ((field) == MON_DATA_SPECIES || (field) == MON_DATA_HELD_ITEM     || (field) == MON_DATA_MOVE1 || (field) == MON_DATA_MOVE2 || (field) == MON_DATA_MOVE3 || (field) == MON_DATA_MOVE4     || (field) == MON_DATA_MET_LOCATION || (field) == MON_DATA_POKEBALL || (field) == MON_DATA_TERA_TYPE     || (field) == MON_DATA_HIDDEN_NATURE)
+void MonDataIdFieldNeeds32Bits(void) __attribute__((error("This MON_DATA field holds a 32-bit content ID: pass a pointer to a 32-bit value.")));
+#define CHECK_MON_DATA_ARG(field, data) do { if (__builtin_constant_p(field) && MON_DATA_IS_ID_FIELD(field) && sizeof(*(data)) != 4) MonDataIdFieldNeeds32Bits(); } while (0)
+#define SetMonData(mon, field, data) ({ CHECK_MON_DATA_ARG(field, data); (SetMonData)(mon, field, data); })
+#define SetBoxMonData(boxMon, field, data) ({ CHECK_MON_DATA_ARG(field, data); (SetBoxMonData)(boxMon, field, data); })
 void CopyMon(void *dest, void *src, size_t size);
 u8 GiveCapturedMonToPlayer(struct Pokemon *mon);
 u8 CopyMonToPC(struct Pokemon *mon);
