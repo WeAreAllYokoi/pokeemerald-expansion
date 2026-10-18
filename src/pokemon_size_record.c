@@ -119,7 +119,7 @@ static u8* ReturnHeightStringNoWhitespace(u32 size)
     return heightStr;
 }
 
-static u8 CompareMonSize(enum Species species, u16 *sizeRecord)
+static u8 CompareMonSize(enum Species species, u32 *sizeRecord)
 {
     if (gSpecialVar_Result == PARTY_NOTHING_CHOSEN)
     {
@@ -154,7 +154,7 @@ static u8 CompareMonSize(enum Species species, u16 *sizeRecord)
 }
 
 // Stores species name in gStringVar1, trainer's name in gStringVar2, and size in gStringVar3
-static void GetMonSizeRecordInfo(enum Species species, u16 *sizeRecord)
+static void GetMonSizeRecordInfo(enum Species species, u32 *sizeRecord)
 {
     u32 size = GetMonSize(species, *sizeRecord);
 
@@ -177,14 +177,14 @@ void InitSeedotSizeRecord(void)
 
 void GetSeedotSizeRecordInfo(void)
 {
-    u16 *sizeRecord = ADMG_REQUIRE_VAR_SPAN(VAR_SEEDOT_SIZE_RECORD, 1);
+    u32 *sizeRecord = ADMG_REQUIRE_VAR_SPAN(VAR_SEEDOT_SIZE_RECORD, 1);
 
     GetMonSizeRecordInfo(SPECIES_SEEDOT, sizeRecord);
 }
 
 void CompareSeedotSize(void)
 {
-    u16 *sizeRecord = ADMG_REQUIRE_VAR_SPAN(VAR_SEEDOT_SIZE_RECORD, 1);
+    u32 *sizeRecord = ADMG_REQUIRE_VAR_SPAN(VAR_SEEDOT_SIZE_RECORD, 1);
 
     gSpecialVar_Result = CompareMonSize(SPECIES_SEEDOT, sizeRecord);
 }
@@ -196,42 +196,42 @@ void InitLotadSizeRecord(void)
 
 void GetLotadSizeRecordInfo(void)
 {
-    u16 *sizeRecord = ADMG_REQUIRE_VAR_SPAN(VAR_LOTAD_SIZE_RECORD, 1);
+    u32 *sizeRecord = ADMG_REQUIRE_VAR_SPAN(VAR_LOTAD_SIZE_RECORD, 1);
 
     GetMonSizeRecordInfo(SPECIES_LOTAD, sizeRecord);
 }
 
 void CompareLotadSize(void)
 {
-    u16 *sizeRecord = ADMG_REQUIRE_VAR_SPAN(VAR_LOTAD_SIZE_RECORD, 1);
+    u32 *sizeRecord = ADMG_REQUIRE_VAR_SPAN(VAR_LOTAD_SIZE_RECORD, 1);
 
     gSpecialVar_Result = CompareMonSize(SPECIES_LOTAD, sizeRecord);
 }
 
 void GetHeracrossSizeRecordInfo(void)
 {
-    u16 *sizeRecord = ADMG_REQUIRE_VAR_SPAN(VAR_HERACROSS_SIZE_RECORD, 1);
+    u32 *sizeRecord = ADMG_REQUIRE_VAR_SPAN(VAR_HERACROSS_SIZE_RECORD, 1);
 
     GetMonSizeRecordInfo(SPECIES_HERACROSS, sizeRecord);
 }
 
 void CompareHeracrossSize(void)
 {
-    u16 *sizeRecord = ADMG_REQUIRE_VAR_SPAN(VAR_HERACROSS_SIZE_RECORD, 1);
+    u32 *sizeRecord = ADMG_REQUIRE_VAR_SPAN(VAR_HERACROSS_SIZE_RECORD, 1);
 
     gSpecialVar_Result = CompareMonSize(SPECIES_HERACROSS, sizeRecord);
 }
 
 void GetMagikarpSizeRecordInfo(void)
 {
-    u16 *sizeRecord = ADMG_REQUIRE_VAR_SPAN(VAR_MAGIKARP_SIZE_RECORD, 1);
+    u32 *sizeRecord = ADMG_REQUIRE_VAR_SPAN(VAR_MAGIKARP_SIZE_RECORD, 1);
 
     GetMonSizeRecordInfo(SPECIES_MAGIKARP, sizeRecord);
 }
 
 void CompareMagikarpSize(void)
 {
-    u16 *sizeRecord = ADMG_REQUIRE_VAR_SPAN(VAR_MAGIKARP_SIZE_RECORD, 1);
+    u32 *sizeRecord = ADMG_REQUIRE_VAR_SPAN(VAR_MAGIKARP_SIZE_RECORD, 1);
 
     gSpecialVar_Result = CompareMonSize(SPECIES_MAGIKARP, sizeRecord);
 }

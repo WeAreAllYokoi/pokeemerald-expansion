@@ -78,7 +78,7 @@ static UNUSED bool32 ShopCriteriaByFlag(u32 flagId)
 
 static UNUSED bool32 ShopCriteriaByVar(u32 varId, u32 varValue)
 {
-    u16 value;
+    u32 value;
     if (ADMG_TryReadVar(varId, &value, TRUE) && value >= varValue)
         return TRUE;
 

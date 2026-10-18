@@ -116,7 +116,7 @@ void InitBirchState(void)
 
 void UpdateBirchState(u16 days)
 {
-    u16 *state = ADMG_REQUIRE_VAR_SPAN(VAR_BIRCH_STATE, 1);
+    u32 *state = ADMG_REQUIRE_VAR_SPAN(VAR_BIRCH_STATE, 1);
     *state += days;
     *state %= 7;
 }

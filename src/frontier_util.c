@@ -2249,7 +2249,8 @@ static void GetFacilitySymbolCount(void)
 
 static void GiveFacilitySymbol(void)
 {
-    u16 facility, silver, gold;
+    u32 facility;
+    u16 silver, gold;
     if (!ADMG_TryReadVar(VAR_FRONTIER_FACILITY, &facility, FALSE)
      || !ADMG_TryGetIndexedFlagId(FLAG_SYS_TOWER_SILVER, facility, NUM_FRONTIER_FACILITIES, 2, &silver)
      || !ADMG_TryGetIndexedFlagId(FLAG_SYS_TOWER_GOLD, facility, NUM_FRONTIER_FACILITIES, 2, &gold))

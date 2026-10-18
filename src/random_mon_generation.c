@@ -551,7 +551,7 @@ void ResolveMoves(enum Species species, u32 level, const u16 *movesTemplate, enu
     SortMoves(moves);
 }
 
-static bool8 ADMG_TryReadFilterFuncArg(struct ScriptContext *ctx, u16 *arg)
+static bool8 ADMG_TryReadFilterFuncArg(struct ScriptContext *ctx, u32 *arg)
 {
     u16 operand = ScriptReadHalfword(ctx);
 
@@ -569,7 +569,7 @@ static bool8 ADMG_TryReadFilterFuncArg(struct ScriptContext *ctx, u16 *arg)
 static u16 ReadFilterFuncArg(struct ScriptContext *ctx) __attribute__((used, noipa));
 static u16 ReadFilterFuncArg(struct ScriptContext *ctx)
 {
-    u16 arg;
+    u32 arg;
     if (!ADMG_TryReadFilterFuncArg(ctx, &arg))
     {
         ADMG_StopInvalidStateCommand(ctx);

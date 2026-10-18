@@ -17,7 +17,7 @@ bool8 ADMG_IsNativeRematchMovement(u32 type)
 
 bool8 ADMG_TryGetNativeRematchGraphics(u32 graphicsId, const struct ADMG_NativeRematchGraphics **graphics)
 {
-    u16 resolved;
+    u32 resolved;
     u32 i;
     if (graphics == NULL || graphicsId > 0xFFFF)
         return RejectRematchMovement(graphicsId, __func__);

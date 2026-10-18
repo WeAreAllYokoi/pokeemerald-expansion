@@ -327,7 +327,7 @@ void UpdateCyclingRoadState(void)
 
 void SetSSTidalFlag(void)
 {
-    u16 *steps = ADMG_REQUIRE_VAR_SPAN(VAR_CRUISE_STEP_COUNT, 1);
+    u32 *steps = ADMG_REQUIRE_VAR_SPAN(VAR_CRUISE_STEP_COUNT, 1);
     FlagSet(FLAG_SYS_CRUISE_MODE);
     *steps = 0;
 }
@@ -348,9 +348,9 @@ bool32 CountSSTidalStep(u16 delta)
 
 enum SSTidalLocation GetSSTidalLocation(s8 *mapGroup, s8 *mapNum, s16 *x, s16 *y)
 {
-    u16 *varCruiseStepCount = ADMG_REQUIRE_VAR_SPAN(VAR_CRUISE_STEP_COUNT, 1, (enum SSTidalLocation)-1);
+    u32 *varCruiseStepCount = ADMG_REQUIRE_VAR_SPAN(VAR_CRUISE_STEP_COUNT, 1, (enum SSTidalLocation)-1);
 
-    u16 *cruiseState = ADMG_REQUIRE_VAR_SPAN(VAR_SS_TIDAL_STATE, 1, (enum SSTidalLocation)-1);
+    u32 *cruiseState = ADMG_REQUIRE_VAR_SPAN(VAR_SS_TIDAL_STATE, 1, (enum SSTidalLocation)-1);
     if (mapGroup == NULL || mapNum == NULL || x == NULL || y == NULL
      || *cruiseState < SS_TIDAL_BOARD_SLATEPORT || *cruiseState > SS_TIDAL_EXIT_CURRENTS_LEFT)
         return (enum SSTidalLocation)-1;
@@ -1299,7 +1299,7 @@ void EndLotteryCornerComputerEffect(void)
 
 void SetTrickHouseNuggetFlag(void)
 {
-    u16 *specVar = &gSpecialVar_0x8004;
+    u32 *specVar = &gSpecialVar_0x8004;
     u16 flag = FLAG_HIDDEN_ITEM_TRICK_HOUSE_NUGGET;
     if (!ADMG_IsFlagIdValid(flag))
     {
@@ -1312,7 +1312,7 @@ void SetTrickHouseNuggetFlag(void)
 
 void ResetTrickHouseNuggetFlag(void)
 {
-    u16 *specVar = &gSpecialVar_0x8004;
+    u32 *specVar = &gSpecialVar_0x8004;
     u16 flag = FLAG_HIDDEN_ITEM_TRICK_HOUSE_NUGGET;
     if (!ADMG_IsFlagIdValid(flag))
     {
@@ -1463,7 +1463,7 @@ u16 GetSlotMachineId(void)
 
 bool8 FoundAbandonedShipRoom1Key(void)
 {
-    u16 *specVar = &gSpecialVar_0x8004;
+    u32 *specVar = &gSpecialVar_0x8004;
     u16 flag = FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_1_KEY;
     if (!ADMG_IsFlagIdValid(flag))
     {
@@ -1479,7 +1479,7 @@ bool8 FoundAbandonedShipRoom1Key(void)
 
 bool8 FoundAbandonedShipRoom2Key(void)
 {
-    u16 *specVar = &gSpecialVar_0x8004;
+    u32 *specVar = &gSpecialVar_0x8004;
     u16 flag = FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_2_KEY;
     if (!ADMG_IsFlagIdValid(flag))
     {
@@ -1495,7 +1495,7 @@ bool8 FoundAbandonedShipRoom2Key(void)
 
 bool8 FoundAbandonedShipRoom4Key(void)
 {
-    u16 *specVar = &gSpecialVar_0x8004;
+    u32 *specVar = &gSpecialVar_0x8004;
     u16 flag = FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_4_KEY;
     if (!ADMG_IsFlagIdValid(flag))
     {
@@ -1511,7 +1511,7 @@ bool8 FoundAbandonedShipRoom4Key(void)
 
 bool8 FoundAbandonedShipRoom6Key(void)
 {
-    u16 *specVar = &gSpecialVar_0x8004;
+    u32 *specVar = &gSpecialVar_0x8004;
     u16 flag = FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_6_KEY;
     if (!ADMG_IsFlagIdValid(flag))
     {
@@ -2195,7 +2195,7 @@ bool32 PlayerNotAtTrainerHillEntrance(void)
 
 void UpdateFrontierManiac(u16 daysSince)
 {
-    u16 *var = ADMG_REQUIRE_VAR_SPAN(VAR_FRONTIER_MANIAC_FACILITY, 1);
+    u32 *var = ADMG_REQUIRE_VAR_SPAN(VAR_FRONTIER_MANIAC_FACILITY, 1);
     *var += daysSince;
     *var %= FRONTIER_MANIAC_FACILITY_COUNT;
 }
@@ -2987,7 +2987,7 @@ void ShowNatureGirlMessage(void)
 
 void UpdateFrontierGambler(u16 daysSince)
 {
-    u16 *var = ADMG_REQUIRE_VAR_SPAN(VAR_FRONTIER_GAMBLER_CHALLENGE, 1);
+    u32 *var = ADMG_REQUIRE_VAR_SPAN(VAR_FRONTIER_GAMBLER_CHALLENGE, 1);
     *var += daysSince;
     *var %= FRONTIER_GAMBLER_CHALLENGE_COUNT;
 }
@@ -4462,7 +4462,7 @@ void PreparePartyForSkyBattle(void)
     CompactPartySlots();
 }
 
-void GetObjectPosition(u16* xPointer, u16* yPointer, u32 localId, u32 useTemplate)
+void GetObjectPosition(u32 *xPointer, u32 *yPointer, u32 localId, u32 useTemplate)
 {
     u32 objectId;
     struct ObjectEvent* objEvent;

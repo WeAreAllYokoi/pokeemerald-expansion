@@ -1577,9 +1577,9 @@ static bool8 ShouldInitObjectEventStateFromTemplate(const struct ObjectEventTemp
     return TRUE;
 }
 
-static bool8 ADMG_TryReadObjectTemplateState(const struct ObjectEventTemplate *template, u8 mapNum, u8 mapGroup, u16 *shinyState)
+static bool8 ADMG_TryReadObjectTemplateState(const struct ObjectEventTemplate *template, u8 mapNum, u8 mapGroup, u32 *shinyState)
 {
-    u16 graphicsId;
+    u32 graphicsId;
     *shinyState = 0;
     if (template == NULL || gSaveBlock1Ptr == NULL || !ADMG_IsMapIdValid(mapGroup, mapNum)
      || !ADMG_IsMapIdValid(gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum))
@@ -1632,7 +1632,7 @@ static u8 InitObjectEventStateFromTemplate(const struct ObjectEventTemplate *tem
     s16 y2 = 0;
     s16 x3 = 0;
     s16 y3 = 0;
-    u16 shinyState = 0;
+    u32 shinyState = 0;
     if (!ADMG_TryReadObjectTemplateState(template, mapNum, mapGroup, &shinyState))
         return OBJECT_EVENTS_COUNT;
 
@@ -1966,7 +1966,7 @@ static u8 TrySetupObjectEventSprite(const struct ObjectEventTemplate *objectEven
 
 u8 TrySpawnObjectEventTemplate(const struct ObjectEventTemplate *objectEventTemplate, u8 mapNum, u8 mapGroup, s16 cameraX, s16 cameraY)
 {
-    u16 shinyState;
+    u32 shinyState;
     if (!ADMG_TryReadObjectTemplateState(objectEventTemplate, mapNum, mapGroup, &shinyState))
         return OBJECT_EVENTS_COUNT;
     if (objectEventTemplate->movementType >= ARRAY_COUNT(sMovementTypeCallbacks))
@@ -2005,7 +2005,7 @@ u8 SpawnSpecialObjectEvent(struct ObjectEventTemplate *objectEventTemplate)
         ADMG_StateAccessRejected(0, __func__);
         return OBJECT_EVENTS_COUNT;
     }
-    u16 shinyState;
+    u32 shinyState;
     if (!ADMG_TryReadObjectTemplateState(objectEventTemplate, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, &shinyState))
         return OBJECT_EVENTS_COUNT;
     s16 cameraX;
@@ -3299,7 +3299,7 @@ static void SetBerryTreeGraphics(struct ObjectEvent *objectEvent, struct Sprite 
     }
 }
 
-const struct ObjectEventGraphicsInfo *GetObjectEventGraphicsInfo(u16 graphicsId)
+const struct ObjectEventGraphicsInfo *GetObjectEventGraphicsInfo(u32 graphicsId)
 {
     if (graphicsId >= OBJ_EVENT_GFX_VARS && graphicsId <= OBJ_EVENT_GFX_VAR_F
      && !ADMG_TryReadObjectGraphicsVar(graphicsId - OBJ_EVENT_GFX_VARS, &graphicsId))
@@ -3324,7 +3324,7 @@ static void SetObjectEventDynamicGraphicsId(struct ObjectEvent *objectEvent)
 {
     if (objectEvent->graphicsId >= OBJ_EVENT_GFX_VARS && objectEvent->graphicsId <= OBJ_EVENT_GFX_VAR_F)
     {
-        u16 graphicsId;
+        u32 graphicsId;
         if (ADMG_TryReadObjectGraphicsVar(objectEvent->graphicsId - OBJ_EVENT_GFX_VARS, &graphicsId))
             objectEvent->graphicsId = graphicsId;
     }
@@ -6399,7 +6399,7 @@ enum Direction GetDirectionToFace(s16 x, s16 y, s16 targetX, s16 targetY)
 void GetDirectionToFaceScript(struct ScriptContext *ctx)
 {
     u32 varId = ScriptReadHalfword(ctx);
-    u16 *var = ADMG_SCRIPT_POINTER(ctx, varId);
+    u32 *var = ADMG_SCRIPT_POINTER(ctx, varId);
     u8 sourceId = GetObjectEventIdByLocalId(ScriptReadByte(ctx));
     u8 targetId = GetObjectEventIdByLocalId(ScriptReadByte(ctx));
 
@@ -6421,7 +6421,7 @@ void GetDirectionToFaceScript(struct ScriptContext *ctx)
 void IsFollowerFieldMoveUser(struct ScriptContext *ctx)
 {
     u32 varId = ScriptReadHalfword(ctx);
-    u16 *var = ADMG_SCRIPT_POINTER(ctx, varId);
+    u32 *var = ADMG_SCRIPT_POINTER(ctx, varId);
 
     Script_RequestEffects(SCREFF_V1);
     Script_RequestWriteVar(varId);

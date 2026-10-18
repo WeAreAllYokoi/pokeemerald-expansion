@@ -167,7 +167,7 @@ bool8 ScrCmd_specialvar(struct ScriptContext *ctx)
 {
     u32 varId = ScriptReadHalfword(ctx);
     u16 index = ScriptReadHalfword(ctx);
-    u16 *ptr = ADMG_SCRIPT_POINTER(ctx, varId, FALSE);
+    u32 *ptr = ADMG_SCRIPT_POINTER(ctx, varId, FALSE);
 
     if (index >= (u32)(gSpecialsEnd - gSpecials))
     {
@@ -480,7 +480,7 @@ bool8 ScrCmd_copybyte(struct ScriptContext *ctx)
 bool8 ScrCmd_setvar(struct ScriptContext *ctx)
 {
     u32 varId = ScriptReadHalfword(ctx);
-    u16 *ptr = ADMG_SCRIPT_POINTER(ctx, varId, FALSE);
+    u32 *ptr = ADMG_SCRIPT_POINTER(ctx, varId, FALSE);
 
     Script_RequestEffects(SCREFF_V1);
     Script_RequestWriteVar(varId);
@@ -492,8 +492,8 @@ bool8 ScrCmd_setvar(struct ScriptContext *ctx)
 bool8 ScrCmd_copyvar(struct ScriptContext *ctx)
 {
     u32 varId = ScriptReadHalfword(ctx);
-    u16 *ptr = ADMG_SCRIPT_POINTER(ctx, varId, FALSE);
-    const u16 *source = ADMG_SCRIPT_POINTER(ctx, ScriptReadHalfword(ctx), FALSE);
+    u32 *ptr = ADMG_SCRIPT_POINTER(ctx, varId, FALSE);
+    u32 *source = ADMG_SCRIPT_POINTER(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
     Script_RequestWriteVar(varId);
@@ -505,7 +505,7 @@ bool8 ScrCmd_copyvar(struct ScriptContext *ctx)
 bool8 ScrCmd_setorcopyvar(struct ScriptContext *ctx)
 {
     u32 varId = ScriptReadHalfword(ctx);
-    u16 *ptr = ADMG_SCRIPT_POINTER(ctx, varId, FALSE);
+    u32 *ptr = ADMG_SCRIPT_POINTER(ctx, varId, FALSE);
     u16 value = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
@@ -603,8 +603,8 @@ bool8 ScrCmd_compare_var_to_value(struct ScriptContext *ctx)
 
 bool8 ScrCmd_compare_var_to_var(struct ScriptContext *ctx)
 {
-    const u16 *ptr1 = ADMG_SCRIPT_POINTER(ctx, ScriptReadHalfword(ctx), FALSE);
-    const u16 *ptr2 = ADMG_SCRIPT_POINTER(ctx, ScriptReadHalfword(ctx), FALSE);
+    u32 *ptr1 = ADMG_SCRIPT_POINTER(ctx, ScriptReadHalfword(ctx), FALSE);
+    u32 *ptr2 = ADMG_SCRIPT_POINTER(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -618,7 +618,7 @@ bool8 ScrCmd_compare_var_to_var(struct ScriptContext *ctx)
 bool8 ScrCmd_addvar(struct ScriptContext *ctx)
 {
     u32 varId = ScriptReadHalfword(ctx);
-    u16 *ptr = ADMG_SCRIPT_POINTER(ctx, varId, FALSE);
+    u32 *ptr = ADMG_SCRIPT_POINTER(ctx, varId, FALSE);
 
     Script_RequestEffects(SCREFF_V1);
     Script_RequestWriteVar(varId);
@@ -630,7 +630,7 @@ bool8 ScrCmd_addvar(struct ScriptContext *ctx)
 bool8 ScrCmd_subvar(struct ScriptContext *ctx)
 {
     u32 varId = ScriptReadHalfword(ctx);
-    u16 *ptr = ADMG_SCRIPT_POINTER(ctx, varId, FALSE);
+    u32 *ptr = ADMG_SCRIPT_POINTER(ctx, varId, FALSE);
     u16 value = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
@@ -1162,8 +1162,8 @@ bool8 ScrCmd_getplayerxy(struct ScriptContext *ctx)
 {
     u32 varIdX = ScriptReadHalfword(ctx);
     u32 varIdY = ScriptReadHalfword(ctx);
-    u16 *pX = ADMG_SCRIPT_POINTER(ctx, varIdX, FALSE);
-    u16 *pY = ADMG_SCRIPT_POINTER(ctx, varIdY, FALSE);
+    u32 *pX = ADMG_SCRIPT_POINTER(ctx, varIdX, FALSE);
+    u32 *pY = ADMG_SCRIPT_POINTER(ctx, varIdY, FALSE);
 
     Script_RequestEffects(SCREFF_V1);
     Script_RequestWriteVar(varIdX);
@@ -2917,7 +2917,7 @@ bool8 ScrCmd_showelevmenu(struct ScriptContext *ctx)
 bool8 ScrCmd_checkcoins(struct ScriptContext *ctx)
 {
     u32 varId = ScriptReadHalfword(ctx);
-    u16 *ptr = ADMG_SCRIPT_POINTER(ctx, varId, FALSE);
+    u32 *ptr = ADMG_SCRIPT_POINTER(ctx, varId, FALSE);
 
     Script_RequestEffects(SCREFF_V1);
     Script_RequestWriteVar(varId);
@@ -3181,8 +3181,8 @@ bool8 ScrCmd_getobjectxy(struct ScriptContext *ctx)
     u32 useTemplate = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u32 varIdX = ScriptReadHalfword(ctx);
     u32 varIdY = ScriptReadHalfword(ctx);
-    u16 *pX = ADMG_SCRIPT_POINTER(ctx, varIdX, FALSE);
-    u16 *pY = ADMG_SCRIPT_POINTER(ctx, varIdY, FALSE);
+    u32 *pX = ADMG_SCRIPT_POINTER(ctx, varIdX, FALSE);
+    u32 *pY = ADMG_SCRIPT_POINTER(ctx, varIdY, FALSE);
 
     Script_RequestEffects(SCREFF_V1);
     Script_RequestWriteVar(varIdX);
@@ -3198,7 +3198,7 @@ bool8 ScrCmd_checkobjectat(struct ScriptContext *ctx)
     u32 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE) + MAP_OFFSET;
     u32 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE) + MAP_OFFSET;
     u32 varId = ScriptReadHalfword(ctx);
-    u16 *varPointer = ADMG_SCRIPT_POINTER(ctx, varId, FALSE);
+    u32 *varPointer = ADMG_SCRIPT_POINTER(ctx, varId, FALSE);
 
     Script_RequestEffects(SCREFF_V1);
     Script_RequestWriteVar(varId);
@@ -3252,7 +3252,7 @@ bool8 Scrcmd_getobjectfacingdirection(struct ScriptContext *ctx)
 {
     u32 objectId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u32 varId = ScriptReadHalfword(ctx);
-    u16 *varPointer = ADMG_SCRIPT_POINTER(ctx, varId, FALSE);
+    u32 *varPointer = ADMG_SCRIPT_POINTER(ctx, varId, FALSE);
 
     Script_RequestEffects(SCREFF_V1);
     Script_RequestWriteVar(varId);

@@ -837,7 +837,7 @@ static void UNUSED ClearFriendshipStepCounter(void)
 
 static void UpdateFriendshipStepCounter(void)
 {
-    u16 *ptr = ADMG_REQUIRE_VAR_SPAN(VAR_FRIENDSHIP_STEP_COUNTER, 1);
+    u32 *ptr = ADMG_REQUIRE_VAR_SPAN(VAR_FRIENDSHIP_STEP_COUNTER, 1);
     int i;
 
     (*ptr)++;
@@ -1151,7 +1151,7 @@ static s8 GetWarpEventAtPosition(struct MapHeader *mapHeader, u16 x, u16 y, u8 e
 
 static bool32 ShouldTriggerScriptRun(const struct CoordEvent *coordEvent)
 {
-    u16 value;
+    u32 value;
     bool8 flag;
     if (coordEvent->trigger >= VARS_START)
         return ADMG_TryReadVar(coordEvent->trigger, &value, FALSE) && value == coordEvent->index;

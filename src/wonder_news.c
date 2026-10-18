@@ -54,7 +54,7 @@ void WonderNews_Reset(void)
 // Only used in FRLG
 u16 WonderNews_GetRewardInfo(void)
 {
-    u16 *result = &gSpecialVar_Result;
+    u32 *result = &gSpecialVar_Result;
     struct WonderNewsMetadata *data = GetSavedWonderNewsMetadata();
     u16 rewardType;
 

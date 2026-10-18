@@ -414,7 +414,7 @@ const u8 *MapHeaderCheckScriptTable(u8 tag)
     {
         u16 varIndex1;
         u16 varIndex2;
-        u16 value1, value2;
+        u32 value1, value2;
 
         // Read first var (or .2byte terminal value)
         varIndex1 = T1_READ_16(ptr);

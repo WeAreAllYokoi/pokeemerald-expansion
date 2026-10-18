@@ -2564,7 +2564,7 @@ void GetContestMultiplayerId(void)
 void GenerateContestRand(void)
 {
     u16 random;
-    u16 *result;
+    u32 *result;
 
     if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK)
     {

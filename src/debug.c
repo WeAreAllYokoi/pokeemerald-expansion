@@ -2916,7 +2916,7 @@ static const struct DebugSelection sToggleFlagSelection = {
 static void DebugSelectionStep_PrepareVarDisplay(u32 varId)
 {
     u8 *end;
-    u16 value;
+    u32 value;
     if (!ADMG_TryReadVar(varId, &value, TRUE))
         return;
     end = StringCopy(gStringVar1, COMPOUND_STRING("Var: 0x"));
@@ -2927,7 +2927,7 @@ static void DebugSelectionStep_PrepareVarDisplay(u32 varId)
 
 static void DebugSelectionStep_UpdateVarId(u8 taskId, u8 digits, u32 min, u32 max)
 {
-    u16 value, varId;
+    u32 value, varId;
     u64 generation;
     if (!ADMG_DebugTaskValid(taskId))
         return;

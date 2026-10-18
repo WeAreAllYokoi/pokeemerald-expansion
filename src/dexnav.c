@@ -2472,7 +2472,7 @@ bool32 TryFindHiddenPokemon(void)
     ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1, FALSE);
 
     u32 stepId = DN_VAR_STEP_COUNTER;
-    u16 *stepPtr = stepId <= 0xFFFF ? GetVarPointer((u16)stepId) : NULL;
+    u32 *stepPtr = stepId <= 0xFFFF ? GetVarPointer((u16)stepId) : NULL;
     bool8 detectorMode, searching;
     // Zero remains an unbound default. Nonzero IDs must own counter storage.
     if (stepId != 0 && stepPtr == NULL)

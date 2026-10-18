@@ -84,7 +84,7 @@ u32 GetSprayId(void)
 
 u32 GetLastUsedSprayType(void)
 {
-    u16 packed;
+    u32 packed;
     if (!ADMG_TryReadVar(VAR_REPEL_STEP_COUNT, &packed, FALSE))
         return ITEM_NONE;
     if (IS_LAST_USED_LURE(packed))
@@ -95,7 +95,7 @@ u32 GetLastUsedSprayType(void)
 
 u32 SetSprayMenuCursorPosition(int currentSpray, int count)
 {
-    u16 remembered;
+    u32 remembered;
     if (!ADMG_TryReadVar(VAR_LAST_REPEL_LURE_USED, &remembered, VAR_LAST_REPEL_LURE_USED == 0))
         return 0;
     if (remembered == currentSpray)
@@ -143,7 +143,8 @@ void DrawSprayMenu(void)
 
 void HandleSprayMenuChoice(void)
 {
-    u16 choiceId, choice;
+    u16 choiceId;
+    u32 choice;
     if (!ADMG_ValidateSprayMenuState()
         || !ADMG_TryGetIndexedVarId(LOCAL_VAR_SPRAY_CONST, gSpecialVar_Result, NUM_SPRAY_STRENGTH, 1, &choiceId)
         || !ADMG_TryReadVar(choiceId, &choice, FALSE))

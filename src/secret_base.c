@@ -419,7 +419,7 @@ static void SetSecretBaseWarpDestination(void)
 
 static void Task_EnterSecretBase(u8 taskId)
 {
-    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    u32 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
     if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
     {
         ADMG_StateAccessRejected(*admg_base_index, "secret base index");
@@ -525,7 +525,7 @@ bool8 CurMapIsSecretBase(void)
 
 void InitSecretBaseAppearance(bool8 hidePC)
 {
-    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    u32 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
     if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
     {
         ADMG_StateAccessRejected(*admg_base_index, "secret base index");
@@ -700,7 +700,7 @@ void HideSecretBaseDecorationSprites(void)
 
 void SetSecretBaseOwnerGfxId(void)
 {
-    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    u32 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
     if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
     {
         ADMG_StateAccessRejected(*admg_base_index, "secret base index");
@@ -788,7 +788,7 @@ static u8 *GetSecretBaseName(u8 *dest, u8 secretBaseIdx)
 
 u8 *GetSecretBaseMapName(u8 *dest)
 {
-    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1, dest);
+    u32 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1, dest);
     if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
     {
         ADMG_StateAccessRejected(*admg_base_index, "secret base index");
@@ -800,7 +800,7 @@ u8 *GetSecretBaseMapName(u8 *dest)
 
 void CopyCurSecretBaseOwnerName_StrVar1(void)
 {
-    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    u32 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
     if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
     {
         ADMG_StateAccessRejected(*admg_base_index, "secret base index");
@@ -947,7 +947,7 @@ static u8 GetNumRegisteredSecretBases(void)
 
 void GetCurSecretBaseRegistrationValidity(void)
 {
-    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    u32 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
     if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
     {
         ADMG_StateAccessRejected(*admg_base_index, "secret base index");
@@ -964,7 +964,7 @@ void GetCurSecretBaseRegistrationValidity(void)
 
 void ToggleCurSecretBaseRegistry(void)
 {
-    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    u32 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
     if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
     {
         ADMG_StateAccessRejected(*admg_base_index, "secret base index");
@@ -1193,7 +1193,7 @@ static void ReturnToMainRegistryMenu(u8 taskId)
 
 static void GoToSecretBasePCRegisterMenu(u8 taskId)
 {
-    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    u32 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
     if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
     {
         ADMG_StateAccessRejected(*admg_base_index, "secret base index");
@@ -1226,7 +1226,7 @@ static u8 GetSecretBaseOwnerType(u8 secretBaseIdx)
 
 const u8 *GetSecretBaseTrainerLoseText(void)
 {
-    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1, gText_EmptyString2);
+    u32 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1, gText_EmptyString2);
     if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
     {
         ADMG_StateAccessRejected(*admg_base_index, "secret base index");
@@ -1265,7 +1265,7 @@ void PrepSecretBaseBattleFlags(void)
 
 void SetBattledOwnerFromResult(void)
 {
-    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    u32 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
     if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
     {
         ADMG_StateAccessRejected(*admg_base_index, "secret base index");
@@ -1277,7 +1277,7 @@ void SetBattledOwnerFromResult(void)
 
 void GetSecretBaseOwnerAndState(void)
 {
-    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    u32 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
     if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
     {
         ADMG_StateAccessRejected(*admg_base_index, "secret base index");
@@ -1307,7 +1307,7 @@ void GetSecretBaseOwnerAndState(void)
 
 void SecretBasePerStepCallback(u8 taskId)
 {
-    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    u32 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
     if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
     {
         ADMG_StateAccessRejected(*admg_base_index, "secret base index");
@@ -1923,7 +1923,7 @@ void ClearJapaneseSecretBases(struct SecretBase *bases)
 
 void InitSecretBaseVars(void)
 {
-    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    u32 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
     if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
     {
         ADMG_StateAccessRejected(*admg_base_index, "secret base index");
@@ -1959,7 +1959,7 @@ void CheckLeftFriendsSecretBase(void)
 
 void CheckInteractedWithFriendsDollDecor(void)
 {
-    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    u32 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
     if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
     {
         ADMG_StateAccessRejected(*admg_base_index, "secret base index");
@@ -1972,7 +1972,7 @@ void CheckInteractedWithFriendsDollDecor(void)
 
 void CheckInteractedWithFriendsCushionDecor(void)
 {
-    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    u32 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
     if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
     {
         ADMG_StateAccessRejected(*admg_base_index, "secret base index");
@@ -1985,7 +1985,7 @@ void CheckInteractedWithFriendsCushionDecor(void)
 
 void DeclinedSecretBaseBattle(void)
 {
-    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    u32 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
     if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
     {
         ADMG_StateAccessRejected(*admg_base_index, "secret base index");
@@ -2002,7 +2002,7 @@ void DeclinedSecretBaseBattle(void)
 
 void WonSecretBaseBattle(void)
 {
-    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    u32 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
     if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
     {
         ADMG_StateAccessRejected(*admg_base_index, "secret base index");
@@ -2019,7 +2019,7 @@ void WonSecretBaseBattle(void)
 
 void LostSecretBaseBattle(void)
 {
-    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    u32 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
     if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
     {
         ADMG_StateAccessRejected(*admg_base_index, "secret base index");
@@ -2036,7 +2036,7 @@ void LostSecretBaseBattle(void)
 
 void DrewSecretBaseBattle(void)
 {
-    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    u32 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
     if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
     {
         ADMG_StateAccessRejected(*admg_base_index, "secret base index");
@@ -2053,7 +2053,7 @@ void DrewSecretBaseBattle(void)
 
 void CheckInteractedWithFriendsPosterDecor(void)
 {
-    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    u32 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
     if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
     {
         ADMG_StateAccessRejected(*admg_base_index, "secret base index");
@@ -2088,7 +2088,7 @@ void CheckInteractedWithFriendsPosterDecor(void)
 
 void CheckInteractedWithFriendsFurnitureBottom(void)
 {
-    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    u32 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
     if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
     {
         ADMG_StateAccessRejected(*admg_base_index, "secret base index");
@@ -2173,7 +2173,7 @@ void CheckInteractedWithFriendsFurnitureBottom(void)
 
 void CheckInteractedWithFriendsFurnitureMiddle(void)
 {
-    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    u32 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
     if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
     {
         ADMG_StateAccessRejected(*admg_base_index, "secret base index");
@@ -2204,7 +2204,7 @@ void CheckInteractedWithFriendsFurnitureMiddle(void)
 
 void CheckInteractedWithFriendsFurnitureTop(void)
 {
-    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    u32 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
     if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
     {
         ADMG_StateAccessRejected(*admg_base_index, "secret base index");
@@ -2257,7 +2257,7 @@ void CheckInteractedWithFriendsFurnitureTop(void)
 
 void CheckInteractedWithFriendsSandOrnament(void)
 {
-    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    u32 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
     if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
     {
         ADMG_StateAccessRejected(*admg_base_index, "secret base index");

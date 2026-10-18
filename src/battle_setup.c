@@ -1829,7 +1829,7 @@ struct ADMG_PyramidTrainerBattleInput
     u8 count, selectedA, selectedCurrent, localA, approachB, localB;
     bool8 actorsReady, countersPublished, musicTouched, bPublished, marked;
     struct ADMG_BattleTrainerActors actors;
-    u16 *music;
+    u32 *music;
     u16 previousMusic;
     struct Pokemon parties[2][PARTY_SIZE];
     u8 partyCounts[2];

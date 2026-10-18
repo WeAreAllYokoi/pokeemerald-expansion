@@ -8,7 +8,7 @@
 
 enum DifficultyLevel GetCurrentDifficultyLevel(void)
 {
-    u16 value;
+    u32 value;
     if (!B_VAR_DIFFICULTY)
         return DIFFICULTY_NORMAL;
     if (!ADMG_TryReadVar((u32)B_VAR_DIFFICULTY, &value, FALSE))

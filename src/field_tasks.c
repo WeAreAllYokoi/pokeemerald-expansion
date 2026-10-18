@@ -640,7 +640,7 @@ static void MarkIcePuzzleCoordVisited(s16 x, s16 y)
 
 static bool32 IsIcePuzzleCoordVisited(s16 x, s16 y)
 {
-    u16 var;
+    u32 var;
     if (!CoordInIcePuzzleRegion(x, y))
         return FALSE;
 
@@ -678,7 +678,7 @@ static void SootopolisGymIcePerStepCallback(u8 taskId)
 {
     s16 x, y;
     u16 tileBehavior;
-    u16 *iceStepCount = ADMG_REQUIRE_VAR_SPAN(VAR_ICE_STEP_COUNT, 1);
+    u32 *iceStepCount = ADMG_REQUIRE_VAR_SPAN(VAR_ICE_STEP_COUNT, 1);
     s16 *data = gTasks[taskId].data;
     switch (tState)
     {
@@ -765,7 +765,7 @@ static void SootopolisGymIcePerStepCallback(u8 taskId)
 static void AshGrassPerStepCallback(u8 taskId)
 {
     s16 x, y;
-    u16 *ashGatherCount = ADMG_REQUIRE_VAR_SPAN(VAR_ASH_GATHER_COUNT, 1);
+    u32 *ashGatherCount = ADMG_REQUIRE_VAR_SPAN(VAR_ASH_GATHER_COUNT, 1);
     s16 *data = gTasks[taskId].data;
     PlayerGetDestCoords(&x, &y);
 

@@ -300,7 +300,7 @@ bool8 TrySetPortholeWarpDestination(void)
 void Task_HandlePorthole(u8 taskId)
 {
     s16 *data = gTasks[taskId].data;
-    u16 *cruiseState = ADMG_REQUIRE_VAR_SPAN(VAR_SS_TIDAL_STATE, 1);
+    u32 *cruiseState = ADMG_REQUIRE_VAR_SPAN(VAR_SS_TIDAL_STATE, 1);
     struct WarpData *location = &gSaveBlock1Ptr->location;
 
     switch ((enum PortholeState)data[0])

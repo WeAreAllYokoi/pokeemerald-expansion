@@ -643,7 +643,7 @@ static u8 *ADMG_RotatingGateState(void)
     if (sRotatingGate_PuzzleConfig == NULL || sRotatingGate_PuzzleCount == 0
      || sRotatingGate_PuzzleCount > MAX_GATES)
         return NULL;
-    return (u8 *)ADMG_GetVarSpan(VAR_TEMP_0, (sRotatingGate_PuzzleCount + 1) / 2);
+    return (u8 *)ADMG_GetVarSpan(VAR_TEMP_0, (sRotatingGate_PuzzleCount + VAR_BYTES - 1) / VAR_BYTES);
 }
 
 static s32 RotatingGate_GetGateOrientation(u8 gateId);

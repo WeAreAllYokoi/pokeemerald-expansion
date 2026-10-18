@@ -18,7 +18,7 @@ struct TrainerFanClub
 
 _Static_assert(offsetof(struct TrainerFanClub, fanFlags) == 1, "Fan Club field payload must remain unchanged");
 _Static_assert(sizeof(struct TrainerFanClub) <= 2 * sizeof(u16), "Fan Club declared extent exceeds existing adjacent backing");
-#define TRAINER_FAN_CLUB ((struct TrainerFanClub *)ADMG_GetVarSpan(VAR_FANCLUB_FAN_COUNTER, (sizeof(struct TrainerFanClub) + sizeof(u16) - 1) / sizeof(u16)))
+#define TRAINER_FAN_CLUB ((struct TrainerFanClub *)ADMG_GetVarSpan(VAR_FANCLUB_FAN_COUNTER, (sizeof(struct TrainerFanClub) + VAR_BYTES - 1) / VAR_BYTES))
 
 #define GET_TRAINER_FAN_CLUB_FLAG(flag) (fanClub->fanFlags >> (flag) & 1)
 #define SET_TRAINER_FAN_CLUB_FLAG(flag) (fanClub->fanFlags |= 1 << (flag))

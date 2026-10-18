@@ -11,8 +11,8 @@
 
 struct FilterFuncArgs
 {
-    u16 arg1;
-    u16 arg2;
+    u32 arg1;
+    u32 arg2;
 };
 
 enum Species GetRandomSpecies(u32 optionId, const struct FilterFuncArgs *filterFuncArgs);

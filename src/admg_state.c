@@ -9,12 +9,12 @@
 _Static_assert(ARRAY_COUNT(MAP_GROUP_COUNT) == MAP_GROUPS_COUNT + 1, "map counts must match the generated map groups");
 
 EWRAM_DATA u8 gADMG_KantoFlags[288] = {0};
-EWRAM_DATA u16 gADMG_KantoVars[224] = {0};
+EWRAM_DATA u32 gADMG_KantoVars[224] = {0};
 EWRAM_DATA u8 gADMG_UnionVisibility[2] = {0};
 EWRAM_DATA u8 gADMG_NativeSpecialScratch[1] = {0};
-EWRAM_DATA u16 gADMG_TextColorScratch[2] = {0};
+EWRAM_DATA u32 gADMG_TextColorScratch[2] = {0};
 EWRAM_DATA u8 gADMG_FeatureBindingFlags[5] = {0};
-EWRAM_DATA u16 gADMG_FeatureBindingVars[8] = {0};
+EWRAM_DATA u32 gADMG_FeatureBindingVars[8] = {0};
 static EWRAM_DATA u64 sADMG_StateRejectionGeneration = 0;
 static EWRAM_DATA bool8 sADMG_StateRejectionExhausted = FALSE;
 
@@ -63,7 +63,7 @@ u8 *ADMG_GetRegionalFlagPointer(u16 id)
     return NULL;
 }
 
-u16 *ADMG_GetRegionalVarPointer(u16 id)
+u32 *ADMG_GetRegionalVarPointer(u16 id)
 {
     if (id >= ADMG_STATE_KANTO_NATIVE_VARS_FIRST && id <= ADMG_STATE_KANTO_NATIVE_VARS_LAST)
     {
@@ -172,9 +172,9 @@ bool8 ADMG_TryGetFlagFromTable(const u16 *flags, u32 index, u32 count, u16 *id)
     return TRUE;
 }
 
-bool8 ADMG_TryReadVar(u32 id, u16 *value, bool8 allowLiteral)
+bool8 ADMG_TryReadVar(u32 id, u32 *value, bool8 allowLiteral)
 {
-    u16 *ptr;
+    u32 *ptr;
     if (value != NULL && id < VARS_START && allowLiteral)
     {
         *value = VarGet((u16)id);
@@ -192,7 +192,7 @@ bool8 ADMG_TryReadVar(u32 id, u16 *value, bool8 allowLiteral)
     return TRUE;
 }
 
-bool8 ADMG_TryReadObjectGraphicsVar(u32 slot, u16 *value)
+bool8 ADMG_TryReadObjectGraphicsVar(u32 slot, u32 *value)
 {
     /* Keep the slot wide until its complete native domain is validated. A
      * successful stored 65535 remains data, independent of this status. */
@@ -252,9 +252,9 @@ bool8 ADMG_TryGetObjectEventFlagId(u32 localId, u32 mapNum, u32 mapGroup, u16 *f
     return TRUE;
 }
 
-bool8 ADMG_TryReadVarIndex(u32 id, u32 count, u16 *value)
+bool8 ADMG_TryReadVarIndex(u32 id, u32 count, u32 *value)
 {
-    u16 candidate;
+    u32 candidate;
     if (value == NULL || count == 0)
     {
         ADMG_StateAccessRejected(id, "variable index domain");
@@ -276,9 +276,9 @@ static bool8 SpanFitsBank(u32 id, u32 words, u32 first, u32 last)
     return id >= first && id <= last && words - 1 <= last - id;
 }
 
-u16 *ADMG_GetVarSpan(u32 id, u32 words)
+u32 *ADMG_GetVarSpan(u32 id, u32 words)
 {
-    u16 *first;
+    u32 *first;
     u32 i;
     if (words == 0 || id > 0xFFFF)
         return NULL;
@@ -295,7 +295,7 @@ u16 *ADMG_GetVarSpan(u32 id, u32 words)
     if (first == NULL)
         return NULL;
     for (i = 1; i < words; ++i)
-        if ((u32)GetVarPointer((u16)(id + i)) != (u32)first + i * sizeof(u16))
+        if ((u32)GetVarPointer((u16)(id + i)) != (u32)first + i * VAR_BYTES)
             return NULL;
     return first;
 }

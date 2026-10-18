@@ -2337,7 +2337,7 @@ static void ResolveNumberOneShow(u16 days)
 static void TryPutNumberOneOnAir(u8 actionIdx)
 {
     TVShow *show;
-    u16 count;
+    u32 count;
 
     if (actionIdx >= ARRAY_COUNT(sNumberOneVarsAndThresholds)
      || gSaveBlock1Ptr == NULL || gSaveBlock2Ptr == NULL)

@@ -15,7 +15,7 @@ ADMG_NATIVE_ENTRY void ADMG_StopInvalidStateCommand(struct ScriptContext *ctx);
  * Callers must parse/validate every input and destination before any effect. */
 #define ADMG_SCRIPT_VALUE(context, operand, ...) \
     ({ \
-        u16 admg_value; \
+        u32 admg_value; \
         if (!ADMG_TryReadVar((operand), &admg_value, TRUE)) \
         { \
             ADMG_StopInvalidStateCommand(context); \
@@ -26,11 +26,11 @@ ADMG_NATIVE_ENTRY void ADMG_StopInvalidStateCommand(struct ScriptContext *ctx);
 
 /* Native signed-byte operands also admit the documented negative halfword
  * literals. Other commands retain their ordinary identifier/literal rules.
- * Successful variable reads keep the entire stored u16, including 65535. */
+ * Successful variable reads keep the entire stored 32-bit value. */
 #define ADMG_SCRIPT_SIGNED_BYTE_VALUE(context, operand, ...) \
     ({ \
         u32 admg_operand = (operand); \
-        u16 admg_value; \
+        u32 admg_value; \
         if (admg_operand >= 0xFF80 && admg_operand <= 0xFFFF) \
             admg_value = admg_operand; \
         else if (!ADMG_TryReadVar(admg_operand, &admg_value, TRUE)) \
@@ -82,7 +82,7 @@ ADMG_NATIVE_ENTRY void ADMG_StopInvalidStateCommand(struct ScriptContext *ctx);
 #define ADMG_SCRIPT_POINTER(context, identifier, ...) \
     ({ \
         u32 admg_identifier = (identifier); \
-        u16 *admg_pointer = ADMG_GetVarSpan(admg_identifier, 1); \
+        u32 *admg_pointer = ADMG_GetVarSpan(admg_identifier, 1); \
         if (admg_pointer == NULL) \
         { \
             ADMG_StateAccessRejected(admg_identifier, __func__); \

@@ -466,7 +466,7 @@ bool32 AreBattleTowerLinkSpeciesSame(enum Species *speciesList1, enum Species *s
     return haveSameSpecies;
 }
 
-static void FinishLinkup(u16 *linkupStatus, u32 taskId)
+static void FinishLinkup(u32 *linkupStatus, u32 taskId)
 {
     struct TrainerCard *trainerCards = gTrainerCards;
 
