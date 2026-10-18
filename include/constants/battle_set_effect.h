@@ -118,7 +118,9 @@ enum MoveEffect
     SECRET_POWER_SP_ATK_MINUS_1,
     SECRET_POWER_ACC_MINUS_1,
 
-    NUM_MOVE_EFFECTS
+    NUM_MOVE_EFFECTS,
+    // Keep the enum 32-bit even while the built-in IDs fit in fewer bits
+    MOVE_EFFECT_ID_MAX = 0xFFFFFFFF,
 };
 
 #if B_USE_FROSTBITE == TRUE

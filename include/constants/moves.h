@@ -1009,6 +1009,8 @@ enum Move
     LAST_MAX_MOVE = MOVE_G_MAX_RAPID_FLOW,
     MOVES_COUNT_DYNAMAX,
     MOVES_COUNT_ALL = MOVES_COUNT_DYNAMAX,
+    // Keep the enum 32-bit even while the built-in IDs fit in fewer bits
+    MOVE_ID_MAX = 0xFFFFFFFF,
 };
 
 #define MOVE_DEFAULT     0x3FFF // Used when creating a mon to be replaced by a level-up move (needs to be less than that 0x4000 because of VarGet)

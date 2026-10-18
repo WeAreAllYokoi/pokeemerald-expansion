@@ -5012,7 +5012,7 @@ static void RemoveAllTerrains(void)
     {                                                       \
         if (clear)                                          \
         {                                                   \
-            if (move)                                       \
+            if ((move) != MOVE_NONE)                      \
                 PREPARE_MOVE_BUFFER(gBattleTextBuff1, move);\
             *sideStatuses &= ~status;                       \
             sideTimer->structField = 0;                     \

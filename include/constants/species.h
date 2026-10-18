@@ -1696,6 +1696,8 @@ enum Species
 
     SPECIES_EGG = SPECIES_CUSTOM_END,
     NUM_SPECIES = SPECIES_EGG,
+    // Keep the enum 32-bit even while the built-in IDs fit in fewer bits
+    SPECIES_ID_MAX = 0xFFFFFFFF,
 };
 
 #define SPECIES_SHINY_TAG 5000

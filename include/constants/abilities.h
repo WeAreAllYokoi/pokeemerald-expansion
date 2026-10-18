@@ -343,6 +343,8 @@ enum Ability
     ABILITY_AURA_GUARD = 319,
     ABILITIES_COUNT_GEN9,
     ABILITIES_COUNT = ABILITIES_COUNT_GEN9,
+    // Keep the enum 32-bit even while the built-in IDs fit in fewer bits
+    ABILITY_ID_MAX = 0xFFFFFFFF,
 };
 
 #endif  // GUARD_CONSTANTS_ABILITIES_H

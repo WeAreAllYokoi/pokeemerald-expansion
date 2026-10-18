@@ -25,7 +25,9 @@ enum Type
     TYPE_DARK = 18,
     TYPE_FAIRY = 19,
     TYPE_STELLAR = 20,
-    NUMBER_OF_MON_TYPES
+    NUMBER_OF_MON_TYPES,
+    // Keep the enum 32-bit even while the built-in IDs fit in fewer bits
+    TYPE_ID_MAX = 0xFFFFFFFF,
 };
 
 // Pokémon egg groups

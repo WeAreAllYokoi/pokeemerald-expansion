@@ -178,6 +178,8 @@ enum TrainerPicID
     TRAINER_PIC_POKEMON_BREEDER_FRLG,
     TRAINER_PIC_PAINTER_FRLG,
     TRAINER_PIC_COUNT,
+    // Keep the enum 32-bit even while the built-in IDs fit in fewer bits
+    TRAINER_PIC_ID_MAX = 0xFFFFFFFF,
 };
 
 enum

@@ -1054,6 +1054,8 @@ enum Item
 
     ITEMS_COUNT,
     ITEM_FIELD_ARROW = ITEMS_COUNT,
+    // Keep the enum 32-bit even while the built-in IDs fit in fewer bits
+    ITEM_ID_MAX = 0xFFFFFFFF,
 };
 
 // A special item id associated with "Cancel"/"Exit" etc. in a list of items or decorations
