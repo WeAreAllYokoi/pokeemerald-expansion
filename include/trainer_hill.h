@@ -47,6 +47,13 @@ struct TrainerHillChallenge
     struct TrainerHillFloor floors[0]; // Floor data is assumed to follow, so this will be intentionally read out of bounds
 };
 
+// Header and floors saved in ADMG_SAVE_SECTION_TRAINER_HILL
+struct TrainerHillChallengeSave
+{
+    struct TrainerHillChallenge header;
+    struct TrainerHillFloor floors[NUM_TRAINER_HILL_FLOORS];
+};
+
 extern u32 *gTrainerHillVBlankCounter;
 
 void CallTrainerHillFunction(void);

@@ -246,13 +246,14 @@ enum SubstructType
     SUBSTRUCT_TYPE_3,
 };
 
-union PokemonSubstruct
+// Keep the four substructs unencrypted and in a fixed order so the save schema can see their fields
+// The checksum still covers these substructs; a mismatch marks the Pokémon as a Bad Egg
+struct PokemonSubstructs
 {
     struct PokemonSubstruct0 type0;
     struct PokemonSubstruct1 type1;
     struct PokemonSubstruct2 type2;
     struct PokemonSubstruct3 type3;
-    u16 raw[NUM_SUBSTRUCT_BYTES / 2]; // /2 because it's u16, not u8
 };
 
 struct BoxPokemon
@@ -276,11 +277,7 @@ struct BoxPokemon
     u16 shinyModifier:1;
     u16 unused_1E:1;
 
-    union
-    {
-        u32 raw[(NUM_SUBSTRUCT_BYTES * 4) / 4]; // *4 because there are 4 substructs, /4 because it's u32, not u8
-        union PokemonSubstruct substructs[4];
-    } secure;
+    struct PokemonSubstructs secure;
 };
 
 struct Pokemon

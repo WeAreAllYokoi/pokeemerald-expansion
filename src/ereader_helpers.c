@@ -16,7 +16,10 @@
 #include "constants/trainer_hill.h"
 
 // Size the buffer for whichever is larger: the Trainer Hill challenge or the e-Reader set
-#define TRAINER_HILL_SAVE_SIZE max(sizeof(struct TrainerHillChallenge), sizeof(struct EReaderTrainerHillSet))
+// The buffer holds either the saved Trainer Hill challenge or an e-Reader set
+// Only TrainerHillChallengeSave is saved; reads copy the e-Reader view from the start and leave the rest zeroed
+#define TRAINER_HILL_SAVE_SIZE max(sizeof(struct TrainerHillChallengeSave), sizeof(struct EReaderTrainerHillSet))
+STATIC_ASSERT(offsetof(struct TrainerHillChallengeSave, floors) == offsetof(struct TrainerHillChallenge, floors), trainerHillFloorsFollowTheHeader);
 STATIC_ASSERT(sizeof(struct TrainerHillChallenge) <= SECTOR_COUNTER_OFFSET, TrainerHillChallengeFreeSpace);
 
 struct SendRecvMgr
@@ -460,7 +463,7 @@ static bool32 TryWriteTrainerHill_Internal(struct EReaderTrainerHillSet *hillSet
     }
 
     challenge->checksum = CalcByteArraySum((u8 *)challenge->floors, NUM_TRAINER_HILL_FLOORS * sizeof(struct TrainerHillFloor));
-    if (TryWriteSpecialSaveSector(SECTOR_ID_TRAINER_HILL, (u8 *)challenge, TRAINER_HILL_SAVE_SIZE) != SAVE_STATUS_OK)
+    if (TryWriteSpecialSaveSector(SECTOR_ID_TRAINER_HILL, (u8 *)challenge, sizeof(struct TrainerHillChallengeSave)) != SAVE_STATUS_OK)
         return FALSE;
 
     return TRUE;
@@ -476,7 +479,7 @@ bool32 TryWriteTrainerHill(struct EReaderTrainerHillSet *hillSet)
 
 static bool32 TryReadTrainerHill_Internal(struct EReaderTrainerHillSet *dest, u8 *buffer)
 {
-    if (TryReadSpecialSaveSector(SECTOR_ID_TRAINER_HILL, buffer, TRAINER_HILL_SAVE_SIZE) != SAVE_STATUS_OK)
+    if (TryReadSpecialSaveSector(SECTOR_ID_TRAINER_HILL, buffer, sizeof(struct TrainerHillChallengeSave)) != SAVE_STATUS_OK)
         return FALSE;
 
     memcpy(dest, buffer, sizeof(struct EReaderTrainerHillSet));
