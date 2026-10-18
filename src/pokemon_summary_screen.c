@@ -2849,7 +2849,7 @@ static void CopyNColumnsToTilemap(const struct SlidingWindow *slidingWindow, u16
 
 #define tScrollingSpeed data[0]
 #define tVisibleColumns data[1]
-#define tMove           data[2]
+#define tMove           contentIds[0]
 
 static void PositionPowerAccSlidingWindow(u16 visibleColumns, s16 speed)
 {
@@ -2941,7 +2941,7 @@ static void Task_SlideAppealJamWindow(u8 taskId)
         {
             if (sMonSummaryScreen->currPageIndex == PSS_PAGE_CONTEST_MOVES && FuncIsActiveTask(PssScrollRight) == 0)
                 PutWindowTilemap(PSS_LABEL_WINDOW_MOVES_APPEAL_JAM);
-            DrawContestMoveHearts(tMove);
+            DrawContestMoveHearts(gTasks[taskId].tMove);
         }
         else
         {
@@ -4018,16 +4018,16 @@ static void Task_PrintBattleMoves(u8 taskId)
         if (sMonSummaryScreen->mode == SUMMARY_MODE_SELECT_MOVE)
         {
             if (sMonSummaryScreen->firstMoveIndex == MAX_MON_MOVES)
-                data[1] = sMonSummaryScreen->newMove;
+                gTasks[taskId].contentIds[0] = sMonSummaryScreen->newMove;
             else
-                data[1] = sMonSummaryScreen->summary.moves[sMonSummaryScreen->firstMoveIndex];
+                gTasks[taskId].contentIds[0] = sMonSummaryScreen->summary.moves[sMonSummaryScreen->firstMoveIndex];
         }
         break;
     case 7:
         if (sMonSummaryScreen->mode == SUMMARY_MODE_SELECT_MOVE)
         {
             if (sMonSummaryScreen->newMove != MOVE_NONE || sMonSummaryScreen->firstMoveIndex != MAX_MON_MOVES)
-                PrintMoveDetails(data[1]);
+                PrintMoveDetails(gTasks[taskId].contentIds[0]);
         }
         break;
     case 8:
@@ -4533,7 +4533,7 @@ static u8 CreateMonSprite(struct Pokemon *unused)
     u8 spriteId = CreateSprite(&gMultiuseSpriteTemplate, 40, 64, 5);
 
     FreeSpriteOamMatrix(&gSprites[spriteId]);
-    gSprites[spriteId].data[0] = summary->species2;
+    gSprites[spriteId].contentId = summary->species2;
     gSprites[spriteId].data[2] = 0;
     gSprites[spriteId].callback = SpriteCB_Pokemon;
     gSprites[spriteId].oam.priority = 0;
@@ -4552,9 +4552,9 @@ static void SpriteCB_Pokemon(struct Sprite *sprite)
 
     if (!gPaletteFade.active && sprite->data[2] != 1)
     {
-        sprite->data[1] = IsMonSpriteNotFlipped(sprite->data[0]);
+        sprite->data[1] = IsMonSpriteNotFlipped(sprite->contentId);
         PlayMonCry();
-        PokemonSummaryDoMonAnimation(sprite, sprite->data[0], summary->isEgg);
+        PokemonSummaryDoMonAnimation(sprite, sprite->contentId, summary->isEgg);
     }
 }
 

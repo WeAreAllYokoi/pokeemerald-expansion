@@ -2912,7 +2912,7 @@ static void TeleportWarpInFieldEffect_SpinGround(struct Task *task)
 #define tMonSpriteId data[15]
 
 // Sprite data for field move mon sprite
-#define sSpecies       data[0]
+#define sSpecies       contentId
 #define sOnscreenTimer data[1]
 #define sSlidOffscreen data[7]
 

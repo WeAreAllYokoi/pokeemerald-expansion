@@ -555,7 +555,7 @@ static void Task_Hof_SetMonDisplayTask(u8 taskId)
 
 #define tDestinationX  data[1]
 #define tDestinationY  data[2]
-#define tSpecies       data[7]
+#define tSpecies       contentId
 
 static void Task_Hof_DisplayMon(u8 taskId)
 {
@@ -1335,7 +1335,7 @@ static void SpriteCB_GetOnScreenAndAnimate(struct Sprite *sprite)
     }
     else
     {
-        s16 species = sprite->tSpecies;
+        enum Species species = sprite->tSpecies;
 
         if (species == SPECIES_EGG)
             DoMonFrontSpriteAnimation(sprite, species, TRUE, 3);

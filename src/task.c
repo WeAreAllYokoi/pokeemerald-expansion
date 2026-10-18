@@ -36,6 +36,7 @@ u8 CreateTask(TaskFunc func, u8 priority)
             gTasks[i].priority = priority;
             InsertTask(i);
             memset(gTasks[i].data, 0, sizeof(gTasks[i].data));
+            memset(gTasks[i].contentIds, 0, sizeof(gTasks[i].contentIds));
             gTasks[i].isActive = TRUE;
             return i;
         }

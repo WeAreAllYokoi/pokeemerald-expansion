@@ -240,6 +240,9 @@ struct Sprite
              u8 subspriteMode:2;
 
     /*0x43*/ u8 subpriority;
+
+    // Full-width content ID for this sprite, such as a species ID
+    u32 contentId;
 };
 
 struct OamMatrix

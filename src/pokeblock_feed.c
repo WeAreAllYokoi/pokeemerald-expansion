@@ -833,7 +833,7 @@ static void Task_FadeOutPokeblockFeed(u8 taskId)
 // Sprite data for Pokéblock and Pokémon
 #define sSpeed   data[0]
 #define sAccel   data[1]
-#define sSpecies data[2]
+#define sSpecies contentId
 
 static u8 CreateMonSprite(struct Pokemon *mon)
 {

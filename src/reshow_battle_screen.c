@@ -333,7 +333,8 @@ void CreateBattlerSprite(enum BattlerId battler)
             gSprites[gBattlerSpriteIds[battler]].oam.paletteNum = battler;
             gSprites[gBattlerSpriteIds[battler]].callback = SpriteCallbackDummy;
             gSprites[gBattlerSpriteIds[battler]].data[0] = battler;
-            gSprites[gBattlerSpriteIds[battler]].data[2] = species;
+            gSprites[gBattlerSpriteIds[battler]].data[2] = (s16)species;  // Low 16 bits; contentId holds the full species ID
+            gSprites[gBattlerSpriteIds[battler]].contentId = species;
 
             StartSpriteAnim(&gSprites[gBattlerSpriteIds[battler]], 0);
         }
@@ -373,7 +374,8 @@ void CreateBattlerSprite(enum BattlerId battler)
             gSprites[gBattlerSpriteIds[battler]].oam.paletteNum = battler;
             gSprites[gBattlerSpriteIds[battler]].callback = SpriteCallbackDummy;
             gSprites[gBattlerSpriteIds[battler]].data[0] = battler;
-            gSprites[gBattlerSpriteIds[battler]].data[2] = species;
+            gSprites[gBattlerSpriteIds[battler]].data[2] = (s16)species;  // Low 16 bits; contentId holds the full species ID
+            gSprites[gBattlerSpriteIds[battler]].contentId = species;
 
             StartSpriteAnim(&gSprites[gBattlerSpriteIds[battler]], 0);
         }
@@ -437,7 +439,8 @@ static void CreateCaughtMonSprite(void)
     gSprites[gBattlerSpriteIds[gBattlerTarget]].oam.paletteNum = gBattlerTarget;
     gSprites[gBattlerSpriteIds[gBattlerTarget]].callback = SpriteCallbackDummy;
     gSprites[gBattlerSpriteIds[gBattlerTarget]].data[0] = gBattlerTarget;
-    gSprites[gBattlerSpriteIds[gBattlerTarget]].data[2] = GetMonData(GetBattlerMon(gBattlerTarget), MON_DATA_SPECIES);
+    gSprites[gBattlerSpriteIds[gBattlerTarget]].contentId = GetMonData(GetBattlerMon(gBattlerTarget), MON_DATA_SPECIES);
+    gSprites[gBattlerSpriteIds[gBattlerTarget]].data[2] = (s16)gSprites[gBattlerSpriteIds[gBattlerTarget]].contentId;  // Low 16 bits; contentId holds the full species ID
 
     StartSpriteAnim(&gSprites[gBattlerSpriteIds[gBattlerTarget]], 0);
 

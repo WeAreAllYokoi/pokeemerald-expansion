@@ -891,7 +891,7 @@ static void Task_ShowWinnerMonBanner(u8 taskId)
         SetMultiuseSpriteTemplateToPokemon(species, B_POSITION_OPPONENT_LEFT);
         gMultiuseSpriteTemplate.paletteTag = SpeciesSpriteTag(species);
         spriteId = CreateSprite(&gMultiuseSpriteTemplate, DISPLAY_WIDTH + 32, DISPLAY_HEIGHT / 2, 10);
-        gSprites[spriteId].data[1] = species;
+        gSprites[spriteId].contentId = species;
         gSprites[spriteId].oam.priority = 0;
         gSprites[spriteId].callback = SpriteCB_WinnerMonSlideIn;
         sContestResults->data->winnerMonSpriteId = spriteId;
@@ -1529,7 +1529,7 @@ static void SpriteCB_WinnerMonSlideIn(struct Sprite *sprite)
     {
         if (++sprite->data[0] == 10)
         {
-            PlayCry_Normal(sprite->data[1], 0);
+            PlayCry_Normal(sprite->contentId, 0);
             sprite->data[1] = 0;
         }
     }
@@ -1609,7 +1609,7 @@ static void SpriteCB_Confetti(struct Sprite *sprite)
 
 #define tMonIndex  data[0]
 #define tNumFrames data[1]
-#define tSpecies   data[2]
+#define tSpecies   contentIds[0]
 #define tTimer     data[10]
 #define tBounced   data[11]
 
@@ -2481,7 +2481,7 @@ void ShowContestEntryMonPic(void)
         isShiny = gContestMons[gSpecialVar_0x8006].isShiny;
         taskId = CreateTask(Task_ShowContestEntryMonPic, 0x50);
         gTasks[taskId].data[0] = 0;
-        gTasks[taskId].data[1] = species;
+        gTasks[taskId].contentIds[0] = species;
         HandleLoadSpecialPokePic(TRUE, gMonSpritesGfxPtr->spritesGfx[B_POSITION_OPPONENT_LEFT], species, personality);
 
         LoadSpritePaletteWithTag(GetMonSpritePalFromSpeciesAndPersonality(species, isShiny, personality), SpeciesSpriteTag(species));

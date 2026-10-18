@@ -408,7 +408,7 @@ static void Task_Sparkles_CircleInward_End(u8 taskId)
     DestroyTask(taskId);
 }
 
-#define tSpecies data[2] // Never read
+#define tSpecies contentIds[0] // Never read
 
 u8 EvolutionSparkles_SprayAndFlash(enum Species species)
 {

@@ -18,6 +18,8 @@ struct Task
     u8 next;
     u8 priority;
     s16 data[NUM_TASK_DATA];
+    // Full-width species and move IDs that won't fit in a single data slot
+    u32 contentIds[2];
 };
 
 extern struct Task gTasks[];

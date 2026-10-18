@@ -1105,7 +1105,7 @@ static u8 LaunchBallFadeMonTaskForPokeball(bool8 unFadeLater, u8 spritePalNum, u
 }
 
 // Sprite data for the Pokémon
-#define sSpecies data[7]
+#define sSpecies contentId
 
 // Sprite data for the Poké Ball
 #define sMonSpriteId data[0]

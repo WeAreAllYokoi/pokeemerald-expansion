@@ -232,7 +232,7 @@ void SoundTask_PlayDoubleCry(u8 taskId)
     }
 
     gTasks[taskId].data[0] = gBattleAnimArgs[1];
-    gTasks[taskId].data[1] = species;
+    gTasks[taskId].contentIds[0] = species;
     gTasks[taskId].data[2] = pan;
 
     if (species != SPECIES_NONE)
@@ -252,7 +252,7 @@ void SoundTask_PlayDoubleCry(u8 taskId)
 
 static void SoundTask_PlayDoubleCry_Step(u8 taskId)
 {
-    enum Species species = gTasks[taskId].data[1];
+    enum Species species = gTasks[taskId].contentIds[0];
     s8 pan = gTasks[taskId].data[2];
 
     if (gTasks[taskId].data[9] < 2)
@@ -300,7 +300,7 @@ void SoundTask_PlayNormalCry(u8 taskId)
     gTasks[taskId].func = SoundTask_WaitForCry;
 }
 
-#define tSpecies data[1]
+#define tSpecies contentIds[0]
 #define tPan     data[2]
 #define tState   data[9]
 #define tLastCry data[10] // If it's not the last cry, don't try to restore the BGM, because another is coming

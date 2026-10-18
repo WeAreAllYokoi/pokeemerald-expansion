@@ -2710,7 +2710,8 @@ static u32 CreatePokedexMonSprite(u16 num, s16 x, s16 y)
             gSprites[spriteId].oam.priority = 3;
             gSprites[spriteId].data[0] = 0;
             gSprites[spriteId].data[1] = i;
-            gSprites[spriteId].data[2] = NationalPokedexNumToSpeciesForm(num);
+            gSprites[spriteId].contentId = NationalPokedexNumToSpeciesForm(num);
+            gSprites[spriteId].data[2] = (s16)gSprites[spriteId].contentId;  // Low 16 bits; contentId holds the full species ID
             sPokedexView->monSpriteIds[i] = spriteId;
             return spriteId;
         }
@@ -3963,7 +3964,7 @@ static void HighlightSubmenuScreenSelectBarItem(u8 a, u16 b)
 }
 
 #define tState         data[0]
-#define tSpecies        data[1]
+#define tSpecies        contentIds[0]
 #define tPalTimer      data[2]
 #define tMonSpriteId   data[3]
 #define tIsShiny       data[13]

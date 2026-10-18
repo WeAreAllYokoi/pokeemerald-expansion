@@ -5241,7 +5241,8 @@ static struct Sprite *CreateMonIconSprite(enum Species species, u32 personality,
 
     gSprites[spriteId].oam.tileNum = tileNum;
     gSprites[spriteId].oam.priority = oamPriority;
-    gSprites[spriteId].data[0] = species;
+    gSprites[spriteId].data[0] = (s16)species;  // Low 16 bits; contentId holds the full species ID
+    gSprites[spriteId].contentId = species;
     gSprites[spriteId].data[1] = iconType;
 
     return &gSprites[spriteId];
@@ -5249,7 +5250,7 @@ static struct Sprite *CreateMonIconSprite(enum Species species, u32 personality,
 
 static void DestroyBoxMonIcon(struct Sprite *sprite)
 {
-    RemoveSpeciesFromIconList(sprite->data[0], sprite->data[1]);
+    RemoveSpeciesFromIconList(sprite->contentId, sprite->data[1]);
     DestroySprite(sprite);
 }
 

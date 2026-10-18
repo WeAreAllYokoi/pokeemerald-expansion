@@ -958,7 +958,7 @@ void GetLilycoveSSTidalSelection(void)
 }
 
 #define tState       data[0]
-#define tMonSpecies  data[1]
+#define tMonSpecies  contentIds[0]
 #define tMonSpriteId data[2]
 #define tWindowX     data[3]
 #define tWindowY     data[4]

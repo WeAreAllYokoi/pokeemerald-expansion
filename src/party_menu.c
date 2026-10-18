@@ -5485,7 +5485,7 @@ static void TryUseItemOnMove(u8 taskId)
     else
     {
         enum Move move = MOVE_NONE;
-        s16 *moveSlot = &gPartyMenu.data1;
+        s32 *moveSlot = &gPartyMenu.data1;
         enum Item item = gSpecialVar_ItemId;
 
         if (ExecuteTableBasedItemEffect(mon, item, ptr->slotId, *moveSlot))
@@ -6274,12 +6274,12 @@ void ItemUseCB_EvolutionStone(u8 taskId, TaskFunc task)
 #define SECOND_FUSE_MON 3
 
 #define tState          data[0]
-#define tTargetSpecies  data[1]
+#define tTargetSpecies  contentIds[0]
 #define tAnimWait       data[2]
 #define tNextFunc       3
 
 #define fusionType           data[6]
-#define firstFusion          data[7]
+#define firstFusion          contentIds[1]
 #define firstFusionSlot      data[8]
 #define fusionResult         data[9]
 #define secondFusionSlot     data[10]

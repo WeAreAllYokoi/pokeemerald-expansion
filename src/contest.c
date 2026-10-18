@@ -3224,7 +3224,8 @@ static u8 CreateContestantSprite(enum Species species, bool8 isShiny, u32 person
     gSprites[spriteId].subpriority = GetBattlerSpriteSubpriority(2);
     gSprites[spriteId].callback = SpriteCallbackDummy;
     gSprites[spriteId].data[0] = gSprites[spriteId].oam.paletteNum;
-    gSprites[spriteId].data[2] = species;
+    gSprites[spriteId].data[2] = (s16)species;  // Low 16 bits; contentId holds the full species ID
+    gSprites[spriteId].contentId = species;
     if (IsSpeciesNotUnown(species))
         gSprites[spriteId].affineAnims = gAffineAnims_BattleSpriteContest;
     else
