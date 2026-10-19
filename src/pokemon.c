@@ -6344,12 +6344,12 @@ void TryToSetBattleFormChangeMoves(struct Pokemon *mon, enum FormChanges method)
             && formChanges[i].param3
             && formChanges[i].targetSpecies != species)
         {
-            u16 originalMove = formChanges[i].param2;
-            u16 newMove = formChanges[i].param3;
+            enum Move originalMove = formChanges[i].param2;
+            enum Move newMove = formChanges[i].param3;
 
             for (j = 0; j < MAX_MON_MOVES; j++)
             {
-                u16 currMove = GetMonData(mon, MON_DATA_MOVE1 + j);
+                enum Move currMove = GetMonData(mon, MON_DATA_MOVE1 + j);
                 if (currMove == originalMove)
                     SetMonMoveSlot_KeepPP(mon, newMove, j);
             }

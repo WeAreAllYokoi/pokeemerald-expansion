@@ -2886,7 +2886,7 @@ static bool8 IsPlayerLinkLeader(void)
 void CreateContestMonFromParty(u8 partyIndex)
 {
     u8 name[max(PLAYER_NAME_LENGTH + 1, POKEMON_NAME_BUFFER_SIZE)];
-    u16 heldItem;
+    enum Item heldItem;
     s16 cool;
     s16 beauty;
     s16 cute;

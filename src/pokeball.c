@@ -719,7 +719,7 @@ static void SpriteCB_BallThrow_Shake(struct Sprite *sprite)
     }
 }
 
-#define tCryTaskSpecies         data[0]
+#define tCryTaskSpecies         contentIds[0]
 #define tCryTaskPan             data[1]
 #define tCryTaskWantedCry       data[2]
 #define tCryTaskBattler         data[3]

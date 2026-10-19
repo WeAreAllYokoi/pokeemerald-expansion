@@ -949,7 +949,7 @@ static void RevealHiddenSearch(void)
 
 bool32 TryStartDexNavSearch(void)
 {
-    u16 val = VarGet(DN_VAR_SPECIES);
+    enum Species val = VarGet(DN_VAR_SPECIES);
 
     if (FlagGet(DN_FLAG_SEARCHING) && sDexNavSearchDataPtr->hiddenSearch)
     {
@@ -2188,7 +2188,7 @@ static void CreateTypeIconSprites(void)
     }
 }
 
-#define tSpecies            data[2]
+#define tSpecies            contentIds[0]
 #define tEnvironment        data[3]
 
 static bool8 DexNav_DoGfxSetup(void)

@@ -4948,7 +4948,7 @@ void ItemUseCB_Medicine(u8 taskId, TaskFunc task)
 }
 
 #define tState      data[0]
-#define tSpecies    data[1]
+#define tSpecies    contentIds[0]
 #define tAbilityNum data[2]
 #define tMonId      data[3]
 #define tOldFunc    4
@@ -4956,6 +4956,7 @@ void ItemUseCB_Medicine(u8 taskId, TaskFunc task)
 void Task_AbilityCapsule(u8 taskId)
 {
     s16 *data = gTasks[taskId].data;
+    u32 *contentIds = gTasks[taskId].contentIds;
 
     switch (tState)
     {
@@ -5030,6 +5031,7 @@ void Task_AbilityCapsule(u8 taskId)
 void ItemUseCB_AbilityCapsule(u8 taskId, TaskFunc task)
 {
     s16 *data = gTasks[taskId].data;
+    u32 *contentIds = gTasks[taskId].contentIds;
 
     tState = 0;
     tMonId = gPartyMenu.slotId;
@@ -5042,6 +5044,7 @@ void ItemUseCB_AbilityCapsule(u8 taskId, TaskFunc task)
 void Task_AbilityPatch(u8 taskId)
 {
     s16 *data = gTasks[taskId].data;
+    u32 *contentIds = gTasks[taskId].contentIds;
 
     switch (tState)
     {
@@ -5115,6 +5118,7 @@ void Task_AbilityPatch(u8 taskId)
 void ItemUseCB_AbilityPatch(u8 taskId, TaskFunc task)
 {
     s16 *data = gTasks[taskId].data;
+    u32 *contentIds = gTasks[taskId].contentIds;
 
     tState = 0;
     tMonId = gPartyMenu.slotId;
@@ -5135,8 +5139,8 @@ void ItemUseCB_AbilityPatch(u8 taskId, TaskFunc task)
 
 #define tState      data[0]
 #define tMonId      data[1]
-#define tOldNature  data[2]
-#define tNewNature  data[3]
+#define tOldNature  contentIds[0]
+#define tNewNature  contentIds[1]
 #define tOldFunc    4
 
 void Task_Mint(u8 taskId)
@@ -5144,6 +5148,7 @@ void Task_Mint(u8 taskId)
     static const u8 sText_askText[] = _("It might affect {STR_VAR_1}'s stats.\nAre you sure you want to use it?");
     static const u8 sText_doneText[] = _("{STR_VAR_1}'s stats may have changed due\nto the effects of the {STR_VAR_2}!{PAUSE_UNTIL_PRESS}");
     s16 *data = gTasks[taskId].data;
+    u32 *contentIds = gTasks[taskId].contentIds;
 
     switch (tState)
     {
@@ -5219,6 +5224,7 @@ void Task_Mint(u8 taskId)
 void ItemUseCB_Mint(u8 taskId, TaskFunc task)
 {
     s16 *data = gTasks[taskId].data;
+    u32 *contentIds = gTasks[taskId].contentIds;
 
     tState = 0;
     tMonId = gPartyMenu.slotId;
@@ -6281,12 +6287,12 @@ void ItemUseCB_EvolutionStone(u8 taskId, TaskFunc task)
 #define fusionType           data[6]
 #define firstFusion          contentIds[1]
 #define firstFusionSlot      data[8]
-#define fusionResult         data[9]
+#define fusionResult         contentIds[2]
 #define secondFusionSlot     data[10]
-#define unfuseSecondMon      data[11]
-#define moveToLearn          data[12]
+#define unfuseSecondMon      contentIds[3]
+#define moveToLearn          contentIds[4]
 #define tExtraMoveHandling   data[13]
-#define forgetMove           data[14]
+#define forgetMove           contentIds[5]
 #define storageIndex         data[15]
 
 static void Task_TryItemUseFusionChange(u8 taskId);

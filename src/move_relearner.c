@@ -332,7 +332,7 @@ static void Task_WaitForFadeOut(u8 taskId)
 
 #define tState      data[0]
 #define tPartyIndex data[1]
-#define tMove       data[2]
+#define tMove       contentIds[0]
 #define tRecoverPp  data[3]
 #define tCategory   data[4]
 

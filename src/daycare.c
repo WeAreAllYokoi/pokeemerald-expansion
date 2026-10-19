@@ -324,7 +324,7 @@ static u32 GetExpAtLevelCap(struct Pokemon *mon)
     return gExperienceTables[gSpeciesInfo[GetMonData(mon, MON_DATA_SPECIES)].growthRate][GetCurrentLevelCap()];
 }
 
-static u16 TakeSelectedPokemonFromDaycare(struct DaycareMon *daycareMon)
+static enum Species TakeSelectedPokemonFromDaycare(struct DaycareMon *daycareMon)
 {
     u32 experience;
     struct Pokemon pokemon;
@@ -1548,7 +1548,7 @@ u8 GetNumLevelsGainedForRoute5DaycareMon(void)
 #endif
 }
 
-u16 TakePokemonFromRoute5Daycare(void)
+enum Species TakePokemonFromRoute5Daycare(void)
 {
 #if IS_FRLG
     return TakeSelectedPokemonFromDaycare(&gSaveBlock1Ptr->route5DayCareMon);

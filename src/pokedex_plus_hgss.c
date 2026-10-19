@@ -1506,7 +1506,7 @@ static void LoadScreenSelectBarMain(u16 unused)
 //*                                  *
 //************************************
 #define tState         data[0]
-#define tSpecies       data[1]
+#define tSpecies       contentIds[0]
 #define tPalTimer      data[2]
 #define tMonSpriteId   data[3]
 #define tOtIdLo        data[12]

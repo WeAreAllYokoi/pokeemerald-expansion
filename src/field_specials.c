@@ -4545,7 +4545,7 @@ static void UIEndTask(u8 taskId)
 
 #define tState         data[0]
 #define tPartyIndex    data[1]
-#define tMove          data[2]
+#define tMove          contentIds[0]
 #define tRecoverPp     data[3]
 
 static void UIShowMoveList(u8 taskId)

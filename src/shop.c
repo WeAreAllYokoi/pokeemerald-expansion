@@ -438,7 +438,7 @@ static void Task_ShopMenu(u8 taskId)
 }
 
 #define tItemCount  data[1]
-#define tItemId     data[5]
+#define tItemId     contentIds[0]
 #define tListTaskId data[7]
 #define tCallbackHi data[8]
 #define tCallbackLo data[9]
@@ -1014,6 +1014,7 @@ static bool8 BuyMenuCheckForOverlapWithMenuBg(int x, int y)
 static void Task_BuyMenu(u8 taskId)
 {
     s16 *data = gTasks[taskId].data;
+    u32 *contentIds = gTasks[taskId].contentIds;
 
     if (!gPaletteFade.active)
     {
@@ -1090,6 +1091,7 @@ static void Task_BuyMenu(u8 taskId)
 static void Task_BuyHowManyDialogueInit(u8 taskId)
 {
     s16 *data = gTasks[taskId].data;
+    u32 *contentIds = gTasks[taskId].contentIds;
 
     u16 quantityInBag = CountTotalItemQuantityInBag(tItemId);
     u16 maxQuantity;
@@ -1120,6 +1122,7 @@ static void Task_BuyHowManyDialogueInit(u8 taskId)
 static void Task_BuyHowManyDialogueHandleInput(u8 taskId)
 {
     s16 *data = gTasks[taskId].data;
+    u32 *contentIds = gTasks[taskId].contentIds;
 
     if (AdjustQuantityAccordingToDPadInput(&tItemCount, sShopData->maxQuantity) == TRUE)
     {
@@ -1161,6 +1164,7 @@ static void BuyMenuConfirmPurchase(u8 taskId)
 static void BuyMenuTryMakePurchase(u8 taskId)
 {
     s16 *data = gTasks[taskId].data;
+    u32 *contentIds = gTasks[taskId].contentIds;
 
     PutWindowTilemap(WIN_ITEM_LIST);
 
@@ -1209,6 +1213,7 @@ static void BuyMenuSubtractMoney(u8 taskId)
 static void Task_ReturnToItemListAfterItemPurchase(u8 taskId)
 {
     s16 *data = gTasks[taskId].data;
+    u32 *contentIds = gTasks[taskId].contentIds;
 
     if (JOY_NEW(A_BUTTON | B_BUTTON))
     {
@@ -1301,6 +1306,7 @@ static void ClearItemPurchases(void)
 static void RecordItemPurchase(u8 taskId)
 {
     s16 *data = gTasks[taskId].data;
+    u32 *contentIds = gTasks[taskId].contentIds;
 
     u16 i;
 

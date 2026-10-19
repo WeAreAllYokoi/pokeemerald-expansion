@@ -96,7 +96,7 @@ enum {
 struct MatchCallState
 {
     u32 minutes;
-    u16 trainerId;
+    u32 trainerId; // a trainer ID, or REMATCH_TABLE_ENTRIES for none
     u8 stepCounter;
     bool8 triggeredFromScript;
 };

@@ -7,6 +7,7 @@
 
 #define NUM_TASKS 16
 #define NUM_TASK_DATA 16
+#define NUM_TASK_CONTENT_IDS 6
 
 typedef void (*TaskFunc)(u8 taskId);
 
@@ -19,7 +20,7 @@ struct Task
     u8 priority;
     s16 data[NUM_TASK_DATA];
     // Full-width species and move IDs that won't fit in a single data slot
-    u32 contentIds[2];
+    u32 contentIds[NUM_TASK_CONTENT_IDS];
 };
 
 extern struct Task gTasks[];

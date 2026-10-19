@@ -2375,7 +2375,7 @@ u32 GetBattleWindowTemplatePixelWidth(u32 windowsType, u32 tableId)
 }
 
 #define sBattler            data[0]
-#define sSpeciesId          data[2]
+#define sSpeciesId          contentId
 
 void SpriteCB_WildMon(struct Sprite *sprite)
 {
