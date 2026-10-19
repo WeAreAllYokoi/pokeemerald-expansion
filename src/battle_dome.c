@@ -6105,12 +6105,12 @@ static void ADMG_RestoreDomeRound(const struct ADMG_DomeRoundFrame *frame)
     if (frame->ownedMons != NULL && gFacilityTrainerMons == frame->ownedMons) gFacilityTrainerMons = frame->previousMons;
 }
 
-static u16 ADMG_DomeRoundWinning(struct ADMG_DomeRoundFrame *frame, int winner, int loser, u8 round)
+static enum Move ADMG_DomeRoundWinning(struct ADMG_DomeRoundFrame *frame, int winner, int loser, u8 round)
 {
     // Winning-move publication can legitimately replace the scoring table.
     frame->left = frame->right = NULL;
     if (round > DOME_ROUND2) frame->textUsed = TRUE;
-    u16 result = GetWinningMove(winner, loser, round);
+    enum Move result = GetWinningMove(winner, loser, round);
     frame->ownedTrainers = gFacilityTrainers; frame->ownedMons = gFacilityTrainerMons;
     return result;
 }
