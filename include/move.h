@@ -233,6 +233,18 @@ extern const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL];
 extern const u8 gNotDoneYetDescription[];
 extern const struct BattleMoveEffect gBattleMoveEffects[];
 
+// A move effect's row. The table grows at run time (gADMG_RegistryCounts.moveEffects); an effect it does not have reads
+// as EFFECT_PLACEHOLDER, as an invalid move reads as MOVE_NONE.
+static inline const struct BattleMoveEffect *GetBattleMoveEffectInfo(enum BattleMoveEffects effect)
+{
+    assertf(IsBattleMoveEffectValid(effect), "invalid move effect: %d", effect)
+    {
+        return &gBattleMoveEffects[EFFECT_PLACEHOLDER];
+    }
+
+    return &gBattleMoveEffects[effect];
+}
+
 
 static inline enum Move SanitizeMoveId(enum Move moveId)
 {
@@ -596,7 +608,7 @@ static inline u32 GetMoveTwoTurnAttackStringId(enum Move moveId)
 {
     moveId = SanitizeMoveId(moveId);
     enum BattleMoveEffects effect = gMovesInfo[moveId].effect;
-    assertf(gBattleMoveEffects[effect].twoTurnEffect, "not a two-turn move: %S", gMovesInfo[moveId].name);
+    assertf(GetBattleMoveEffectInfo(effect)->twoTurnEffect, "not a two-turn move: %S", gMovesInfo[moveId].name);
     return gMovesInfo[moveId].argument.twoTurnAttack.stringId;
 }
 
@@ -849,11 +861,11 @@ static inline const u8 *GetMoveAnimationScript(enum Move moveId)
 static inline const u8 *GetMoveBattleScript(enum Move moveId)
 {
     moveId = SanitizeMoveId(moveId);
-    assertf(gBattleMoveEffects[GetMoveEffect(moveId)].battleScript, "No battle script for %S", gMovesInfo[moveId].name)
+    assertf(GetBattleMoveEffectInfo(GetMoveEffect(moveId))->battleScript, "No battle script for %S", gMovesInfo[moveId].name)
     {
         return gBattleMoveEffects[EFFECT_PLACEHOLDER].battleScript;
     }
-    return gBattleMoveEffects[GetMoveEffect(moveId)].battleScript;
+    return GetBattleMoveEffectInfo(GetMoveEffect(moveId))->battleScript;
 }
 
 #endif // GUARD_MOVES_H

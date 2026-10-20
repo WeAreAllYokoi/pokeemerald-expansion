@@ -1722,7 +1722,7 @@ static bool32 IsBattlerWeatherAffectedTemp(enum HoldEffect holdEffect, u32 weath
 
 static bool32 CanTwoTurnMoveFireThisTurn(struct BattleCalcValues *cv, bool32 *showAbilityPopUp)
 {
-    if (cv->moveEffect == EFFECT_GEOMANCY || gBattleMoveEffects[cv->moveEffect].semiInvulnerableEffect)
+    if (cv->moveEffect == EFFECT_GEOMANCY || GetBattleMoveEffectInfo(cv->moveEffect)->semiInvulnerableEffect)
         return FALSE;
 
     u32 weather = GetWeather();
@@ -1816,7 +1816,7 @@ static enum CancelerResult CancelerCharging(struct BattleCalcValues *cv)
 {
     enum CancelerResult result = CANCELER_RESULT_SUCCESS;
 
-    if (!gBattleMoveEffects[cv->moveEffect].twoTurnEffect)
+    if (!GetBattleMoveEffectInfo(cv->moveEffect)->twoTurnEffect)
     {
         result = CANCELER_RESULT_SUCCESS;
     }
@@ -1829,7 +1829,7 @@ static enum CancelerResult CancelerCharging(struct BattleCalcValues *cv)
         gBattleScripting.animTurn = 1;
         gBattleScripting.animTargetsHit = 0;
         gBattleMons[cv->battlerAtk].volatiles.multipleTurns = FALSE;
-        if (gBattleMoveEffects[cv->moveEffect].semiInvulnerableEffect)
+        if (GetBattleMoveEffectInfo(cv->moveEffect)->semiInvulnerableEffect)
             gBattleMons[cv->battlerAtk].volatiles.semiInvulnerable = STATE_NONE;
         result = CANCELER_RESULT_SUCCESS;
     }
@@ -1837,7 +1837,7 @@ static enum CancelerResult CancelerCharging(struct BattleCalcValues *cv)
     {
         gLockedMoves[cv->battlerAtk] = cv->move;
         gProtectStructs[cv->battlerAtk].chargingTurn = TRUE;
-        if (gBattleMoveEffects[cv->moveEffect].semiInvulnerableEffect)
+        if (GetBattleMoveEffectInfo(cv->moveEffect)->semiInvulnerableEffect)
             gBattleMons[cv->battlerAtk].volatiles.semiInvulnerable = GetTwoTurnMoveSemiInvulnerability(cv->move);
         BattleScriptCall(BattleScript_TwoTurnMoveCharging);
         result = CANCELER_RESULT_RUN_SCRIPT;
@@ -1851,7 +1851,7 @@ static enum CancelerResult CancelerCharging(struct BattleCalcValues *cv)
             gBattleScripting.animTargetsHit = 0;
             gBattleScripting.battler = cv->battlerAtk;
             gProtectStructs[cv->battlerAtk].chargingTurn = FALSE;
-            if (gBattleMoveEffects[cv->moveEffect].semiInvulnerableEffect)
+            if (GetBattleMoveEffectInfo(cv->moveEffect)->semiInvulnerableEffect)
                 gBattleMons[cv->battlerAtk].volatiles.semiInvulnerable = STATE_NONE;
             if (showAbilityPopUp)
             {
@@ -1868,7 +1868,7 @@ static enum CancelerResult CancelerCharging(struct BattleCalcValues *cv)
             gBattleScripting.animTurn = 1;
             gBattleScripting.animTargetsHit = 0;
             gProtectStructs[cv->battlerAtk].chargingTurn = FALSE;
-            if (gBattleMoveEffects[cv->moveEffect].semiInvulnerableEffect)
+            if (GetBattleMoveEffectInfo(cv->moveEffect)->semiInvulnerableEffect)
                 gBattleMons[cv->battlerAtk].volatiles.semiInvulnerable = STATE_NONE;
             gLastUsedItem = gBattleMons[cv->battlerAtk].item;
             BattleScriptCall(BattleScript_PowerHerbActivation);
@@ -2292,7 +2292,7 @@ static bool32 IsMoveParentalBondAffected(struct BattleCalcValues *cv)
      || gBattleStruct->numSpreadTargets > 1
      || IsMoveParentalBondBanned(cv->move)
      || IsBattleMoveStatus(cv->move)
-     || gBattleMoveEffects[cv->moveEffect].twoTurnEffect
+     || GetBattleMoveEffectInfo(cv->moveEffect)->twoTurnEffect
      || cv->moveEffect == EFFECT_OHKO
      || GetActiveGimmick(cv->battlerAtk) == GIMMICK_Z_MOVE
      || cv->move == MOVE_STRUGGLE)
@@ -6060,7 +6060,7 @@ static enum Move GetSleepTalkMove(void)
     for (i = 0; i < MAX_MON_MOVES; i++)
     {
         if (IsMoveSleepTalkBanned(gBattleMons[gBattlerAttacker].moves[i])
-            || gBattleMoveEffects[GetMoveEffect(gBattleMons[gBattlerAttacker].moves[i])].twoTurnEffect)
+            || GetBattleMoveEffectInfo(GetMoveEffect(gBattleMons[gBattlerAttacker].moves[i]))->twoTurnEffect)
             unusableMovesBits |= (1 << (i));
     }
 

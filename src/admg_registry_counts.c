@@ -13,4 +13,5 @@ const struct ADMG_RegistryCounts gADMG_RegistryCounts =
     .trainerPics = TRAINER_PIC_COUNT,
     .addedTrainers = 0,
     .nationalDex = NATIONAL_DEX_COUNT + 1,
+    .moveEffects = NUM_BATTLE_MOVE_EFFECTS,
 };

@@ -13,6 +13,7 @@
 #include "constants/abilities.h"
 #include "constants/trainers.h"
 #include "constants/pokedex.h"
+#include "constants/battle_move_effects.h"
 
 struct ADMG_RegistryCounts
 {
@@ -26,6 +27,7 @@ struct ADMG_RegistryCounts
     u32 trainerPics;    // Rows of gTrainerPicInfo
     u32 addedTrainers;  // Rows per difficulty of gADMG_AddedTrainers: the trainers added at run time
     u32 nationalDex;    // National Pokédex numbers, including NATIONAL_DEX_NONE
+    u32 moveEffects;    // Rows of gBattleMoveEffects
 };
 
 // Keep the defaults in a separate source file so callers read the counts from ROM
@@ -41,6 +43,7 @@ extern const struct ADMG_RegistryCounts gADMG_RegistryCounts;
 #define RUNTIME_TRAINER_PICS_COUNT     (gADMG_RegistryCounts.trainerPics)
 #define RUNTIME_ADDED_TRAINERS_COUNT   (gADMG_RegistryCounts.addedTrainers)
 #define RUNTIME_NATIONAL_DEX_COUNT     (gADMG_RegistryCounts.nationalDex)
+#define RUNTIME_MOVE_EFFECTS_COUNT     (gADMG_RegistryCounts.moveEffects)
 
 #define FIRST_ADDED_SPECIES        (NUM_SPECIES + 1)
 #define FIRST_ADDED_MOVE           (MOVES_COUNT_ALL + 1)
@@ -54,6 +57,7 @@ extern const struct ADMG_RegistryCounts gADMG_RegistryCounts;
 // all of them.
 #define FIRST_ADDED_TRAINER        0x10000
 #define FIRST_ADDED_NATIONAL_DEX   (NATIONAL_DEX_COUNT + 1)
+#define FIRST_ADDED_MOVE_EFFECT    (NUM_BATTLE_MOVE_EFFECTS + 1)
 
 static inline bool32 IsSpeciesIdValid(u32 species) { return species < RUNTIME_SPECIES_COUNT; }
 static inline bool32 IsMoveIdValid(u32 move) { return move < RUNTIME_MOVES_COUNT && move != MOVES_COUNT_ALL; }
@@ -65,6 +69,7 @@ static inline bool32 IsTypeIdValid(u32 type) { return type < RUNTIME_TYPES_COUNT
 static inline bool32 IsNatureIdValid(u32 nature) { return nature < RUNTIME_NATURES_COUNT && nature != NUM_NATURES; }
 static inline bool32 IsTrainerClassIdValid(u32 trainerClass) { return trainerClass < RUNTIME_TRAINER_CLASSES_COUNT && trainerClass != TRAINER_CLASS_COUNT; }
 static inline bool32 IsTrainerPicIdValid(u32 pic) { return pic < RUNTIME_TRAINER_PICS_COUNT && pic != TRAINER_PIC_COUNT; }
+static inline bool32 IsBattleMoveEffectValid(u32 effect) { return effect < RUNTIME_MOVE_EFFECTS_COUNT && effect != NUM_BATTLE_MOVE_EFFECTS; }
 
 // Advance past SPECIES_EGG in species loops, or the reserved base count for types and items
 #define NEXT_SPECIES_ID(i) ((i) + 1 == SPECIES_EGG ? SPECIES_EGG + 1 : (i) + 1)

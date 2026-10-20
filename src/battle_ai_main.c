@@ -4364,7 +4364,7 @@ static s32 AI_CalcMoveEffectScore(enum BattlerId battlerAtk, enum BattlerId batt
         ADJUST_SCORE(10);
 
     // don't get baited into encore
-    if (gBattleMoveEffects[moveEffect].encourageEncore
+    if (GetBattleMoveEffectInfo(moveEffect)->encourageEncore
      && HasBattlerSideMoveWithEffect(battlerDef, EFFECT_ENCORE)
      && (B_MENTAL_HERB < GEN_5 || aiData->holdEffects[battlerAtk] != HOLD_EFFECT_MENTAL_HERB))
      {
@@ -4763,7 +4763,7 @@ static s32 AI_CalcMoveEffectScore(enum BattlerId battlerAtk, enum BattlerId batt
         if (GetActiveGimmick(battlerDef) == GIMMICK_DYNAMAX)
             break;
 
-        bool32 encourage = gBattleMoveEffects[GetMoveEffect(aiData->lastUsedMove[battlerDef])].encourageEncore;
+        bool32 encourage = GetBattleMoveEffectInfo(GetMoveEffect(aiData->lastUsedMove[battlerDef]))->encourageEncore;
 
         switch (GetMoveNonVolatileStatus(aiData->lastUsedMove[battlerDef]))
         {

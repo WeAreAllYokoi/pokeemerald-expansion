@@ -11090,7 +11090,7 @@ void TryResetConsecutiveUseCounter(enum BattlerId battler)
     }
 
     enum BattleMoveEffects lastEffect = GetMoveEffect(lastMove);
-    if (!gBattleMoveEffects[lastEffect].usesProtectCounter)
+    if (!GetBattleMoveEffectInfo(lastEffect)->usesProtectCounter)
     {
         if (GetConfig(B_ALLY_SWITCH_FAIL_CHANCE) < GEN_9 || lastEffect != EFFECT_ALLY_SWITCH)
             gBattleMons[battler].volatiles.consecutiveMoveUses = 0;

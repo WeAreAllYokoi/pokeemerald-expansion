@@ -702,7 +702,7 @@ static void GetOpponentBattleStyle(void)
 
 static enum FactoryStyle GetMoveBattleStyle(enum Move move)
 {
-    enum FactoryStyle style = gBattleMoveEffects[GetMoveEffect(move)].battleFactoryStyle;
+    enum FactoryStyle style = GetBattleMoveEffectInfo(GetMoveEffect(move))->battleFactoryStyle;
 
     if (style != FACTORY_STYLE_NONE)
         return style;

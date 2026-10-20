@@ -1041,7 +1041,7 @@ static void Cmd_printattackstring(void)
         if (!ADMG_EndStateAccessCheck(printGeneration)) return;
     }
     gBattleCommunication[MSG_DISPLAY] = MSG_DISPLAY_CONTINUE;
-    if (gBattleMoveEffects[GetMoveEffect(gCurrentMove)].twoTurnEffect
+    if (GetBattleMoveEffectInfo(GetMoveEffect(gCurrentMove))->twoTurnEffect
      && !gBattleMons[gBattlerAttacker].volatiles.multipleTurns)
     {
         gBattleCommunication[MSG_DISPLAY] = MSG_DISPLAY_WAIT;
@@ -7003,7 +7003,7 @@ static void Cmd_setsemiinvulnerablebit(void)
 {
     CMD_ARGS(bool8 clear);
 
-    if (gBattleMoveEffects[GetMoveEffect(gCurrentMove)].semiInvulnerableEffect == TRUE)
+    if (GetBattleMoveEffectInfo(GetMoveEffect(gCurrentMove))->semiInvulnerableEffect == TRUE)
     {
         u32 semiInvulnerableEffect = GetTwoTurnMoveSemiInvulnerability(gCurrentMove);
         if (cmd->clear)
@@ -11321,7 +11321,7 @@ void BS_TryInstruct(void)
         || IsInstructBannedChargingMove(gBattlerTarget)
         || gBattleMons[gBattlerTarget].volatiles.bideTurns != 0
         || gBattleMons[gBattlerTarget].volatiles.semiInvulnerable == STATE_SKY_DROP_TARGET
-        || gBattleMoveEffects[GetMoveEffect(move)].twoTurnEffect
+        || GetBattleMoveEffectInfo(GetMoveEffect(move))->twoTurnEffect
         || (GetActiveGimmick(gBattlerTarget) == GIMMICK_DYNAMAX)
         || IsZMove(move)
         || IsMaxMove(move))

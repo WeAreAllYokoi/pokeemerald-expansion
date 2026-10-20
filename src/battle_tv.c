@@ -801,7 +801,7 @@ static void AddMovePoints(u8 caseId, u32 arg1, u32 arg2, u32 arg3)
     case PTS_MOVE_EFFECT: // arg1 -> move slot, arg2 -> move
     {
         enum BattleMoveEffects effect = GetMoveEffect(move);
-        u8 baseFromEffect = gBattleMoveEffects[effect].battleTvScore;
+        u8 baseFromEffect = GetBattleMoveEffectInfo(effect)->battleTvScore;
 
         // Changes depending on the effect
         switch (effect)
