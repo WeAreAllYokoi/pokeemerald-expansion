@@ -1,4 +1,6 @@
 #include "global.h"
+#include "admg_feature_policies.h"
+#include "admg_retention.h"
 #include "event_data.h"
 #include "admg_state.h"
 #include "field_screen_effect.h"
@@ -12,6 +14,7 @@
 #include "menu.h"
 #include "overworld.h"
 #include "palette.h"
+#include "rtc.h"
 #include "region_map.h"
 #include "script.h"
 #include "string_util.h"
@@ -20,8 +23,10 @@
 
 static EWRAM_DATA bool8 sHasVisitedMapBefore = FALSE;
 static EWRAM_DATA bool8 sAllocedBg0TilemapBuffer = FALSE;
+static EWRAM_DATA const struct MapPreviewScreen *sActivePreview = NULL;
 
 static void Task_MapPreviewScreen_FadeIn(u8 taskId);
+static void Task_MapPreviewScreen_Script(u8 taskId);
 
 static const u8 sViridianForestMapPreviewPalette[] = INCGFX_U8("graphics/map_preview/viridian_forest/tiles.png", ".gbapal");
 static const u8 sViridianForestMapPreviewTiles[] = INCGFX_U8("graphics/map_preview/viridian_forest/tiles.png", ".4bpp.smol");
@@ -342,37 +347,52 @@ static const struct BgTemplate sMapPreviewBgTemplate[1] = {
 
 bool32 ShouldRunMapPreview(void)
 {
-    if (MPS_ENABLE_MAP_PREVIEWS && FlagGet(FLAG_HIDE_MAP_NAME_POPUP) != TRUE && GetLastUsedWarpMapSectionId() != gMapHeader.regionMapSectionId)
+    if (ADMG_GetFeaturePolicy(ADMG_POLICY_MAP_PREVIEWS) && FlagGet(FLAG_HIDE_MAP_NAME_POPUP) != TRUE && GetLastUsedWarpMapSectionId() != gMapHeader.regionMapSectionId)
         return TRUE;
 
     return FALSE;
 }
 
-static u8 GetMapPreviewScreenIdx(mapsec_u8_t mapsec)
+ADMG_NATIVE_ENTRY const struct MapPreviewScreen *ADMG_GetRegisteredMapPreview(u32 section, u32 timeOfDay)
+{
+    return NULL;
+}
+
+ADMG_NATIVE_ENTRY const struct MapPreviewScreen *ADMG_GetRetainedMapPreview(u32 id)
+{
+    return id < MPS_COUNT ? &sMapPreviewScreenData[id] : NULL;
+}
+
+static const struct MapPreviewScreen *GetMapPreview(mapsec_u8_t mapsec)
 {
     s32 i;
+    const struct MapPreviewScreen *registered;
+    if (sActivePreview != NULL && sActivePreview->mapsec == mapsec)
+        return sActivePreview;
+    registered = ADMG_GetRegisteredMapPreview(mapsec, GetTimeOfDay());
+    if (registered != NULL && registered->mapsec == mapsec && registered->type <= MPS_TYPE_BASIC
+     && registered->tilesptr != NULL && registered->tilemapptr != NULL && registered->palptr != NULL)
+        return registered;
 
     for (i = 0; i < MPS_COUNT; i++)
     {
         if (sMapPreviewScreenData[i].mapsec == mapsec)
         {
-            return i;
+            return &sMapPreviewScreenData[i];
         }
     }
-    return MPS_COUNT;
+    return NULL;
 }
 
 bool32 CurrentMapHasPreviewScreen(enum MapPreviewScreenType type)
 {
-    u8 idx;
-
-    idx = GetMapPreviewScreenIdx(gMapHeader.regionMapSectionId);
-    if (idx != MPS_COUNT)
+    const struct MapPreviewScreen *preview = GetMapPreview(gMapHeader.regionMapSectionId);
+    if (preview != NULL)
     {
         if (type == MPS_TYPE_ANY)
             return TRUE;
         else
-            return sMapPreviewScreenData[idx].type == type ? TRUE : FALSE;
+            return preview->type == type ? TRUE : FALSE;
     }
     else
     {
@@ -388,18 +408,17 @@ void MapPreview_InitBgs(void)
 
 void MapPreview_LoadGfx(mapsec_u8_t mapsec)
 {
-    u8 idx;
-
-    idx = GetMapPreviewScreenIdx(mapsec);
-    if (idx != MPS_COUNT)
+    const struct MapPreviewScreen *preview = GetMapPreview(mapsec);
+    if (preview != NULL)
     {
+        sActivePreview = preview;
         ResetTempTileDataBuffers();
-        if (sMapPreviewScreenData[idx].usesAllPalettes)
-            LoadPalette(sMapPreviewScreenData[idx].palptr, BG_PLTT_ID(0), 16 * PLTT_SIZE_4BPP);
+        if (preview->usesAllPalettes)
+            LoadPalette(preview->palptr, BG_PLTT_ID(0), 16 * PLTT_SIZE_4BPP);
         else
-            LoadPalette(sMapPreviewScreenData[idx].palptr, BG_PLTT_ID(13), 3 * PLTT_SIZE_4BPP);
+            LoadPalette(preview->palptr, BG_PLTT_ID(13), 3 * PLTT_SIZE_4BPP);
 
-        DecompressAndCopyTileDataToVram(0, sMapPreviewScreenData[idx].tilesptr, 0, 0, 0);
+        DecompressAndCopyTileDataToVram(0, preview->tilesptr, 0, 0, 0);
         if (GetBgTilemapBuffer(0) == NULL)
         {
             SetBgTilemapBuffer(0, Alloc(BG_SCREEN_SIZE));
@@ -409,18 +428,22 @@ void MapPreview_LoadGfx(mapsec_u8_t mapsec)
         {
             sAllocedBg0TilemapBuffer = FALSE;
         }
-        CopyToBgTilemapBuffer(0, sMapPreviewScreenData[idx].tilemapptr, 0, 0x000);
+        CopyToBgTilemapBuffer(0, preview->tilemapptr, 0, 0x000);
         CopyBgTilemapBufferToVram(0);
     }
 }
 
 void MapPreview_Unload(s32 windowId)
 {
-    RemoveWindow(windowId);
+    if (windowId != WINDOW_NONE)
+        RemoveWindow(windowId);
     if (sAllocedBg0TilemapBuffer)
     {
         Free(GetBgTilemapBuffer(0));
+        UnsetBgTilemapBuffer(0);
     }
+    sAllocedBg0TilemapBuffer = FALSE;
+    sActivePreview = NULL;
 }
 
 bool32 MapPreview_IsGfxLoadFinished(void)
@@ -467,13 +490,14 @@ u16 MapPreview_CreateMapNameWindow(mapsec_u8_t mapsec)
 #define tState      data[0]
 #define tCounter    data[1]
 #define tDuration   data[2]
-#define tMapSecId   data[3]
+#define tMapSecId   gTasks[taskId].contentIds[0]
 #define tWindowId   data[4]
 
 void RunMapPreviewScreenNonFade(mapsec_u8_t mapSecId)
 {
     u8 taskId = CreateTask(Task_MapPreviewScreen_NonFade, 0);
     gTasks[taskId].contentIds[0] = mapSecId;
+    gTasks[taskId].tWindowId = WINDOW_NONE;
 }
 
 void Task_MapPreviewScreen_NonFade(u8 taskId)
@@ -492,9 +516,8 @@ void Task_MapPreviewScreen_NonFade(u8 taskId)
     case 1:
         if (!MapPreview_IsGfxLoadFinished())
         {
-            u8 idx = GetMapPreviewScreenIdx(tMapSecId);
-
-            if (!sMapPreviewScreenData[idx].nameDisabled)
+            const struct MapPreviewScreen *preview = GetMapPreview(tMapSecId);
+            if (preview != NULL && !preview->nameDisabled)
             {
                 tWindowId = MapPreview_CreateMapNameWindow(tMapSecId);
                 CopyWindowToVram(tWindowId, COPYWIN_FULL);
@@ -536,11 +559,12 @@ void Task_MapPreviewScreen_NonFade(u8 taskId)
         if (!UpdatePaletteFade())
         {
             int i;
+            u16 window = tWindowId;
             for (i = 0; i < 16; i++)
             {
                 data[i] = 0;
             }
-            MapPreview_Unload(tWindowId);
+            MapPreview_Unload(window);
             if (CurrentMapHasPreviewScreen(MPS_TYPE_CAVE))
                 gTasks[taskId].func = Task_EnterCaveTransition2;
             else
@@ -568,7 +592,8 @@ void Task_MapPreviewScreen_NonFade(u8 taskId)
 void RunMapPreviewScreenFadeIn(mapsec_u8_t mapsec)
 {
     u8 taskId;
-    u8 idx = GetMapPreviewScreenIdx(mapsec);
+    const struct MapPreviewScreen *preview = GetMapPreview(mapsec);
+    if (preview == NULL) return;
 
     taskId = CreateTask(Task_MapPreviewScreen_FadeIn, 0);
     gTasks[taskId].tBGPriority = GetBgAttribute(0, BG_ATTR_PRIORITY);
@@ -583,7 +608,8 @@ void RunMapPreviewScreenFadeIn(mapsec_u8_t mapsec)
     SetBgAttribute(0, BG_ATTR_PRIORITY, 0);
     SetGpuRegBits(REG_OFFSET_WININ, WININ_WIN0_CLR | WININ_WIN1_CLR);
     SetGpuRegBits(REG_OFFSET_WINOUT, WINOUT_WIN01_CLR);
-    if (!sMapPreviewScreenData[idx].nameDisabled)
+    gTasks[taskId].tWindowId = WINDOW_NONE;
+    if (!preview->nameDisabled)
         gTasks[taskId].tWindowId = MapPreview_CreateMapNameWindow(mapsec);
 
     LockPlayerFieldControls();
@@ -604,7 +630,8 @@ static void Task_MapPreviewScreen_FadeIn(u8 taskId)
     case 0:
         if (!MapPreview_IsGfxLoadFinished() && !IsDma3ManagerBusyWithBgCopy())
         {
-            CopyWindowToVram(tWindowId, COPYWIN_FULL);
+            if (tWindowId != WINDOW_NONE)
+                CopyWindowToVram(tWindowId, COPYWIN_FULL);
             tState++;
         }
         break;
@@ -689,20 +716,16 @@ static void Task_MapPreviewScreen_FadeIn(u8 taskId)
 
 u16 MapPreview_GetDuration(mapsec_u8_t mapsec)
 {
-    u8 idx;
     u16 flagId;
     bool8 visited;
-
-    idx = GetMapPreviewScreenIdx(mapsec);
-
-    if (idx == MPS_COUNT)
+    const struct MapPreviewScreen *preview = GetMapPreview(mapsec);
+    if (preview == NULL)
         return 0;
-
-    flagId = sMapPreviewScreenData[idx].flagId;
+    flagId = preview->flagId;
 
     if (flagId == MPS_FLAG_NULL)
     {
-        return MPS_DURATION_NO_FLAG;
+        return preview->duration ? preview->duration : MPS_DURATION_NO_FLAG;
     }
     else
     {
@@ -711,11 +734,11 @@ u16 MapPreview_GetDuration(mapsec_u8_t mapsec)
         if (!visited)
         {
             FlagSet(flagId);
-            return MPS_DURATION_LONG;
+            return preview->duration ? preview->duration : MPS_DURATION_LONG;
         }
         else
         {
-            return MPS_DURATION_SHORT;
+            return preview->duration ? preview->duration : MPS_DURATION_SHORT;
         }
     }
 }
@@ -764,9 +787,10 @@ static void Task_MapPreviewScreen_Script(u8 taskId)
         if (!UpdatePaletteFade())
         {
             SetVBlankCallback(NULL);
-            MapPreview_LoadGfx(gMapHeader.regionMapSectionId);
+            MapPreview_LoadGfx(gTasks[taskId].contentIds[0]);
             BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);
-            gMain.savedCallback = CB2_ReturnToFieldContinueScript;
+            gMain.savedCallback = gTasks[taskId].contentIds[2]
+                ? (MainCallback)(uintptr_t)gTasks[taskId].contentIds[1] : CB2_ReturnToFieldContinueScript;
             SetMainCallback2(CB2_MapPreviewScript);
             tTaskStep++;
         }
@@ -774,11 +798,10 @@ static void Task_MapPreviewScreen_Script(u8 taskId)
     case 1:
         if (!MapPreview_IsGfxLoadFinished() && !IsDma3ManagerBusyWithBgCopy())
         {
-            u8 idx = GetMapPreviewScreenIdx(gMapHeader.regionMapSectionId);
-
-            if (!sMapPreviewScreenData[idx].nameDisabled)
+            const struct MapPreviewScreen *preview = GetMapPreview(gTasks[taskId].contentIds[0]);
+            if (preview != NULL && !preview->nameDisabled)
             {
-                tWindowId = MapPreview_CreateMapNameWindow(gMapHeader.regionMapSectionId);
+                tWindowId = MapPreview_CreateMapNameWindow(gTasks[taskId].contentIds[0]);
                 CopyWindowToVram(tWindowId, COPYWIN_FULL);
             }
             tTaskStep++;
@@ -823,5 +846,56 @@ void MapPreviewScript(struct ScriptContext *ctx)
     ScriptContext_Stop();
     FadeScreen(FADE_TO_BLACK, 0);
     taskId = CreateTask(Task_MapPreviewScreen_Script, 0);
+    gTasks[taskId].contentIds[0] = gMapHeader.regionMapSectionId;
+    gTasks[taskId].tWindowId = WINDOW_NONE;
     gTasks[taskId].tDuration = duration;
 }
+
+ADMG_NATIVE_ENTRY u32 ADMG_IsMapPreviewActive(void)
+{
+    return FuncIsActiveTask(Task_MapPreviewScreen_Script)
+        || FuncIsActiveTask(Task_MapPreviewScreen_FadeIn)
+        || FuncIsActiveTask(Task_MapPreviewScreen_NonFade);
+}
+
+ADMG_NATIVE_ENTRY u32 ADMG_TryStartAutomaticMapPreview(void)
+{
+    if (!ShouldRunMapPreview() || !CurrentMapHasPreviewScreen(MPS_TYPE_FADE_IN)) return FALSE;
+    MapPreview_LoadGfx(gMapHeader.regionMapSectionId);
+    RunMapPreviewScreenFadeIn(gMapHeader.regionMapSectionId);
+    return TRUE;
+}
+
+ADMG_NATIVE_ENTRY u32 ADMG_RequestMapPreview(u32 section, void (*callback)(void))
+{
+    u32 taskId;
+    const struct MapPreviewScreen *preview;
+    if (ADMG_IsMapPreviewActive()) return ADMG_MAP_PREVIEW_BUSY;
+    if (gSaveBlock1Ptr == NULL || gSaveBlock2Ptr == NULL || gMain.callback2 != CB2_Overworld
+     || gMain.inBattle || ScriptContext_IsEnabled() || ArePlayerFieldControlsLocked())
+        return ADMG_MAP_PREVIEW_FIELD_NOT_IDLE;
+    preview = GetMapPreview(section);
+    if (preview == NULL || callback == NULL) return ADMG_MAP_PREVIEW_MISSING;
+    taskId = CreateTask(Task_MapPreviewScreen_Script, 0);
+    if (taskId >= NUM_TASKS) return ADMG_MAP_PREVIEW_TASK_CAPACITY;
+    sActivePreview = preview;
+    gTasks[taskId].contentIds[0] = section;
+    gTasks[taskId].contentIds[1] = (uintptr_t)callback;
+    gTasks[taskId].contentIds[2] = TRUE;
+    gTasks[taskId].tWindowId = WINDOW_NONE;
+    gTasks[taskId].tDuration = MapPreview_GetDuration(section);
+    LockPlayerFieldControls();
+    FadeScreen(FADE_TO_BLACK, 0);
+    return ADMG_MAP_PREVIEW_STARTED;
+}
+
+ADMG_RETAIN_FUNCTION(ADMG_GetRegisteredMapPreview);
+ADMG_RETAIN_FUNCTION(ADMG_GetRetainedMapPreview);
+ADMG_RETAIN_FUNCTION(ADMG_RequestMapPreview);
+ADMG_RETAIN_FUNCTION(ADMG_IsMapPreviewActive);
+ADMG_RETAIN_FUNCTION(ADMG_TryStartAutomaticMapPreview);
+ADMG_RETAIN_FUNCTION(ShouldRunMapPreview);
+ADMG_RETAIN_FUNCTION(MapPreviewScript);
+ADMG_RETAIN_FUNCTION(RunMapPreviewScreenNonFade);
+ADMG_RETAIN_FUNCTION(RunMapPreviewScreenFadeIn);
+ADMG_RETAIN_DATA(sMapPreviewScreenData);

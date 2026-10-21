@@ -1,5 +1,6 @@
 #include "global.h"
 #include "config/wild_encounter.h"
+#include "config/map_preview_screen.h"
 #include "admg_feature_policies.h"
 #include "admg_retention.h"
 #include "config/fishing.h"
@@ -39,6 +40,7 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeaturePolicyDefault(ADMG_Word policy)
     case ADMG_POLICY_OVERWORLD_ENCOUNTERS: return WE_OW_ENCOUNTERS;
     case ADMG_POLICY_TIME_ENCOUNTERS: return OW_TIME_OF_DAY_ENCOUNTERS;
     case ADMG_POLICY_DISABLE_TIME_ENCOUNTER_FALLBACK: return OW_TIME_OF_DAY_DISABLE_FALLBACK;
+    case ADMG_POLICY_MAP_PREVIEWS: return MPS_ENABLE_MAP_PREVIEWS;
     default: return 0;
     }
 }
@@ -49,7 +51,8 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_IsFeaturePolicyKnown(ADMG_Word policy)
         || (policy >= ADMG_POLICY_FISHING_CHAIN && policy <= ADMG_POLICY_ENEMY_HP_PERCENTAGE)
         || policy == ADMG_POLICY_DEXNAV || policy == ADMG_POLICY_DEXNAV_SEARCH_LEVELS
         || policy == ADMG_POLICY_OVERWORLD_ENCOUNTERS
-        || policy == ADMG_POLICY_TIME_ENCOUNTERS || policy == ADMG_POLICY_DISABLE_TIME_ENCOUNTER_FALLBACK;
+        || policy == ADMG_POLICY_TIME_ENCOUNTERS || policy == ADMG_POLICY_DISABLE_TIME_ENCOUNTER_FALLBACK
+        || policy == ADMG_POLICY_MAP_PREVIEWS;
 }
 
 ADMG_RETAIN_FUNCTION(ADMG_GetFeaturePolicy);

@@ -2456,12 +2456,7 @@ static bool32 LoadMapInStepsLocal(u8 *state, bool32 a2)
         (*state)++;
         break;
     case 11:
-        if (ShouldRunMapPreview() && CurrentMapHasPreviewScreen(MPS_TYPE_FADE_IN) == TRUE)
-        {
-            MapPreview_LoadGfx(gMapHeader.regionMapSectionId);
-            RunMapPreviewScreenFadeIn(gMapHeader.regionMapSectionId);
-        }
-        else if (gMapHeader.showMapName == TRUE && SecretBaseMapPopupEnabled() == TRUE)
+        if (!ADMG_TryStartAutomaticMapPreview() && gMapHeader.showMapName == TRUE && SecretBaseMapPopupEnabled() == TRUE)
             ShowMapNamePopup();
         (*state)++;
         break;

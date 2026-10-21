@@ -55,7 +55,22 @@ struct MapPreviewScreen
     const void *tilesptr;
     const void *tilemapptr;
     const void *palptr;
+    u32 duration; // Zero uses the default duration: no visit flag, first visit or repeat visit.
 };
+
+enum ADMG_MapPreviewRequestResult
+{
+    ADMG_MAP_PREVIEW_STARTED = 1,
+    ADMG_MAP_PREVIEW_BUSY,
+    ADMG_MAP_PREVIEW_MISSING,
+    ADMG_MAP_PREVIEW_FIELD_NOT_IDLE,
+    ADMG_MAP_PREVIEW_TASK_CAPACITY,
+};
+const struct MapPreviewScreen *ADMG_GetRegisteredMapPreview(u32 section, u32 timeOfDay);
+const struct MapPreviewScreen *ADMG_GetRetainedMapPreview(u32 id);
+u32 ADMG_RequestMapPreview(u32 section, void (*callback)(void));
+u32 ADMG_IsMapPreviewActive(void);
+u32 ADMG_TryStartAutomaticMapPreview(void);
 
 bool32 ShouldRunMapPreview(void);
 u16 MapPreview_CreateMapNameWindow(mapsec_u8_t mapsec);
