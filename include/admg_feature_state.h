@@ -14,10 +14,31 @@ struct ADMG_ItemSeenByte
     u8 bits;
 };
 
+/* Store NPC follower state separately from the conditional SaveBlock3 layout.
+ * Content IDs remain 32-bit, and movement fields keep their original byte-sized representation. */
+struct ADMG_NPCFollower
+{
+    u8 inProgress;
+    u8 warpEnd;
+    u8 createSurfBlob;
+    u8 comeOutDoorStairs;
+    u8 forcedMovement;
+    u8 objId;
+    u8 currentSprite;
+    u8 delayedState;
+    struct Coords16 log;
+    const u8 *script;
+    u32 flag;
+    u32 graphicsId;
+    u32 flags;
+    u32 battlePartner;
+};
+
 enum ADMG_FeatureStateId
 {
     ADMG_FEATURE_STATE_CLOCK = 1,
     ADMG_FEATURE_STATE_ITEMS_SEEN = 2,
+    ADMG_FEATURE_STATE_NPC_FOLLOWER = 3,
 };
 ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeatureStateBridgeVersion(void);
 ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeatureState(ADMG_Word state);
