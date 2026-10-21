@@ -53,7 +53,7 @@ Route109_SeashoreHouse_EventScript_BuySodaPop::
 	removemoney 300
 	updatemoneybox
 	callnative ADMG_ScriptTestItemDescriptions, requests_effects=1
-	goto_if_eq TRUE, Route109_SeashoreHouse_EventScript_GiveSodaWithDescription
+	goto_if_eq Route109_SeashoreHouse_EventScript_GiveSodaWithDescription
 	giveitem ITEM_SODA_POP
 	hidemoneybox
 	goto Route109_SeashoreHouse_EventScript_GaveSoda

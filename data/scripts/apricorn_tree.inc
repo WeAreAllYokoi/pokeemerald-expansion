@@ -27,7 +27,7 @@ ApricornTree_EventScript_PickApricorn::
 	goto_if_eq VAR_0x8006, APRICORN_NORMAL_BAG_FULL, ApricornTree_EventScript_PocketFull
 	message ApricornTree_Text_PickedTheApricorn
 	callnative ADMG_ScriptTestItemDescriptions, requests_effects=1
-	goto_if_ne TRUE, ApricornTree_EventScript_DescriptionItemReady
+	goto_if_ne ApricornTree_EventScript_DescriptionItemReady
 	copyvar VAR_0x8006 VAR_0x8004
 ApricornTree_EventScript_DescriptionItemReady::
 	delay 10

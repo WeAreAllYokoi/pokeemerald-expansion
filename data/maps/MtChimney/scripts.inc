@@ -105,7 +105,7 @@ MtChimney_EventScript_LavaCookieLady::
 	checkitemspace ITEM_LAVA_COOKIE
 	call_if_eq VAR_RESULT, TRUE, MtChimney_EventScript_RemoveMoney
 	callnative ADMG_ScriptTestItemDescriptions, requests_effects=1
-	goto_if_eq TRUE, MtChimney_EventScript_GiveCookieWithDescription
+	goto_if_eq MtChimney_EventScript_GiveCookieWithDescription
 	giveitem ITEM_LAVA_COOKIE
 	goto_if_eq VAR_RESULT, FALSE, MtChimney_EventScript_BagIsFull
 	hidemoneybox
