@@ -2020,7 +2020,7 @@ static void Task_ChangeSummaryMon(u8 taskId)
         if (ExtractMonDataToSummaryStruct(&sMonSummaryScreen->currentMon) == FALSE)
             return;
 
-        if (P_SUMMARY_SCREEN_RENAME && sMonSummaryScreen->currPageIndex == PSS_PAGE_INFO)
+        if (ADMG_GetFeaturePolicy(ADMG_POLICY_SUMMARY_RENAME) && sMonSummaryScreen->currPageIndex == PSS_PAGE_INFO)
             ShowUtilityPrompt(SUMMARY_MODE_NORMAL);
 
         if (ShouldShowIvEvPrompt() && sMonSummaryScreen->currPageIndex == PSS_PAGE_SKILLS)
@@ -4758,7 +4758,7 @@ static inline bool32 ShouldShowMoveRelearner(void)
 
 static inline bool32 ShouldShowRename(void)
 {
-    return (P_SUMMARY_SCREEN_RENAME
+    return (ADMG_GetFeaturePolicy(ADMG_POLICY_SUMMARY_RENAME)
          && !sMonSummaryScreen->lockMovesFlag
          && !sMonSummaryScreen->summary.isEgg
          && sMonSummaryScreen->mode != SUMMARY_MODE_BOX_CURSOR
