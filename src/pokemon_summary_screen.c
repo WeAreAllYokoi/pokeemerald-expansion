@@ -4386,7 +4386,7 @@ static enum BattlerId GetCurrentBattlerFromSumIndex(u32 sumIndex)
 
 static enum Type SummaryScreen_GetDynamicMoveType(struct Pokemon *mon, enum Move move, enum Type type)
 {
-    if (!P_SHOW_DYNAMIC_TYPES)
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_DYNAMIC_MOVE_TYPES))
         return type;
 
     if (gBattleStruct == NULL)

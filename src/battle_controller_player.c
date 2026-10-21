@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_policies.h"
 #include "admg_trainer_actor.h"
 #include "admg_state.h"
 #include "battle.h"
@@ -1729,7 +1730,7 @@ static void MoveSelectionDisplayMoveType(enum BattlerId battler)
         || (IsGimmickSelected(battler, GIMMICK_TERA) && speciesId == SPECIES_TERAPAGOS_TERASTAL))
             type = TYPE_STELLAR;
     }
-    else if (P_SHOW_DYNAMIC_TYPES) // Non-vanilla changes to battle UI showing dynamic types
+    else if (ADMG_GetFeaturePolicy(ADMG_POLICY_DYNAMIC_MOVE_TYPES)) // Apply other dynamic type changes to the move-selection display.
     {
         struct Pokemon *mon = GetBattlerMon(battler);
         type = CheckDynamicMoveType(mon, move, battler, MON_IN_BATTLE);
