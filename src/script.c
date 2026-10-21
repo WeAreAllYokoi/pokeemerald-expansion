@@ -236,9 +236,7 @@ u16 ScriptPeekHalfword(struct ScriptContext *ctx)
 
 MapId ScriptReadMapId(struct ScriptContext *ctx)
 {
-    MapId mapId = ScriptReadByte(ctx) << 8; // group, then number
-
-    return mapId | ScriptReadByte(ctx);
+    return ScriptReadWord(ctx);
 }
 
 u32 ScriptReadWord(struct ScriptContext *ctx)

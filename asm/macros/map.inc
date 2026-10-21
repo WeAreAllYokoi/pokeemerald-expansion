@@ -1,10 +1,9 @@
 @ Most of the macros in this file are for arranging map event data, and are output by mapjson using data from each map's JSON file.
 
-	@ Takes a MAP constant and outputs the map group and map number as separate bytes
+	@ Takes a MAP constant and outputs its MapId as a word
 	.macro map map_id:req
 	.ifdef \map_id
-	.byte \map_id >> 8    @ map group
-	.byte \map_id & 0xFF  @ map num
+	.4byte \map_id
 	.else
 	.error "undefined map (check for typos)"
 	.endif
