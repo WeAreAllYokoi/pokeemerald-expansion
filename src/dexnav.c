@@ -3032,3 +3032,9 @@ ADMG_RETAIN_FUNCTION(ADMG_SetDexNavDetectorEnabled);
 ADMG_RETAIN_FUNCTION(ADMG_GetDexNavDetectorSteps);
 ADMG_RETAIN_FUNCTION(ADMG_AdvanceDexNavSearchStep);
 ADMG_RETAIN_FUNCTION(ADMG_AdvanceDexNavDetectorStep);
+
+ADMG_NATIVE_ENTRY u32 ADMG_TryStartRegisteredDexNavSearch(void)
+{
+    return ADMG_TryStartDexNavSearch(ADMG_GetDexNavRegisteredSpecies(), ADMG_GetDexNavRegisteredEnvironment());
+}
+ADMG_RETAIN_FUNCTION(ADMG_TryStartRegisteredDexNavSearch);

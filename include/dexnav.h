@@ -130,6 +130,7 @@ struct ADMG_DexNavSearchSnapshot
     u32 movementCount;
 };
 ADMG_NATIVE_ENTRY u32 ADMG_TryStartDexNavSearch(u32 species, u32 environment);
+ADMG_NATIVE_ENTRY u32 ADMG_TryStartRegisteredDexNavSearch(void);
 ADMG_NATIVE_ENTRY bool32 ADMG_ReadDexNavSearch(struct ADMG_DexNavSearchSnapshot *snapshot);
 ADMG_NATIVE_ENTRY bool32 ADMG_CancelDexNavSearch(void);
 ADMG_NATIVE_ENTRY u32 ADMG_GetDexNavDetectorEnabled(void);
