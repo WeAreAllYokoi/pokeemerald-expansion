@@ -20,6 +20,9 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_CreateBoxMon(struct BoxPokemon *boxMon, ADMG_Wo
 /* CreateMonFromTemplate with the given original trainer instead of the player. */
 ADMG_NATIVE_ENTRY ADMG_Word ADMG_CreateMonFromTemplate(struct Pokemon *mon, const struct PokemonTemplate *monTemplate,
                                                        const struct OriginalTrainerId *trainerId);
+/* Call the daycare's CreateEgg. Return FALSE without changing mon if it is NULL
+ * or species is SPECIES_NONE, SPECIES_EGG, out of range or disabled. */
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_CreateEgg(struct Pokemon *mon, ADMG_Word species, ADMG_Word setHotSpringsLocation);
 /* Set the original trainer's name and gender, and mark the met location as an in-game trade.
  * Return FALSE without changing the record if mon or otName is NULL,
  * the record has no species, or otGender is neither MALE nor FEMALE. */

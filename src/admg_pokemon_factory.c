@@ -2,6 +2,7 @@
 #include "admg_pokemon_factory.h"
 #include "admg_registry.h"
 #include "admg_retention.h"
+#include "daycare.h"
 #include "pokemon.h"
 #include "constants/region_map_sections.h"
 
@@ -59,6 +60,14 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_CreateMonFromTemplate(struct Pokemon *mon, cons
     return TRUE;
 }
 
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_CreateEgg(struct Pokemon *mon, ADMG_Word species, ADMG_Word setHotSpringsLocation)
+{
+    if (mon == NULL || !IsCreatableSpecies(species) || species == SPECIES_EGG)
+        return FALSE;
+    CreateEgg(mon, species, setHotSpringsLocation != FALSE);
+    return TRUE;
+}
+
 ADMG_NATIVE_ENTRY ADMG_Word ADMG_SetMonTradeOrigin(struct Pokemon *mon, const u8 *otName, ADMG_Word otGender)
 {
     u8 gender;
@@ -76,4 +85,5 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_SetMonTradeOrigin(struct Pokemon *mon, const u8
 ADMG_RETAIN_FUNCTION(ADMG_CreateMon);
 ADMG_RETAIN_FUNCTION(ADMG_CreateBoxMon);
 ADMG_RETAIN_FUNCTION(ADMG_CreateMonFromTemplate);
+ADMG_RETAIN_FUNCTION(ADMG_CreateEgg);
 ADMG_RETAIN_FUNCTION(ADMG_SetMonTradeOrigin);
