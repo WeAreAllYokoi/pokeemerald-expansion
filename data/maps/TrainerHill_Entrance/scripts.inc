@@ -251,17 +251,17 @@ TrainerHill_Entrance_EventScript_Clerk::
 
 	.align 2
 TrainerHill_Entrance_Pokemart_Basic:
-	.2byte ITEM_SUPER_POTION
-	.2byte ITEM_ANTIDOTE
-	.2byte ITEM_PARALYZE_HEAL
-	.2byte ITEM_AWAKENING
-	.2byte ITEM_X_SPEED
-	.2byte ITEM_X_SP_ATK
-	.2byte ITEM_X_ATTACK
-	.2byte ITEM_X_DEFENSE
-	.2byte ITEM_DIRE_HIT
-	.2byte ITEM_GUARD_SPEC
-	.2byte ITEM_X_ACCURACY
+	.4byte ITEM_SUPER_POTION
+	.4byte ITEM_ANTIDOTE
+	.4byte ITEM_PARALYZE_HEAL
+	.4byte ITEM_AWAKENING
+	.4byte ITEM_X_SPEED
+	.4byte ITEM_X_SP_ATK
+	.4byte ITEM_X_ATTACK
+	.4byte ITEM_X_DEFENSE
+	.4byte ITEM_DIRE_HIT
+	.4byte ITEM_GUARD_SPEC
+	.4byte ITEM_X_ACCURACY
 	pokemartlistend
 
 TrainerHill_Entrance_EventScript_ExpandedPokemart::
@@ -272,18 +272,18 @@ TrainerHill_Entrance_EventScript_ExpandedPokemart::
 
 	.align 2
 TrainerHill_Entrance_Pokemart_Expanded:
-	.2byte ITEM_HYPER_POTION
-	.2byte ITEM_MAX_POTION
-	.2byte ITEM_FULL_RESTORE
-	.2byte ITEM_FULL_HEAL
-	.2byte ITEM_REVIVE
-	.2byte ITEM_X_SPEED
-	.2byte ITEM_X_SP_ATK
-	.2byte ITEM_X_ATTACK
-	.2byte ITEM_X_DEFENSE
-	.2byte ITEM_DIRE_HIT
-	.2byte ITEM_GUARD_SPEC
-	.2byte ITEM_X_ACCURACY
+	.4byte ITEM_HYPER_POTION
+	.4byte ITEM_MAX_POTION
+	.4byte ITEM_FULL_RESTORE
+	.4byte ITEM_FULL_HEAL
+	.4byte ITEM_REVIVE
+	.4byte ITEM_X_SPEED
+	.4byte ITEM_X_SP_ATK
+	.4byte ITEM_X_ATTACK
+	.4byte ITEM_X_DEFENSE
+	.4byte ITEM_DIRE_HIT
+	.4byte ITEM_GUARD_SPEC
+	.4byte ITEM_X_ACCURACY
 	pokemartlistend
 
 TrainerHill_Entrance_Text_StillGettingReady:

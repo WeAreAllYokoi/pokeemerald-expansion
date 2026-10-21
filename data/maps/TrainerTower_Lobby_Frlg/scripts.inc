@@ -126,16 +126,16 @@ TrainerTower_Lobby_EventScript_MartClerk::
 
 	.align 2
 TrainerTower_Lobby_Mart_Items::
-	.2byte ITEM_ULTRA_BALL
-	.2byte ITEM_GREAT_BALL
-	.2byte ITEM_FULL_RESTORE
-	.2byte ITEM_MAX_POTION
-	.2byte ITEM_HYPER_POTION
-	.2byte ITEM_REVIVE
-	.2byte ITEM_FULL_HEAL
-	.2byte ITEM_ESCAPE_ROPE
-	.2byte ITEM_MAX_REPEL
-	.2byte ITEM_NONE
+	.4byte ITEM_ULTRA_BALL
+	.4byte ITEM_GREAT_BALL
+	.4byte ITEM_FULL_RESTORE
+	.4byte ITEM_MAX_POTION
+	.4byte ITEM_HYPER_POTION
+	.4byte ITEM_REVIVE
+	.4byte ITEM_FULL_HEAL
+	.4byte ITEM_ESCAPE_ROPE
+	.4byte ITEM_MAX_REPEL
+	.4byte ITEM_NONE
 	release
 	end
 

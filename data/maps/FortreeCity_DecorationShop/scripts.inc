@@ -21,14 +21,14 @@ FortreeCity_DecorationShop_EventScript_ClerkDesks::
 
 	.align 2
 FortreeCity_DecorationShop_PokemartDecor_Desks:
-	.2byte DECOR_SMALL_DESK
-	.2byte DECOR_POKEMON_DESK
-	.2byte DECOR_HEAVY_DESK
-	.2byte DECOR_RAGGED_DESK
-	.2byte DECOR_COMFORT_DESK
-	.2byte DECOR_BRICK_DESK
-	.2byte DECOR_CAMP_DESK
-	.2byte DECOR_HARD_DESK
+	.4byte DECOR_SMALL_DESK
+	.4byte DECOR_POKEMON_DESK
+	.4byte DECOR_HEAVY_DESK
+	.4byte DECOR_RAGGED_DESK
+	.4byte DECOR_COMFORT_DESK
+	.4byte DECOR_BRICK_DESK
+	.4byte DECOR_CAMP_DESK
+	.4byte DECOR_HARD_DESK
 	pokemartlistend
 
 FortreeCity_DecorationShop_EventScript_ClerkChairs::
@@ -43,14 +43,14 @@ FortreeCity_DecorationShop_EventScript_ClerkChairs::
 
 	.align 2
 FortreeCity_DecorationShop_PokemartDecor_Chairs:
-	.2byte DECOR_SMALL_CHAIR
-	.2byte DECOR_POKEMON_CHAIR
-	.2byte DECOR_HEAVY_CHAIR
-	.2byte DECOR_RAGGED_CHAIR
-	.2byte DECOR_COMFORT_CHAIR
-	.2byte DECOR_BRICK_CHAIR
-	.2byte DECOR_CAMP_CHAIR
-	.2byte DECOR_HARD_CHAIR
+	.4byte DECOR_SMALL_CHAIR
+	.4byte DECOR_POKEMON_CHAIR
+	.4byte DECOR_HEAVY_CHAIR
+	.4byte DECOR_RAGGED_CHAIR
+	.4byte DECOR_COMFORT_CHAIR
+	.4byte DECOR_BRICK_CHAIR
+	.4byte DECOR_CAMP_CHAIR
+	.4byte DECOR_HARD_CHAIR
 	pokemartlistend
 
 FortreeCity_DecorationShop_Text_MerchandiseSentToPC:

@@ -9,12 +9,13 @@ gText_PlayerWhatCanIDoForYou::
 	.string "{PLAYER}{KUN}, welcome!\p"
 	.string "What can I do for you?$"
 
+	.align 2
 Pokemart_DefaultItemList::
-	.2byte ITEM_ULTRA_BALL
-	.2byte ITEM_HYPER_POTION
-	.2byte ITEM_MAX_POTION
-	.2byte ITEM_FULL_RESTORE
-	.2byte ITEM_FULL_HEAL
-	.2byte ITEM_REVIVE
-	.2byte ITEM_MAX_REPEL
+	.4byte ITEM_ULTRA_BALL
+	.4byte ITEM_HYPER_POTION
+	.4byte ITEM_MAX_POTION
+	.4byte ITEM_FULL_RESTORE
+	.4byte ITEM_FULL_HEAL
+	.4byte ITEM_REVIVE
+	.4byte ITEM_MAX_REPEL
 	pokemartlistend

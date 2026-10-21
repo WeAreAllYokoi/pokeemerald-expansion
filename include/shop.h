@@ -3,10 +3,11 @@
 
 extern struct ItemSlot gMartPurchaseHistory[3];
 
-void CreatePokemartMenu(const u16 *itemsForSale);
-void CreatePokemartMenuFromList(const u32 *itemsForSale);
-void CreateDecorationShop1Menu(const u16 *itemsForSale);
-void CreateDecorationShop2Menu(const u16 *itemsForSale);
+// Shop lists use 32-bit IDs (.4byte in scripts), ending in ITEM_NONE or DECOR_NONE
+// Keep the supplied list alive while the shop is open
+void CreatePokemartMenu(const u32 *itemsForSale);
+void CreateDecorationShop1Menu(const u32 *itemsForSale);
+void CreateDecorationShop2Menu(const u32 *itemsForSale);
 void CB2_ExitSellMenu(void);
 
 #endif // GUARD_SHOP_H

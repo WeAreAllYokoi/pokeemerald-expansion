@@ -13,15 +13,15 @@ FourIsland_Mart_EventScript_Clerk::
 
 	.align 2
 FourIsland_Mart_Items::
-	.2byte ITEM_ULTRA_BALL
-	.2byte ITEM_FULL_RESTORE
-	.2byte ITEM_MAX_POTION
-	.2byte ITEM_REVIVE
-	.2byte ITEM_ICE_HEAL
-	.2byte ITEM_FULL_HEAL
-	.2byte ITEM_ESCAPE_ROPE
-	.2byte ITEM_MAX_REPEL
-	.2byte ITEM_NONE
+	.4byte ITEM_ULTRA_BALL
+	.4byte ITEM_FULL_RESTORE
+	.4byte ITEM_MAX_POTION
+	.4byte ITEM_REVIVE
+	.4byte ITEM_ICE_HEAL
+	.4byte ITEM_FULL_HEAL
+	.4byte ITEM_ESCAPE_ROPE
+	.4byte ITEM_MAX_REPEL
+	.4byte ITEM_NONE
 	release
 	end
 

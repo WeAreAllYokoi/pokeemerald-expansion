@@ -50,14 +50,14 @@ IndigoPlateau_PokemonCenter_1F_EventScript_Clerk::
 
 	.align 2
 IndigoPlateau_PokemonCenter_1F_Items::
-	.2byte ITEM_ULTRA_BALL
-	.2byte ITEM_GREAT_BALL
-	.2byte ITEM_FULL_RESTORE
-	.2byte ITEM_MAX_POTION
-	.2byte ITEM_REVIVE
-	.2byte ITEM_FULL_HEAL
-	.2byte ITEM_MAX_REPEL
-	.2byte ITEM_NONE
+	.4byte ITEM_ULTRA_BALL
+	.4byte ITEM_GREAT_BALL
+	.4byte ITEM_FULL_RESTORE
+	.4byte ITEM_MAX_POTION
+	.4byte ITEM_REVIVE
+	.4byte ITEM_FULL_HEAL
+	.4byte ITEM_MAX_REPEL
+	.4byte ITEM_NONE
 	release
 	end
 

@@ -25,16 +25,16 @@ LavenderTown_Mart_EventScript_Clerk::
 
 	.align 2
 LavenderTown_Mart_Items::
-	.2byte ITEM_GREAT_BALL
-	.2byte ITEM_SUPER_POTION
-	.2byte ITEM_REVIVE
-	.2byte ITEM_ANTIDOTE
-	.2byte ITEM_PARALYZE_HEAL
-	.2byte ITEM_BURN_HEAL
-	.2byte ITEM_ICE_HEAL
-	.2byte ITEM_ESCAPE_ROPE
-	.2byte ITEM_SUPER_REPEL
-	.2byte ITEM_NONE
+	.4byte ITEM_GREAT_BALL
+	.4byte ITEM_SUPER_POTION
+	.4byte ITEM_REVIVE
+	.4byte ITEM_ANTIDOTE
+	.4byte ITEM_PARALYZE_HEAL
+	.4byte ITEM_BURN_HEAL
+	.4byte ITEM_ICE_HEAL
+	.4byte ITEM_ESCAPE_ROPE
+	.4byte ITEM_SUPER_REPEL
+	.4byte ITEM_NONE
 	release
 	end
 

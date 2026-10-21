@@ -115,9 +115,9 @@ TwoIsland_EventScript_ShopInitial::
 
 	.align 2
 TwoIsland_Items_ShopInitial::
-	.2byte ITEM_GREAT_BALL
-	.2byte ITEM_FRESH_WATER
-	.2byte ITEM_NONE
+	.4byte ITEM_GREAT_BALL
+	.4byte ITEM_FRESH_WATER
+	.4byte ITEM_NONE
 	release
 	end
 
@@ -129,11 +129,11 @@ TwoIsland_EventScript_ShopExpanded1::
 
 	.align 2
 TwoIsland_Items_ShopExpanded1::
-	.2byte ITEM_ULTRA_BALL
-	.2byte ITEM_GREAT_BALL
-	.2byte ITEM_SODA_POP
-	.2byte ITEM_FRESH_WATER
-	.2byte ITEM_NONE
+	.4byte ITEM_ULTRA_BALL
+	.4byte ITEM_GREAT_BALL
+	.4byte ITEM_SODA_POP
+	.4byte ITEM_FRESH_WATER
+	.4byte ITEM_NONE
 	release
 	end
 
@@ -145,13 +145,13 @@ TwoIsland_EventScript_ShopExpanded2::
 
 	.align 2
 TwoIsland_Items_ShopExpanded2::
-	.2byte ITEM_ULTRA_BALL
-	.2byte ITEM_GREAT_BALL
-	.2byte ITEM_LEMONADE
-	.2byte ITEM_SODA_POP
-	.2byte ITEM_FRESH_WATER
-	.2byte ITEM_MOOMOO_MILK
-	.2byte ITEM_NONE
+	.4byte ITEM_ULTRA_BALL
+	.4byte ITEM_GREAT_BALL
+	.4byte ITEM_LEMONADE
+	.4byte ITEM_SODA_POP
+	.4byte ITEM_FRESH_WATER
+	.4byte ITEM_MOOMOO_MILK
+	.4byte ITEM_NONE
 	release
 	end
 
@@ -163,15 +163,15 @@ TwoIsland_EventScript_ShopExpanded3::
 
 	.align 2
 TwoIsland_Items_ShopExpanded3::
-	.2byte ITEM_ULTRA_BALL
-	.2byte ITEM_REPEAT_BALL
-	.2byte ITEM_TIMER_BALL
-	.2byte ITEM_LEMONADE
-	.2byte ITEM_SODA_POP
-	.2byte ITEM_FRESH_WATER
-	.2byte ITEM_MOOMOO_MILK
-	.2byte ITEM_LAVA_COOKIE
-	.2byte ITEM_NONE
+	.4byte ITEM_ULTRA_BALL
+	.4byte ITEM_REPEAT_BALL
+	.4byte ITEM_TIMER_BALL
+	.4byte ITEM_LEMONADE
+	.4byte ITEM_SODA_POP
+	.4byte ITEM_FRESH_WATER
+	.4byte ITEM_MOOMOO_MILK
+	.4byte ITEM_LAVA_COOKIE
+	.4byte ITEM_NONE
 	release
 	end
 

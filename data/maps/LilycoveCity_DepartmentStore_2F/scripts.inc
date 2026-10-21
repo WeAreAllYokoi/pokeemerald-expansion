@@ -25,17 +25,17 @@ LilycoveCity_DepartmentStore_2F_EventScript_ClerkLeft::
 
 	.align 2
 LilycoveCity_DepartmentStore_2F_Pokemart1:
-	.2byte ITEM_POKE_BALL
-	.2byte ITEM_GREAT_BALL
-	.2byte ITEM_ULTRA_BALL
-	.2byte ITEM_ESCAPE_ROPE
-	.2byte ITEM_FULL_HEAL
-	.2byte ITEM_ANTIDOTE
-	.2byte ITEM_PARALYZE_HEAL
-	.2byte ITEM_BURN_HEAL
-	.2byte ITEM_ICE_HEAL
-	.2byte ITEM_AWAKENING
-	.2byte ITEM_FLUFFY_TAIL
+	.4byte ITEM_POKE_BALL
+	.4byte ITEM_GREAT_BALL
+	.4byte ITEM_ULTRA_BALL
+	.4byte ITEM_ESCAPE_ROPE
+	.4byte ITEM_FULL_HEAL
+	.4byte ITEM_ANTIDOTE
+	.4byte ITEM_PARALYZE_HEAL
+	.4byte ITEM_BURN_HEAL
+	.4byte ITEM_ICE_HEAL
+	.4byte ITEM_AWAKENING
+	.4byte ITEM_FLUFFY_TAIL
 	pokemartlistend
 
 LilycoveCity_DepartmentStore_2F_EventScript_ClerkRight::
@@ -50,16 +50,16 @@ LilycoveCity_DepartmentStore_2F_EventScript_ClerkRight::
 
 	.align 2
 LilycoveCity_DepartmentStore_2F_Pokemart2:
-	.2byte ITEM_POTION
-	.2byte ITEM_SUPER_POTION
-	.2byte ITEM_HYPER_POTION
-	.2byte ITEM_MAX_POTION
-	.2byte ITEM_REVIVE
-	.2byte ITEM_REPEL
-	.2byte ITEM_SUPER_REPEL
-	.2byte ITEM_MAX_REPEL
-	.2byte ITEM_WAVE_MAIL
-	.2byte ITEM_MECH_MAIL
+	.4byte ITEM_POTION
+	.4byte ITEM_SUPER_POTION
+	.4byte ITEM_HYPER_POTION
+	.4byte ITEM_MAX_POTION
+	.4byte ITEM_REVIVE
+	.4byte ITEM_REPEL
+	.4byte ITEM_SUPER_REPEL
+	.4byte ITEM_MAX_REPEL
+	.4byte ITEM_WAVE_MAIL
+	.4byte ITEM_MECH_MAIL
 	pokemartlistend
 
 LilycoveCity_DepartmentStore_2F_Text_LearnToUseItemsProperly:

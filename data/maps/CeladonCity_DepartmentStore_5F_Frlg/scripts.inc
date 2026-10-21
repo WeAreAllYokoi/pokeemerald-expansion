@@ -25,14 +25,14 @@ CeladonCity_DepartmentStore_5F_EventScript_ClerkXItems::
 
 	.align 2
 CeladonCity_DepartmentStore_5F_XItems::
-	.2byte ITEM_X_ATTACK
-	.2byte ITEM_X_DEFEND
-	.2byte ITEM_X_SPEED
-	.2byte ITEM_X_SPECIAL
-	.2byte ITEM_X_ACCURACY
-	.2byte ITEM_GUARD_SPEC
-	.2byte ITEM_DIRE_HIT
-	.2byte ITEM_NONE
+	.4byte ITEM_X_ATTACK
+	.4byte ITEM_X_DEFEND
+	.4byte ITEM_X_SPEED
+	.4byte ITEM_X_SPECIAL
+	.4byte ITEM_X_ACCURACY
+	.4byte ITEM_GUARD_SPEC
+	.4byte ITEM_DIRE_HIT
+	.4byte ITEM_NONE
 	release
 	end
 
@@ -48,13 +48,13 @@ CeladonCity_DepartmentStore_5F_EventScript_ClerkVitamins::
 
 	.align 2
 CeladonCity_DepartmentStore_5F_Vitamins::
-	.2byte ITEM_HP_UP
-	.2byte ITEM_PROTEIN
-	.2byte ITEM_IRON
-	.2byte ITEM_CALCIUM
-	.2byte ITEM_ZINC
-	.2byte ITEM_CARBOS
-	.2byte ITEM_NONE
+	.4byte ITEM_HP_UP
+	.4byte ITEM_PROTEIN
+	.4byte ITEM_IRON
+	.4byte ITEM_CALCIUM
+	.4byte ITEM_ZINC
+	.4byte ITEM_CARBOS
+	.4byte ITEM_NONE
 	release
 	end
 

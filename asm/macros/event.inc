@@ -1309,7 +1309,7 @@
 	.endm
 
 	@ Opens the Pokemart system, offering the specified products for sale.
-	@ Products should be a list of .2byte item values preceded by an .align 2
+	@ Products should be a list of .4byte item values (full-width item IDs) preceded by an .align 2
 	.macro pokemart products=Pokemart_DefaultItemList
 	.byte SCR_OP_POKEMART
 	.4byte \products
@@ -1317,13 +1317,13 @@
 
 	@ Used as the endpoint for a Pokemart item list
 	.macro pokemartlistend
-	.2byte ITEM_NONE
+	.4byte ITEM_NONE
 	release
 	end
 	.endm
 
 	@ Opens the Pokemart system and treats the list of items as decorations.
-	@ Products should be a list of .2byte decoration values preceded by an .align 2
+	@ Products should be a list of .4byte decoration values preceded by an .align 2
 	.macro pokemartdecoration products:req
 	.byte SCR_OP_POKEMARTDECORATION
 	.4byte \products
