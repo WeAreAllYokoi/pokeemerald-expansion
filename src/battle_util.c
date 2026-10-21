@@ -1,4 +1,7 @@
 #include "global.h"
+#include "admg_battle_gimmicks.h"
+#include "battle_dynamax.h"
+#include "admg_retention.h"
 #include "admg_feature_bindings.h"
 #include "admg_trainer.h"
 #include "battle.h"
@@ -4878,7 +4881,7 @@ u32 AbilityBattleEffects(enum AbilityEffect caseID, enum BattlerId battler, enum
     return effect;
 }
 
-bool32 TryPrimalReversion(enum BattlerId battler)
+ADMG_NATIVE_ENTRY bool32 TryPrimalReversion(enum BattlerId battler)
 {
     if (TryBattleFormChange(battler, FORM_CHANGE_BATTLE_PRIMAL_REVERSION, GetBattlerAbility(battler)))
     {
@@ -11247,3 +11250,24 @@ bool32 IsAsleepOrComatose(enum BattlerId battler, enum Ability ability)
 {
     return (gBattleMons[battler].status1 & STATUS1_SLEEP) || ability == ABILITY_COMATOSE;
 }
+
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_CanPrimalRevert(ADMG_Word battler)
+{
+    if (!gMain.inBattle || gBattleStruct == NULL || battler >= gBattlersCount
+        || (gAbsentBattlerFlags & (1u << battler)) || gBattleMons[battler].hp == 0
+        || !CanBattlerFormChange(battler, FORM_CHANGE_BATTLE_PRIMAL_REVERSION))
+        return FALSE;
+    return GetBattleFormChangeTargetSpecies(battler, FORM_CHANGE_BATTLE_PRIMAL_REVERSION, GetBattlerAbility(battler))
+        != gBattleMons[battler].species;
+}
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_CanGigantamax(ADMG_Word battler)
+{
+    if (!gMain.inBattle || gBattleStruct == NULL || battler >= gBattlersCount
+        || (gAbsentBattlerFlags & (1u << battler)) || gBattleMons[battler].hp == 0
+        || gBattleMons[battler].volatiles.transformed || !CanDynamax(battler))
+        return FALSE;
+    return GetBattleFormChangeTargetSpecies(battler, FORM_CHANGE_BATTLE_GIGANTAMAX, GetBattlerAbility(battler))
+        != gBattleMons[battler].species;
+}
+ADMG_RETAIN_FUNCTION(ADMG_CanPrimalRevert);
+ADMG_RETAIN_FUNCTION(ADMG_CanGigantamax);

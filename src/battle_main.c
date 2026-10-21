@@ -1,4 +1,6 @@
 #include "global.h"
+#include "admg_battle_gimmicks.h"
+#include "admg_retention.h"
 #include "admg_feature_bindings.h"
 #include "admg_state.h"
 #include "admg_trainer_actor.h"
@@ -5958,3 +5960,16 @@ void BattleDebug_WonBattle(void)
     gBattleOutcome |= B_OUTCOME_WON;
     gBattleMainFunc = sEndTurnFuncsTable[gBattleOutcome & 0x7F];
 }
+
+/* Set the battler's usable gimmick for activation through the controller's RET_GIMMICK response. */
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_SelectBattleGimmick(ADMG_Word battler, ADMG_Word gimmick)
+{
+    if (!gMain.inBattle || gBattleStruct == NULL || gBattleMainFunc != HandleTurnActionSelectionState
+        || battler >= gBattlersCount || gimmick <= GIMMICK_NONE || gimmick >= GIMMICKS_COUNT
+        || (gAbsentBattlerFlags & (1u << battler)) || gBattleMons[battler].hp == 0
+        || !CanActivateGimmick(battler, gimmick))
+        return FALSE;
+    gBattleStruct->gimmick.usableGimmick[battler] = gimmick;
+    return TRUE;
+}
+ADMG_RETAIN_FUNCTION(ADMG_SelectBattleGimmick);
