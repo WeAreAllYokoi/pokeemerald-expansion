@@ -124,6 +124,7 @@ struct DexNavSearch
 struct DexNavGUI
 {
     MainCallback savedCallback;
+    bool8 admgOwnedReturn;
     u8 state;
     u8 cursorSpriteId;
     enum Species landSpecies[NUM_LAND_MONS_ENCOUNTER_SLOTS];
@@ -143,6 +144,9 @@ EWRAM_DATA static struct DexNavSearch *sDexNavSearchDataPtr = NULL;
 EWRAM_DATA static struct DexNavGUI *sDexNavUiDataPtr = NULL;
 EWRAM_DATA static u8 *sBg1TilemapBuffer = NULL;
 EWRAM_DATA enum Species gDexNavSpecies = SPECIES_NONE;
+EWRAM_DATA static u32 sADMG_DexNavGuiResult = ADMG_DEXNAV_GUI_PENDING;
+EWRAM_DATA static u32 sADMG_DexNavGuiExitSpecies = SPECIES_NONE;
+EWRAM_DATA static u32 sADMG_DexNavGuiExitEnvironment = ENCOUNTER_TYPE_LAND;
 
 //// Function Declarations
 //GUI
@@ -1820,8 +1824,8 @@ static void DexNav_InitWindows(void)
 
 static void DexNavGuiFreeResources(void)
 {
-    Free(sDexNavUiDataPtr);
-    Free(sBg1TilemapBuffer);
+    FREE_AND_SET_NULL(sDexNavUiDataPtr);
+    FREE_AND_SET_NULL(sBg1TilemapBuffer);
     FreeAllWindowBuffers();
 }
 
@@ -1841,20 +1845,27 @@ static void CB1_DexNavSearchCallback(void)
 
 static void Task_DexNavExitAndSearch(u8 taskId)
 {
+    MainCallback returnCallback = sDexNavUiDataPtr->admgOwnedReturn ? sDexNavUiDataPtr->savedCallback : CB2_ReturnToField;
+    sADMG_DexNavGuiResult = ADMG_DEXNAV_GUI_SEARCH_SELECTED;
+    sADMG_DexNavGuiExitSpecies = gSpecialVar_0x8000;
+    sADMG_DexNavGuiExitEnvironment = gSpecialVar_0x8001;
     DespawnAllOverworldWildEncounters(OWE_GENERATED, 0);
     DexNavGuiFreeResources();
     DestroyTask(taskId);
     SetMainCallback1(CB1_DexNavSearchCallback);
-    SetMainCallback2(CB2_ReturnToField);
+    SetMainCallback2(returnCallback);
 }
 
 static void Task_DexNavFadeAndExit(u8 taskId)
 {
     if (!gPaletteFade.active)
     {
-        SetMainCallback2(sDexNavUiDataPtr->savedCallback);
+        MainCallback returnCallback = sDexNavUiDataPtr->savedCallback;
+        if (sADMG_DexNavGuiResult == ADMG_DEXNAV_GUI_PENDING)
+            sADMG_DexNavGuiResult = ADMG_DEXNAV_GUI_CLOSED;
         DexNavGuiFreeResources();
         DestroyTask(taskId);
+        SetMainCallback2(returnCallback);
     }
 }
 
@@ -2231,6 +2242,7 @@ static bool8 DexNav_DoGfxSetup(void)
         }
         else
         {
+            sADMG_DexNavGuiResult = ADMG_DEXNAV_GUI_SETUP_FAILED;
             DexNavFadeAndExit();
             return TRUE;
         }
@@ -2296,23 +2308,56 @@ static void DexNav_RunSetup(void)
 }
 
 // Entry point for the dexnav GUI
-static void DexNavGuiInit(MainCallback callback)
+static u32 DexNavGuiInit(MainCallback callback, bool32 ownedReturn)
 {
-    assertf(ADMG_DexNavEnabled(), "DexNav was opened when DEXNAV_ENABLED config was disabled.\nCheck include/config/dexnav.h")
-    {
-        SetMainCallback2(callback);
-        return;
-    }
-
+    if (callback == NULL)
+        return ADMG_DEXNAV_GUI_INVALID_CALLBACK;
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_DEXNAV))
+        return ADMG_DEXNAV_GUI_DISABLED;
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING) == 0
+     || ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_DETECTOR_MODE) == 0
+     || ADMG_GetFeatureBinding(ADMG_BINDING_DN_VAR_SPECIES) == 0
+     || ADMG_GetFeatureBinding(ADMG_BINDING_DN_VAR_STEP_COUNTER) == 0)
+        return ADMG_DEXNAV_GUI_MISSING_BINDINGS;
+    if (!ADMG_DexNavSelectionAvailable())
+        return ADMG_DEXNAV_GUI_MISSING_STATE;
+    if (sDexNavUiDataPtr != NULL)
+        return ADMG_DEXNAV_GUI_FIELD_BUSY;
     if ((sDexNavUiDataPtr = AllocZeroed(sizeof(struct DexNavGUI))) == NULL)
-    {
-        SetMainCallback2(callback);
-        return;
-    }
+        return ADMG_DEXNAV_GUI_ALLOCATION_FAILED;
 
     sDexNavUiDataPtr->state = 0;
     sDexNavUiDataPtr->savedCallback = callback;
+    sDexNavUiDataPtr->admgOwnedReturn = ownedReturn;
+    sADMG_DexNavGuiResult = ADMG_DEXNAV_GUI_PENDING;
+    sADMG_DexNavGuiExitSpecies = SPECIES_NONE;
+    sADMG_DexNavGuiExitEnvironment = ENCOUNTER_TYPE_LAND;
+    CleanupOverworldWindowsAndTilemaps();
     SetMainCallback2(DexNav_RunSetup);
+    return ADMG_DEXNAV_GUI_STARTED;
+}
+
+ADMG_NATIVE_ENTRY u32 ADMG_TryOpenDexNavGui(void (*returnCallback)(void))
+{
+    if (returnCallback == NULL)
+        return ADMG_DEXNAV_GUI_INVALID_CALLBACK;
+    if (gMain.callback2 != CB2_Overworld || gMain.inBattle || ScriptContext_IsEnabled()
+     || ArePlayerFieldControlsLocked() || gPaletteFade.active || sDexNavSearchDataPtr != NULL)
+        return ADMG_DEXNAV_GUI_FIELD_BUSY;
+    return DexNavGuiInit(returnCallback, TRUE);
+}
+
+ADMG_NATIVE_ENTRY u32 ADMG_GetDexNavGuiResult(void)
+{
+    return sADMG_DexNavGuiResult;
+}
+ADMG_NATIVE_ENTRY u32 ADMG_GetDexNavGuiExitSpecies(void)
+{
+    return sADMG_DexNavGuiExitSpecies;
+}
+ADMG_NATIVE_ENTRY u32 ADMG_GetDexNavGuiExitEnvironment(void)
+{
+    return sADMG_DexNavGuiExitEnvironment;
 }
 
 void Task_OpenDexNavFromStartMenu(u8 taskId)
@@ -2324,8 +2369,9 @@ void Task_OpenDexNavFromStartMenu(u8 taskId)
     }
     if (!gPaletteFade.active)
     {
-        CleanupOverworldWindowsAndTilemaps();
-        DexNavGuiInit(CB2_ReturnToFieldWithOpenMenu);
+        u32 result = DexNavGuiInit(CB2_ReturnToFieldWithOpenMenu, FALSE);
+        if (result != ADMG_DEXNAV_GUI_STARTED && result != ADMG_DEXNAV_GUI_FIELD_BUSY)
+            SetMainCallback2(CB2_ReturnToFieldWithOpenMenu);
         DestroyTask(taskId);
     }
 }
@@ -2848,3 +2894,8 @@ ADMG_RETAIN_FUNCTION(ADMG_DexNavSelectionAvailable);
 ADMG_RETAIN_FUNCTION(ADMG_GetDexNavRegisteredSpecies);
 ADMG_RETAIN_FUNCTION(ADMG_GetDexNavRegisteredEnvironment);
 ADMG_RETAIN_FUNCTION(ADMG_SetDexNavSelection);
+
+ADMG_RETAIN_FUNCTION(ADMG_TryOpenDexNavGui);
+ADMG_RETAIN_FUNCTION(ADMG_GetDexNavGuiResult);
+ADMG_RETAIN_FUNCTION(ADMG_GetDexNavGuiExitSpecies);
+ADMG_RETAIN_FUNCTION(ADMG_GetDexNavGuiExitEnvironment);

@@ -67,14 +67,35 @@ enum EncounterType
 #define LIT_STAR_TILE_TAG       0x4010
 #define HELD_ITEM_TAG           0xd750
 
-/* Search-history access does not require DexNav gameplay to be enabled.
- * ADMG_GetDexNavSearchLevel returns 0xFFFFFFFF for SPECIES_NONE, an invalid species ID,
- * or unavailable state. Zero is a valid stored search level. */
+enum ADMG_DexNavGuiOpenStatus
+{
+    ADMG_DEXNAV_GUI_STARTED = 1,
+    ADMG_DEXNAV_GUI_DISABLED,
+    ADMG_DEXNAV_GUI_MISSING_BINDINGS,
+    ADMG_DEXNAV_GUI_MISSING_STATE,
+    ADMG_DEXNAV_GUI_FIELD_BUSY,
+    ADMG_DEXNAV_GUI_ALLOCATION_FAILED,
+    ADMG_DEXNAV_GUI_INVALID_CALLBACK,
+};
+enum ADMG_DexNavGuiResult
+{
+    ADMG_DEXNAV_GUI_PENDING,
+    ADMG_DEXNAV_GUI_CLOSED,
+    ADMG_DEXNAV_GUI_SEARCH_SELECTED,
+    ADMG_DEXNAV_GUI_SETUP_FAILED,
+};
+ADMG_NATIVE_ENTRY u32 ADMG_TryOpenDexNavGui(void (*returnCallback)(void));
+ADMG_NATIVE_ENTRY u32 ADMG_GetDexNavGuiResult(void);
+ADMG_NATIVE_ENTRY u32 ADMG_GetDexNavGuiExitSpecies(void);
+ADMG_NATIVE_ENTRY u32 ADMG_GetDexNavGuiExitEnvironment(void);
 ADMG_NATIVE_ENTRY bool32 ADMG_DexNavEnabled(void);
 ADMG_NATIVE_ENTRY bool32 ADMG_DexNavSelectionAvailable(void);
 ADMG_NATIVE_ENTRY u32 ADMG_GetDexNavRegisteredSpecies(void);
 ADMG_NATIVE_ENTRY u32 ADMG_GetDexNavRegisteredEnvironment(void);
 ADMG_NATIVE_ENTRY bool32 ADMG_SetDexNavSelection(u32 species, u32 environment);
+/* Search history uses host-owned state and can be accessed even when DexNav gameplay is disabled.
+ * ADMG_GetDexNavSearchLevel returns 0xFFFFFFFF for SPECIES_NONE, an invalid species ID,
+ * or unavailable state. Zero is a valid stored search level. */
 ADMG_NATIVE_ENTRY bool32 ADMG_DexNavSearchLevelsAvailable(void);
 ADMG_NATIVE_ENTRY u32 ADMG_GetDexNavSearchLevel(u32 species);
 ADMG_NATIVE_ENTRY bool32 ADMG_SetDexNavSearchLevel(u32 species, u32 level);
