@@ -3347,6 +3347,10 @@ bool8 ScrCmd_fwdtime(struct ScriptContext *ctx)
     if (rtc->hour == hours && rtc->minute == minutes && rtc->second == 0)
         return FALSE;
 
+    u32 current = rtc->hour * 3600 + rtc->minute * 60 + rtc->second;
+    u32 delta = (hours * 3600 + minutes * 60 + 86400 - current) % 86400;
+    if (!FakeRtc_CanAdvanceTimeBy(0, 0, 0, delta))
+        return FALSE;
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
     FakeRtc_ForwardTimeTo(hours, minutes, 0);
@@ -3365,7 +3369,7 @@ bool8 ScrCmd_fwdweekday(struct ScriptContext *ctx)
         return FALSE;
 
     u32 daysToAdd = (weekdayTarget + WEEKDAY_COUNT - rtc->dayOfWeek) % WEEKDAY_COUNT;
-    if (daysToAdd == 0)
+    if (daysToAdd == 0 || !FakeRtc_CanAdvanceTimeBy(daysToAdd, 0, 0, 0))
         return FALSE;
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);

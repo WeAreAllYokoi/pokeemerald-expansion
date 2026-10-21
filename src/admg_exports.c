@@ -148,3 +148,10 @@ ADMG_RETAIN_DATA(gADMG_KantoVsSeekerCounter);
 ADMG_RETAIN_DATA(gADMG_NativeRematchGraphics);
 ADMG_RETAIN_DATA(gADMG_NativeRematchGraphicsCount);
 ADMG_RETAIN_DATA(gADMG_NativeRematchAnimations);
+
+/* Keep these checked clock functions in the build even when the fake clock is disabled by default. */
+#include "fake_rtc.h"
+ADMG_RETAIN_FUNCTION(FakeRtc_CanAdvanceTimeBy);
+ADMG_RETAIN_FUNCTION(FakeRtc_TryAdvanceTimeBy);
+ADMG_RETAIN_FUNCTION(FakeRtc_TryManuallySetTime);
+ADMG_RETAIN_FUNCTION(FakeRtc_TryForwardTimeTo);

@@ -51,44 +51,107 @@ void FakeRtc_TickTimeForward(void)
     FakeRtc_AdvanceTimeBy(0, 0, 0, FakeRtc_GetSecondsRatio());
 }
 
-void FakeRtc_AdvanceTimeBy(u32 days, u32 hours, u32 minutes, u32 seconds)
+/* Reject invalid dates, times or weekdays, and advances past 31 December of year offset 255,
+ * before calling calendar helpers. Check whole-day increments against the remaining range,
+ * then combine sub-day remainders so even UINT32_MAX inputs cannot overflow the bounds
+ * calculation. This also bounds the day count passed to the calendar helpers. */
+static bool32 FakeRtc_CanAdvanceRecord(const struct SiiRtcInfo *rtc, u32 days, u32 hours, u32 minutes, u32 seconds)
 {
-    if (!FakeRtc_IsActive())
-        return;
+    u32 daysInMonth, remaining, carry, timeOfDay;
+    if (rtc == NULL || rtc->month < MONTH_JAN || rtc->month > MONTH_DEC
+     || rtc->dayOfWeek >= WEEKDAY_COUNT || rtc->hour >= HOURS_PER_DAY
+     || rtc->minute >= MINUTES_PER_HOUR || rtc->second >= SECONDS_PER_MINUTE)
+        return FALSE;
+    daysInMonth = sNumDaysInMonths[rtc->month - 1] + (rtc->month == MONTH_FEB && IsLeapYear(rtc->year));
+    if (rtc->day == 0 || rtc->day > daysInMonth)
+        return FALSE;
+    remaining = ConvertDateToDayCount(255, MONTH_DEC, 31) - ConvertDateToDayCount(rtc->year, rtc->month, rtc->day);
+    if (days > remaining)
+        return FALSE;
+    remaining -= days;
+    carry = hours / HOURS_PER_DAY;
+    if (carry > remaining)
+        return FALSE;
+    remaining -= carry;
+    carry = minutes / (HOURS_PER_DAY * MINUTES_PER_HOUR);
+    if (carry > remaining)
+        return FALSE;
+    remaining -= carry;
+    carry = seconds / (HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE);
+    if (carry > remaining)
+        return FALSE;
+    remaining -= carry;
+    timeOfDay = rtc->hour * 3600 + rtc->minute * 60 + rtc->second
+              + (hours % HOURS_PER_DAY) * 3600
+              + (minutes % (HOURS_PER_DAY * MINUTES_PER_HOUR)) * 60
+              + seconds % (HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE);
+    return timeOfDay / (HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE) <= remaining;
+}
 
+ADMG_NATIVE_ENTRY bool32 FakeRtc_CanAdvanceTimeBy(u32 days, u32 hours, u32 minutes, u32 seconds)
+{
+    return FakeRtc_CanAdvanceRecord(FakeRtc_GetCurrentTime(), days, hours, minutes, seconds);
+}
+
+ADMG_NATIVE_ENTRY bool32 FakeRtc_TryAdvanceTimeBy(u32 days, u32 hours, u32 minutes, u32 seconds)
+{
     struct DateTime dateTime;
     struct SiiRtcInfo *rtc = FakeRtc_GetCurrentTime();
-
+    if (!FakeRtc_CanAdvanceRecord(rtc, days, hours, minutes, seconds))
+        return FALSE;
     ConvertRtcToDateTime(&dateTime, rtc);
     DateTime_AddSeconds(&dateTime, seconds);
     DateTime_AddMinutes(&dateTime, minutes);
     DateTime_AddHours(&dateTime, hours);
     DateTime_AddDays(&dateTime, days);
     ConvertDateTimeToRtc(rtc, &dateTime);
+    return TRUE;
+}
+
+void FakeRtc_AdvanceTimeBy(u32 days, u32 hours, u32 minutes, u32 seconds)
+{
+    FakeRtc_TryAdvanceTimeBy(days, hours, minutes, seconds);
+}
+
+ADMG_NATIVE_ENTRY bool32 FakeRtc_TryForwardTimeTo(u32 hour, u32 minute, u32 second)
+{
+    struct SiiRtcInfo *rtc = FakeRtc_GetCurrentTime();
+    u32 current, target, secondsPerDay;
+    if (rtc == NULL || hour >= HOURS_PER_DAY || minute >= MINUTES_PER_HOUR || second >= SECONDS_PER_MINUTE)
+        return FALSE;
+    current = rtc->hour * MINUTES_PER_HOUR * SECONDS_PER_MINUTE + rtc->minute * SECONDS_PER_MINUTE + rtc->second;
+    target = hour * MINUTES_PER_HOUR * SECONDS_PER_MINUTE + minute * SECONDS_PER_MINUTE + second;
+    secondsPerDay = HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE;
+    return FakeRtc_TryAdvanceTimeBy(0, 0, 0, (target + secondsPerDay - current) % secondsPerDay);
 }
 
 void FakeRtc_ForwardTimeTo(u32 hour, u32 minute, u32 second)
 {
-    if (!FakeRtc_IsActive() || hour >= HOURS_PER_DAY || minute >= MINUTES_PER_HOUR || second >= SECONDS_PER_MINUTE)
-        return;
+    FakeRtc_TryForwardTimeTo(hour, minute, second);
+}
 
+ADMG_NATIVE_ENTRY bool32 FakeRtc_TryManuallySetTime(u32 day, u32 hour, u32 minute, u32 second)
+{
     struct SiiRtcInfo *rtc = FakeRtc_GetCurrentTime();
-    u32 current = rtc->hour * MINUTES_PER_HOUR * SECONDS_PER_MINUTE + rtc->minute * SECONDS_PER_MINUTE + rtc->second;
-    u32 target = hour * MINUTES_PER_HOUR * SECONDS_PER_MINUTE + minute * SECONDS_PER_MINUTE + second;
-    u32 secondsPerDay = HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE;
-    u32 delta = (target + secondsPerDay - current) % secondsPerDay;
-
-    /* Advance synchronously on the game thread without changing the pause flag.
-     * A clock paused by the caller must remain paused after this operation. */
-    FakeRtc_AdvanceTimeBy(0, 0, 0, delta);
+    struct SiiRtcInfo candidate;
+    struct DateTime dateTime = gGen3Epoch;
+    if (rtc == NULL)
+        return FALSE;
+    candidate = *rtc;
+    ConvertDateTimeToRtc(&candidate, &dateTime);
+    if (!FakeRtc_CanAdvanceRecord(&candidate, day, hour, minute, second))
+        return FALSE;
+    DateTime_AddSeconds(&dateTime, second);
+    DateTime_AddMinutes(&dateTime, minute);
+    DateTime_AddHours(&dateTime, hour);
+    DateTime_AddDays(&dateTime, day);
+    ConvertDateTimeToRtc(rtc, &dateTime);
+    return TRUE;
 }
 
 void FakeRtc_ManuallySetTime(u32 day, u32 hour, u32 minute, u32 second)
 {
-    if (!FakeRtc_IsActive())
-        return;
-    FakeRtc_Reset();
-    FakeRtc_AdvanceTimeBy(day, hour, minute, second);
+    FakeRtc_TryManuallySetTime(day, hour, minute, second);
 }
 
 ADMG_NATIVE_ENTRY u32 FakeRtc_GetSecondsRatio(void)
