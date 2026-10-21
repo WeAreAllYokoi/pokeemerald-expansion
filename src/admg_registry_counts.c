@@ -15,4 +15,5 @@ const struct ADMG_RegistryCounts gADMG_RegistryCounts =
     .nationalDex = NATIONAL_DEX_COUNT + 1,
     .moveEffects = NUM_BATTLE_MOVE_EFFECTS,
     .addedMaps = 0,
+    .addedLayouts = 0,
 };

@@ -284,7 +284,7 @@ typedef union // size = 0x24
         /*0x06*/ u8 nGoldSymbols;
         /*0x07*/ mapsec_u8_t location;
         /*0x08*/ u16 battlePoints;
-        /*0x0A*/ u16 mapLayoutId;
+        /*0x0A*/ u32 mapLayoutId;
         /*0x0C*/ u8 language;
         /*0x0D*/ u8 filler_0D[6];
         /*0x13*/ u8 playerName[PLAYER_NAME_LENGTH + 1];
@@ -311,7 +311,7 @@ typedef union // size = 0x24
         /*0x02*/ enum Item item;
         /*0x04*/ mapsec_u8_t location;
         /*0x05*/ u8 language;
-        /*0x06*/ u16 mapLayoutId;
+        /*0x06*/ u32 mapLayoutId;
         /*0x08*/ u8 filler_08[11];
         /*0x13*/ u8 playerName[PLAYER_NAME_LENGTH + 1];
         /*0x1B*/ //u8 padding;

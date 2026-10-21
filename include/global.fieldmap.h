@@ -230,21 +230,21 @@ struct MapHeader
     /* 0x08 */ const u8 *mapScripts;
     /* 0x0C */ const struct MapConnections *connections;
     /* 0x10 */ u16 music;
-    /* 0x12 */ u16 mapLayoutId;
-    /* 0x14 */ mapsec_u8_t regionMapSectionId;
-    /* 0x18 */ u8 weather;
-    /* 0x19 */ u8 mapType;
-    /* 0x1A */ s8 floorNumber;
-    /* 0x1C */ u16 nightMusic;
+    /* 0x12 */ u16 nightMusic;
+    /* 0x14 */ u32 mapLayoutId;
+    /* 0x18 */ mapsec_u8_t regionMapSectionId;
+    /* 0x1C */ u8 weather;
+    /* 0x1D */ u8 mapType;
+    /* 0x1E */ s8 floorNumber;
                // fields correspond to the arguments in the map_header_flags macro
-    /* 0x1E */ bool8 allowCycling:1;
+    /* 0x1F */ bool8 allowCycling:1;
                bool8 allowEscaping:1; // Escape Rope and Dig
                bool8 allowRunning:1;
                bool8 showMapName:1;
                bool8 writeSpecialVarIsEffect:1;
                bool8 cave:1;
                bool8 unused:2;
-    /* 0x1F */ u8 battleType;
+    /* 0x20 */ u8 battleType;
 };
 
 STATIC_ASSERT(sizeof(struct MapHeader) == MAP_HEADER_SIZE, MapHeaderMatchesGeneratedHeaders);

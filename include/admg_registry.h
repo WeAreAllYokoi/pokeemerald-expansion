@@ -29,6 +29,7 @@ struct ADMG_RegistryCounts
     u32 nationalDex;    // National Pokédex numbers, including NATIONAL_DEX_NONE
     u32 moveEffects;    // Rows of gBattleMoveEffects
     u32 addedMaps;      // Rows of gADMG_AddedMaps: the maps added at run time, from FIRST_ADDED_MAP
+    u32 addedLayouts;   // Rows of gADMG_AddedLayouts: the layouts added at run time, from FIRST_ADDED_LAYOUT
 };
 
 // Keep the defaults in a separate source file so callers read the counts from ROM
@@ -46,6 +47,7 @@ extern const struct ADMG_RegistryCounts gADMG_RegistryCounts;
 #define RUNTIME_NATIONAL_DEX_COUNT     (gADMG_RegistryCounts.nationalDex)
 #define RUNTIME_MOVE_EFFECTS_COUNT     (gADMG_RegistryCounts.moveEffects)
 #define RUNTIME_ADDED_MAPS_COUNT       (gADMG_RegistryCounts.addedMaps)
+#define RUNTIME_ADDED_LAYOUTS_COUNT    (gADMG_RegistryCounts.addedLayouts)
 
 #define FIRST_ADDED_SPECIES        (NUM_SPECIES + 1)
 #define FIRST_ADDED_MOVE           (MOVES_COUNT_ALL + 1)
@@ -60,6 +62,8 @@ extern const struct ADMG_RegistryCounts gADMG_RegistryCounts;
 #define FIRST_ADDED_TRAINER        0x10000
 #define FIRST_ADDED_NATIONAL_DEX   (NATIONAL_DEX_COUNT + 1)
 #define FIRST_ADDED_MOVE_EFFECT    (NUM_BATTLE_MOVE_EFFECTS + 1)
+// Layout IDs are 1-based; a script's layout operand below 0x10000 may name a variable, so added layouts start above.
+#define FIRST_ADDED_LAYOUT         0x10000
 
 static inline bool32 IsSpeciesIdValid(u32 species) { return species < RUNTIME_SPECIES_COUNT; }
 static inline bool32 IsMoveIdValid(u32 move) { return move < RUNTIME_MOVES_COUNT && move != MOVES_COUNT_ALL; }

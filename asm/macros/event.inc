@@ -1538,7 +1538,7 @@
 	@ This should be done before the layout is loaded, typically in the ON_TRANSITION map script.
 	.macro setmaplayoutindex index:req
 	.byte SCR_OP_SETMAPLAYOUTINDEX
-	.2byte \index
+	.4byte \index
 	.endm
 
 	@ Sets the specified object's sprite's subpriority, and sets fixedPriority to TRUE.

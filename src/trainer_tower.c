@@ -766,7 +766,7 @@ static void TrainerTowerAddFloorCleared(void)
 static void GetFloorAlreadyCleared(void)
 {
 #if FREE_TRAINER_TOWER == FALSE && IS_FRLG
-    u16 mapLayoutId = gMapHeader.mapLayoutId;
+    u32 mapLayoutId = gMapHeader.mapLayoutId;
     if (mapLayoutId - LAYOUT_TRAINER_TOWER_1F == TRAINER_TOWER.floorsCleared
      && mapLayoutId - LAYOUT_TRAINER_TOWER_LOBBY <= CURR_FLOOR.floorIdx)
         gSpecialVar_Result = FALSE;

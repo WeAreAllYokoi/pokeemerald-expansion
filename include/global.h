@@ -1103,7 +1103,7 @@ struct SaveBlock1
     /*0x2F*/ u8 weatherCycleStage;
     /*0x30*/ u8 flashLevel;
     /*0x31*/ //u8 padding1;
-    /*0x32*/ u16 mapLayoutId;
+    /*0x32*/ u32 mapLayoutId;
     /*0x34*/ u16 mapView[0x100];
     /*0x234*/ u8 playerPartyCount;
     /*0x235*/ //u8 padding2[3];

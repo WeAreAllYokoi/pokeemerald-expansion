@@ -991,8 +991,11 @@ bool8 ScrCmd_setstepcallback(struct ScriptContext *ctx)
 
 bool8 ScrCmd_setmaplayoutindex(struct ScriptContext *ctx)
 {
-    u16 value = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    // A word: a base layout ID or variable (below 0x10000), or an added layout's ID.
+    u32 value = ScriptReadWord(ctx);
 
+    if (value < FIRST_ADDED_LAYOUT)
+        value = ADMG_SCRIPT_VALUE(ctx, value, FALSE);
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE | SCREFF_HARDWARE);
 
     SetCurrentMapLayout(value);
