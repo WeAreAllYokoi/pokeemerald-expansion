@@ -1,6 +1,9 @@
 #include "global.h"
+#include "admg_feature_policies.h"
+#include "admg_feature_settings.h"
 #include "admg_feature_bindings.h"
 #include "admg_script.h"
+#include "admg_retention.h"
 #include "wild_encounter_ow.h"
 #include "battle_setup.h"
 #include "battle_main.h"
@@ -232,21 +235,41 @@ const struct FieldEffectInfoOWE gOverworldWildEncounterFieldEffectInfo[] =
 };
 
 
+ADMG_NATIVE_ENTRY bool32 ADMG_OverworldEncountersAvailable(void)
+{
+    return OW_POKEMON_OBJECT_EVENTS && ROAMER_COUNT <= OWE_MAX_ROAMERS;
+}
+
+ADMG_NATIVE_ENTRY bool32 ADMG_OverworldEncountersEnabled(void)
+{
+    return ADMG_OverworldEncountersAvailable()
+        && ADMG_GetFeaturePolicy(ADMG_POLICY_OVERWORLD_ENCOUNTERS);
+}
+
 void UpdateOverworldWildEncounter(void)
 {
     //Check if possible to spawn.
 
+    if (!ADMG_OverworldEncountersEnabled())
+    {
+        if (sOWESpawnCountdown != OWE_NO_ENCOUNTER_SET)
+        {
+            DespawnAllOverworldWildEncounters(OWE_GENERATED, 0);
+            sOWESpawnCountdown = OWE_NO_ENCOUNTER_SET;
+        }
+        return;
+    }
+
     bool32 shouldSpawnWaterMons = ShouldSpawnWaterOWE();
-    
+
     if (ArePlayerFieldControlsLocked() || FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING)) || !CheckCurrentWildMonHeaderForOWE(shouldSpawnWaterMons))
         return;
 
-    if (!WE_OW_ENCOUNTERS
-     || FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_WE_OWE_FLAG_DISABLED))
+    if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_WE_OWE_FLAG_DISABLED))
      || FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_WE_FLAG_NO_ENCOUNTER))
      || FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING))
-     || (gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PIKE_ROOM_WILD_MONS && !WE_OWE_BATTLE_PIKE)
-     || (gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR && !WE_OWE_BATTLE_PYRAMID)
+     || (gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PIKE_ROOM_WILD_MONS && !ADMG_GetFeatureSetting(ADMG_SETTING_OWE_BATTLE_PIKE))
+     || (gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR && !ADMG_GetFeatureSetting(ADMG_SETTING_OWE_BATTLE_PYRAMID))
      || InTrainerHillChallenge())
     {
         if (sOWESpawnCountdown != OWE_NO_ENCOUNTER_SET)
@@ -293,7 +316,7 @@ void UpdateOverworldWildEncounter(void)
     SetSpeciesInfoForOWE(&infoOWE, x, y);
 
     if (infoOWE.speciesId == SPECIES_NONE
-     || (WE_OWE_SPECIAL_ONLY && infoOWE.category >= OWE_CATEGORY_WILD)
+     || (ADMG_GetFeatureSetting(ADMG_SETTING_OWE_SPECIAL_ONLY) && infoOWE.category >= OWE_CATEGORY_WILD)
      || !IsWildLevelAllowedByRepel(infoOWE.level)
      || !IsAbilityAllowingEncounter(infoOWE.level)
      || !CheckCanLoadOWE(infoOWE.speciesId, infoOWE.isFemale, infoOWE.isShiny, x, y))
@@ -507,11 +530,11 @@ static bool32 CreateEnemyPartyOWE(struct InfoOWE *info, s32 x, s32 y)
             info->category = gEncounteredRoamerIndex;
             return TRUE;
         }
-        else if (WE_OWE_FEEBAS_SPOTS && MetatileBehavior_IsWaterWildEncounter(metatileBehavior) && CheckFeebasAtCoords(x, y))
+        else if (ADMG_GetFeatureSetting(ADMG_SETTING_OWE_FEEBAS_SPOTS) && MetatileBehavior_IsWaterWildEncounter(metatileBehavior) && CheckFeebasAtCoords(x, y))
         {
             CreateWildMon(gWildFeebas.species, ChooseWildMonLevel(&gWildFeebas, 0, WILD_AREA_FISHING));
             info->category = OWE_CATEGORY_FEEBAS;
-            if (WE_OWE_PREVENT_FEEBAS_DESPAWN)
+            if (ADMG_GetFeatureSetting(ADMG_SETTING_OWE_PREVENT_FEEBAS_DESPAWN))
                 info->noDespawn = TRUE;
 
             return TRUE;
@@ -637,7 +660,7 @@ void SetMinimumOWESpawnTimer(void)
 {
     ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1);
 
-    if (!WE_OW_ENCOUNTERS)
+    if (!ADMG_OverworldEncountersEnabled())
         return;
 
     sOWESpawnCountdown = OWE_SPAWN_TIME_MINIMUM;
@@ -649,7 +672,7 @@ void TryTriggerOverworldWildEncounter(struct ObjectEvent *obstacle, struct Objec
 {
     ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1);
 
-    if (WE_OWE_NO_REPEL_DEXNAV_COLLISION && (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING)) || REPEL_STEP_COUNT))
+    if (ADMG_GetFeatureSetting(ADMG_SETTING_OWE_NO_REPEL_DEXNAV_COLLISION) && (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING)) || REPEL_STEP_COUNT))
         return;
 
     bool32 playerFollowerIsColliderOWE = ((collider->isPlayer || collider->localId == OBJ_EVENT_ID_FOLLOWER)
@@ -759,7 +782,7 @@ static u32 GetNextOWESpawnSlot(void)
     // All mon slots are in use
     if (GetNumberOfActiveOWEs(OWE_GENERATED) >= OWE_SPAWNS_MAX)
     {
-        if (WE_OWE_SPAWN_REPLACEMENT)
+        if (ADMG_GetFeatureSetting(ADMG_SETTING_OWE_SPAWN_REPLACEMENT))
         {
             // Cycle through so we remove the oldest mon first
             return GetOldestActiveOWESlot(FALSE); 
@@ -875,7 +898,7 @@ static void SetSpeciesInfoForOWE(struct InfoOWE *info, u32 x, u32 y)
     else
         info->isFemale = FALSE;
 
-    if (WE_OWE_PREVENT_SHINY_DESPAWN && info->isShiny)
+    if (ADMG_GetFeatureSetting(ADMG_SETTING_OWE_PREVENT_SHINY_DESPAWN) && info->isShiny)
         info->noDespawn = TRUE;
 
     if (info->category == OWE_CATEGORY_UNDEFINED)
@@ -1108,7 +1131,7 @@ void DespawnAllOverworldWildEncounters(enum TypeOWE oweType, u32 flags)
 
 u32 TryAndDespawnOldestGeneratedOWE_ToFreeObject(void)
 {
-    if (!WE_OW_ENCOUNTERS)
+    if (!ADMG_OverworldEncountersEnabled())
         return OBJECT_EVENTS_COUNT;
 
     return RemoveOldestGeneratedOWE();
@@ -1155,7 +1178,7 @@ void DespawnOWEOnBattleStart(void)
 
 void TryDespawnOWEsCrossingMapConnection(void)
 {
-    if (!WE_OWE_DESPAWN_ON_ENTER_TOWN)
+    if (!ADMG_GetFeatureSetting(ADMG_SETTING_OWE_DESPAWN_ON_ENTER_TOWN))
         return;
 
     if (gMapHeader.mapType != MAP_TYPE_CITY && gMapHeader.mapType != MAP_TYPE_TOWN)
@@ -1181,7 +1204,7 @@ static bool32 ShouldDespawnGeneratedForNewOWE(struct ObjectEvent *owe)
     if (!IsOverworldWildEncounter(owe, OWE_GENERATED))
         return FALSE;
 
-    return WE_OWE_SPAWN_REPLACEMENT && GetNumberOfActiveOWEs(OWE_GENERATED) >= OWE_SPAWNS_MAX;
+    return ADMG_GetFeatureSetting(ADMG_SETTING_OWE_SPAWN_REPLACEMENT) && GetNumberOfActiveOWEs(OWE_GENERATED) >= OWE_SPAWNS_MAX;
 }
 
 static void SetNewOWESpawnCountdown(void)
@@ -1190,7 +1213,7 @@ static void SetNewOWESpawnCountdown(void)
 
     u32 numActive = GetNumberOfActiveOWEs(OWE_GENERATED);
 
-    if (WE_OWE_SPAWN_REPLACEMENT && numActive >= OWE_SPAWNS_MAX)
+    if (ADMG_GetFeatureSetting(ADMG_SETTING_OWE_SPAWN_REPLACEMENT) && numActive >= OWE_SPAWNS_MAX)
         sOWESpawnCountdown = OWE_SPAWN_TIME_REPLACEMENT;
     else if (LURE_STEP_COUNT && numActive < OWE_SPAWNS_MAX)
         sOWESpawnCountdown = OWE_SPAWN_TIME_LURE;
@@ -1203,7 +1226,7 @@ static void DoOWESpawnAnim(struct ObjectEvent *owe)
     bool32 isShiny = OW_SHINY(owe) ? TRUE : FALSE;
     enum SpawnDespawnTypeOWE spawnAnimType;
 
-    if (WE_OWE_SHINY_SPARKLE && isShiny)
+    if (ADMG_GetFeatureSetting(ADMG_SETTING_OWE_SHINY_SPARKLE) && isShiny)
     {
         PlaySE(SE_SHINY);
         spawnAnimType = OWE_SPAWN_ANIM_SHINY;
@@ -1309,7 +1332,7 @@ static bool32 OWE_ShouldPlayOWEFleeSound(struct ObjectEvent *owe)
     if (owe->offScreen)
         return FALSE;
 
-    return WE_OWE_DESPAWN_SOUND;
+    return ADMG_GetFeatureSetting(ADMG_SETTING_OWE_DESPAWN_SOUND);
 }
 
 #define sTypeFuncId data[1] // Same as in src/event_object_movement.c
@@ -1332,7 +1355,7 @@ bool32 CheckRestrictedOWEMovement(struct ObjectEvent *owe, enum Direction direct
     if (GetCollisionInDirection(owe, direction))
         return TRUE;
 
-    if (WE_OWE_UNRESTRICT_SIGHT
+    if (ADMG_GetFeatureSetting(ADMG_SETTING_OWE_UNRESTRICT_SIGHT)
      && owe->movementType != MOVEMENT_TYPE_WANDER_AROUND_OWE
      && CanAwareOWESeePlayer(owe))
         return FALSE;
@@ -1367,7 +1390,7 @@ static bool32 CheckRestrictedOWEMovementAtCoords(struct ObjectEvent *owe, s32 xN
 
 static bool32 CheckRestrictedOWEMovementMetatile(s32 xCurrent, s32 yCurrent, s32 xNew, s32 yNew)
 {
-    if (!WE_OWE_RESTRICT_METATILE)
+    if (!ADMG_GetFeatureSetting(ADMG_SETTING_OWE_RESTRICT_METATILE))
         return FALSE;
 
     u32 metatileBehaviourCurrent = MapGridGetMetatileBehaviorAt(xCurrent, yCurrent);
@@ -1390,7 +1413,7 @@ static bool32 CheckRestrictedOWEMovementMetatile(s32 xCurrent, s32 yCurrent, s32
 
 static bool32 CheckRestrictedOWEMovementMap(struct ObjectEvent *owe, s32 xNew, s32 yNew)
 {
-    if (!WE_OWE_RESTRICT_MAP)
+    if (!ADMG_GetFeatureSetting(ADMG_SETTING_OWE_RESTRICT_MAP))
         return FALSE;
     
     if (owe->mapId == gSaveBlock1Ptr->location.mapId)
@@ -1612,7 +1635,7 @@ void OWEApproachForBattle(struct ScriptContext *ctx)
         ADMG_SCRIPT_REQUIRE_INDEX(ctx, OW_SPECIES(owe), RUNTIME_SPECIES_COUNT);
     Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
     
-    if (!WE_OWE_APPROACH_FOR_BATTLE || !IsOverworldWildEncounter(owe, OWE_ANY))
+    if (!ADMG_GetFeatureSetting(ADMG_SETTING_OWE_APPROACH_FOR_BATTLE) || !IsOverworldWildEncounter(owe, OWE_ANY))
     {
         FreezeObjectEvent(owe);
         return;
@@ -1826,7 +1849,7 @@ static bool32 CheckValidOWESpecies(enum Species speciesId)
 
 bool32 CanRemoveObjectForOWEMovement(struct ObjectEvent *objectEvent)
 {
-    if (WE_OWE_PREVENT_SPECIAL_MOVEMENT_DESPAWN && IsObjectActiveOWE(objectEvent) && HasOWENoDespawnFlag(objectEvent))
+    if (ADMG_GetFeatureSetting(ADMG_SETTING_OWE_PREVENT_SPECIAL_MOVEMENT_DESPAWN) && IsObjectActiveOWE(objectEvent) && HasOWENoDespawnFlag(objectEvent))
         return FALSE;
 
     return TRUE;
@@ -1835,3 +1858,14 @@ bool32 CanRemoveObjectForOWEMovement(struct ObjectEvent *objectEvent)
 #undef sOverworldEncounterLevel
 #undef sOverworldEncounterAge
 #undef sOverworldEncounterCategory
+
+/* Retain the encounter entry points, availability queries and field-effect data
+ * even when encounters are disabled by default. */
+ADMG_RETAIN_FUNCTION(ADMG_OverworldEncountersAvailable);
+ADMG_RETAIN_FUNCTION(ADMG_OverworldEncountersEnabled);
+ADMG_RETAIN_FUNCTION(UpdateOverworldWildEncounter);
+ADMG_RETAIN_FUNCTION(GetNumberOfActiveOWEs);
+ADMG_RETAIN_FUNCTION(DespawnAllOverworldWildEncounters);
+ADMG_RETAIN_FUNCTION(TryTriggerOverworldWildEncounter);
+ADMG_RETAIN_FUNCTION(TryGetObjectEventTemplateForOWE);
+ADMG_RETAIN_DATA(gOverworldWildEncounterFieldEffectInfo);

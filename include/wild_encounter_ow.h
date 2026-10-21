@@ -74,6 +74,9 @@ struct FieldEffectInfoOWE
 
 extern const struct FieldEffectInfoOWE gOverworldWildEncounterFieldEffectInfo[];
 
+/* Availability requires OW_POKEMON_OBJECT_EVENTS and ROAMER_COUNT <= OWE_MAX_ROAMERS. */
+bool32 ADMG_OverworldEncountersAvailable(void);
+bool32 ADMG_OverworldEncountersEnabled(void);
 void UpdateOverworldWildEncounter(void);
 bool32 IsOverworldWildEncounter(struct ObjectEvent *owe, enum TypeOWE oweType);
 void SetMinimumOWESpawnTimer(void);

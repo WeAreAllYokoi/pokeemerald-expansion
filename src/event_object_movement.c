@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_settings.h"
 #include "admg_feature_bindings.h"
 #include "constants/event_object_movement.h"
 #include "admg_rematch_movement.h"
@@ -12063,7 +12064,7 @@ bool8 MovementType_OverworldWildEncounter_FleePlayer_Step8(struct ObjectEvent *o
 
 bool8 MovementType_OverworldWildEncounter_FleePlayer_Step10(struct ObjectEvent *objectEvent, struct Sprite *sprite)
 {
-    if (WE_OWE_FLEE_DESPAWN && sCollisionTimer >= OWE_FLEE_COLLISION_TIME && CanRemoveObjectForOWEMovement(objectEvent))
+    if (ADMG_GetFeatureSetting(ADMG_SETTING_OWE_FLEE_DESPAWN) && sCollisionTimer >= OWE_FLEE_COLLISION_TIME && CanRemoveObjectForOWEMovement(objectEvent))
     {
         RemoveObjectEvent(objectEvent);
         return FALSE;

@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_settings.h"
 #include "admg_feature_bindings.h"
 #include "battle_setup.h"
 #include "bike.h"
@@ -903,16 +904,16 @@ static bool32 ShouldDisableRandomEncounters(void)
     if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_WE_FLAG_NO_ENCOUNTER)))
         return TRUE;
 
-    if (!WE_VANILLA_RANDOM && WE_OW_ENCOUNTERS)
+    if (!ADMG_GetFeatureSetting(ADMG_SETTING_VANILLA_RANDOM) && ADMG_OverworldEncountersEnabled())
     {
-        if (gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PIKE_ROOM_WILD_MONS && !WE_OWE_BATTLE_PIKE)
+        if (gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PIKE_ROOM_WILD_MONS && !ADMG_GetFeatureSetting(ADMG_SETTING_OWE_BATTLE_PIKE))
             return FALSE;
 
-        if (gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR && !WE_OWE_BATTLE_PYRAMID)
+        if (gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR && !ADMG_GetFeatureSetting(ADMG_SETTING_OWE_BATTLE_PYRAMID))
             return FALSE;
     }
 
-    return !WE_VANILLA_RANDOM;
+    return !ADMG_GetFeatureSetting(ADMG_SETTING_VANILLA_RANDOM);
 }
 
 static bool8 CheckStandardWildEncounter(u16 metatileBehavior)

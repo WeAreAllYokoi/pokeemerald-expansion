@@ -29,6 +29,7 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeaturePolicyDefault(ADMG_Word policy)
     case ADMG_POLICY_ENEMY_HP_PERCENTAGE: return B_HP_PERCENTAGE_DISPLAY;
     case ADMG_POLICY_DEXNAV: return DEXNAV_ENABLED;
     case ADMG_POLICY_DEXNAV_SEARCH_LEVELS: return USE_DEXNAV_SEARCH_LEVELS;
+    case ADMG_POLICY_OVERWORLD_ENCOUNTERS: return WE_OW_ENCOUNTERS;
     default: return 0;
     }
 }
@@ -36,7 +37,8 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeaturePolicyDefault(ADMG_Word policy)
 ADMG_NATIVE_ENTRY ADMG_Word ADMG_IsFeaturePolicyKnown(ADMG_Word policy)
 {
     return (policy >= ADMG_POLICY_FISHING_CHAIN && policy <= ADMG_POLICY_ENEMY_HP_PERCENTAGE)
-        || policy == ADMG_POLICY_DEXNAV || policy == ADMG_POLICY_DEXNAV_SEARCH_LEVELS;
+        || policy == ADMG_POLICY_DEXNAV || policy == ADMG_POLICY_DEXNAV_SEARCH_LEVELS
+        || policy == ADMG_POLICY_OVERWORLD_ENCOUNTERS;
 }
 
 ADMG_RETAIN_FUNCTION(ADMG_GetFeaturePolicy);
