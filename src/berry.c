@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_policies.h"
 #include "berry.h"
 #include "event_data.h"
 #include "event_object_movement.h"
@@ -2835,7 +2836,7 @@ void ObjectEventInteractionPickBerryTree(void)
     u8 berry = GetBerryTypeByBerryTreeId(id);
     u8 mutation = GetTreeMutationValue(id);
 
-    if (!OW_BERRY_MUTATIONS || mutation == 0)
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_BERRY_MUTATIONS) || mutation == 0)
     {
         gSpecialVar_0x8004 = AddBagItem(BerryTypeToItemId(berry), GetBerryCountByBerryTreeId(id));
         return;
@@ -2943,7 +2944,8 @@ bool8 PlayerHasMulch(void)
     return FALSE;
 }
 
-#if OW_BERRY_MUTATIONS == TRUE
+/* Compile the mutation table and helpers even when mutations default to disabled.
+ * ADMG_POLICY_BERRY_MUTATIONS controls their use at runtime. */
 static const u8 sBerryMutations[][3] = {
     {BERRY_ID_IAPAPA, BERRY_ID_MAGO,   BERRY_ID_POMEG},
     {BERRY_ID_CHESTO, BERRY_ID_PERSIM, BERRY_ID_KELPSY},
@@ -2961,6 +2963,7 @@ static const u8 sBerryMutations[][3] = {
     {BERRY_ID_SALAC,  BERRY_ID_PETAYA, BERRY_ID_MARANGA},
     // Up to one more Mutation can be added here for a total of 15 (only 4 bits are allocated)
 };
+_Static_assert(ARRAY_COUNT(sBerryMutations) <= 15, "Berry mutation identities must fit the existing tree fields");
 
 static u8 GetMutationOutcome(u8 berry1, u8 berry2)
 {
@@ -3015,7 +3018,6 @@ static u8 TryForMutation(u8 berryTreeId, u8 berry)
     }
     return 0;
 }
-#endif
 
 struct TreeMutationBitfield {
   u8 a: 2;
@@ -3030,32 +3032,33 @@ union TreeMutation {
 
 static u8 GetTreeMutationValue(u8 id)
 {
-#if OW_BERRY_MUTATIONS
-    struct BerryTree *tree = GetBerryTreeInfo(id);
+    struct BerryTree *tree;
     union TreeMutation myMutation;
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_BERRY_MUTATIONS))
+        return 0;
+    tree = GetBerryTreeInfo(id);
     if (tree->stopGrowth) // Pre-generated trees shouldn't have mutations
         return 0;
     myMutation.asField.a = tree->mutationA;
     myMutation.asField.b = tree->mutationB;
     myMutation.asField.unused = 0;
-    if (myMutation.value == 0) // no mutation
+    if (myMutation.value == 0 || myMutation.value > ARRAY_COUNT(sBerryMutations))
         return 0;
     return sBerryMutations[myMutation.value - 1][2];
-#else
-    return 0;
-#endif
 }
 
 static void SetTreeMutations(u8 id, u8 berry)
 {
-#if OW_BERRY_MUTATIONS == TRUE
-    struct BerryTree *tree = GetBerryTreeInfo(id);
+    struct BerryTree *tree;
     union TreeMutation myMutation;
+
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_BERRY_MUTATIONS))
+        return;
+    tree = GetBerryTreeInfo(id);
 
     myMutation.value = TryForMutation(id, berry);
     tree->mutationA = myMutation.asField.a;
     tree->mutationB = myMutation.asField.b;
-#endif
 }
 
 static enum Species GetBerryPestSpecies(u8 berryId)

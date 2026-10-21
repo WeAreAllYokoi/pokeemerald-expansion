@@ -5,6 +5,7 @@
 #include "config/pokemon.h"
 #include "config/summary_screen.h"
 #include "config/pokedex_plus_hgss.h"
+#include "config/overworld.h"
 
 /* Keep this a real call (never inlined) so mods can override feature policies at runtime.
  * Without an override, it returns the corresponding configuration macro's value. */
@@ -21,13 +22,14 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeaturePolicyDefault(ADMG_Word policy)
     case ADMG_POLICY_FORGET_HIDDEN_MOVES: return P_CAN_FORGET_HIDDEN_MOVE;
     case ADMG_POLICY_HGSS_POKEDEX: return POKEDEX_PLUS_HGSS;
     case ADMG_POLICY_SUMMARY_IV_EV: return P_SUMMARY_SCREEN_IV_EV_INFO;
+    case ADMG_POLICY_BERRY_MUTATIONS: return OW_BERRY_MUTATIONS;
     default: return 0;
     }
 }
 
 ADMG_NATIVE_ENTRY ADMG_Word ADMG_IsFeaturePolicyKnown(ADMG_Word policy)
 {
-    return policy >= ADMG_POLICY_FISHING_CHAIN && policy <= ADMG_POLICY_SUMMARY_IV_EV;
+    return policy >= ADMG_POLICY_FISHING_CHAIN && policy <= ADMG_POLICY_BERRY_MUTATIONS;
 }
 
 ADMG_RETAIN_FUNCTION(ADMG_GetFeaturePolicy);
