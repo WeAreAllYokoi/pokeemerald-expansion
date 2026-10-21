@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_policies.h"
 #include "malloc.h"
 #include "battle.h"
 #include "pokemon.h"
@@ -635,7 +636,7 @@ u8 CreateBattlerHealthboxSprites(enum BattlerId battler)
             healthboxLeftSpriteId = CreateSprite(&sHealthboxOpponentSpriteTemplates[0], DISPLAY_WIDTH, DISPLAY_HEIGHT, 1);
             healthboxRightSpriteId = CreateSpriteAtEnd(&sHealthboxOpponentSpriteTemplates[0], DISPLAY_WIDTH, DISPLAY_HEIGHT, 1);
 
-            if (B_HP_PERCENTAGE_DISPLAY)
+            if (ADMG_GetFeaturePolicy(ADMG_POLICY_ENEMY_HP_PERCENTAGE))
             {
                 gSprites[healthboxLeftSpriteId].oam.shape = ST_OAM_SQUARE;
                 gSprites[healthboxRightSpriteId].oam.shape = ST_OAM_SQUARE;
@@ -843,7 +844,7 @@ static const s16 sBattlerHealthboxCoords[BATTLE_COORDS_COUNT][MAX_BATTLERS_COUNT
     [BATTLE_COORDS_SINGLES] =
     {
         [B_POSITION_PLAYER_LEFT]   = { 158, 88 },
-        [B_POSITION_OPPONENT_LEFT] = { 44,  (B_HP_PERCENTAGE_DISPLAY ? 22 : 30)},
+        [B_POSITION_OPPONENT_LEFT] = { 44,  30},
     },
     [BATTLE_COORDS_DOUBLES] =
     {
@@ -861,6 +862,9 @@ void GetBattlerHealthboxCoords(enum BattlerId battler, s16 *x, s16 *y)
 
     *x = sBattlerHealthboxCoords[index][position][0];
     *y = sBattlerHealthboxCoords[index][position][1];
+    if (index == BATTLE_COORDS_SINGLES && position == B_POSITION_OPPONENT_LEFT
+     && ADMG_GetFeaturePolicy(ADMG_POLICY_ENEMY_HP_PERCENTAGE))
+        *y = 22;
 }
 
 void InitBattlerHealthboxCoords(enum BattlerId battler)
@@ -1066,7 +1070,7 @@ static bool32 ShouldShowHealthbar(enum BattlerId battler)
         if (isPlayer)
             return TRUE;
         else
-            return B_HP_PERCENTAGE_DISPLAY || !showHpText;
+            return ADMG_GetFeaturePolicy(ADMG_POLICY_ENEMY_HP_PERCENTAGE) || !showHpText;
     }
     else
     {
@@ -1093,7 +1097,7 @@ void UpdateHpTextInHealthbox(u32 healthboxSpriteId, u32 maxOrCurrent, s16 currHp
         }
         else // Opponent
         {
-            if (B_HP_PERCENTAGE_DISPLAY)
+            if (ADMG_GetFeaturePolicy(ADMG_POLICY_ENEMY_HP_PERCENTAGE))
             {
                 PrintHPPercentageOnHealthbox(healthboxSpriteId, currHp, maxHp, HEALTHBOX_BG_INDEX, -8, 16);
             }
@@ -1136,7 +1140,7 @@ static void UpdateHpTextInHealthboxInDoubles(u32 healthboxSpriteId, u32 maxOrCur
     {
         if (gBattleSpritesDataPtr->battlerData[battler].hpNumbersNoBars) // don't print text if only bars are visible
         {
-            if (B_HP_PERCENTAGE_DISPLAY)
+            if (ADMG_GetFeaturePolicy(ADMG_POLICY_ENEMY_HP_PERCENTAGE))
                 PrintHPPercentageOnHealthbox(healthboxSpriteId, currHp, maxHp, HEALTHBOX_BG_INDEX, -8, 8);
             else 
                 PrintHpOnHealthbox(healthboxSpriteId, currHp, maxHp, HEALTHBOX_BG_INDEX, -8, 8); // debug only
@@ -1227,7 +1231,7 @@ void SwapHpBarsWithHpText(void)
     {
         struct Pokemon *mon = GetBattlerMon(i);
         if (gSprites[gHealthboxSpriteIds[i]].callback == SpriteCallbackDummy
-         && (B_HP_PERCENTAGE_DISPLAY || IsOnPlayerSide(i)))
+         && (ADMG_GetFeaturePolicy(ADMG_POLICY_ENEMY_HP_PERCENTAGE) || IsOnPlayerSide(i)))
         {
             s32 currHp = GetMonData(mon, MON_DATA_HP);
             s32 maxHp = GetMonData(mon, MON_DATA_MAX_HP);
@@ -1889,7 +1893,7 @@ static void UpdateStatusIconInHealthbox(u8 healthboxSpriteId)
     }
     else
     {
-        if (B_HP_PERCENTAGE_DISPLAY && GetBattlerCoordsIndex(battler) == BATTLE_COORDS_SINGLES)
+        if (ADMG_GetFeaturePolicy(ADMG_POLICY_ENEMY_HP_PERCENTAGE) && GetBattlerCoordsIndex(battler) == BATTLE_COORDS_SINGLES)
             tileNumAdder = 0x19;
         else
             tileNumAdder = 0x11;
@@ -1945,7 +1949,7 @@ static void UpdateStatusIconInHealthbox(u8 healthboxSpriteId)
     FillPalette(sStatusIconColors[statusPalId], OBJ_PLTT_OFFSET + pltAdder, PLTT_SIZEOF(1));
     CpuCopy16(&gPlttBufferUnfaded[OBJ_PLTT_OFFSET + pltAdder], (u16 *)OBJ_PLTT + pltAdder, PLTT_SIZEOF(1));
     CpuCopy32(statusGfxPtr, (void *)(OBJ_VRAM0 + (gSprites[healthboxSpriteId].oam.tileNum + tileNumAdder) * TILE_SIZE_4BPP), 96);
-    if ((!B_HP_PERCENTAGE_DISPLAY && !IsOnPlayerSide(battler)) || GetBattlerCoordsIndex(battler) == BATTLE_COORDS_DOUBLES)
+    if ((!ADMG_GetFeaturePolicy(ADMG_POLICY_ENEMY_HP_PERCENTAGE) && !IsOnPlayerSide(battler)) || GetBattlerCoordsIndex(battler) == BATTLE_COORDS_DOUBLES)
     {
         if (!gBattleSpritesDataPtr->battlerData[battler].hpNumbersNoBars)
         {
@@ -1953,7 +1957,7 @@ static void UpdateStatusIconInHealthbox(u8 healthboxSpriteId)
             CpuCopy32(GetHealthboxElementGfxPtr(HEALTHBOX_GFX_65), (void *)(OBJ_VRAM0 + (gSprites[healthBarSpriteId].oam.tileNum + 1) * TILE_SIZE_4BPP), 32);
         }
     }
-    TryAddPokeballIconToHealthbox(healthboxSpriteId, (B_HP_PERCENTAGE_DISPLAY && GetBattlerCoordsIndex(battler) == BATTLE_COORDS_SINGLES));
+    TryAddPokeballIconToHealthbox(healthboxSpriteId, (ADMG_GetFeaturePolicy(ADMG_POLICY_ENEMY_HP_PERCENTAGE) && GetBattlerCoordsIndex(battler) == BATTLE_COORDS_SINGLES));
 }
 
 static u8 GetStatusIconForBattlerId(u8 statusElementId, enum BattlerId battler)

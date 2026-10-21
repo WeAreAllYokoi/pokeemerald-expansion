@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_policies.h"
 #include "battle.h"
 #include "battle_controllers.h"
 #include "battle_ai_main.h"
@@ -732,7 +733,7 @@ bool8 BattleLoadAllHealthBoxesGfx(u8 state)
             }
             else if (state == 3)
             {
-                if (B_HP_PERCENTAGE_DISPLAY)
+                if (ADMG_GetFeaturePolicy(ADMG_POLICY_ENEMY_HP_PERCENTAGE))
                     LoadCompressedSpriteSheet(&sSpriteSheet_SinglesOpponentLargeHealthbox);
                 else
                     LoadCompressedSpriteSheet(&sSpriteSheet_SinglesOpponentHealthbox);

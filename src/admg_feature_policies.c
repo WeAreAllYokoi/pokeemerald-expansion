@@ -25,13 +25,14 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeaturePolicyDefault(ADMG_Word policy)
     case ADMG_POLICY_BERRY_MUTATIONS: return OW_BERRY_MUTATIONS;
     case ADMG_POLICY_FAKE_RTC: return OW_USE_FAKE_RTC;
     case ADMG_POLICY_NPC_FOLLOWERS: return FNPC_ENABLE_NPC_FOLLOWERS;
+    case ADMG_POLICY_ENEMY_HP_PERCENTAGE: return B_HP_PERCENTAGE_DISPLAY;
     default: return 0;
     }
 }
 
 ADMG_NATIVE_ENTRY ADMG_Word ADMG_IsFeaturePolicyKnown(ADMG_Word policy)
 {
-    return policy >= ADMG_POLICY_FISHING_CHAIN && policy <= ADMG_POLICY_NPC_FOLLOWERS;
+    return policy >= ADMG_POLICY_FISHING_CHAIN && policy <= ADMG_POLICY_ENEMY_HP_PERCENTAGE;
 }
 
 ADMG_RETAIN_FUNCTION(ADMG_GetFeaturePolicy);
