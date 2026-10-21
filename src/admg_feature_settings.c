@@ -1,5 +1,6 @@
 #include "global.h"
 #include "config/wild_encounter.h"
+#include "config/summary_screen.h"
 #include "admg_feature_settings.h"
 #include "admg_feature_state.h"
 #include "admg_retention.h"
@@ -13,6 +14,7 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeatureSettingDefault(ADMG_Word setting)
 {
     switch (setting)
     {
+    case ADMG_SETTING_SUMMARY_IV_PRESENTATION: return P_SUMMARY_SCREEN_IV_EV_VALUES;
     case ADMG_SETTING_ITEM_DESCRIPTION_MODE: return OW_SHOW_ITEM_DESCRIPTIONS;
     case ADMG_SETTING_VANILLA_RANDOM: return WE_VANILLA_RANDOM;
     case ADMG_SETTING_OWE_SPECIAL_ONLY: return WE_OWE_SPECIAL_ONLY;
@@ -38,7 +40,8 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeatureSettingDefault(ADMG_Word setting)
 }
 ADMG_NATIVE_ENTRY ADMG_Word ADMG_IsFeatureSettingKnown(ADMG_Word setting)
 {
-    return setting == ADMG_SETTING_ITEM_DESCRIPTION_MODE
+    return setting == ADMG_SETTING_SUMMARY_IV_PRESENTATION
+        || setting == ADMG_SETTING_ITEM_DESCRIPTION_MODE
         || (setting >= ADMG_SETTING_VANILLA_RANDOM && setting <= ADMG_SETTING_OWE_NO_REPEL_DEXNAV_COLLISION);
 }
 ADMG_NATIVE_ENTRY ADMG_Word ADMG_ItemDescriptionsEnabled(void)

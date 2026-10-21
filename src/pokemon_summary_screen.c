@@ -1,6 +1,7 @@
 #include "global.h"
 #include "admg_feature_bindings.h"
 #include "admg_feature_policies.h"
+#include "admg_feature_settings.h"
 #include "type_icon_anim.h"
 #include "main.h"
 #include "battle.h"
@@ -3845,7 +3846,7 @@ static void BufferStat(u8 *dst, enum Stat statIndex, u32 stat, u32 strId, u32 n)
     else
         txtPtr = StringCopy(dst, sTextNatureNeutral);
 
-    if (!P_SUMMARY_SCREEN_IV_EV_VALUES
+    if (!ADMG_GetFeatureSetting(ADMG_SETTING_SUMMARY_IV_PRESENTATION)
         && sMonSummaryScreen->skillsPageMode == SUMMARY_SKILLS_MODE_IVS)
         StringAppend(dst, GetLetterGrade(stat));
     else
@@ -3922,7 +3923,7 @@ static void PrintLeftColumnStats(void)
 {
     int x;
 
-    if (sMonSummaryScreen->skillsPageMode == SUMMARY_SKILLS_MODE_IVS && !P_SUMMARY_SCREEN_IV_EV_VALUES)
+    if (sMonSummaryScreen->skillsPageMode == SUMMARY_SKILLS_MODE_IVS && !ADMG_GetFeatureSetting(ADMG_SETTING_SUMMARY_IV_PRESENTATION))
         x = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 46);
     else
         x = 4;
@@ -3945,7 +3946,7 @@ static void PrintRightColumnStats(void)
 {
     int x;
 
-    if (sMonSummaryScreen->skillsPageMode == SUMMARY_SKILLS_MODE_IVS && !P_SUMMARY_SCREEN_IV_EV_VALUES)
+    if (sMonSummaryScreen->skillsPageMode == SUMMARY_SKILLS_MODE_IVS && !ADMG_GetFeatureSetting(ADMG_SETTING_SUMMARY_IV_PRESENTATION))
         x = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 20);
     else
         x = 2;
