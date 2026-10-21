@@ -43,44 +43,29 @@ void DateTime_AddDays(struct DateTime *dateTime, u32 days)
 
 void DateTime_AddHours(struct DateTime *dateTime, u32 hours)
 {
-    u32 days = 0;
-
-    dateTime->hour += hours;
-    while (dateTime->hour >= HOURS_PER_DAY)
-    {
-        days++;
-        dateTime->hour -= HOURS_PER_DAY;
-    }
-
-    DateTime_AddDays(dateTime, days);
+    /* Compute the day carry in u32 before storing the normalized hour in its u8 field. */
+    u32 total = dateTime->hour + hours % HOURS_PER_DAY;
+    u32 carry = hours / HOURS_PER_DAY + total / HOURS_PER_DAY;
+    dateTime->hour = total % HOURS_PER_DAY;
+    DateTime_AddDays(dateTime, carry);
 }
 
 void DateTime_AddMinutes(struct DateTime *dateTime, u32 minutes)
 {
-    u32 hours = 0;
-
-    dateTime->minute += minutes;
-    while (dateTime->minute >= MINUTES_PER_HOUR)
-    {
-        hours++;
-        dateTime->minute -= MINUTES_PER_HOUR;
-    }
-
-    DateTime_AddHours(dateTime, hours);
+    /* Compute the hour carry in u32 before storing the normalized minute in its u8 field. */
+    u32 total = dateTime->minute + minutes % MINUTES_PER_HOUR;
+    u32 carry = minutes / MINUTES_PER_HOUR + total / MINUTES_PER_HOUR;
+    dateTime->minute = total % MINUTES_PER_HOUR;
+    DateTime_AddHours(dateTime, carry);
 }
 
 void DateTime_AddSeconds(struct DateTime *dateTime, u32 seconds)
 {
-    u32 minutes = 0;
-
-    dateTime->second += seconds;
-    while (dateTime->second >= SECONDS_PER_MINUTE)
-    {
-        minutes++;
-        dateTime->second -= SECONDS_PER_MINUTE;
-    }
-
-    DateTime_AddMinutes(dateTime, minutes);
+    /* Compute the minute carry in u32 before storing the normalized second in its u8 field. */
+    u32 total = dateTime->second + seconds % SECONDS_PER_MINUTE;
+    u32 carry = seconds / SECONDS_PER_MINUTE + total / SECONDS_PER_MINUTE;
+    dateTime->second = total % SECONDS_PER_MINUTE;
+    DateTime_AddMinutes(dateTime, carry);
 }
 
 void ConvertDateTimeToRtc(struct SiiRtcInfo *result, struct DateTime *dateTime)
