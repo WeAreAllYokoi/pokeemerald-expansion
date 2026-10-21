@@ -11,6 +11,8 @@
 
 #define MULTICHOICE_DYNAMIC_STACK_SIZE 5
 #define MULTICHOICE_DYNAMIC_STACK_INC 5
+// Maximum rows shown before scrolling when maxBeforeScroll is 0xFF
+#define DYN_MULTICHOICE_DEFAULT_MAX_BEFORE_SCROLL 6
 
 extern const u8 *const gStdStrings[];
 
@@ -32,6 +34,13 @@ struct ListMenuItem *MultichoiceDynamic_PeekElement(void);
 struct ListMenuItem *MultichoiceDynamic_PeekElementAt(u32 index);
 void MultichoiceDynamic_DestroyStack(void);
 bool8 ScriptMenu_MultichoiceDynamic(u8 left, u8 top, u8 argc, struct ListMenuItem *items, bool8 ignoreBPress, u8 maxBeforeScroll, u32 initialRow, u32 callbackSet);
+// The platform API uses the same menu code as dynmultipush and dynmultistack
+// Pass the label and ID separately instead of passing ListMenuItem by value
+void ADMG_DynamicMultichoice_Push(const u8 *name, u32 id);
+bool32 ADMG_DynamicMultichoice_ShowStack(u32 left, u32 top, bool32 ignoreBPress, u32 maxBeforeScroll, bool32 shouldSort, u32 initialSelected, u32 callbackSet);
+u32 ADMG_DynamicMultichoice_PendingCount(void);
+void ADMG_DynamicMultichoice_Discard(void);
+bool32 ADMG_DynamicMultichoice_CanPreview(u32 callbackSet, u32 id);
 bool8 ScriptMenu_Multichoice(u8 left, u8 top, u8 multichoiceId, bool8 ignoreBPress);
 bool8 ScriptMenu_MultichoiceWithDefault(u8 left, u8 top, u8 multichoiceId, bool8 ignoreBPress, u8 defaultChoice);
 void DrawMultichoiceMenuInternal(u8 left, u8 top, u8 multichoiceId, bool8 ignoreBPress, u8 cursorPos, const struct MenuAction *actions, int count);

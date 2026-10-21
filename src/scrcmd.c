@@ -65,6 +65,8 @@
 #include "window.h"
 #include "list_menu.h"
 #include "malloc.h"
+#include "admg_native.h"
+#include "admg_retention.h"
 #include "battle.h"
 #include "constants/comparison_operators.h"
 #include "constants/event_objects.h"
@@ -1850,7 +1852,46 @@ static void DynamicMultichoiceSortList(struct ListMenuItem *items, u32 count)
     }
 }
 
-#define DYN_MULTICHOICE_DEFAULT_MAX_BEFORE_SCROLL 6
+// Give the stacked options to the menu, sorting by ID if requested
+// Find initialSelected after sorting so the cursor follows the option
+// The last matching ID wins; if none match, start on the first row
+ADMG_NATIVE_ENTRY bool32 ADMG_DynamicMultichoice_ShowStack(u32 left, u32 top, bool32 ignoreBPress, u32 maxBeforeScroll, bool32 shouldSort, u32 initialSelected, u32 callbackSet)
+{
+    u32 i;
+    u32 initialRow = 0;
+    u32 argc = MultichoiceDynamic_StackSize();
+    struct ListMenuItem *items = AllocZeroed(sizeof(struct ListMenuItem) * argc);
+
+    if (maxBeforeScroll == 0xFF)
+        maxBeforeScroll = DYN_MULTICHOICE_DEFAULT_MAX_BEFORE_SCROLL;
+
+    for (i = 0; i < argc; ++i)
+        items[i] = *MultichoiceDynamic_PeekElementAt(i);
+    if (shouldSort)
+        DynamicMultichoiceSortList(items, argc);
+    for (i = 0; i < argc; ++i)
+    {
+        if (items[i].id == initialSelected)
+            initialRow = i;
+    }
+    MultichoiceDynamic_DestroyStack();
+    return ScriptMenu_MultichoiceDynamic(left, top, argc, items, ignoreBPress, maxBeforeScroll, initialRow, callbackSet);
+}
+
+// Copy the label and expand its placeholders into a buffer owned by the menu
+// Free it when the menu closes, can't open, or the pending stack is discarded
+ADMG_NATIVE_ENTRY void ADMG_DynamicMultichoice_Push(const u8 *name, u32 id)
+{
+    u8 *nameBuffer = Alloc(100);
+    struct ListMenuItem item;
+    StringExpandPlaceholders(nameBuffer, name);
+    item.name = nameBuffer;
+    item.id = id;
+    MultichoiceDynamic_PushElement(item);
+}
+
+ADMG_RETAIN_FUNCTION(ADMG_DynamicMultichoice_ShowStack);
+ADMG_RETAIN_FUNCTION(ADMG_DynamicMultichoice_Push);
 
 bool8 ScrCmd_dynmultichoice(struct ScriptContext *ctx)
 {
@@ -1889,20 +1930,14 @@ bool8 ScrCmd_dynmultichoice(struct ScriptContext *ctx)
                 initialRow = i;
         }
     }
+    else if (ADMG_DynamicMultichoice_ShowStack(left, top, ignoreBPress, maxBeforeScroll, shouldSort, initialSelected, callbackSet))
+    {
+        ScriptContext_Stop();
+        return TRUE;
+    }
     else
     {
-        argc = MultichoiceDynamic_StackSize();
-        items = AllocZeroed(sizeof(struct ListMenuItem) * argc);
-        for (i = 0; i < argc; ++i)
-        {
-            struct ListMenuItem *currentItem = MultichoiceDynamic_PeekElementAt(i);
-            items[i] = *currentItem;
-            if (currentItem->id == initialSelected)
-                initialRow = i;
-        }
-        if (shouldSort)
-            DynamicMultichoiceSortList(items, argc);
-        MultichoiceDynamic_DestroyStack();
+        return FALSE;
     }
 
     if (ScriptMenu_MultichoiceDynamic(left, top, argc, items, ignoreBPress, maxBeforeScroll, initialRow, callbackSet))
@@ -1923,12 +1958,7 @@ bool8 ScrCmd_dynmultipush(struct ScriptContext *ctx)
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
 
-    u8 *nameBuffer = Alloc(100);
-    struct ListMenuItem item;
-    StringExpandPlaceholders(nameBuffer, name);
-    item.name = nameBuffer;
-    item.id = id;
-    MultichoiceDynamic_PushElement(item);
+    ADMG_DynamicMultichoice_Push(name, id);
     return FALSE;
 }
 

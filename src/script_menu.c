@@ -18,6 +18,10 @@
 #include "util.h"
 #include "item_icon.h"
 #include "pokemon_icon.h"
+#include "pokemon.h"
+#include "admg_native.h"
+#include "admg_registry.h"
+#include "admg_retention.h"
 #include "constants/field_specials.h"
 #include "constants/items.h"
 #include "constants/script_menu.h"
@@ -356,6 +360,41 @@ void MultichoiceDynamic_DestroyStack(void)
     TRY_FREE_AND_SET_NULL(sDynamicMultiChoiceStack->elements);
     TRY_FREE_AND_SET_NULL(sDynamicMultiChoiceStack);
 }
+
+// Number of pending options, or 0 if there's no stack
+ADMG_NATIVE_ENTRY u32 ADMG_DynamicMultichoice_PendingCount(void)
+{
+    return sDynamicMultiChoiceStack == NULL ? 0 : MultichoiceDynamic_StackSize();
+}
+
+// Free the pending options and their labels without showing the menu
+ADMG_NATIVE_ENTRY void ADMG_DynamicMultichoice_Discard(void)
+{
+    u32 i;
+
+    if (sDynamicMultiChoiceStack == NULL)
+        return;
+    for (i = 0; i < MultichoiceDynamic_StackSize(); ++i)
+        Free((void *)sDynamicMultiChoiceStack->elements[i].name);
+    MultichoiceDynamic_DestroyStack();
+}
+
+// Item and Pokémon previews need a valid, nonzero ID that fits selectedItem's u16
+// Pokémon species must also be enabled; other callback sets don't check the ID here
+ADMG_NATIVE_ENTRY bool32 ADMG_DynamicMultichoice_CanPreview(u32 callbackSet, u32 id)
+{
+    if (callbackSet != DYN_MULTICHOICE_CB_SHOW_ITEM && callbackSet != DYN_MULTICHOICE_CB_SHOW_PKMN)
+        return TRUE;
+    if (id > 0xFFFF)
+        return FALSE;
+    if (callbackSet == DYN_MULTICHOICE_CB_SHOW_ITEM)
+        return id != ITEM_NONE && IsItemIdValid(id);
+    return id != SPECIES_NONE && IsSpeciesIdValid(id) && IsSpeciesEnabled(id);
+}
+
+ADMG_RETAIN_FUNCTION(ADMG_DynamicMultichoice_PendingCount);
+ADMG_RETAIN_FUNCTION(ADMG_DynamicMultichoice_Discard);
+ADMG_RETAIN_FUNCTION(ADMG_DynamicMultichoice_CanPreview);
 
 static void MultichoiceDynamic_MoveCursor(s32 itemIndex, bool8 onInit, struct ListMenu *list)
 {
