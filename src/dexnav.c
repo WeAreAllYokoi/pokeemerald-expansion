@@ -2809,10 +2809,11 @@ ADMG_NATIVE_ENTRY bool32 ADMG_DexNavSelectionAvailable(void)
 
 ADMG_NATIVE_ENTRY u32 ADMG_GetDexNavRegisteredSpecies(void)
 {
-    u32 *species = ADMG_DexNavRegisteredSpeciesPointer();
-    if (species == NULL || ADMG_DexNavSelectionState() == NULL || !IsSpeciesIdValid(*species))
+    u32 species;
+    if (ADMG_DexNavRegisteredSpeciesPointer() == NULL || ADMG_DexNavSelectionState() == NULL)
         return 0xFFFFFFFF;
-    return *species;
+    species = VarGet((u16)ADMG_GetFeatureBinding(ADMG_BINDING_DN_VAR_SPECIES));
+    return IsSpeciesIdValid(species) ? species : 0xFFFFFFFF;
 }
 
 ADMG_NATIVE_ENTRY u32 ADMG_GetDexNavRegisteredEnvironment(void)
@@ -2837,7 +2838,8 @@ ADMG_NATIVE_ENTRY bool32 ADMG_SetDexNavSelection(u32 species, u32 environment)
     if (selection == NULL)
         return FALSE;
     /* Check the species, environment and required state before changing either value. */
-    *registered = species;
+    if (!VarSet((u16)ADMG_GetFeatureBinding(ADMG_BINDING_DN_VAR_SPECIES), species))
+        return FALSE;
     selection->environment = environment;
     return TRUE;
 }

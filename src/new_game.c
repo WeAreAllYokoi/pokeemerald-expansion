@@ -262,6 +262,6 @@ static void ResetDexNav(void)
     u32 binding = ADMG_GetFeatureBinding(ADMG_BINDING_DN_VAR_SPECIES);
     u32 *registered = binding != 0 && binding <= 0xFFFF ? GetVarPointer((u16)binding) : NULL;
     if (registered != NULL)
-        *registered = SPECIES_NONE;
+        VarSet((u16)binding, SPECIES_NONE);
     gSaveBlock3Ptr->dexNavChain = 0;
 }
