@@ -84,6 +84,60 @@ enum ADMG_DexNavGuiResult
     ADMG_DEXNAV_GUI_SEARCH_SELECTED,
     ADMG_DEXNAV_GUI_SETUP_FAILED,
 };
+enum ADMG_DexNavSearchState
+{
+    ADMG_DEXNAV_SEARCH_IDLE,
+    ADMG_DEXNAV_SEARCH_TRACKING,
+    ADMG_DEXNAV_SEARCH_HIDDEN,
+    ADMG_DEXNAV_SEARCH_CANCELLED,
+    ADMG_DEXNAV_SEARCH_TIMED_OUT,
+    ADMG_DEXNAV_SEARCH_LOST_SIGNAL,
+    ADMG_DEXNAV_SEARCH_MOVED_TOO_FAST,
+    ADMG_DEXNAV_SEARCH_ENCOUNTER_READY,
+    ADMG_DEXNAV_SEARCH_NOT_FOUND,
+    ADMG_DEXNAV_SEARCH_TOO_DARK,
+    ADMG_DEXNAV_SEARCH_ALLOCATION_FAILED,
+    ADMG_DEXNAV_SEARCH_MAP_CHANGED,
+    ADMG_DEXNAV_SEARCH_DISABLED,
+};
+enum ADMG_DexNavSearchStartStatus
+{
+    ADMG_DEXNAV_START_STARTED = 1,
+    ADMG_DEXNAV_START_DISABLED,
+    ADMG_DEXNAV_START_MISSING_BINDINGS,
+    ADMG_DEXNAV_START_MISSING_STATE,
+    ADMG_DEXNAV_START_FIELD_BUSY,
+    ADMG_DEXNAV_START_ALREADY_SEARCHING,
+    ADMG_DEXNAV_START_INVALID_SPECIES,
+    ADMG_DEXNAV_START_INVALID_ENVIRONMENT,
+    ADMG_DEXNAV_START_ALLOCATION_FAILED,
+    ADMG_DEXNAV_START_TOO_DARK,
+    ADMG_DEXNAV_START_NOT_FOUND,
+};
+/* Snapshot of transient DexNav search state, separate from saved search history.
+ * Changing the snapshot does not change the search. */
+struct ADMG_DexNavSearchSnapshot
+{
+    u32 state;
+    u32 species;
+    u32 environment;
+    u32 proximity;
+    s32 tileX;
+    s32 tileY;
+    u32 elapsedFrames;
+    u32 searchLevel;
+    u32 hiddenSearch;
+    u32 movementCount;
+};
+ADMG_NATIVE_ENTRY u32 ADMG_TryStartDexNavSearch(u32 species, u32 environment);
+ADMG_NATIVE_ENTRY bool32 ADMG_ReadDexNavSearch(struct ADMG_DexNavSearchSnapshot *snapshot);
+ADMG_NATIVE_ENTRY bool32 ADMG_CancelDexNavSearch(void);
+ADMG_NATIVE_ENTRY u32 ADMG_GetDexNavDetectorEnabled(void);
+ADMG_NATIVE_ENTRY bool32 ADMG_SetDexNavDetectorEnabled(bool32 enabled);
+ADMG_NATIVE_ENTRY u32 ADMG_GetDexNavDetectorSteps(void);
+ADMG_NATIVE_ENTRY bool32 ADMG_AdvanceDexNavSearchStep(void);
+ADMG_NATIVE_ENTRY bool32 ADMG_AdvanceDexNavDetectorStep(void);
+
 ADMG_NATIVE_ENTRY u32 ADMG_TryOpenDexNavGui(void (*returnCallback)(void));
 ADMG_NATIVE_ENTRY u32 ADMG_GetDexNavGuiResult(void);
 ADMG_NATIVE_ENTRY u32 ADMG_GetDexNavGuiExitSpecies(void);

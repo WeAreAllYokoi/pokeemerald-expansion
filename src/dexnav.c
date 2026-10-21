@@ -144,6 +144,7 @@ EWRAM_DATA static struct DexNavSearch *sDexNavSearchDataPtr = NULL;
 EWRAM_DATA static struct DexNavGUI *sDexNavUiDataPtr = NULL;
 EWRAM_DATA static u8 *sBg1TilemapBuffer = NULL;
 EWRAM_DATA enum Species gDexNavSpecies = SPECIES_NONE;
+EWRAM_DATA static u32 sADMG_DexNavSearchResult = ADMG_DEXNAV_SEARCH_IDLE;
 EWRAM_DATA static u32 sADMG_DexNavGuiResult = ADMG_DEXNAV_GUI_PENDING;
 EWRAM_DATA static u32 sADMG_DexNavGuiExitSpecies = SPECIES_NONE;
 EWRAM_DATA static u32 sADMG_DexNavGuiExitEnvironment = ENCOUNTER_TYPE_LAND;
@@ -847,6 +848,7 @@ static __attribute__((noipa)) bool8 InitDexNavSearch(enum Species species, u32 e
     sDexNavSearchDataPtr = AllocZeroed(sizeof(struct DexNavSearch));
     if (sDexNavSearchDataPtr == NULL)
     {
+        sADMG_DexNavSearchResult = ADMG_DEXNAV_SEARCH_ALLOCATION_FAILED;
         DexNavSearchBail(EventScript_NotFoundNearby);
         return TRUE;
     }
@@ -860,12 +862,14 @@ static __attribute__((noipa)) bool8 InitDexNavSearch(enum Species species, u32 e
 
     if (GetFlashLevel() > 0)
     {
+        sADMG_DexNavSearchResult = ADMG_DEXNAV_SEARCH_TOO_DARK;
         DexNavSearchBail(EventScript_TooDark);
         return TRUE;
     }
 
     if (sDexNavSearchDataPtr->monLevel == MON_LEVEL_NONEXISTENT || !TryStartHiddenMonFieldEffect(sDexNavSearchDataPtr->environment, 12, 12, FALSE))
     {
+        sADMG_DexNavSearchResult = ADMG_DEXNAV_SEARCH_NOT_FOUND;
         DexNavSearchBail(EventScript_NotFoundNearby);
         return TRUE;
     }
@@ -983,13 +987,15 @@ void EndDexNavSearch(void)
     FieldEffectStop(&gSprites[sDexNavSearchDataPtr->fldEffSpriteId], sDexNavSearchDataPtr->fldEffId);
     FREE_AND_SET_NULL(sDexNavSearchDataPtr);
     FlagClear(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING));
+    sADMG_DexNavSearchResult = ADMG_DEXNAV_SEARCH_CANCELLED;
 }
 
-static void EndDexNavSearchSetupScript(const u8 *script)
+static void EndDexNavSearchSetupScript(const u8 *script, u32 result)
 {
     gSaveBlock3Ptr->dexNavChain = 0;   //reset chain
     EndDexNavSearch();
     ScriptContext_SetupScript(script);
+    sADMG_DexNavSearchResult = result;
 }
 
 static u8 GetMovementProximityBySearchLevel(void)
@@ -1047,7 +1053,14 @@ static void RevealHiddenMon(void)
 bool32 OnStep_DexNavSearch(void)
 {
     if (!ADMG_DexNavEnabled())
+    {
+        if (sDexNavSearchDataPtr != NULL)
+        {
+            EndDexNavSearch();
+            sADMG_DexNavSearchResult = ADMG_DEXNAV_SEARCH_DISABLED;
+        }
         return FALSE;
+    }
     if (!FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING)) || sDexNavSearchDataPtr == NULL)
         return FALSE;
 
@@ -1061,11 +1074,12 @@ bool32 OnStep_DexNavSearch(void)
         if (sDexNavSearchDataPtr->hiddenSearch)
         {
             EndDexNavSearch();
+            sADMG_DexNavSearchResult = ADMG_DEXNAV_SEARCH_LOST_SIGNAL;
             return FALSE;
         }
         else
         {
-            EndDexNavSearchSetupScript(EventScript_LostSignal);
+            EndDexNavSearchSetupScript(EventScript_LostSignal, ADMG_DEXNAV_SEARCH_LOST_SIGNAL);
             return TRUE;
         }
     }
@@ -1075,11 +1089,12 @@ bool32 OnStep_DexNavSearch(void)
         if (sDexNavSearchDataPtr->hiddenSearch)
         {
             EndDexNavSearch();
+            sADMG_DexNavSearchResult = ADMG_DEXNAV_SEARCH_MOVED_TOO_FAST;
             return FALSE;
         }
         else
         {
-            EndDexNavSearchSetupScript(EventScript_MovedTooFast);
+            EndDexNavSearchSetupScript(EventScript_MovedTooFast, ADMG_DEXNAV_SEARCH_MOVED_TOO_FAST);
             return TRUE;
         }
     }
@@ -1087,7 +1102,7 @@ bool32 OnStep_DexNavSearch(void)
     if (sDexNavSearchDataPtr->proximity <= SNEAKING_PROXIMITY && TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_DASH | PLAYER_AVATAR_FLAG_BIKE))
     { // running/biking too close
         //always do event script, even if player hasn't revealed a hidden mon. It's assumed they would be creeping towards it
-        EndDexNavSearchSetupScript(EventScript_MovedTooFast);
+        EndDexNavSearchSetupScript(EventScript_MovedTooFast, ADMG_DEXNAV_SEARCH_MOVED_TOO_FAST);
         return TRUE;
     }
 
@@ -1096,11 +1111,12 @@ bool32 OnStep_DexNavSearch(void)
         if (sDexNavSearchDataPtr->hiddenSearch)
         {
             EndDexNavSearch();
+            sADMG_DexNavSearchResult = ADMG_DEXNAV_SEARCH_TIMED_OUT;
             return FALSE;
         }
         else
         {
-            EndDexNavSearchSetupScript(EventScript_PokemonGotAway);
+            EndDexNavSearchSetupScript(EventScript_PokemonGotAway, ADMG_DEXNAV_SEARCH_TIMED_OUT);
             return TRUE;
         }
         return FALSE;
@@ -1112,9 +1128,9 @@ bool32 OnStep_DexNavSearch(void)
         CreateDexNavWildMon(sDexNavSearchDataPtr->species, sDexNavSearchDataPtr->potential, sDexNavSearchDataPtr->monLevel,
                             sDexNavSearchDataPtr->abilityNum, sDexNavSearchDataPtr->heldItem, sDexNavSearchDataPtr->moves);
 
+        EndDexNavSearch();
         ScriptContext_SetupScript(EventScript_StartDexNavBattle);
-        FREE_AND_SET_NULL(sDexNavSearchDataPtr);
-        FlagClear(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING));
+        sADMG_DexNavSearchResult = ADMG_DEXNAV_SEARCH_ENCOUNTER_READY;
         return TRUE;
     }
 
@@ -1133,7 +1149,7 @@ bool32 OnStep_DexNavSearch(void)
 
         if (!TryStartHiddenMonFieldEffect(sDexNavSearchDataPtr->environment, 10, 10, TRUE))
         {
-            EndDexNavSearchSetupScript(EventScript_PokemonGotAway);
+            EndDexNavSearchSetupScript(EventScript_PokemonGotAway, ADMG_DEXNAV_SEARCH_NOT_FOUND);
             return TRUE;
         }
 
@@ -2751,7 +2767,10 @@ void ResetDexNavSearch(void)
     gSaveBlock3Ptr->dexNavChain = 0;    //reset dex nav chaining on new map
     VarSet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_VAR_STEP_COUNTER), 0); // Reset the hidden Pokémon step counter when entering a new map.
     if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING)))
+    {
         EndDexNavSearch();   //moving to new map ends dexnav search
+        sADMG_DexNavSearchResult = ADMG_DEXNAV_SEARCH_MAP_CHANGED;
+    }
 }
 
 void IncrementDexNavChain(void)
@@ -2899,3 +2918,117 @@ ADMG_RETAIN_FUNCTION(ADMG_TryOpenDexNavGui);
 ADMG_RETAIN_FUNCTION(ADMG_GetDexNavGuiResult);
 ADMG_RETAIN_FUNCTION(ADMG_GetDexNavGuiExitSpecies);
 ADMG_RETAIN_FUNCTION(ADMG_GetDexNavGuiExitEnvironment);
+
+static bool32 ADMG_DexNavFieldIdle(void)
+{
+    return gMain.callback2 == CB2_Overworld && !gMain.inBattle && !ScriptContext_IsEnabled()
+        && !ArePlayerFieldControlsLocked() && !gPaletteFade.active && sDexNavUiDataPtr == NULL;
+}
+
+ADMG_NATIVE_ENTRY u32 ADMG_TryStartDexNavSearch(u32 species, u32 environment)
+{
+    if (!ADMG_DexNavFieldIdle())
+        return ADMG_DEXNAV_START_FIELD_BUSY;
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_DEXNAV))
+        return ADMG_DEXNAV_START_DISABLED;
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING) == 0
+     || ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_DETECTOR_MODE) == 0
+     || ADMG_GetFeatureBinding(ADMG_BINDING_DN_VAR_SPECIES) == 0
+     || ADMG_GetFeatureBinding(ADMG_BINDING_DN_VAR_STEP_COUNTER) == 0)
+        return ADMG_DEXNAV_START_MISSING_BINDINGS;
+    if (!ADMG_DexNavSelectionAvailable())
+        return ADMG_DEXNAV_START_MISSING_STATE;
+    if (sDexNavSearchDataPtr != NULL || FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING)))
+        return ADMG_DEXNAV_START_ALREADY_SEARCHING;
+    if (species == SPECIES_NONE || !IsSpeciesIdValid(species))
+        return ADMG_DEXNAV_START_INVALID_SPECIES;
+    if (environment > ENCOUNTER_TYPE_HIDDEN)
+        return ADMG_DEXNAV_START_INVALID_ENVIRONMENT;
+    HideMapNamePopUpWindow();
+    ChangeBgY_ScreenOff(0, 0, 0);
+    PlaySE(SE_DEX_SEARCH);
+    InitDexNavSearch(species, environment);
+    if (sDexNavSearchDataPtr != NULL)
+        return ADMG_DEXNAV_START_STARTED;
+    switch (sADMG_DexNavSearchResult)
+    {
+    case ADMG_DEXNAV_SEARCH_ALLOCATION_FAILED: return ADMG_DEXNAV_START_ALLOCATION_FAILED;
+    case ADMG_DEXNAV_SEARCH_TOO_DARK: return ADMG_DEXNAV_START_TOO_DARK;
+    default: return ADMG_DEXNAV_START_NOT_FOUND;
+    }
+}
+
+ADMG_NATIVE_ENTRY bool32 ADMG_ReadDexNavSearch(struct ADMG_DexNavSearchSnapshot *snapshot)
+{
+    if (snapshot == NULL)
+        return FALSE;
+    memset(snapshot, 0, sizeof(*snapshot));
+    snapshot->state = sADMG_DexNavSearchResult;
+    if (sDexNavSearchDataPtr != NULL)
+    {
+        snapshot->state = sDexNavSearchDataPtr->hiddenSearch ? ADMG_DEXNAV_SEARCH_HIDDEN : ADMG_DEXNAV_SEARCH_TRACKING;
+        snapshot->species = sDexNavSearchDataPtr->species;
+        snapshot->environment = sDexNavSearchDataPtr->environment;
+        snapshot->proximity = sDexNavSearchDataPtr->proximity;
+        snapshot->tileX = sDexNavSearchDataPtr->tileX;
+        snapshot->tileY = sDexNavSearchDataPtr->tileY;
+        snapshot->elapsedFrames = gMain.vblankCounter1 - sDexNavSearchDataPtr->startingTime;
+        snapshot->searchLevel = sDexNavSearchDataPtr->searchLevel;
+        snapshot->hiddenSearch = sDexNavSearchDataPtr->hiddenSearch;
+        snapshot->movementCount = sDexNavSearchDataPtr->movementCount;
+    }
+    return TRUE;
+}
+
+ADMG_NATIVE_ENTRY bool32 ADMG_CancelDexNavSearch(void)
+{
+    if (!ADMG_DexNavFieldIdle() || sDexNavSearchDataPtr == NULL)
+        return FALSE;
+    EndDexNavSearch();
+    return TRUE;
+}
+
+ADMG_NATIVE_ENTRY u32 ADMG_GetDexNavDetectorEnabled(void)
+{
+    bool8 value;
+    u32 binding = ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_DETECTOR_MODE);
+    return binding != 0 && ADMG_TryReadFlag(binding, &value) ? value : 0xFFFFFFFF;
+}
+
+ADMG_NATIVE_ENTRY bool32 ADMG_SetDexNavDetectorEnabled(bool32 enabled)
+{
+    u32 binding = ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_DETECTOR_MODE);
+    if (enabled > 1 || ADMG_GetDexNavDetectorEnabled() == 0xFFFFFFFF)
+        return FALSE;
+    if (enabled)
+        FlagSet(binding);
+    else
+        FlagClear(binding);
+    return TRUE;
+}
+
+ADMG_NATIVE_ENTRY u32 ADMG_GetDexNavDetectorSteps(void)
+{
+    u32 binding = ADMG_GetFeatureBinding(ADMG_BINDING_DN_VAR_STEP_COUNTER);
+    u32 *steps = binding != 0 && binding <= 0xFFFF ? GetVarPointer(binding) : NULL;
+    return steps != NULL ? *steps : 0xFFFFFFFF;
+}
+
+ADMG_NATIVE_ENTRY bool32 ADMG_AdvanceDexNavSearchStep(void)
+{
+    return ADMG_DexNavFieldIdle() ? OnStep_DexNavSearch() : FALSE;
+}
+
+ADMG_NATIVE_ENTRY bool32 ADMG_AdvanceDexNavDetectorStep(void)
+{
+    return ADMG_DexNavFieldIdle() ? TryFindHiddenPokemon() : FALSE;
+}
+
+ADMG_RETAIN_FUNCTION(ADMG_TryStartDexNavSearch);
+ADMG_RETAIN_FUNCTION(ADMG_ReadDexNavSearch);
+ADMG_RETAIN_FUNCTION(ADMG_CancelDexNavSearch);
+ADMG_RETAIN_FUNCTION(ADMG_GetDexNavDetectorEnabled);
+ADMG_RETAIN_FUNCTION(ADMG_SetDexNavDetectorEnabled);
+ADMG_RETAIN_FUNCTION(ADMG_GetDexNavDetectorSteps);
+ADMG_RETAIN_FUNCTION(ADMG_AdvanceDexNavSearchStep);
+ADMG_RETAIN_FUNCTION(ADMG_AdvanceDexNavDetectorStep);
