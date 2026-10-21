@@ -31,6 +31,7 @@
 #include "follower_npc.h"
 #include "gpu_regs.h"
 #include "heal_location.h"
+#include "constants/heal_locations.h"
 #include "io_reg.h"
 #include "item.h"
 #include "item_icon.h"
@@ -903,6 +904,10 @@ bool8 SetDiveWarpDive(u16 x, u16 y)
 
 void LoadMapFromCameraTransition(MapId mapId)
 {
+    const struct Tileset *previousPrimary = gMapHeader.mapLayout->primaryTileset;
+    bool32 previousIsFrlg = gMapHeader.mapLayout->isFrlg;
+    bool32 reloadPrimary;
+
     SetWarpDestination(mapId, WARP_ID_NONE, -1, -1);
 
     // Dont transition map music between BF Outside West/East
@@ -931,12 +936,25 @@ void LoadMapFromCameraTransition(MapId mapId)
     Overworld_ClearSavedMusic();
     RunOnTransitionMapScript();
     InitMap();
+    // Connected maps usually share the primary tileset; one that doesn't (Hoenn and Kanto) needs it reloaded.
+    reloadPrimary = gMapHeader.mapLayout->primaryTileset != previousPrimary || gMapHeader.mapLayout->isFrlg != previousIsFrlg;
+    if (reloadPrimary)
+    {
+        CopyPrimaryTilesetToVramUsingHeap(gMapHeader.mapLayout);
+        LoadPrimaryTilesetPaletteForTransition(gMapHeader.mapLayout);
+    }
     CopySecondaryTilesetToVramUsingHeap(gMapHeader.mapLayout);
     LoadSecondaryTilesetPalette(gMapHeader.mapLayout, TRUE); // skip copying to Faded, gamma shift will take care of it
 
-    ApplyWeatherColorMapToPals(GetNumPalsInPrimary(gMapHeader.mapLayout), NUM_PALS_TOTAL - GetNumPalsInPrimary(gMapHeader.mapLayout)); // palettes [6,12]
+    if (reloadPrimary)
+        ApplyWeatherColorMapToPals(0, NUM_PALS_TOTAL);
+    else
+        ApplyWeatherColorMapToPals(GetNumPalsInPrimary(gMapHeader.mapLayout), NUM_PALS_TOTAL - GetNumPalsInPrimary(gMapHeader.mapLayout)); // palettes [6,12]
 
-    InitSecondaryTilesetAnimation();
+    if (reloadPrimary)
+        InitTilesetAnimations();
+    else
+        InitSecondaryTilesetAnimation();
     UpdateLocationHistoryForRoamer();
     MoveAllRoamers();
     DoCurrentWeather();
@@ -2136,8 +2154,51 @@ static void FieldCB_FadeTryShowMapPopup(void)
     FieldCB_WarpExitFadeFromBlack();
 }
 
+// A saved warp to a map that can't be loaded, which only a removed mod's map can be, goes to the last heal location
+// instead, or to the player's house if that can't be loaded either. Saved objects on such maps are dropped.
+static void FallBackFromUnloadableMaps(void)
+{
+    struct WarpData *warps[] = {
+        &gSaveBlock1Ptr->location, &gSaveBlock1Ptr->continueGameWarp, &gSaveBlock1Ptr->dynamicWarp,
+        &gSaveBlock1Ptr->escapeWarp, &gSaveBlock1Ptr->lastHealLocation,
+    };
+    struct WarpData fallback;
+    u32 i;
+
+    if (ADMG_IsMapLoadable(gSaveBlock1Ptr->lastHealLocation.mapId))
+    {
+        fallback = gSaveBlock1Ptr->lastHealLocation;
+    }
+    else
+    {
+        const struct HealLocation *house = GetHealLocation(gSaveBlock2Ptr->playerGender == MALE
+            ? HEAL_LOCATION_LITTLEROOT_TOWN_BRENDANS_HOUSE_2F : HEAL_LOCATION_LITTLEROOT_TOWN_MAYS_HOUSE_2F);
+        SetWarpData(&fallback, house->mapId, WARP_ID_NONE, house->x, house->y);
+    }
+
+    if (!ADMG_IsMapLoadable(gSaveBlock1Ptr->location.mapId))
+    {
+        DebugPrintfLevel(MGBA_LOG_WARN, "ADMG map 0x%lx can't be loaded (its mod is missing); continuing at 0x%lx",
+            (unsigned long)gSaveBlock1Ptr->location.mapId, (unsigned long)fallback.mapId);
+        gSaveBlock1Ptr->continueGameWarp = fallback;
+        SetContinueGameWarpStatus();
+    }
+    for (i = 0; i < ARRAY_COUNT(warps); i++)
+    {
+        if (!ADMG_IsMapLoadable(warps[i]->mapId))
+            *warps[i] = fallback;
+    }
+    for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+    {
+        if (gSaveBlock1Ptr->objectEvents[i].active && !gSaveBlock1Ptr->objectEvents[i].isPlayer
+         && !ADMG_IsMapLoadable(gSaveBlock1Ptr->objectEvents[i].mapId))
+            gSaveBlock1Ptr->objectEvents[i].active = FALSE;
+    }
+}
+
 void CB2_ContinueSavedGame(void)
 {
+    FallBackFromUnloadableMaps();
     ADMG_PrepareNativeRematchContinue();
 
     u8 trainerHillMapId;

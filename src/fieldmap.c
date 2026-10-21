@@ -1022,6 +1022,17 @@ void CopySecondaryTilesetToVramUsingHeap(struct MapLayout const *mapLayout)
     CopyTilesetToVramUsingHeap(mapLayout->secondaryTileset, NUM_TILES_TOTAL - GetNumTilesInPrimary(mapLayout), GetNumTilesInPrimary(mapLayout));
 }
 
+// A camera transition into a map with another primary tileset or split (Hoenn and Kanto) reloads the primary too.
+void CopyPrimaryTilesetToVramUsingHeap(struct MapLayout const *mapLayout)
+{
+    CopyTilesetToVramUsingHeap(mapLayout->primaryTileset, GetNumTilesInPrimary(mapLayout), 0);
+}
+
+void LoadPrimaryTilesetPaletteForTransition(struct MapLayout const *mapLayout)
+{
+    LoadTilesetPalette(mapLayout->primaryTileset, 0, GetNumPalsInPrimary(mapLayout) * PLTT_SIZE_4BPP, TRUE, GetNumPalsInPrimary(mapLayout));
+}
+
 static void LoadPrimaryTilesetPalette(struct MapLayout const *mapLayout)
 {
     LoadTilesetPalette(mapLayout->primaryTileset, 0, GetNumPalsInPrimary(mapLayout) * PLTT_SIZE_4BPP, FALSE, GetNumPalsInPrimary(mapLayout));

@@ -2,6 +2,7 @@
 #include "event_data.h"
 #include "event_object_movement.h"
 #include "admg_state.h"
+#include "overworld.h"
 #include "data/admg_state_routes.h"
 #include "constants/map_groups.h"
 #include "data/map_group_count.h"
@@ -203,6 +204,14 @@ bool8 ADMG_TryReadObjectGraphicsVar(u32 slot, u32 *value)
     }
     *value = VarGetObjectEventGraphicsId((u8)slot);
     return TRUE;
+}
+
+bool32 ADMG_IsMapLoadable(MapId mapId)
+{
+    // An added map is a checked index into the registered rows; a removed mod's rows are NULL
+    if (mapId >= FIRST_ADDED_MAP)
+        return mapId - FIRST_ADDED_MAP < RUNTIME_ADDED_MAPS_COUNT && gADMG_AddedMaps[mapId - FIRST_ADDED_MAP] != NULL;
+    return MAP_GROUP(mapId) < MAP_GROUPS_COUNT && MAP_NUM(mapId) < MAP_GROUP_COUNT[MAP_GROUP(mapId)];
 }
 
 bool8 ADMG_IsMapIdValid(MapId mapId)

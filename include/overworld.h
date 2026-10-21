@@ -99,6 +99,7 @@ const struct MapLayout *GetMapLayout(u32 mapLayoutId);
 void ApplyCurrentWarp(void);
 struct MapHeader const *const Overworld_GetMapHeaderByGroupAndId(u32 mapGroup, u32 mapNum);
 const struct MapHeader *GetMapHeader(MapId mapId);
+extern const struct MapHeader *const gADMG_AddedMaps[];
 struct MapHeader const *const GetDestinationWarpMapHeader(void);
 void WarpIntoMap(void);
 void SetWarpDestination(MapId mapId, s8 warpId, s8 x, s8 y);

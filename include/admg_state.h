@@ -11,6 +11,9 @@ ADMG_NATIVE_ENTRY bool8 ADMG_TryReadFlag(u32 id, bool8 *value);
 ADMG_NATIVE_ENTRY bool8 ADMG_TryReadVar(u32 id, u32 *value, bool8 allowLiteral);
 ADMG_NATIVE_ENTRY bool8 ADMG_TryReadVarIndex(u32 id, u32 count, u32 *value);
 ADMG_NATIVE_ENTRY bool8 ADMG_IsMapIdValid(MapId mapId);
+// A map whose header can be loaded: a base map, or an added map whose mod is present (a removed mod's maps keep
+// their IDs but have no header). Unlike ADMG_IsMapIdValid it records nothing.
+bool32 ADMG_IsMapLoadable(MapId mapId);
 ADMG_NATIVE_ENTRY bool8 ADMG_TryGetObjectEventId(u32 localId, u8 *objectId);
 ADMG_NATIVE_ENTRY bool8 ADMG_TryGetObjectEventFlagId(u32 localId, MapId mapId, u16 *flagId);
 ADMG_NATIVE_ENTRY bool8 ADMG_TryReadObjectGraphicsVar(u32 slot, u32 *value);
