@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_policies.h"
 #include "malloc.h"
 #include "battle_main.h"
 #include "contest.h"
@@ -716,7 +717,7 @@ void InitMoveRelearnerWindows(bool32 useContestWindow)
     for (i = 0; i < ARRAY_COUNT(sMoveRelearnerWindowTemplates) - 1; i++)
         FillWindowPixelBuffer(i, PIXEL_FILL(1));
 
-    if (C_HIDE_CONTEST_DATA || !useContestWindow)
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_CONTEST_INFORMATION) || !useContestWindow)
         DrawStdFrameWithCustomTileAndPalette(RELEARNERWIN_DESC_BATTLE, FALSE, 0x1, 0xE);
     else
         DrawStdFrameWithCustomTileAndPalette(RELEARNERWIN_DESC_CONTEST, FALSE, 1, 0xE);

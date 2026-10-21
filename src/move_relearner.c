@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_policies.h"
 #include "admg_feature_bindings.h"
 #include "main.h"
 #include "battle.h"
@@ -407,7 +408,7 @@ void CB2_InitLearnMove(void)
     gTasks[sMoveRelearnerStruct->mainTask].tState = 0;
     gTasks[sMoveRelearnerStruct->mainTask].tPartyIndex = gSpecialVar_0x8004;
     gTasks[sMoveRelearnerStruct->mainTask].tMove = MOVE_NONE;
-    if (!C_HIDE_CONTEST_DATA && gRelearnMode == RELEARN_MODE_PSS_PAGE_CONTEST_MOVES)
+    if (!!ADMG_GetFeaturePolicy(ADMG_POLICY_CONTEST_INFORMATION) && gRelearnMode == RELEARN_MODE_PSS_PAGE_CONTEST_MOVES)
         gTasks[sMoveRelearnerStruct->mainTask].tCategory = CONTEST_INFO;
     else
         gTasks[sMoveRelearnerStruct->mainTask].tCategory = BATTLE_INFO;
@@ -658,7 +659,7 @@ static void Task_MoveRelearner_HandleInput(u8 taskId)
                 PlaySE(SE_FAILURE);
             }
         }
-        else if (!C_HIDE_CONTEST_DATA)
+        else if (!!ADMG_GetFeaturePolicy(ADMG_POLICY_CONTEST_INFORMATION))
         {
             if (!(JOY_NEW(DPAD_LEFT | DPAD_RIGHT)) && !GetLRKeysPressed())
                 break;
@@ -756,7 +757,7 @@ static void CreateUISprites(void)
 
 static void AddScrollArrows(void)
 {
-    if (!C_HIDE_CONTEST_DATA && sMoveRelearnerStruct->moveDisplayArrowTask == TASK_NONE)
+    if (!!ADMG_GetFeaturePolicy(ADMG_POLICY_CONTEST_INFORMATION) && sMoveRelearnerStruct->moveDisplayArrowTask == TASK_NONE)
         sMoveRelearnerStruct->moveDisplayArrowTask = AddScrollIndicatorArrowPair(&sDisplayModeArrowsTemplate, &sMoveRelearnerStruct->scrollOffset);
 
     if (sMoveRelearnerStruct->moveListScrollArrowTask == TASK_NONE)
@@ -769,7 +770,7 @@ static void AddScrollArrows(void)
 
 static void RemoveScrollArrows(void)
 {
-    if (!C_HIDE_CONTEST_DATA && sMoveRelearnerStruct->moveDisplayArrowTask != TASK_NONE)
+    if (!!ADMG_GetFeaturePolicy(ADMG_POLICY_CONTEST_INFORMATION) && sMoveRelearnerStruct->moveDisplayArrowTask != TASK_NONE)
     {
         RemoveScrollIndicatorArrowPair(sMoveRelearnerStruct->moveDisplayArrowTask);
         sMoveRelearnerStruct->moveDisplayArrowTask = TASK_NONE;
