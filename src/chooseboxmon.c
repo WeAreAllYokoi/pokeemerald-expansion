@@ -233,7 +233,7 @@ static struct BoxPokemon *LearnMove_GetBoxMonFromTaskData(u8 partyIndex)
 
 #define state         gTasks[taskId].data[0]
 #define partyIndex    gTasks[taskId].data[1]
-#define move          gTasks[taskId].data[2]
+#define move          gTasks[taskId].contentIds[0]
 #define recoverPP     gTasks[taskId].data[3]
 // MoveLearnUI does not contain a waitMessage function and LearnMove assumes the calling task will wait when a printer is active
 // Remember to update Task_LearnMove is you wish to change to an explicit waitMessage system
