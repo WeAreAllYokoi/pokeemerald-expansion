@@ -52,13 +52,15 @@ Route109_SeashoreHouse_EventScript_BuySodaPop::
 	msgbox Route109_SeashoreHouse_Text_HereYouGo, MSGBOX_DEFAULT
 	removemoney 300
 	updatemoneybox
-.if OW_SHOW_ITEM_DESCRIPTIONS != OW_ITEM_DESCRIPTIONS_OFF
-	hidemoneybox
-	giveitem ITEM_SODA_POP
-.else
+	callnative ADMG_ScriptTestItemDescriptions, requests_effects=1
+	goto_if_eq TRUE, Route109_SeashoreHouse_EventScript_GiveSodaWithDescription
 	giveitem ITEM_SODA_POP
 	hidemoneybox
-.endif
+	goto Route109_SeashoreHouse_EventScript_GaveSoda
+Route109_SeashoreHouse_EventScript_GiveSodaWithDescription::
+	hidemoneybox
+	giveitem ITEM_SODA_POP
+Route109_SeashoreHouse_EventScript_GaveSoda::
 	release
 	end
 
