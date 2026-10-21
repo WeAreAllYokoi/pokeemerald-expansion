@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_retention.h"
 #include "admg_feature_settings.h"
 #include "admg_feature_state.h"
 #include "admg_registry.h"
@@ -679,16 +680,26 @@ static bool32 IsDummyWarp(struct WarpData *warp)
         return TRUE;
 }
 
+/* GetMapHeader calls this hook on each lookup of a built-in or valid added map.
+ * The Petalburg fallback for a rejected added map bypasses it.
+ * Return the selected header unchanged by default; overrides can compose object templates here,
+ * including before the header or its templates are copied into current-map or save state. */
+ADMG_NATIVE_ENTRY const struct MapHeader *ADMG_ComposeMapObjectHeader(u32 mapId, const struct MapHeader *header)
+{
+    return header;
+}
+ADMG_RETAIN_FUNCTION(ADMG_ComposeMapObjectHeader);
+
 const struct MapHeader *GetMapHeader(MapId mapId)
 {
     if (mapId >= FIRST_ADDED_MAP)
     {
         if (mapId - FIRST_ADDED_MAP < RUNTIME_ADDED_MAPS_COUNT && gADMG_AddedMaps[mapId - FIRST_ADDED_MAP] != NULL)
-            return gADMG_AddedMaps[mapId - FIRST_ADDED_MAP];
+            return ADMG_ComposeMapObjectHeader(mapId, gADMG_AddedMaps[mapId - FIRST_ADDED_MAP]);
         ADMG_StateAccessRejected(mapId, "added map");
         return gMapGroups[MAP_GROUP(MAP_PETALBURG_CITY)][MAP_NUM(MAP_PETALBURG_CITY)];
     }
-    return gMapGroups[MAP_GROUP(mapId)][MAP_NUM(mapId)];
+    return ADMG_ComposeMapObjectHeader(mapId, gMapGroups[MAP_GROUP(mapId)][MAP_NUM(mapId)]);
 }
 
 struct MapHeader const *const Overworld_GetMapHeaderByGroupAndId(u32 mapGroup, u32 mapNum)
