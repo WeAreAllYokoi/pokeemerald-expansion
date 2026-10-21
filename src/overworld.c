@@ -1,4 +1,7 @@
 #include "global.h"
+#include "admg_feature_settings.h"
+#include "admg_feature_state.h"
+#include "admg_registry.h"
 #include "admg_feature_bindings.h"
 #include "admg_state.h"
 #include "admg_rematch_state.h"
@@ -3772,20 +3775,23 @@ static void SpriteCB_LinkPlayer(struct Sprite *sprite)
 
 bool8 GetSetItemObtained(enum Item item, enum ItemObtainFlags caseId)
 {
-#if OW_SHOW_ITEM_DESCRIPTIONS == OW_ITEM_DESCRIPTIONS_FIRST_TIME
-    u8 index = item / 8;
-    u8 bit = item % 8;
-    u8 mask = 1 << bit;
-    switch (caseId)
-    {
-    case FLAG_GET_ITEM_OBTAINED:
-        return gSaveBlock3Ptr->itemFlags[index] & mask;
-    case FLAG_SET_ITEM_OBTAINED:
-        gSaveBlock3Ptr->itemFlags[index] |= mask;
-        return TRUE;
-    }
-#endif
-    return FALSE;
+    if (ADMG_GetFeatureSetting(ADMG_SETTING_ITEM_DESCRIPTION_MODE) != OW_ITEM_DESCRIPTIONS_FIRST_TIME
+        || item == ITEM_NONE || item == ITEMS_COUNT || item >= RUNTIME_ITEMS_COUNT
+        || (caseId != FLAG_GET_ITEM_OBTAINED && caseId != FLAG_SET_ITEM_OBTAINED)
+        || ADMG_GetFeatureStateBridgeVersion() != 1)
+        return FALSE;
+
+    if (caseId == FLAG_SET_ITEM_OBTAINED)
+        Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
+    struct ADMG_ItemSeenByte *state = (struct ADMG_ItemSeenByte *)ADMG_GetFeatureState(ADMG_FEATURE_STATE_ITEMS_SEEN);
+    if (state == NULL)
+        return FALSE;
+    u32 index = item / 8;
+    u8 mask = 1 << (item % 8);
+    if (caseId == FLAG_GET_ITEM_OBTAINED)
+        return (state[index].bits & mask) != 0;
+    state[index].bits |= mask;
+    return TRUE;
 }
 
 EWRAM_DATA static u8 sHeaderBoxWindowId = 0;
@@ -3805,7 +3811,7 @@ static u8 ReformatItemDescription(enum Item item, u8 *dest)
 void ScriptShowItemDescription(struct ScriptContext *ctx)
 {
     (void) ScriptReadByte(ctx);
-    if (OW_SHOW_ITEM_DESCRIPTIONS == OW_ITEM_DESCRIPTIONS_OFF)
+    if (!ADMG_ItemDescriptionsEnabled())
         return;
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
@@ -3844,7 +3850,7 @@ void ScriptShowItemDescription(struct ScriptContext *ctx)
 
 void ScriptHideItemDescription(struct ScriptContext *ctx)
 {
-    if (OW_SHOW_ITEM_DESCRIPTIONS == OW_ITEM_DESCRIPTIONS_OFF)
+    if (!ADMG_ItemDescriptionsEnabled())
         return;
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE | SCREFF_HARDWARE);

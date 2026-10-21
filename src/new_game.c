@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_state.h"
 #include "clock.h"
 #include "new_game.h"
 #include "random.h"
@@ -246,9 +247,11 @@ static void ResetMiniGamesRecords(void)
 
 static void ResetItemFlags(void)
 {
-#if OW_SHOW_ITEM_DESCRIPTIONS == OW_ITEM_DESCRIPTIONS_FIRST_TIME
-    memset(&gSaveBlock3Ptr->itemFlags, 0, sizeof(gSaveBlock3Ptr->itemFlags));
-#endif
+    if (ADMG_GetFeatureStateBridgeVersion() != 1)
+        return;
+    ADMG_Word address = ADMG_GetFeatureState(ADMG_FEATURE_STATE_ITEMS_SEEN);
+    if (address != 0)
+        ADMG_InitializeFeatureState(ADMG_FEATURE_STATE_ITEMS_SEEN, address, ADMG_GetFeatureStateCount(ADMG_FEATURE_STATE_ITEMS_SEEN));
 }
 
 static void ResetDexNav(void)

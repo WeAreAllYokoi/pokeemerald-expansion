@@ -9,9 +9,15 @@
 /* NativeHost allocates these records when first requested and saves them through
  * a NativeSaveStore platform section. It supplies the state getter and bridge version;
  * the C defaults return zero to indicate that the bridge and state are unavailable. */
+struct ADMG_ItemSeenByte
+{
+    u8 bits;
+};
+
 enum ADMG_FeatureStateId
 {
     ADMG_FEATURE_STATE_CLOCK = 1,
+    ADMG_FEATURE_STATE_ITEMS_SEEN = 2,
 };
 ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeatureStateBridgeVersion(void);
 ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeatureState(ADMG_Word state);

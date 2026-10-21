@@ -1,6 +1,7 @@
 #include "global.h"
 #include "admg_feature_state.h"
 #include "admg_retention.h"
+#include "admg_registry.h"
 #include "datetime.h"
 #include "siirtc.h"
 
@@ -14,11 +15,21 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeatureState(ADMG_Word state)
 }
 ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeatureStateCount(ADMG_Word state)
 {
-    return state == ADMG_FEATURE_STATE_CLOCK ? 1 : 0;
+    switch (state)
+    {
+    case ADMG_FEATURE_STATE_CLOCK: return 1;
+    case ADMG_FEATURE_STATE_ITEMS_SEEN: return RUNTIME_ITEMS_COUNT / 8 + (RUNTIME_ITEMS_COUNT % 8 != 0);
+    default: return 0;
+    }
 }
 ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeatureStateRecordSize(ADMG_Word state)
 {
-    return state == ADMG_FEATURE_STATE_CLOCK ? sizeof(struct SiiRtcInfo) : 0;
+    switch (state)
+    {
+    case ADMG_FEATURE_STATE_CLOCK: return sizeof(struct SiiRtcInfo);
+    case ADMG_FEATURE_STATE_ITEMS_SEEN: return sizeof(struct ADMG_ItemSeenByte);
+    default: return 0;
+    }
 }
 ADMG_NATIVE_ENTRY ADMG_Word ADMG_InitializeFeatureState(ADMG_Word state, ADMG_Word address, ADMG_Word count)
 {
@@ -30,6 +41,11 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_InitializeFeatureState(ADMG_Word state, ADMG_Wo
         rtc->month = gGen3Epoch.month;
         rtc->day = gGen3Epoch.day;
         rtc->dayOfWeek = gGen3Epoch.dayOfWeek;
+        return 1;
+    }
+    if (state == ADMG_FEATURE_STATE_ITEMS_SEEN && address != 0 && count != 0 && count == ADMG_GetFeatureStateCount(state))
+    {
+        memset((void *)address, 0, count * sizeof(struct ADMG_ItemSeenByte));
         return 1;
     }
     return 0;
