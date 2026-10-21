@@ -3293,14 +3293,6 @@ bool8 ScrCmd_addtime(struct ScriptContext *ctx)
     u32 days = ScriptReadWord(ctx);
     u32 hours = ScriptReadWord(ctx);
     u32 minutes = ScriptReadWord(ctx);
-    if (hours >= HOURS_PER_DAY || minutes >= MINUTES_PER_HOUR)
-        return FALSE;
-
-    struct SiiRtcInfo *rtc = FakeRtc_GetCurrentTime();
-    if (rtc == NULL || rtc->hour >= HOURS_PER_DAY || rtc->minute >= MINUTES_PER_HOUR || rtc->second >= SECONDS_PER_MINUTE)
-        return FALSE;
-    if (rtc->hour == hours && rtc->minute == minutes && rtc->second == 0)
-        return FALSE;
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -3346,6 +3338,14 @@ bool8 ScrCmd_fwdtime(struct ScriptContext *ctx)
 {
     u32 hours = ScriptReadWord(ctx);
     u32 minutes = ScriptReadWord(ctx);
+    if (hours >= HOURS_PER_DAY || minutes >= MINUTES_PER_HOUR)
+        return FALSE;
+
+    struct SiiRtcInfo *rtc = FakeRtc_GetCurrentTime();
+    if (rtc == NULL || rtc->hour >= HOURS_PER_DAY || rtc->minute >= MINUTES_PER_HOUR || rtc->second >= SECONDS_PER_MINUTE)
+        return FALSE;
+    if (rtc->hour == hours && rtc->minute == minutes && rtc->second == 0)
+        return FALSE;
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
