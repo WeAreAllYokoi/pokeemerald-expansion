@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "admg_trainer.h"
 #include "battle.h"
 #include "battle_anim.h"
@@ -654,7 +655,7 @@ bool32 TryRunFromBattle(enum BattlerId battler)
     u8 speedVar;
 
     // If this flag is set, running will never be successful under any circumstances.
-    if (FlagGet(WE_FLAG_NO_RUNNING))
+    if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_WE_FLAG_NO_RUNNING)))
         return effect;
 
     if (gBattleMons[battler].item == ITEM_ENIGMA_BERRY_E_READER)
@@ -5983,7 +5984,7 @@ static bool32 IsBattlerGroundedInverseCheck(enum BattlerId battler, enum Ability
         return TRUE;
     if (IsBattlerUngroundedByAbilityItemOrEffect(battler, ability, holdEffect))
         return FALSE;
-    if (IS_BATTLER_OF_TYPE(battler, TYPE_FLYING) && (checkInverse != INVERSE_BATTLE || !FlagGet(B_FLAG_INVERSE_BATTLE)))
+    if (IS_BATTLER_OF_TYPE(battler, TYPE_FLYING) && (checkInverse != INVERSE_BATTLE || !FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_INVERSE_BATTLE))))
         return FALSE;
     return TRUE;
 }
@@ -8332,7 +8333,7 @@ static inline uq4_12_t CalcTypeEffectivenessMultiplierInternal(struct DamageCont
         && ctx->holdEffects[ctx->battlerDef] == HOLD_EFFECT_IRON_BALL
         && IS_BATTLER_OF_TYPE(ctx->battlerDef, TYPE_FLYING)
         && !IsBattlerGrounded(ctx->battlerDef, ctx->abilities[ctx->battlerDef], HOLD_EFFECT_NONE) // We want to ignore Iron Ball so skip item check
-        && !FlagGet(B_FLAG_INVERSE_BATTLE))
+        && !FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_INVERSE_BATTLE)))
     {
         modifier = UQ_4_12(1.0);
     }
@@ -8472,7 +8473,7 @@ uq4_12_t GetOverworldTypeEffectiveness(struct Pokemon *mon, enum Type moveType)
 
 uq4_12_t GetTypeModifier(enum Type atkType, enum Type defType)
 {
-    if (B_FLAG_INVERSE_BATTLE != 0 && FlagGet(B_FLAG_INVERSE_BATTLE))
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_INVERSE_BATTLE) != 0 && FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_INVERSE_BATTLE)))
         return GetInverseTypeMultiplier(ADMG_TypeChartEntry(atkType, defType));
     return ADMG_TypeChartEntry(atkType, defType);
 }
@@ -9649,10 +9650,10 @@ bool32 MoveEffectIsGuaranteed(enum BattlerId battler, enum Ability battlerAbilit
 
 bool32 IsGen6ExpShareEnabled(void)
 {
-    if (I_EXP_SHARE_FLAG <= TEMP_FLAGS_END)
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_I_EXP_SHARE_FLAG) <= TEMP_FLAGS_END)
         return FALSE;
 
-    return FlagGet(I_EXP_SHARE_FLAG);
+    return FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_I_EXP_SHARE_FLAG));
 }
 
 
@@ -9928,7 +9929,7 @@ bool32 IsSleepClauseEnabled(void)
 {
     if (B_SLEEP_CLAUSE)
         return TRUE;
-    if (FlagGet(B_FLAG_SLEEP_CLAUSE))
+    if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_SLEEP_CLAUSE)))
         return TRUE;
     return FALSE;
 }
@@ -10877,7 +10878,7 @@ bool32 IsBattlerInvalidForSpreadMove(enum BattlerId battlerAtk, enum BattlerId b
 
 bool32 IsAllowedToUseBag(void)
 {
-    switch (VarGet(B_VAR_NO_BAG_USE))
+    switch (VarGet(ADMG_GetFeatureBinding(ADMG_BINDING_B_VAR_NO_BAG_USE)))
     {
     case NO_BAG_RESTRICTION:
         return TRUE;
@@ -11226,14 +11227,14 @@ void SetValuesOnFaint(enum BattlerId battler)
 bool32 IsVictoryCatch(void)
 {
     return gBattleTypeFlags & BATTLE_TYPE_RAID
-        || FlagGet(B_FLAG_VICTORY_CATCH_RANDOM)
-        || FlagGet(B_FLAG_VICTORY_CATCH_GUARANTEED);
+        || FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_VICTORY_CATCH_RANDOM))
+        || FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_VICTORY_CATCH_GUARANTEED));
 }
 
 bool32 IsVictoryCatchGuaranteed(void)
 {
     return gBattleTypeFlags & BATTLE_TYPE_RAID
-        || FlagGet(B_FLAG_VICTORY_CATCH_GUARANTEED);
+        || FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_VICTORY_CATCH_GUARANTEED));
 }
 
 bool32 IsBattlerInvolvedInSkyDrop(enum BattlerId battler)

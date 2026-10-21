@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "main.h"
 #include "battle.h"
 #include "battle_util.h"
@@ -429,7 +430,7 @@ static bool32 GameHasDifferentRelearners(void)
 {
     if (P_ENABLE_MOVE_RELEARNERS || P_TM_MOVES_RELEARNER)
         return TRUE;
-    if (P_FLAG_EGG_MOVES || P_FLAG_TUTOR_MOVES)
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_P_FLAG_EGG_MOVES) || ADMG_GetFeatureBinding(ADMG_BINDING_P_FLAG_TUTOR_MOVES))
         return TRUE;
     return FALSE;
 }
@@ -1127,7 +1128,7 @@ static bool32 IsLevelUpMoveRelearnerActive(void)
 
 static bool32 IsEggMoveRelearnerActive(void)
 {
-    return (FlagGet(P_FLAG_EGG_MOVES) || P_ENABLE_MOVE_RELEARNERS);
+    return (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_P_FLAG_EGG_MOVES)) || P_ENABLE_MOVE_RELEARNERS);
 }
 
 static bool32 IsTMMoveRelearnerActive(void)
@@ -1137,5 +1138,5 @@ static bool32 IsTMMoveRelearnerActive(void)
 
 static bool32 IsTutorMoveRelearnerActive(void)
 {
-    return (FlagGet(P_FLAG_TUTOR_MOVES) || P_ENABLE_MOVE_RELEARNERS);
+    return (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_P_FLAG_TUTOR_MOVES)) || P_ENABLE_MOVE_RELEARNERS);
 }

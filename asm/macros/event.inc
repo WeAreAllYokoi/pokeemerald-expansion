@@ -2281,7 +2281,9 @@
 	.endm
 
 	.macro ai_vs_ai_battle trainer1:req, trainer2:req
-	setflag B_FLAG_AI_VS_AI_BATTLE
+	callnative ADMG_ScriptWriteFeatureFlag, requests_effects=1
+	.2byte ADMG_BINDING_B_FLAG_AI_VS_AI_BATTLE
+	.byte TRUE
 	setvar VAR_0x8004, \trainer1
 	callnative CreateTrainerPartyForPlayer, requests_effects=1
 	trainerbattle_no_intro \trainer2, NULL

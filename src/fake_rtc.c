@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "string_util.h"
 #include "strings.h"
 #include "text.h"
@@ -42,7 +43,7 @@ void FakeRtc_TickTimeForward(void)
     if (!OW_USE_FAKE_RTC)
         return;
 
-    if (FlagGet(OW_FLAG_PAUSE_TIME))
+    if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_OW_FLAG_PAUSE_TIME)))
         return;
 
     FakeRtc_AdvanceTimeBy(0, 0, 0, FakeRtc_GetSecondsRatio());
@@ -128,19 +129,19 @@ void Script_PauseFakeRtc(void)
 {
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
-    FlagSet(OW_FLAG_PAUSE_TIME);
+    FlagSet(ADMG_GetFeatureBinding(ADMG_BINDING_OW_FLAG_PAUSE_TIME));
 }
 
 void Script_ResumeFakeRtc(void)
 {
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
-    FlagClear(OW_FLAG_PAUSE_TIME);
+    FlagClear(ADMG_GetFeatureBinding(ADMG_BINDING_OW_FLAG_PAUSE_TIME));
 }
 
 void Script_ToggleFakeRtc(void)
 {
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
-    FlagToggle(OW_FLAG_PAUSE_TIME);
+    FlagToggle(ADMG_GetFeatureBinding(ADMG_BINDING_OW_FLAG_PAUSE_TIME));
 }

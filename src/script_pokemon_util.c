@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "battle.h"
 #include "battle_gfx_sfx_util.h"
 #include "berry.h"
@@ -46,7 +47,7 @@ void HealPlayerParty(void)
 
     // Recharge Tera Orb, if possible.
     if (!IsTeraOrbCharged() && CheckBagHasItem(ITEM_TERA_ORB, 1))
-        FlagSet(B_FLAG_TERA_ORB_CHARGED);
+        FlagSet(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_TERA_ORB_CHARGED));
 }
 
 static void HealPlayerBoxes(void)

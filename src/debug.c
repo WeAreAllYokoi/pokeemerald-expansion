@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "admg_trainer.h"
 #include "battle.h"
 #include "battle_setup.h"
@@ -1405,7 +1406,7 @@ static u32 Debug_GenerateListTrainerMenu(const struct DebugMenuOption *items)
             }
             break;
         case 6:
-            if (FREE_MATCH_CALL || I_VS_SEEKER_CHARGING || !isRealFight || rematchTableId == -1)
+            if (FREE_MATCH_CALL || ADMG_GetFeatureBinding(ADMG_BINDING_I_VS_SEEKER_CHARGING) || !isRealFight || rematchTableId == -1)
             {
                 noDraw = TRUE;
                 break;
@@ -1416,7 +1417,7 @@ static u32 Debug_GenerateListTrainerMenu(const struct DebugMenuOption *items)
                 StringCopy(gStringVar1, COMPOUND_STRING("{COLOR RED} FALSE"));
             break;
         case 8:
-            if (FREE_MATCH_CALL || I_VS_SEEKER_CHARGING == 0)
+            if (FREE_MATCH_CALL || ADMG_GetFeatureBinding(ADMG_BINDING_I_VS_SEEKER_CHARGING) == 0)
                 noDraw = TRUE;
             break;
         }
@@ -1608,19 +1609,19 @@ static u32 Debug_CheckToggleFlags(u8 id)
         result = FlagGet(FLAG_SYS_FRONTIER_PASS);
         break;
     case DEBUG_FLAGVAR_MENU_ITEM_TOGGLE_COLLISION:
-        result = OW_FLAG_NO_COLLISION ? FlagGet(OW_FLAG_NO_COLLISION) : DEBUG_OPTION_CANT_BE_TOGGLED;
+        result = ADMG_GetFeatureBinding(ADMG_BINDING_OW_FLAG_NO_COLLISION) ? FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_OW_FLAG_NO_COLLISION)) : DEBUG_OPTION_CANT_BE_TOGGLED;
         break;
     case DEBUG_FLAGVAR_MENU_ITEM_TOGGLE_ENCOUNTER:
-        result = WE_FLAG_NO_ENCOUNTER ? FlagGet(WE_FLAG_NO_ENCOUNTER) : DEBUG_OPTION_CANT_BE_TOGGLED;
+        result = ADMG_GetFeatureBinding(ADMG_BINDING_WE_FLAG_NO_ENCOUNTER) ? FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_WE_FLAG_NO_ENCOUNTER)) : DEBUG_OPTION_CANT_BE_TOGGLED;
         break;
     case DEBUG_FLAGVAR_MENU_ITEM_TOGGLE_TRAINER_SEE:
-        result = OW_FLAG_NO_TRAINER_SEE ? FlagGet(OW_FLAG_NO_TRAINER_SEE) : DEBUG_OPTION_CANT_BE_TOGGLED;
+        result = ADMG_GetFeatureBinding(ADMG_BINDING_OW_FLAG_NO_TRAINER_SEE) ? FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_OW_FLAG_NO_TRAINER_SEE)) : DEBUG_OPTION_CANT_BE_TOGGLED;
         break;
     case DEBUG_FLAGVAR_MENU_ITEM_TOGGLE_CATCHING:
-        result = WE_FLAG_NO_CATCHING ? FlagGet(WE_FLAG_NO_CATCHING) : DEBUG_OPTION_CANT_BE_TOGGLED;
+        result = ADMG_GetFeatureBinding(ADMG_BINDING_WE_FLAG_NO_CATCHING) ? FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_WE_FLAG_NO_CATCHING)) : DEBUG_OPTION_CANT_BE_TOGGLED;
         break;
     case DEBUG_FLAGVAR_MENU_ITEM_TOGGLE_BAG_USE:
-        result = VarGet(B_VAR_NO_BAG_USE);
+        result = VarGet(ADMG_GetFeatureBinding(ADMG_BINDING_B_VAR_NO_BAG_USE));
         if (result >= NO_BAG_INVALID_VALUE)
             result = NO_BAG_INVALID_VALUE;
         break;
@@ -3166,64 +3167,73 @@ static void DebugAction_FlagsVars_ToggleFrontierPass(u8 taskId)
 
 static void DebugAction_FlagsVars_CollisionOnOff(u8 taskId)
 {
-#if OW_FLAG_NO_COLLISION == 0
-    Debug_DestroyMenu_Full_Script(taskId, Debug_FlagsNotSetOverworldConfigMessage);
-#else
-    if (FlagGet(OW_FLAG_NO_COLLISION))
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_OW_FLAG_NO_COLLISION) == 0)
+    {
+        Debug_DestroyMenu_Full_Script(taskId, Debug_FlagsNotSetOverworldConfigMessage);
+        return;
+    }
+    if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_OW_FLAG_NO_COLLISION)))
         PlaySE(SE_PC_OFF);
     else
         PlaySE(SE_PC_LOGIN);
-    FlagToggle(OW_FLAG_NO_COLLISION);
-#endif
+    FlagToggle(ADMG_GetFeatureBinding(ADMG_BINDING_OW_FLAG_NO_COLLISION));
+
 }
 
 static void DebugAction_FlagsVars_EncounterOnOff(u8 taskId)
 {
-#if WE_FLAG_NO_ENCOUNTER == 0
-    Debug_DestroyMenu_Full_Script(taskId, Debug_FlagsNotSetOverworldConfigMessage);
-#else
-    if (FlagGet(WE_FLAG_NO_ENCOUNTER))
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_WE_FLAG_NO_ENCOUNTER) == 0)
+    {
+        Debug_DestroyMenu_Full_Script(taskId, Debug_FlagsNotSetOverworldConfigMessage);
+        return;
+    }
+    if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_WE_FLAG_NO_ENCOUNTER)))
         PlaySE(SE_PC_OFF);
     else
         PlaySE(SE_PC_LOGIN);
-    FlagToggle(WE_FLAG_NO_ENCOUNTER);
-#endif
+    FlagToggle(ADMG_GetFeatureBinding(ADMG_BINDING_WE_FLAG_NO_ENCOUNTER));
+
 }
 
 static void DebugAction_FlagsVars_TrainerSeeOnOff(u8 taskId)
 {
-#if OW_FLAG_NO_TRAINER_SEE == 0
-    Debug_DestroyMenu_Full_Script(taskId, Debug_FlagsNotSetOverworldConfigMessage);
-#else
-    if (FlagGet(OW_FLAG_NO_TRAINER_SEE))
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_OW_FLAG_NO_TRAINER_SEE) == 0)
+    {
+        Debug_DestroyMenu_Full_Script(taskId, Debug_FlagsNotSetOverworldConfigMessage);
+        return;
+    }
+    if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_OW_FLAG_NO_TRAINER_SEE)))
         PlaySE(SE_PC_OFF);
     else
         PlaySE(SE_PC_LOGIN);
-    FlagToggle(OW_FLAG_NO_TRAINER_SEE);
-#endif
+    FlagToggle(ADMG_GetFeatureBinding(ADMG_BINDING_OW_FLAG_NO_TRAINER_SEE));
+
 }
 
 static void DebugAction_FlagsVars_BagUseOnOff(u8 taskId)
 {
-#if B_VAR_NO_BAG_USE < VARS_START || B_VAR_NO_BAG_USE > VARS_END
-    Debug_DestroyMenu_Full_Script(taskId, Debug_VarsNotSetBattleConfigMessage);
-#else
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_B_VAR_NO_BAG_USE) == 0 || GetVarPointer(ADMG_GetFeatureBinding(ADMG_BINDING_B_VAR_NO_BAG_USE)) == NULL)
+    {
+        Debug_DestroyMenu_Full_Script(taskId, Debug_VarsNotSetBattleConfigMessage);
+        return;
+    }
     PlaySE(SE_SELECT);
-    VarSet(B_VAR_NO_BAG_USE, (VarGet(B_VAR_NO_BAG_USE) + 1) % 3);
-#endif
+    VarSet(ADMG_GetFeatureBinding(ADMG_BINDING_B_VAR_NO_BAG_USE), (VarGet(ADMG_GetFeatureBinding(ADMG_BINDING_B_VAR_NO_BAG_USE)) + 1) % 3);
 }
 
 static void DebugAction_FlagsVars_CatchingOnOff(u8 taskId)
 {
-#if WE_FLAG_NO_CATCHING == 0
-    Debug_DestroyMenu_Full_Script(taskId, Debug_FlagsNotSetBattleConfigMessage);
-#else
-    if (FlagGet(WE_FLAG_NO_CATCHING))
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_WE_FLAG_NO_CATCHING) == 0)
+    {
+        Debug_DestroyMenu_Full_Script(taskId, Debug_FlagsNotSetBattleConfigMessage);
+        return;
+    }
+    if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_WE_FLAG_NO_CATCHING)))
         PlaySE(SE_PC_OFF);
     else
         PlaySE(SE_PC_LOGIN);
-    FlagToggle(WE_FLAG_NO_CATCHING);
-#endif
+    FlagToggle(ADMG_GetFeatureBinding(ADMG_BINDING_WE_FLAG_NO_CATCHING));
+
 }
 
 // *******************************

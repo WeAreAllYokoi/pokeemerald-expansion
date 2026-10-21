@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "battle.h"
 #include "battle_anim.h"
 #include "battle_controllers.h"
@@ -28,7 +29,7 @@ void ActivateTera(enum BattlerId battler)
         && IsOnPlayerSide(battler)
         && !(IsDoubleBattle() && !IsPartnerMonFromSameTrainer(battler)))
     {
-        FlagClear(B_FLAG_TERA_ORB_CHARGED);
+        FlagClear(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_TERA_ORB_CHARGED));
     }
 
     // Execute battle script.
@@ -60,9 +61,9 @@ void ApplyBattlerVisualsForTeraAnim(enum BattlerId battler)
 // Returns whether the Tera Orb is charged.
 bool32 IsTeraOrbCharged(void)
 {
-    if (FlagGet(B_FLAG_TERA_ORB_NO_COST) || B_TERA_ORB_ALWAYS_CHARGED)
+    if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_TERA_ORB_NO_COST)) || B_TERA_ORB_ALWAYS_CHARGED)
         return TRUE;
-    return FlagGet(B_FLAG_TERA_ORB_CHARGED);
+    return FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_TERA_ORB_CHARGED));
 }
 
 // Returns whether a battler can Terastallize.

@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "main.h"
 #include "admg_rematch_response.h"
 #include "admg_rematch_movement.h"
@@ -258,7 +259,7 @@ bool8 UpdateVsSeekerStepCounter(void)
 #if FREE_MATCH_CALL == FALSE
     u8 x = 0;
 
-    if (!I_VS_SEEKER_CHARGING) return FALSE;
+    if (!ADMG_GetFeatureBinding(ADMG_BINDING_I_VS_SEEKER_CHARGING)) return FALSE;
 
     // This condition helps in case your save file is switching between vs seeker and matchcall
     if (gSaveBlock1Ptr->trainerRematchStepCounter > VSSEEKER_RECHARGE_STEPS && gSaveBlock1Ptr->trainerRematchStepCounter <= 0xFF)
@@ -269,7 +270,7 @@ bool8 UpdateVsSeekerStepCounter(void)
             gSaveBlock1Ptr->trainerRematchStepCounter++;
     }
 
-    if (FlagGet(I_VS_SEEKER_CHARGING))
+    if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_I_VS_SEEKER_CHARGING)))
     {
         if (((gSaveBlock1Ptr->trainerRematchStepCounter >> 8) & 0xFF) < VSSEEKER_RECHARGE_STEPS)
         {
@@ -278,7 +279,7 @@ bool8 UpdateVsSeekerStepCounter(void)
         }
         if (((gSaveBlock1Ptr->trainerRematchStepCounter >> 8) & 0xFF) == VSSEEKER_RECHARGE_STEPS)
         {
-            FlagClear(I_VS_SEEKER_CHARGING);
+            FlagClear(ADMG_GetFeatureBinding(ADMG_BINDING_I_VS_SEEKER_CHARGING));
             VsSeekerResetChargingStepCounter();
             ClearAllTrainerRematchStates();
             return TRUE;
@@ -293,9 +294,9 @@ void MapResetTrainerRematches(MapId mapId)
 {
     (void)ADMG_TryResetNativeRematchMap();
 
-    if (!I_VS_SEEKER_CHARGING) return;
+    if (!ADMG_GetFeatureBinding(ADMG_BINDING_I_VS_SEEKER_CHARGING)) return;
 
-    FlagClear(I_VS_SEEKER_CHARGING);
+    FlagClear(ADMG_GetFeatureBinding(ADMG_BINDING_I_VS_SEEKER_CHARGING));
     VsSeekerResetChargingStepCounter();
     ClearAllTrainerRematchStates();
     ResetMovementOfRematchableTrainers();
@@ -344,7 +345,7 @@ static void VsSeekerResetChargingStepCounter(void)
 
 void Task_InitVsSeekerAndCheckForTrainersOnScreen(u8 taskId)
 {
-    if (!I_VS_SEEKER_CHARGING) return;
+    if (!ADMG_GetFeatureBinding(ADMG_BINDING_I_VS_SEEKER_CHARGING)) return;
     (void)InitVsSeekerField(taskId, NULL);
 }
 
@@ -549,7 +550,7 @@ static u8 GetVsSeekerResponseInArea(void)
     if (trainerWantsRematch)
     {
         PlaySE(SE_PIN);
-        FlagSet(I_VS_SEEKER_CHARGING);
+        FlagSet(ADMG_GetFeatureBinding(ADMG_BINDING_I_VS_SEEKER_CHARGING));
         VsSeekerResetChargingStepCounter();
         return VSSEEKER_RESPONSE_FOUND_REMATCHES;
     }
@@ -577,7 +578,7 @@ void ClearRematchMovementByTrainerId(void)
 
     int vsSeekerDataIdx = TrainerIdToRematchTableId(gRematchTable, TRAINER_BATTLE_PARAM.opponentA);
 
-    if (!I_VS_SEEKER_CHARGING) return;
+    if (!ADMG_GetFeatureBinding(ADMG_BINDING_I_VS_SEEKER_CHARGING)) return;
 
     if (vsSeekerDataIdx == -1)
         return;
@@ -641,7 +642,7 @@ u16 GetRematchTrainerIdVSSeeker(enum TrainerId trainerId)
     if (!ADMG_EndStateAccessCheck(generation))
         return 0;
 
-    if (!I_VS_SEEKER_CHARGING)
+    if (!ADMG_GetFeatureBinding(ADMG_BINDING_I_VS_SEEKER_CHARGING))
         return 0;
     if (tableId == -1)
         return 0;
@@ -663,7 +664,7 @@ u16 GetRematchTrainerIdVSSeeker(enum TrainerId trainerId)
 
 bool32 IsVsSeekerEnabled(void)
 {
-    if (I_VS_SEEKER_CHARGING == 0)
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_I_VS_SEEKER_CHARGING) == 0)
         return FALSE;
 
     return (CheckBagHasItem(ITEM_VS_SEEKER, 1));

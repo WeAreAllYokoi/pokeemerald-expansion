@@ -39,10 +39,18 @@ EventScript_PkmnCenterNurse_TakeAndHealPkmn::
 	applymovement VAR_0x800B, Movement_PkmnCenterNurse_Turn
 	waitmovement 0
 	dofieldeffect FLDEFF_POKECENTER_HEAL
-.if OW_UNION_DISABLE_CHECK == FALSE && OW_FLAG_MOVE_UNION_ROOM_CHECK != 0
-	setflag OW_FLAG_MOVE_UNION_ROOM_CHECK
+.if OW_UNION_DISABLE_CHECK == FALSE
+	callnative ADMG_ScriptTestFeatureBinding, requests_effects=1
+	.2byte ADMG_BINDING_OW_FLAG_MOVE_UNION_ROOM_CHECK
+	goto_if_ne EventScript_PkmnCenterNurse_NoUnionFeatureBinding
+	callnative ADMG_ScriptWriteFeatureFlag, requests_effects=1
+	.2byte ADMG_BINDING_OW_FLAG_MOVE_UNION_ROOM_CHECK
+	.byte TRUE
 	call CableClub_OnResume
-	clearflag OW_FLAG_MOVE_UNION_ROOM_CHECK
+	callnative ADMG_ScriptWriteFeatureFlag, requests_effects=1
+	.2byte ADMG_BINDING_OW_FLAG_MOVE_UNION_ROOM_CHECK
+	.byte FALSE
+EventScript_PkmnCenterNurse_NoUnionFeatureBinding:
 .endif
 	waitfieldeffect FLDEFF_POKECENTER_HEAL
 	applymovement VAR_0x800B, Common_Movement_WalkInPlaceFasterDown

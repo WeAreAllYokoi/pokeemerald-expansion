@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "admg_state.h"
 #include "main.h"
 #include "bike.h"
@@ -406,7 +407,7 @@ static bool8 TryInterruptObjectEventSpecialAnim(struct ObjectEvent *playerObjEve
 
             if (playerObjEvent->movementDirection != direction)
             {
-                if (I_ORAS_DOWSING_FLAG != 0 && FlagGet(I_ORAS_DOWSING_FLAG))
+                if (ADMG_GetFeatureBinding(ADMG_BINDING_I_ORAS_DOWSING_FLAG) != 0 && FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_I_ORAS_DOWSING_FLAG)))
                     gSprites[playerObj->fieldEffectSpriteId].sCounter = 0;
 
                 ObjectEventClearHeldMovement(playerObjEvent);
@@ -415,7 +416,7 @@ static bool8 TryInterruptObjectEventSpecialAnim(struct ObjectEvent *playerObjEve
 
             if (CheckForPlayerAvatarStaticCollision(direction) == COLLISION_NONE)
             {
-                if (I_ORAS_DOWSING_FLAG != 0 && FlagGet(I_ORAS_DOWSING_FLAG))
+                if (ADMG_GetFeatureBinding(ADMG_BINDING_I_ORAS_DOWSING_FLAG) != 0 && FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_I_ORAS_DOWSING_FLAG)))
                 {
                     gSprites[playerObj->fieldEffectSpriteId].sCounter = 0;
                     gSprites[playerObj->fieldEffectSpriteId].y2 = 0;
@@ -895,7 +896,7 @@ static void PlayerNotOnBikeMoving(enum Direction direction, u16 heldKeys)
     gPlayerAvatar.creeping = FALSE;
     if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_SURFING)
     {
-        if (FlagGet(DN_FLAG_SEARCHING) && (heldKeys & A_BUTTON))
+        if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING)) && (heldKeys & A_BUTTON))
         {
             gPlayerAvatar.creeping = TRUE;
             PlayerWalkSlow(direction);
@@ -913,7 +914,7 @@ static void PlayerNotOnBikeMoving(enum Direction direction, u16 heldKeys)
      && FlagGet(FLAG_SYS_B_DASH)
      && IsRunningDisallowed(gObjectEvents[gPlayerAvatar.objectEventId].currentMetatileBehavior) == 0
      && !FollowerNPCComingThroughDoor()
-     && (I_ORAS_DOWSING_FLAG == 0 || (I_ORAS_DOWSING_FLAG != 0 && !FlagGet(I_ORAS_DOWSING_FLAG))))
+     && (ADMG_GetFeatureBinding(ADMG_BINDING_I_ORAS_DOWSING_FLAG) == 0 || (ADMG_GetFeatureBinding(ADMG_BINDING_I_ORAS_DOWSING_FLAG) != 0 && !FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_I_ORAS_DOWSING_FLAG)))))
     {
         if (ObjectMovingOnRockStairs(&gObjectEvents[gPlayerAvatar.objectEventId], direction))
             PlayerRunSlow(direction);
@@ -923,7 +924,7 @@ static void PlayerNotOnBikeMoving(enum Direction direction, u16 heldKeys)
         gPlayerAvatar.flags |= PLAYER_AVATAR_FLAG_DASH;
         return;
     }
-    else if (FlagGet(DN_FLAG_SEARCHING) && (heldKeys & A_BUTTON))
+    else if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING)) && (heldKeys & A_BUTTON))
     {
         gPlayerAvatar.creeping = TRUE;
         PlayerWalkSlow(direction);

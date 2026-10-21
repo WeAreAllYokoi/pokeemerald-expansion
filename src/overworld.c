@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "admg_state.h"
 #include "admg_rematch_state.h"
 #include "overworld.h"
@@ -445,22 +446,22 @@ void Overworld_ResetBattleFlagsAndVars(void)
 {
     ResetStartingStatuses();
 
-    #if B_VAR_WILD_AI_FLAGS != 0
-        VarSet(B_VAR_WILD_AI_FLAGS,0);
-    #endif
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_B_VAR_WILD_AI_FLAGS) != 0)
+        VarSet(ADMG_GetFeatureBinding(ADMG_BINDING_B_VAR_WILD_AI_FLAGS),0);
 
-    #if B_VAR_NO_BAG_USE != 0
-        VarSet(B_VAR_NO_BAG_USE, 0);
-    #endif
 
-    FlagClear(B_FLAG_INVERSE_BATTLE);
-    FlagClear(WE_FLAG_FORCE_DOUBLE_WILD);
-    FlagClear(WE_SMART_WILD_AI_FLAG);
-    FlagClear(WE_FLAG_NO_CATCHING);
-    FlagClear(WE_FLAG_NO_RUNNING);
-    FlagClear(B_FLAG_DYNAMAX_BATTLE);
-    FlagClear(B_FLAG_SKY_BATTLE);
-    FlagClear(B_FLAG_NO_WHITEOUT);
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_B_VAR_NO_BAG_USE) != 0)
+        VarSet(ADMG_GetFeatureBinding(ADMG_BINDING_B_VAR_NO_BAG_USE), 0);
+
+
+    FlagClear(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_INVERSE_BATTLE));
+    FlagClear(ADMG_GetFeatureBinding(ADMG_BINDING_WE_FLAG_FORCE_DOUBLE_WILD));
+    FlagClear(ADMG_GetFeatureBinding(ADMG_BINDING_WE_SMART_WILD_AI_FLAG));
+    FlagClear(ADMG_GetFeatureBinding(ADMG_BINDING_WE_FLAG_NO_CATCHING));
+    FlagClear(ADMG_GetFeatureBinding(ADMG_BINDING_WE_FLAG_NO_RUNNING));
+    FlagClear(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_DYNAMAX_BATTLE));
+    FlagClear(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_SKY_BATTLE));
+    FlagClear(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_NO_WHITEOUT));
 }
 #endif
 
@@ -926,7 +927,7 @@ void LoadMapFromCameraTransition(MapId mapId)
     TryUpdateRandomTrainerRematches(mapId);
 #endif //FREE_MATCH_CALL
 
-    if (I_VS_SEEKER_CHARGING != 0 || ADMG_HasNativeRematchContext())
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_I_VS_SEEKER_CHARGING) != 0 || ADMG_HasNativeRematchContext())
         MapResetTrainerRematches(mapId);
 
     DoTimeBasedEvents();
@@ -1006,7 +1007,7 @@ static void LoadMapFromWarp(bool32 a1)
     TryUpdateRandomTrainerRematches(gSaveBlock1Ptr->location.mapId);
 #endif //FREE_MATCH_CALL
 
-    if (I_VS_SEEKER_CHARGING != 0 || ADMG_HasNativeRematchContext())
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_I_VS_SEEKER_CHARGING) != 0 || ADMG_HasNativeRematchContext())
          MapResetTrainerRematches(gSaveBlock1Ptr->location.mapId);
 
     if (a1 != TRUE)

@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "debug.h"
 #include "malloc.h"
 #include "battle.h"
@@ -4414,7 +4415,7 @@ void TrySkyBattle(void)
 {
     int i;
 
-    if (B_VAR_SKY_BATTLE == 0 || B_FLAG_SKY_BATTLE == 0)
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_B_VAR_SKY_BATTLE) == 0 || ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_SKY_BATTLE) == 0)
     {
         LockPlayerFieldControls();
         ScriptContext_SetupScript(Debug_FlagsAndVarNotSetBattleConfigMessage);
@@ -4438,7 +4439,7 @@ void PreparePartyForSkyBattle(void)
     int i, participatingPokemonSlot = 0;
     u8 partyCount = CalculatePlayerPartyCount();
 
-    FlagSet(B_FLAG_SKY_BATTLE);
+    FlagSet(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_SKY_BATTLE));
     SavePlayerParty();
 
     for (i = 0; i < partyCount; i++)
@@ -4450,7 +4451,7 @@ void PreparePartyForSkyBattle(void)
         else
             ZeroMonData(pokemon);
     }
-    VarSet(B_VAR_SKY_BATTLE,participatingPokemonSlot);
+    VarSet(ADMG_GetFeatureBinding(ADMG_BINDING_B_VAR_SKY_BATTLE),participatingPokemonSlot);
     CompactPartySlots();
 }
 

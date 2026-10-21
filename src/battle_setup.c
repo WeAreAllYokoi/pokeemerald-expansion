@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "admg_script.h"
 #include "admg_trainer_actor.h"
 #include "admg_rematch.h"
@@ -859,9 +860,9 @@ static void CB2_EndWildBattle(void)
     if (IsNPCFollowerWildBattle())
     {
         RestorePartyAfterFollowerNPCBattle();
-        if (FNPC_FLAG_HEAL_AFTER_FOLLOWER_BATTLE != 0
-         && (FNPC_FLAG_HEAL_AFTER_FOLLOWER_BATTLE == FNPC_ALWAYS
-         || FlagGet(FNPC_FLAG_HEAL_AFTER_FOLLOWER_BATTLE)))
+        if (ADMG_GetFeatureBinding(ADMG_BINDING_FNPC_FLAG_HEAL_AFTER_FOLLOWER_BATTLE) != 0
+         && (ADMG_GetFeatureBinding(ADMG_BINDING_FNPC_FLAG_HEAL_AFTER_FOLLOWER_BATTLE) == FNPC_ALWAYS
+         || FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_FNPC_FLAG_HEAL_AFTER_FOLLOWER_BATTLE))))
             HealPlayerParty();
     }
 
@@ -2248,7 +2249,7 @@ void BattleSetup_StartTrainerBattle_Debug(void)
 static void SaveChangesToPlayerParty(void)
 {
     u8 i = 0, j = 0;
-    u8 participatedPokemon = VarGet(B_VAR_SKY_BATTLE);
+    u8 participatedPokemon = VarGet(ADMG_GetFeatureBinding(ADMG_BINDING_B_VAR_SKY_BATTLE));
     for (i = 0; i < PARTY_SIZE; i++)
     {
         if ((participatedPokemon >> i & 1) == 1)
@@ -2261,11 +2262,11 @@ static void SaveChangesToPlayerParty(void)
 
 static void HandleBattleVariantEndParty(void)
 {
-    if (B_FLAG_SKY_BATTLE == 0 || !FlagGet(B_FLAG_SKY_BATTLE))
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_SKY_BATTLE) == 0 || !FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_SKY_BATTLE)))
         return;
     SaveChangesToPlayerParty();
     LoadPlayerParty();
-    FlagClear(B_FLAG_SKY_BATTLE);
+    FlagClear(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_SKY_BATTLE));
 }
 
 static void CB2_EndTrainerBattle(void)
@@ -2276,9 +2277,9 @@ static void CB2_EndTrainerBattle(void)
     if (FollowerNPCIsBattlePartner())
     {
         RestorePartyAfterFollowerNPCBattle();
-        if (FNPC_FLAG_HEAL_AFTER_FOLLOWER_BATTLE != 0
-         && (FNPC_FLAG_HEAL_AFTER_FOLLOWER_BATTLE == FNPC_ALWAYS
-         || FlagGet(FNPC_FLAG_HEAL_AFTER_FOLLOWER_BATTLE)))
+        if (ADMG_GetFeatureBinding(ADMG_BINDING_FNPC_FLAG_HEAL_AFTER_FOLLOWER_BATTLE) != 0
+         && (ADMG_GetFeatureBinding(ADMG_BINDING_FNPC_FLAG_HEAL_AFTER_FOLLOWER_BATTLE) == FNPC_ALWAYS
+         || FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_FNPC_FLAG_HEAL_AFTER_FOLLOWER_BATTLE))))
             HealPlayerParty();
     }
 
@@ -2337,7 +2338,7 @@ static void CB2_EndTrainerBattle(void)
     }
     else if (IsPlayerDefeated(gBattleOutcome))
     {
-        if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE || InTrainerHillChallenge() || FlagGet(B_FLAG_NO_WHITEOUT))
+        if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE || InTrainerHillChallenge() || FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_NO_WHITEOUT)))
             SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);
         else
             SetMainCallback2(CB2_WhiteOut);
@@ -2714,7 +2715,7 @@ static bool32 UpdateRandomTrainerRematches(const struct RematchTrainer *table, M
 {
     s32 i;
 
-    if (CheckBagHasItem(ITEM_VS_SEEKER, 1) && I_VS_SEEKER_CHARGING != 0)
+    if (CheckBagHasItem(ITEM_VS_SEEKER, 1) && ADMG_GetFeatureBinding(ADMG_BINDING_I_VS_SEEKER_CHARGING) != 0)
         return FALSE;
 
     for (i = 0; i < REMATCH_SPECIAL_TRAINER_START; i++)
@@ -2834,7 +2835,7 @@ void ClearCurrentTrainerWantRematchVsSeeker(void)
     if (IsNativeTrainerBattleContent(TRAINER_BATTLE_PARAM.opponentA)) return;
 
 #if FREE_MATCH_CALL == FALSE
-    if ((gBattleTypeFlags & BATTLE_TYPE_TRAINER) && FlagGet(I_VS_SEEKER_CHARGING) && (I_VS_SEEKER_CHARGING != 0))
+    if ((gBattleTypeFlags & BATTLE_TYPE_TRAINER) && FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_I_VS_SEEKER_CHARGING)) && (ADMG_GetFeatureBinding(ADMG_BINDING_I_VS_SEEKER_CHARGING) != 0))
     {
         for (u32 i = 0; i < REMATCH_TABLE_ENTRIES; i++)
         {
@@ -2877,7 +2878,7 @@ static bool8 WasSecondRematchWon(const struct RematchTrainer *table, enum Traine
     if (!HasTrainerBeenFought(table[tableId].trainerIds[1]))
         return FALSE;
 #if FREE_MATCH_CALL == FALSE
-    if (I_VS_SEEKER_CHARGING)
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_I_VS_SEEKER_CHARGING))
     {
         if (gSaveBlock1Ptr->trainerRematches[tableId] == 0)
             return FALSE;
@@ -2951,7 +2952,7 @@ ADMG_NATIVE_ENTRY u16 GetRematchTrainerId(enum TrainerId trainerId)
         ADMG_StateAccessRejected(trainerId, __func__);
         return 0;
     }
-    if (FlagGet(I_VS_SEEKER_CHARGING) && (I_VS_SEEKER_CHARGING != 0))
+    if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_I_VS_SEEKER_CHARGING)) && (ADMG_GetFeatureBinding(ADMG_BINDING_I_VS_SEEKER_CHARGING) != 0))
         return GetRematchTrainerIdVSSeeker(trainerId);
     return GetRematchTrainerIdFromTable(gRematchTable, trainerId);
 }
@@ -3020,7 +3021,7 @@ bool8 IsTrainerReadyForRematch(void)
 
 static void HandleRematchVarsOnBattleEnd(void)
 {
-    if ((gBattleTypeFlags & BATTLE_TYPE_TRAINER) && (I_VS_SEEKER_CHARGING != 0))
+    if ((gBattleTypeFlags & BATTLE_TYPE_TRAINER) && (ADMG_GetFeatureBinding(ADMG_BINDING_I_VS_SEEKER_CHARGING) != 0))
         ClearRematchMovementByTrainerId();
 
     ClearTrainerWantRematchState(gRematchTable, TRAINER_BATTLE_PARAM.opponentA);

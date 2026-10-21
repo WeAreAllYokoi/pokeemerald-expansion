@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "battle_setup.h"
 #include "battle_pike.h"
 #include "battle_pyramid.h"
@@ -1218,10 +1219,10 @@ bool8 TryDoDoubleWildBattle(void)
     if (GetSafariZoneFlag()
       || (WE_DOUBLE_WILD_REQUIRE_2_MONS && GetMonsStateToDoubles() != PLAYER_HAS_TWO_USABLE_MONS))
         return FALSE;
-    if (FollowerNPCIsBattlePartner() && FNPC_FLAG_PARTNER_WILD_BATTLES != 0
-     && (FNPC_FLAG_PARTNER_WILD_BATTLES == FNPC_ALWAYS || FlagGet(FNPC_FLAG_PARTNER_WILD_BATTLES)) && FNPC_NPC_FOLLOWER_WILD_BATTLE_VS_2 == TRUE)
+    if (FollowerNPCIsBattlePartner() && ADMG_GetFeatureBinding(ADMG_BINDING_FNPC_FLAG_PARTNER_WILD_BATTLES) != 0
+     && (ADMG_GetFeatureBinding(ADMG_BINDING_FNPC_FLAG_PARTNER_WILD_BATTLES) == FNPC_ALWAYS || FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_FNPC_FLAG_PARTNER_WILD_BATTLES))) && FNPC_NPC_FOLLOWER_WILD_BATTLE_VS_2 == TRUE)
         return TRUE;
-    else if (FlagGet(WE_FLAG_FORCE_DOUBLE_WILD))
+    else if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_WE_FLAG_FORCE_DOUBLE_WILD)))
         return TRUE;
     else if (RandomPercentage(RNG_NONE, WE_DOUBLE_WILD_CHANCE))
         return TRUE;

@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "battle_setup.h"
 #include "bike.h"
 #include "coord_event_weather.h"
@@ -899,7 +900,7 @@ void RestartWildEncounterImmunitySteps(void)
 
 static bool32 ShouldDisableRandomEncounters(void)
 {
-    if (FlagGet(WE_FLAG_NO_ENCOUNTER))
+    if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_WE_FLAG_NO_ENCOUNTER)))
         return TRUE;
 
     if (!WE_VANILLA_RANDOM && WE_OW_ENCOUNTERS)

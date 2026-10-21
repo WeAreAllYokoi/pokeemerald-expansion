@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "admg_state.h"
 #include "admg_trainer_actor.h"
 #include "battle.h"
@@ -3707,7 +3708,7 @@ u8 IsRunningFromBattleImpossible(enum BattlerId battler)
     enum HoldEffect holdEffect;
     u32 i;
 
-    if (FlagGet(WE_FLAG_NO_RUNNING))
+    if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_WE_FLAG_NO_RUNNING)))
     {
         gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_CANT_ESCAPE;
         return BATTLE_RUN_FORBIDDEN;
@@ -4106,7 +4107,7 @@ static void HandleTurnActionSelectionState(void)
                 }
                 else if ((IsRunningFromBattleImpossible(battler) != BATTLE_RUN_SUCCESS
                          && gBattleResources->bufferB[battler][1] == B_ACTION_RUN)
-                         || (FlagGet(WE_FLAG_NO_RUNNING) == TRUE && gBattleResources->bufferB[battler][1] == B_ACTION_RUN))
+                         || (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_WE_FLAG_NO_RUNNING)) == TRUE && gBattleResources->bufferB[battler][1] == B_ACTION_RUN))
                 {
                     gSelectionBattleScripts[battler] = BattleScript_PrintCantEscapeFromBattle;
                     gBattleCommunication[battler] = STATE_SELECTION_SCRIPT;
@@ -5918,11 +5919,7 @@ void ScriptSetTotemBoost(struct ScriptContext *ctx)
 
 bool32 IsWildMonSmart(void)
 {
-#if WE_SMART_WILD_AI_FLAG != 0
-    return (FlagGet(WE_SMART_WILD_AI_FLAG));
-#else
-    return FALSE;
-#endif
+    return FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_WE_SMART_WILD_AI_FLAG));
 }
 
 s32 Factorial(s32 n)

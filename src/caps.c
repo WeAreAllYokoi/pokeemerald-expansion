@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "battle.h"
 #include "event_data.h"
 #include "caps.h"
@@ -32,7 +33,7 @@ u32 GetCurrentLevelCap(void)
     }
     else if (B_LEVEL_CAP_TYPE == LEVEL_CAP_VARIABLE)
     {
-        return VarGet(B_LEVEL_CAP_VARIABLE);
+        return VarGet(ADMG_GetFeatureBinding(ADMG_BINDING_B_LEVEL_CAP_VARIABLE));
     }
 
     return MAX_LEVEL;

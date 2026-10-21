@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "item.h"
 #include "berry.h"
 #include "pokeball.h"
@@ -890,7 +891,12 @@ enum ItemType GetItemType(enum Item itemId)
 
 ItemUseFunc GetItemFieldFunc(enum Item itemId)
 {
-    return gItemsInfo[SanitizeItemId(itemId)].fieldUseFunc;
+    enum Item item = SanitizeItemId(itemId);
+    ItemUseFunc use = gItemsInfo[item].fieldUseFunc;
+    if (item == ITEM_VS_SEEKER && use == ItemUseOutOfBattle_CannotUse
+     && ADMG_GetFeatureBinding(ADMG_BINDING_I_VS_SEEKER_CHARGING) != 0)
+        return FieldUseFunc_VsSeeker;
+    return use;
 }
 
 // Returns an item's battle effect script ID.

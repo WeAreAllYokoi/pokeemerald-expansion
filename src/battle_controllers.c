@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "admg_trainer_actor.h"
 #include "admg_state.h"
 #include "battle.h"
@@ -60,7 +61,7 @@ static void AnimateMonAfterKnockout(enum BattlerId battler);
 
 bool32 IsAiVsAiBattle(void)
 {
-    return (B_FLAG_AI_VS_AI_BATTLE && FlagGet(B_FLAG_AI_VS_AI_BATTLE));
+    return (ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_AI_VS_AI_BATTLE) && FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_AI_VS_AI_BATTLE)));
 }
 
 bool32 BattlerIsPlayer(enum BattlerId battlerId)

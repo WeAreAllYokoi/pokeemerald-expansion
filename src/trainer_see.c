@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "battle_setup.h"
 #include "event_data.h"
 #include "admg_state.h"
@@ -440,7 +441,7 @@ bool8 CheckForTrainersWantingBattle(void)
     u8 trainerObjects[OBJECT_EVENTS_COUNT] = {0};
     u8 trainerObjectsCount = 0;
 
-    if (FlagGet(OW_FLAG_NO_TRAINER_SEE))
+    if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_OW_FLAG_NO_TRAINER_SEE)))
         return FALSE;
 
     gNoOfApproachingTrainers = 0;
@@ -572,7 +573,7 @@ static u8 CheckTrainer(u8 objectEventId)
         if (defeated)
         {
             //If there is a rematch, we want to trigger the approach sequence
-            if (I_VS_SEEKER_CHARGING && GetRematchFromScriptPointer(trainerBattlePtr))
+            if (ADMG_GetFeatureBinding(ADMG_BINDING_I_VS_SEEKER_CHARGING) && GetRematchFromScriptPointer(trainerBattlePtr))
             {
                 trainerBattlePtr = NULL;
                 numTrainers = 0xFF;

@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "admg_trainer_actor.h"
 #include "battle.h"
 #include "battle_hold_effects.h"
@@ -10461,7 +10462,7 @@ void BS_JumpIfNoWhiteOut(void)
 {
     NATIVE_ARGS(const u8 *jumpInstr);
 
-    if (FlagGet(B_FLAG_NO_WHITEOUT))
+    if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_NO_WHITEOUT)))
         gBattlescriptCurrInstr = cmd->jumpInstr;
     else
         gBattlescriptCurrInstr = cmd->nextInstr;
@@ -10559,7 +10560,7 @@ void BS_JumpIfRoarFails(void)
              && !IsOnPlayerSide(gBattlerAttacker)
              && !IsOnPlayerSide(gBattlerTarget))
         gBattlescriptCurrInstr = cmd->jumpInstr;
-    else if (FlagGet(WE_FLAG_NO_RUNNING))
+    else if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_WE_FLAG_NO_RUNNING)))
         gBattlescriptCurrInstr = cmd->jumpInstr;
     else
         gBattlescriptCurrInstr = cmd->nextInstr;

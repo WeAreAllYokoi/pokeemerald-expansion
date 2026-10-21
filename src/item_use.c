@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "item_use.h"
 #include "battle.h"
 #include "battle_anim.h"
@@ -267,7 +268,7 @@ void ItemUseOutOfBattle_ExpShare(u8 taskId)
         else
             DisplayItemMessage(taskId, FONT_NORMAL, gText_ExpShareOn, CloseItemMessage);
     }
-    FlagToggle(I_EXP_SHARE_FLAG);
+    FlagToggle(ADMG_GetFeatureBinding(ADMG_BINDING_I_EXP_SHARE_FLAG));
 #else
     DisplayDadsAdviceCannotUseItemMessage(taskId, gTasks[taskId].tUsingRegisteredKeyItem);
 #endif
@@ -369,7 +370,7 @@ void ItemUseOutOfBattle_Itemfinder(u8 var)
 
 static void ItemUseOnFieldCB_Itemfinder(u8 taskId)
 {
-    if (I_ORAS_DOWSING_FLAG != 0)
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_I_ORAS_DOWSING_FLAG) != 0)
     {
         if (!TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING) && !TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_UNDERWATER))
             gTasks[taskId].func = Task_UseORASDowsingMachine;
@@ -443,7 +444,7 @@ bool8 ItemfinderCheckForHiddenItems(const struct MapEvents *events, u8 taskId)
     s16 playerX, playerY, i, distanceX, distanceY;
     bool8 collected;
     PlayerGetDestCoords(&playerX, &playerY);
-    if (I_ORAS_DOWSING_FLAG != 0)
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_I_ORAS_DOWSING_FLAG) != 0)
         gSprites[gObjectEvents[gPlayerAvatar.objectEventId].fieldEffectSpriteId].tItemFound = FALSE;
     else
         gTasks[taskId].tItemFound = FALSE;
@@ -561,7 +562,7 @@ static void SetDistanceOfClosestHiddenItem(u8 taskId, s16 itemDistanceX, s16 ite
 {
     s16 *data = gTasks[taskId].data;
     s16 oldItemAbsX, oldItemAbsY, newItemAbsX, newItemAbsY;
-    if (I_ORAS_DOWSING_FLAG != 0)
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_I_ORAS_DOWSING_FLAG) != 0)
         data = gSprites[gObjectEvents[gPlayerAvatar.objectEventId].fieldEffectSpriteId].data;
 
     if (tItemFound == FALSE)
@@ -992,9 +993,8 @@ static void Task_UseRepel(u8 taskId)
     if (!IsSEPlaying())
     {
         VarSet(VAR_REPEL_STEP_COUNT, GetItemHoldEffectParam(gSpecialVar_ItemId));
-    #if VAR_LAST_REPEL_LURE_USED != 0
-        VarSet(VAR_LAST_REPEL_LURE_USED, gSpecialVar_ItemId);
-    #endif
+        if (ADMG_GetFeatureBinding(ADMG_BINDING_VAR_LAST_REPEL_LURE_USED) != 0)
+            VarSet(ADMG_GetFeatureBinding(ADMG_BINDING_VAR_LAST_REPEL_LURE_USED), gSpecialVar_ItemId);
         RemoveUsedItem();
         if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)
             DisplayItemMessage(taskId, FONT_NORMAL, gStringVar4, CloseItemMessage);
@@ -1032,9 +1032,8 @@ static void Task_UseLure(u8 taskId)
     if (!IsSEPlaying())
     {
         VarSet(VAR_REPEL_STEP_COUNT, GetItemHoldEffectParam(gSpecialVar_ItemId) | REPEL_LURE_MASK);
-    #if VAR_LAST_REPEL_LURE_USED != 0
-        VarSet(VAR_LAST_REPEL_LURE_USED, gSpecialVar_ItemId);
-    #endif
+        if (ADMG_GetFeatureBinding(ADMG_BINDING_VAR_LAST_REPEL_LURE_USED) != 0)
+            VarSet(ADMG_GetFeatureBinding(ADMG_BINDING_VAR_LAST_REPEL_LURE_USED), gSpecialVar_ItemId);
         RemoveUsedItem();
         if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)
             DisplayItemMessage(taskId, FONT_NORMAL, gStringVar4, CloseItemMessage);
@@ -1132,7 +1131,7 @@ static u32 GetBallThrowableState(void)
         return BALL_THROW_UNABLE_NO_ROOM;
     else if (GetConfig(B_SEMI_INVULNERABLE_CATCH) >= GEN_4 &&  IsSemiInvulnerable(GetCatchingBattler(), CHECK_ALL))
         return BALL_THROW_UNABLE_SEMI_INVULNERABLE;
-    else if (FlagGet(WE_FLAG_NO_CATCHING) || !IsAllowedToUseBag())
+    else if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_WE_FLAG_NO_CATCHING)) || !IsAllowedToUseBag())
         return BALL_THROW_UNABLE_DISABLED_FLAG;
 
     return BALL_THROW_ABLE;

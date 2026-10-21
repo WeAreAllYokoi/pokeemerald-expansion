@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "admg_feature_policies.h"
 #include "admg_trainer_actor.h"
 #include "admg_state.h"
@@ -870,13 +871,13 @@ bool32 ComputePlayerShinyOdds(u32 personality, u32 value)
 {
     ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1, FALSE);
 
-    if (FlagGet(P_FLAG_FORCE_NO_SHINY))
+    if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_P_FLAG_FORCE_NO_SHINY)))
         return FALSE;
 
-    if (FlagGet(P_FLAG_FORCE_SHINY))
+    if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_P_FLAG_FORCE_SHINY)))
         return TRUE;
 
-    if (P_ONLY_OBTAINABLE_SHINIES && (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE || (FlagGet(WE_FLAG_NO_CATCHING))))
+    if (P_ONLY_OBTAINABLE_SHINIES && (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE || (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_WE_FLAG_NO_CATCHING)))))
         return FALSE;
 
     if (P_NO_SHINIES_WITHOUT_POKEBALLS && !HasAtLeastOnePokeBall() && FlagGet(FLAG_SYS_POKEDEX_GET))

@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "event_data.h"
 #include "config_changes.h"
 #include "pokemon.h"
@@ -30,7 +31,7 @@ void RandomlyGivePartyPokerus(void)
     if ((GetConfig(POKERUS_INFECT_AGAIN) > GEN_2) && IsPokerusInParty())
         return;
 
-    if (P_POKERUS_FLAG_INFECTION && !FlagGet(P_POKERUS_FLAG_INFECTION))
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_P_POKERUS_FLAG_INFECTION) && !FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_P_POKERUS_FLAG_INFECTION)))
         return;
 
     if (RandomUniform(RNG_POKERUS_INFECTION, 0, MAX_u16) < P_POKERUS_INFECTION_ODDS)

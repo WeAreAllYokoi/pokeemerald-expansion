@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "admg_feature_policies.h"
 #include "type_icon_anim.h"
 #include "main.h"
@@ -4769,12 +4770,12 @@ static inline bool32 ShouldShowIvEvPrompt(void)
 {
     if (P_SUMMARY_SCREEN_IV_EV_BOX_ONLY)
     {
-        return (ADMG_GetFeaturePolicy(ADMG_POLICY_SUMMARY_IV_EV) || FlagGet(P_FLAG_SUMMARY_SCREEN_IV_EV_INFO))
+        return (ADMG_GetFeaturePolicy(ADMG_POLICY_SUMMARY_IV_EV) || FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_P_FLAG_SUMMARY_SCREEN_IV_EV_INFO)))
             && (sMonSummaryScreen->mode == SUMMARY_MODE_BOX || sMonSummaryScreen->mode == SUMMARY_MODE_BOX_CURSOR);
     }
     else if (!P_SUMMARY_SCREEN_IV_EV_BOX_ONLY)
     {
-        return (ADMG_GetFeaturePolicy(ADMG_POLICY_SUMMARY_IV_EV) || FlagGet(P_FLAG_SUMMARY_SCREEN_IV_EV_INFO));
+        return (ADMG_GetFeaturePolicy(ADMG_POLICY_SUMMARY_IV_EV) || FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_P_FLAG_SUMMARY_SCREEN_IV_EV_INFO)));
     }
     return FALSE;
 }

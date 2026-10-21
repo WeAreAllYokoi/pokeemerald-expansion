@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "data.h"
 #include "event_data.h"
 #include "admg_state.h"
@@ -9,9 +10,9 @@
 enum DifficultyLevel GetCurrentDifficultyLevel(void)
 {
     u32 value;
-    if (!B_VAR_DIFFICULTY)
+    if (!ADMG_GetFeatureBinding(ADMG_BINDING_B_VAR_DIFFICULTY))
         return DIFFICULTY_NORMAL;
-    if (!ADMG_TryReadVar((u32)B_VAR_DIFFICULTY, &value, FALSE))
+    if (!ADMG_TryReadVar((u32)ADMG_GetFeatureBinding(ADMG_BINDING_B_VAR_DIFFICULTY), &value, FALSE))
         return DIFFICULTY_NORMAL;
     if (value >= DIFFICULTY_COUNT)
     {
@@ -23,13 +24,13 @@ enum DifficultyLevel GetCurrentDifficultyLevel(void)
 
 void SetCurrentDifficultyLevel(enum DifficultyLevel desiredDifficulty)
 {
-    if (!B_VAR_DIFFICULTY)
+    if (!ADMG_GetFeatureBinding(ADMG_BINDING_B_VAR_DIFFICULTY))
         return;
 
     if (desiredDifficulty > DIFFICULTY_MAX)
         desiredDifficulty = DIFFICULTY_MAX;
 
-    VarSet(B_VAR_DIFFICULTY, desiredDifficulty);
+    VarSet(ADMG_GetFeatureBinding(ADMG_BINDING_B_VAR_DIFFICULTY), desiredDifficulty);
 }
 
 enum DifficultyLevel GetBattlePartnerDifficultyLevel(enum TrainerId partnerId)
@@ -68,7 +69,7 @@ void Script_IncreaseDifficulty(void)
 {
     enum DifficultyLevel currentDifficulty;
 
-    if (!B_VAR_DIFFICULTY)
+    if (!ADMG_GetFeatureBinding(ADMG_BINDING_B_VAR_DIFFICULTY))
         return;
 
     currentDifficulty = GetCurrentDifficultyLevel();
@@ -77,7 +78,7 @@ void Script_IncreaseDifficulty(void)
         return;
 
     Script_RequestEffects(SCREFF_V1);
-    Script_RequestWriteVar(B_VAR_DIFFICULTY);
+    Script_RequestWriteVar(ADMG_GetFeatureBinding(ADMG_BINDING_B_VAR_DIFFICULTY));
 
     SetCurrentDifficultyLevel(currentDifficulty);
 }
@@ -86,7 +87,7 @@ void Script_DecreaseDifficulty(void)
 {
     enum DifficultyLevel currentDifficulty;
 
-    if (!B_VAR_DIFFICULTY)
+    if (!ADMG_GetFeatureBinding(ADMG_BINDING_B_VAR_DIFFICULTY))
         return;
 
     currentDifficulty = GetCurrentDifficultyLevel();
@@ -95,7 +96,7 @@ void Script_DecreaseDifficulty(void)
         return;
 
     Script_RequestEffects(SCREFF_V1);
-    Script_RequestWriteVar(B_VAR_DIFFICULTY);
+    Script_RequestWriteVar(ADMG_GetFeatureBinding(ADMG_BINDING_B_VAR_DIFFICULTY));
 
     SetCurrentDifficultyLevel(--currentDifficulty);
 }
@@ -111,7 +112,7 @@ void Script_SetDifficulty(struct ScriptContext *ctx)
     enum DifficultyLevel desiredDifficulty = ScriptReadByte(ctx);
 
     Script_RequestEffects(SCREFF_V1);
-    Script_RequestWriteVar(B_VAR_DIFFICULTY);
+    Script_RequestWriteVar(ADMG_GetFeatureBinding(ADMG_BINDING_B_VAR_DIFFICULTY));
 
     SetCurrentDifficultyLevel(desiredDifficulty);
 }

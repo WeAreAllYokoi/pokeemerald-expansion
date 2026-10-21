@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "admg_state.h"
 #include "battle.h"
 #include "battle_anim.h"
@@ -51,9 +52,8 @@ void AllocateBattleResources(void)
     gAiPartyData = AllocZeroed(sizeof(*gAiPartyData));
     gBattleHistory = AllocZeroed(sizeof(*gBattleHistory));
 
-#if B_FLAG_SKY_BATTLE
-    gBattleStruct->isSkyBattle = FlagGet(B_FLAG_SKY_BATTLE);
-#endif
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_SKY_BATTLE) != 0)
+        gBattleStruct->isSkyBattle = FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_SKY_BATTLE));
 
     gBattleResources = AllocZeroed(sizeof(*gBattleResources));
     gBattleResources->secretBase = AllocZeroed(sizeof(*gBattleResources->secretBase));

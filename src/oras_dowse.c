@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "oras_dowse.h"
 #include "bike.h"
 #include "event_data.h"
@@ -253,7 +254,7 @@ const struct SpriteTemplate gFieldEffectObjectTemplate_ORASDowsingMay = {
 
 void Task_UseORASDowsingMachine(u8 taskId)
 {
-    if (FlagGet(I_ORAS_DOWSING_FLAG))
+    if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_I_ORAS_DOWSING_FLAG)))
     {
         EndORASDowsing();
     }
@@ -280,7 +281,7 @@ static void StartORASDowseFieldEffect(void)
 
 void ResumeORASDowseFieldEffect(void)
 {
-    if (I_ORAS_DOWSING_FLAG != 0 && FlagGet(I_ORAS_DOWSING_FLAG))
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_I_ORAS_DOWSING_FLAG) != 0 && FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_I_ORAS_DOWSING_FLAG)))
         StartORASDowseFieldEffect();
 }
 
@@ -306,7 +307,7 @@ u32 FldEff_ORASDowsing(void)
     u32 spriteId;
     u32 palNum;
 
-    FlagSet(I_ORAS_DOWSING_FLAG);
+    FlagSet(ADMG_GetFeatureBinding(ADMG_BINDING_I_ORAS_DOWSING_FLAG));
     SetSpritePosToOffsetMapCoords((s16 *)&fPlayerX, (s16 *)&fPlayerY, 8, 0);
     if (gPlayerAvatar.gender == MALE)
         spriteId = CreateSpriteAtEndUnchecked(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_ORAS_DOWSE_BRENDAN], fPlayerX, fPlayerY, 1);
@@ -337,7 +338,7 @@ static void UpdateORASDowsingFieldEffect(struct Sprite *sprite)
     struct ObjectEvent *playerObj = &gObjectEvents[gPlayerAvatar.objectEventId];
     struct Sprite *playerSprite = &gSprites[playerObj->spriteId];
 
-    if (!FlagGet(I_ORAS_DOWSING_FLAG))
+    if (!FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_I_ORAS_DOWSING_FLAG)))
     {
         DestroySpriteAndFreeResources(sprite);
         return;
@@ -539,13 +540,13 @@ void UpdateDowsingAnimDirection(struct Sprite *sprite, struct ObjectEvent *playe
 
 void EndORASDowsing(void)
 {
-    if (I_ORAS_DOWSING_FLAG != 0 && FlagGet(I_ORAS_DOWSING_FLAG))
-        FlagClear(I_ORAS_DOWSING_FLAG);
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_I_ORAS_DOWSING_FLAG) != 0 && FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_I_ORAS_DOWSING_FLAG)))
+        FlagClear(ADMG_GetFeatureBinding(ADMG_BINDING_I_ORAS_DOWSING_FLAG));
 }
 
 void Script_ClearDowsingColor(void)
 {
-    if (I_ORAS_DOWSING_FLAG != 0 && FlagGet(I_ORAS_DOWSING_FLAG))
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_I_ORAS_DOWSING_FLAG) != 0 && FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_I_ORAS_DOWSING_FLAG)))
     {
         struct Sprite *sprite = &gSprites[gObjectEvents[gPlayerAvatar.objectEventId].fieldEffectSpriteId];
         ClearDowsingColor(sprite);
@@ -555,6 +556,6 @@ void Script_ClearDowsingColor(void)
 
 void Script_UpdateDowseState(void)
 {
-    if (I_ORAS_DOWSING_FLAG != 0 && FlagGet(I_ORAS_DOWSING_FLAG))
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_I_ORAS_DOWSING_FLAG) != 0 && FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_I_ORAS_DOWSING_FLAG)))
         UpdateDowseState(&gSprites[gObjectEvents[gPlayerAvatar.objectEventId].fieldEffectSpriteId]);
 }

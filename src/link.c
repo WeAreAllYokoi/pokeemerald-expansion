@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "m4a.h"
 #include "malloc.h"
 #include "reload_save.h"
@@ -2323,10 +2324,10 @@ bool32 ShouldCheckForUnionRoom(void)
     if (OW_UNION_DISABLE_CHECK)
         return FALSE;
 
-    if (OW_FLAG_MOVE_UNION_ROOM_CHECK == 0)
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_OW_FLAG_MOVE_UNION_ROOM_CHECK) == 0)
         return TRUE;
 
-    if (FlagGet(OW_FLAG_MOVE_UNION_ROOM_CHECK))
+    if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_OW_FLAG_MOVE_UNION_ROOM_CHECK)))
         return TRUE;
 
     return FALSE;

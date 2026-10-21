@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "event_data.h"
 #include "admg_state.h"
 #include "script_menu.h"
@@ -41,9 +42,9 @@ static bool8 ADMG_ValidateSprayMenuState(void)
         if (!ADMG_TryGetIndexedVarId(LOCAL_VAR_SPRAY_CONST, i, NUM_SPRAY_STRENGTH, 1, &id))
             return FALSE;
     }
-    if (VAR_LAST_REPEL_LURE_USED != 0 && ADMG_GetVarSpan(VAR_LAST_REPEL_LURE_USED, 1) == NULL)
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_VAR_LAST_REPEL_LURE_USED) != 0 && ADMG_GetVarSpan(ADMG_GetFeatureBinding(ADMG_BINDING_VAR_LAST_REPEL_LURE_USED), 1) == NULL)
     {
-        ADMG_StateAccessRejected(VAR_LAST_REPEL_LURE_USED, __func__);
+        ADMG_StateAccessRejected(ADMG_GetFeatureBinding(ADMG_BINDING_VAR_LAST_REPEL_LURE_USED), __func__);
         return FALSE;
     }
     return TRUE;
@@ -96,7 +97,7 @@ u32 GetLastUsedSprayType(void)
 u32 SetSprayMenuCursorPosition(int currentSpray, int count)
 {
     u32 remembered;
-    if (!ADMG_TryReadVar(VAR_LAST_REPEL_LURE_USED, &remembered, VAR_LAST_REPEL_LURE_USED == 0))
+    if (!ADMG_TryReadVar(ADMG_GetFeatureBinding(ADMG_BINDING_VAR_LAST_REPEL_LURE_USED), &remembered, ADMG_GetFeatureBinding(ADMG_BINDING_VAR_LAST_REPEL_LURE_USED) == 0))
         return 0;
     if (remembered == currentSpray)
         return count;
@@ -127,7 +128,7 @@ void DrawSprayMenu(void)
         menuItems[count].text = GetItemName(currentSpray);
         VarSet(LOCAL_VAR_SPRAY_CONST + count, currentSpray);
 
-        if (VAR_LAST_REPEL_LURE_USED != 0)
+        if (ADMG_GetFeatureBinding(ADMG_BINDING_VAR_LAST_REPEL_LURE_USED) != 0)
             menuPos = SetSprayMenuCursorPosition(currentSpray, count);
 
         yCoord = SPRAY_MENU_Y_COORD - (2 * count);
@@ -159,6 +160,6 @@ void HandleSprayMenuChoice(void)
 
     VarSet(VAR_REPEL_STEP_COUNT, GetItemHoldEffectParam(LOCAL_VAR_SPRAY) | lureMask);
 
-    if (VAR_LAST_REPEL_LURE_USED != 0)
-        VarSet(VAR_LAST_REPEL_LURE_USED, LOCAL_VAR_SPRAY);
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_VAR_LAST_REPEL_LURE_USED) != 0)
+        VarSet(ADMG_GetFeatureBinding(ADMG_BINDING_VAR_LAST_REPEL_LURE_USED), LOCAL_VAR_SPRAY);
 }

@@ -4,10 +4,14 @@
 .set LOCAL_VAR_NEW_SPRAY, VAR_0x8007
 
 EventScript_BufferSprayName::
-.if VAR_LAST_REPEL_LURE_USED != 0
-	bufferitemname STR_VAR_1, VAR_LAST_REPEL_LURE_USED
+	callnative ADMG_ScriptTestFeatureBinding, requests_effects=1
+	.2byte ADMG_BINDING_VAR_LAST_REPEL_LURE_USED
+	goto_if_ne EventScript_BufferSprayName_Unbound
+	callnative ADMG_ScriptCopyFeatureVar, requests_effects=1
+	.2byte ADMG_BINDING_VAR_LAST_REPEL_LURE_USED, LOCAL_VAR_SPRAY
+	bufferitemname STR_VAR_1, LOCAL_VAR_SPRAY
 	return
-.endif
+EventScript_BufferSprayName_Unbound:
 	specialvar LOCAL_VAR_SPRAY_TYPE, GetLastUsedSprayType
 	compare LOCAL_VAR_SPRAY_TYPE, ITEM_REPEL
 	goto_if_eq EventScript_BufferSprayName_2
@@ -46,24 +50,24 @@ EventScript_SprayWoreOffMessage::
 
 
 EventScript_UseSingleSpray::
-.if VAR_LAST_REPEL_LURE_USED == 0
-	call EventScript_UseDifferentSpray
-.else
-	checkitem VAR_LAST_REPEL_LURE_USED, 1
+	callnative ADMG_ScriptTestFeatureBinding, requests_effects=1
+	.2byte ADMG_BINDING_VAR_LAST_REPEL_LURE_USED
+	goto_if_ne EventScript_UseSingleSpray_Unbound
+	callnative ADMG_ScriptCopyFeatureVar, requests_effects=1
+	.2byte ADMG_BINDING_VAR_LAST_REPEL_LURE_USED, LOCAL_VAR_SPRAY
+	checkitem LOCAL_VAR_SPRAY, 1
 	compare VAR_RESULT, TRUE
 	goto_if_eq EventScript_UseSingleSpray_2
+EventScript_UseSingleSpray_Unbound:
 	call EventScript_UseDifferentSpray
-.endif
 EventScript_UseSingleSpray_1:
 	closemessage
 	releaseall
 	end
 
-.if VAR_LAST_REPEL_LURE_USED != 0
 EventScript_UseSingleSpray_2:
 	call EventScript_UseLastUsedSpray
 	goto EventScript_UseSingleSpray_1
-.endif
 
 
 EventScript_SetSingleSprayAndUse::
@@ -87,7 +91,6 @@ EventScript_UseDifferentSpray_2:
 	goto EventScript_UseDifferentSpray_1
 
 
-.if VAR_LAST_REPEL_LURE_USED != 0
 EventScript_UseLastUsedSpray::
 	msgbox Text_SprayWoreOffAskUseAnother, MSGBOX_YESNO
 	compare VAR_RESULT, YES
@@ -96,10 +99,10 @@ EventScript_UseLastUsedSpray_1:
 	return
 
 EventScript_UseLastUsedSpray_2:
-	copyvar LOCAL_VAR_SPRAY, VAR_LAST_REPEL_LURE_USED
+	callnative ADMG_ScriptCopyFeatureVar, requests_effects=1
+	.2byte ADMG_BINDING_VAR_LAST_REPEL_LURE_USED, LOCAL_VAR_SPRAY
 	call EventScript_SetSingleSprayAndUse
 	goto EventScript_UseLastUsedSpray_1
-.endif
 
 
 .if I_REPEL_LURE_MENU == TRUE

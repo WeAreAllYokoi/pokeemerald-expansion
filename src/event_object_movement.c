@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "constants/event_object_movement.h"
 #include "admg_rematch_movement.h"
 #include "admg_state.h"
@@ -2451,7 +2452,7 @@ void UpdateFollowingPokemon(void)
     // 4. a follower NPC is present
     if (OW_POKEMON_OBJECT_EVENTS == FALSE
      || OW_FOLLOWERS_ENABLED == FALSE
-     || FlagGet(B_FLAG_FOLLOWERS_DISABLED)
+     || FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_FOLLOWERS_DISABLED))
      || !GetFollowerInfo(&species, &shiny, &female)
      || SpeciesToGraphicsInfo(species, shiny, female) == NULL
      || (gMapHeader.mapType == MAP_TYPE_INDOOR && SpeciesToGraphicsInfo(species, shiny, female)->oam->size > ST_OAM_SIZE_2)
@@ -6556,10 +6557,8 @@ enum Collision GetCollisionAtCoords(struct ObjectEvent *objectEvent, s16 x, s16 
     u8 nextBehavior = MapGridGetMetatileBehaviorAt(x, y);
     enum Collision collision;
 
-    #if OW_FLAG_NO_COLLISION != 0
-    if (FlagGet(OW_FLAG_NO_COLLISION))
+    if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_OW_FLAG_NO_COLLISION)))
         return COLLISION_NONE;
-    #endif
 
     objectEvent->directionOverwrite = DIR_NONE;
 

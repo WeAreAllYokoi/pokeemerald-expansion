@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "type_icon_anim.h"
 #include "battle_main.h"
 #include "battle_setup.h"
@@ -832,7 +833,7 @@ static void SetUpDexNavSearch(void)
 static void DexNavSearchBail(const u8 *script)
 {
     TRY_FREE_AND_SET_NULL(sDexNavSearchDataPtr);
-    FlagClear(DN_FLAG_SEARCHING);
+    FlagClear(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING));
     FreeMonIconPalettes();
     ScriptContext_SetupScript(script);
 }
@@ -845,7 +846,7 @@ static bool8 InitDexNavSearch(enum Species species, u32 environment)
         DexNavSearchBail(EventScript_NotFoundNearby);
         return TRUE;
     }
-    FlagSet(DN_FLAG_SEARCHING);
+    FlagSet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING));
 
     // assign non-objects to struct
     sDexNavSearchDataPtr->species = species;
@@ -949,15 +950,15 @@ static void RevealHiddenSearch(void)
 
 bool32 TryStartDexNavSearch(void)
 {
-    enum Species val = VarGet(DN_VAR_SPECIES);
+    enum Species val = VarGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_VAR_SPECIES));
 
-    if (FlagGet(DN_FLAG_SEARCHING) && sDexNavSearchDataPtr->hiddenSearch)
+    if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING)) && sDexNavSearchDataPtr->hiddenSearch)
     {
         RevealHiddenSearch();
         return FALSE;
     }
 
-    if (FlagGet(DN_FLAG_SEARCHING) || (val & DEXNAV_MASK_SPECIES) == SPECIES_NONE)
+    if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING)) || (val & DEXNAV_MASK_SPECIES) == SPECIES_NONE)
         return FALSE;
 
     HideMapNamePopUpWindow();
@@ -968,12 +969,12 @@ bool32 TryStartDexNavSearch(void)
 
 void EndDexNavSearch(void)
 {
-    if (!FlagGet(DN_FLAG_SEARCHING) || sDexNavSearchDataPtr == NULL)
+    if (!FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING)) || sDexNavSearchDataPtr == NULL)
         return;
     RemoveDexNavWindowAndGfx();
     FieldEffectStop(&gSprites[sDexNavSearchDataPtr->fldEffSpriteId], sDexNavSearchDataPtr->fldEffId);
     FREE_AND_SET_NULL(sDexNavSearchDataPtr);
-    FlagClear(DN_FLAG_SEARCHING);
+    FlagClear(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING));
 }
 
 static void EndDexNavSearchSetupScript(const u8 *script)
@@ -1037,7 +1038,7 @@ static void RevealHiddenMon(void)
 
 bool32 OnStep_DexNavSearch(void)
 {
-    if (!FlagGet(DN_FLAG_SEARCHING) || sDexNavSearchDataPtr == NULL)
+    if (!FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING)) || sDexNavSearchDataPtr == NULL)
         return FALSE;
 
     u32 frameCount = gMain.vblankCounter1 - sDexNavSearchDataPtr->startingTime;
@@ -1103,7 +1104,7 @@ bool32 OnStep_DexNavSearch(void)
 
         ScriptContext_SetupScript(EventScript_StartDexNavBattle);
         FREE_AND_SET_NULL(sDexNavSearchDataPtr);
-        FlagClear(DN_FLAG_SEARCHING);
+        FlagClear(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING));
         return TRUE;
     }
 
@@ -1992,7 +1993,7 @@ static void DrawSpeciesIcons(void)
         species = sDexNavUiDataPtr->hiddenSpecies[i];
         x = ROW_HIDDEN_ICON_X + 24 * i;
         y = ROW_HIDDEN_ICON_Y;
-        if (FlagGet(DN_FLAG_DETECTOR_MODE))
+        if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_DETECTOR_MODE)))
             TryDrawIconInSlot(species, x, y);
        else if (species == SPECIES_NONE || !IsSpeciesIdValid(species))
             CreateNoDataIcon(x, y);
@@ -2017,7 +2018,7 @@ static enum Species DexNavGetSpecies(void)
         species = sDexNavUiDataPtr->landSpecies[sDexNavUiDataPtr->cursorCol + COL_LAND_COUNT];
         break;
     case ROW_HIDDEN:
-        if (!FlagGet(DN_FLAG_DETECTOR_MODE))
+        if (!FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_DETECTOR_MODE)))
             species = SPECIES_NONE;
         else
             species = sDexNavUiDataPtr->hiddenSpecies[sDexNavUiDataPtr->cursorCol];
@@ -2240,7 +2241,7 @@ static bool8 DexNav_DoGfxSetup(void)
         gMain.state++;
         break;
     case 7:
-        PrintSearchableSpecies(VarGet(DN_VAR_SPECIES) & DEXNAV_MASK_SPECIES);
+        PrintSearchableSpecies(VarGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_VAR_SPECIES)) & DEXNAV_MASK_SPECIES);
         DexNavLoadEncounterData();
         gMain.state++;
         break;
@@ -2439,7 +2440,7 @@ static void Task_DexNavMain(u8 taskId)
             PlayCry_Script(species, 0);
 
             // create value to store in a var
-            VarSet(DN_VAR_SPECIES, ((sDexNavUiDataPtr->environment << 14) | species));
+            VarSet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_VAR_SPECIES), ((sDexNavUiDataPtr->environment << 14) | species));
         }
         else
         {
@@ -2472,7 +2473,7 @@ bool32 TryFindHiddenPokemon(void)
 {
     ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1, FALSE);
 
-    u32 stepId = DN_VAR_STEP_COUNTER;
+    u32 stepId = ADMG_GetFeatureBinding(ADMG_BINDING_DN_VAR_STEP_COUNTER);
     u32 *stepPtr = stepId <= 0xFFFF ? GetVarPointer((u16)stepId) : NULL;
     bool8 detectorMode, searching;
     // Zero remains an unbound default. Nonzero IDs must own counter storage.
@@ -2488,7 +2489,7 @@ bool32 TryFindHiddenPokemon(void)
             (*stepPtr) = 0;
         return FALSE;
     }
-    if (!ADMG_TryReadFlag(DN_FLAG_DETECTOR_MODE, &detectorMode))
+    if (!ADMG_TryReadFlag(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_DETECTOR_MODE), &detectorMode))
         return FALSE;
     if (!detectorMode)
     {
@@ -2496,7 +2497,7 @@ bool32 TryFindHiddenPokemon(void)
             (*stepPtr) = 0;
         return FALSE;
     }
-    if (!ADMG_TryReadFlag(DN_FLAG_SEARCHING, &searching))
+    if (!ADMG_TryReadFlag(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING), &searching))
         return FALSE;
     if (searching || GetFlashLevel() > 0)
     {
@@ -2507,7 +2508,7 @@ bool32 TryFindHiddenPokemon(void)
 
     if (stepPtr == NULL)
     {
-        ADMG_StateAccessRejected(DN_VAR_STEP_COUNTER, __func__);
+        ADMG_StateAccessRejected(ADMG_GetFeatureBinding(ADMG_BINDING_DN_VAR_STEP_COUNTER), __func__);
         return FALSE;
     }
 
@@ -2587,7 +2588,7 @@ bool32 TryFindHiddenPokemon(void)
             return FALSE;
 
         sDexNavSearchDataPtr = AllocZeroed(sizeof(struct DexNavSearch));
-        FlagSet(DN_FLAG_SEARCHING);
+        FlagSet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING));
         // init search data
         sDexNavSearchDataPtr->isHiddenMon = isHiddenMon;
         sDexNavSearchDataPtr->species = species;
@@ -2597,7 +2598,7 @@ bool32 TryFindHiddenPokemon(void)
         if (sDexNavSearchDataPtr->monLevel == MON_LEVEL_NONEXISTENT)
         {
             FREE_AND_SET_NULL(sDexNavSearchDataPtr);
-            FlagClear(DN_FLAG_SEARCHING);
+            FlagClear(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING));
             return FALSE;
         }
 
@@ -2605,7 +2606,7 @@ bool32 TryFindHiddenPokemon(void)
         if (!TryStartHiddenMonFieldEffect(sDexNavSearchDataPtr->environment, 8, 8, TRUE))
         {
             FREE_AND_SET_NULL(sDexNavSearchDataPtr);
-            FlagClear(DN_FLAG_SEARCHING);
+            FlagClear(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING));
             return FALSE;
         }
 
@@ -2690,8 +2691,8 @@ void TryIncrementSpeciesSearchLevel()
 void ResetDexNavSearch(void)
 {
     gSaveBlock3Ptr->dexNavChain = 0;    //reset dex nav chaining on new map
-    VarSet(DN_VAR_STEP_COUNTER, 0); //reset hidden Pokémon step counter
-    if (FlagGet(DN_FLAG_SEARCHING))
+    VarSet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_VAR_STEP_COUNTER), 0); // Reset the hidden Pokémon step counter when entering a new map.
+    if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING)))
         EndDexNavSearch();   //moving to new map ends dexnav search
 }
 

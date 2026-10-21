@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "main.h"
 #include "menu.h"
 #include "bg.h"
@@ -30,7 +31,7 @@ static void WindowFunc_ClearNamebox(u8, u8, u8, u8, u8, u8);
 void PrepareNamebox(u32 tileNum)
 {
     u8 *strbuf = AllocZeroed(32 * sizeof(u8));
-    if (FlagGet(OW_FLAG_SUPPRESS_NAME_BOX) || !gSpeakerName || !strbuf)
+    if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_OW_FLAG_SUPPRESS_NAME_BOX)) || !gSpeakerName || !strbuf)
     {
         // Re-check again in case anything but !strbuf is TRUE.
         if (strbuf)

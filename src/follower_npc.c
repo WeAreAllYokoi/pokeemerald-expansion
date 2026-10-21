@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "admg_script.h"
 #include "follower_npc.h"
 #include "follower_npc_alternate_sprites.h"
@@ -1697,8 +1698,8 @@ bool32 FollowerNPCIsBattlePartner(void)
 
 bool32 IsNPCFollowerWildBattle(void)
 {
-    if (FollowerNPCIsBattlePartner() && FNPC_FLAG_PARTNER_WILD_BATTLES != 0
-     && (FNPC_FLAG_PARTNER_WILD_BATTLES == FNPC_ALWAYS || FlagGet(FNPC_FLAG_PARTNER_WILD_BATTLES)))
+    if (FollowerNPCIsBattlePartner() && ADMG_GetFeatureBinding(ADMG_BINDING_FNPC_FLAG_PARTNER_WILD_BATTLES) != 0
+     && (ADMG_GetFeatureBinding(ADMG_BINDING_FNPC_FLAG_PARTNER_WILD_BATTLES) == FNPC_ALWAYS || FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_FNPC_FLAG_PARTNER_WILD_BATTLES))))
         return TRUE;
 
     return FALSE;

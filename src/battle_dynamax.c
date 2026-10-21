@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "battle.h"
 #include "battle_anim.h"
 #include "battle_controllers.h"
@@ -85,7 +86,7 @@ bool32 CanDynamax(enum BattlerId battler)
     {
         if (!CheckBagHasItem(ITEM_DYNAMAX_BAND, 1))
             return FALSE;
-        if (B_FLAG_DYNAMAX_BATTLE == 0 || (B_FLAG_DYNAMAX_BATTLE != 0 && !FlagGet(B_FLAG_DYNAMAX_BATTLE)))
+        if (ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_DYNAMAX_BATTLE) == 0 || (ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_DYNAMAX_BATTLE) != 0 && !FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_DYNAMAX_BATTLE))))
             return FALSE;
     }
 

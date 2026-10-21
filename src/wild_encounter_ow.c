@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "admg_script.h"
 #include "wild_encounter_ow.h"
 #include "battle_setup.h"
@@ -237,13 +238,13 @@ void UpdateOverworldWildEncounter(void)
 
     bool32 shouldSpawnWaterMons = ShouldSpawnWaterOWE();
     
-    if (ArePlayerFieldControlsLocked() || FlagGet(DN_FLAG_SEARCHING) || !CheckCurrentWildMonHeaderForOWE(shouldSpawnWaterMons))
+    if (ArePlayerFieldControlsLocked() || FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING)) || !CheckCurrentWildMonHeaderForOWE(shouldSpawnWaterMons))
         return;
 
     if (!WE_OW_ENCOUNTERS
-     || FlagGet(WE_OWE_FLAG_DISABLED)
-     || FlagGet(WE_FLAG_NO_ENCOUNTER)
-     || FlagGet(DN_FLAG_SEARCHING)
+     || FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_WE_OWE_FLAG_DISABLED))
+     || FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_WE_FLAG_NO_ENCOUNTER))
+     || FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING))
      || (gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PIKE_ROOM_WILD_MONS && !WE_OWE_BATTLE_PIKE)
      || (gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR && !WE_OWE_BATTLE_PYRAMID)
      || InTrainerHillChallenge())
@@ -648,7 +649,7 @@ void TryTriggerOverworldWildEncounter(struct ObjectEvent *obstacle, struct Objec
 {
     ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1);
 
-    if (WE_OWE_NO_REPEL_DEXNAV_COLLISION && (FlagGet(DN_FLAG_SEARCHING) || REPEL_STEP_COUNT))
+    if (WE_OWE_NO_REPEL_DEXNAV_COLLISION && (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING)) || REPEL_STEP_COUNT))
         return;
 
     bool32 playerFollowerIsColliderOWE = ((collider->isPlayer || collider->localId == OBJ_EVENT_ID_FOLLOWER)

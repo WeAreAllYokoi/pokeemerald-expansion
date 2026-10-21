@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_bindings.h"
 #include "admg_trainer_actor.h"
 #include "admg_state.h"
 #include "main.h"
@@ -253,8 +254,8 @@ static u64 GetWildAiFlags(void)
     if (avgLevel >= 80)
         flags |= AI_FLAG_HP_AWARE;
 
-    if (B_VAR_WILD_AI_FLAGS != 0 && VarGet(B_VAR_WILD_AI_FLAGS) != 0)
-        flags |= VarGet(B_VAR_WILD_AI_FLAGS);
+    if (ADMG_GetFeatureBinding(ADMG_BINDING_B_VAR_WILD_AI_FLAGS) != 0 && VarGet(ADMG_GetFeatureBinding(ADMG_BINDING_B_VAR_WILD_AI_FLAGS)) != 0)
+        flags |= VarGet(ADMG_GetFeatureBinding(ADMG_BINDING_B_VAR_WILD_AI_FLAGS));
 
     return flags;
 }

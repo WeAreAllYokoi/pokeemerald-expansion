@@ -1225,11 +1225,12 @@ EventScript_CloseMossdeepGameCornerBarrier::
 
 CableClub_OnResume:
 	special InitUnionRoom
-.if OW_FLAG_MOVE_UNION_ROOM_CHECK != 0
-	return
-.else
+	callnative ADMG_ScriptTestFeatureBinding, requests_effects=1
+	.2byte ADMG_BINDING_OW_FLAG_MOVE_UNION_ROOM_CHECK
+	goto_if_eq CableClub_FeatureBindingReturn
 	end
-.endif
+CableClub_FeatureBindingReturn:
+	return
 
 MossdeepCity_GameCorner_1F_EventScript_InfoMan2::
 	lock
