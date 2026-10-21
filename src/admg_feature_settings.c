@@ -2,6 +2,7 @@
 #include "config/wild_encounter.h"
 #include "config/summary_screen.h"
 #include "admg_feature_settings.h"
+#include "constants/rtc.h"
 #include "admg_feature_state.h"
 #include "admg_retention.h"
 #include "script.h"
@@ -35,6 +36,7 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeatureSettingDefault(ADMG_Word setting)
     case ADMG_SETTING_OWE_DESPAWN_ON_ENTER_TOWN: return WE_OWE_DESPAWN_ON_ENTER_TOWN;
     case ADMG_SETTING_OWE_NO_REPEL_DEXNAV_COLLISION: return WE_OWE_NO_REPEL_DEXNAV_COLLISION;
 
+    case ADMG_SETTING_TIME_ENCOUNTER_FALLBACK: return OW_TIME_OF_DAY_FALLBACK;
     default: return 0;
     }
 }
@@ -42,7 +44,8 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_IsFeatureSettingKnown(ADMG_Word setting)
 {
     return setting == ADMG_SETTING_SUMMARY_IV_PRESENTATION
         || setting == ADMG_SETTING_ITEM_DESCRIPTION_MODE
-        || (setting >= ADMG_SETTING_VANILLA_RANDOM && setting <= ADMG_SETTING_OWE_NO_REPEL_DEXNAV_COLLISION);
+        || (setting >= ADMG_SETTING_VANILLA_RANDOM && setting <= ADMG_SETTING_OWE_NO_REPEL_DEXNAV_COLLISION)
+        || setting == ADMG_SETTING_TIME_ENCOUNTER_FALLBACK;
 }
 ADMG_NATIVE_ENTRY ADMG_Word ADMG_ItemDescriptionsEnabled(void)
 {

@@ -289,7 +289,7 @@ static bool8 DrawAreaGlow(void)
 static void FindMapsWithMon(enum Species species)
 {
     enum RegionMapType currentRegionMapType;
-    u16 i;
+    u32 i;
     struct Roamer *roamer;
 
     sPokedexAreaScreen->alteringCaveCounter = 0;
@@ -334,7 +334,7 @@ static void FindMapsWithMon(enum Species species)
 
     currentRegionMapType = GetRegionMapType(gMapHeader.regionMapSectionId);
     // Add regular species to the area map
-    for (i = 0; MAP_GROUP(gWildMonHeaders[i].mapId) != MAP_GROUP(MAP_UNDEFINED); i++)
+    for (i = 0; gWildMonHeaders[i].mapId != MAP_UNDEFINED; i++)
     {
         u32 headerSectionId = GetMapHeader(gWildMonHeaders[i].mapId)->regionMapSectionId;
 

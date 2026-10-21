@@ -24,6 +24,9 @@
 #include "script.h"
 #include "tv.h"
 #include "wild_encounter.h"
+#include "admg_feature_policies.h"
+#include "admg_feature_settings.h"
+#include "admg_retention.h"
 #include "battle_debug.h"
 #include "battle_pike.h"
 #include "battle_pyramid.h"
@@ -429,69 +432,95 @@ u8 ChooseWildMonLevel(const struct WildPokemon *wildPokemon, u8 wildMonIndex, en
     }
 }
 
-u16 GetCurrentMapWildMonHeaderId(void)
+ADMG_NATIVE_ENTRY u32 ADMG_GetWildEncounterHeaderCount(void)
 {
-    u16 i;
+    u32 count = 0;
+    while (gWildMonHeaders[count].mapId != MAP_UNDEFINED)
+        count++;
+    return count;
+}
 
-    for (i = 0; ; i++)
+ADMG_NATIVE_ENTRY u32 GetCurrentMapWildMonHeaderId(void)
+{
+    u32 count = ADMG_GetWildEncounterHeaderCount();
+    for (u32 i = 0; i < count; i++)
     {
-        const struct WildPokemonHeader *wildHeader = &gWildMonHeaders[i];
-        if (MAP_GROUP(wildHeader->mapId) == MAP_GROUP(MAP_UNDEFINED))
-            break;
-
         if (gWildMonHeaders[i].mapId == gSaveBlock1Ptr->location.mapId)
         {
             if (gSaveBlock1Ptr->location.mapId == MAP_ALTERING_CAVE)
             {
-                u16 alteringCaveId = VarGet(VAR_ALTERING_CAVE_WILD_SET);
-                if (alteringCaveId >= NUM_ALTERING_CAVE_TABLES)
-                    alteringCaveId = 0;
-
-                i += alteringCaveId;
+                u32 variant = VarGet(VAR_ALTERING_CAVE_WILD_SET);
+                if (variant >= NUM_ALTERING_CAVE_TABLES)
+                    variant = 0;
+                return i + variant < count ? i + variant : HEADER_NONE;
             }
-
             return i;
         }
     }
-
     return HEADER_NONE;
+}
+
+ADMG_NATIVE_ENTRY u32 ADMG_GetTimeEncounterFallback(void)
+{
+    u32 selected = ADMG_GetFeatureSetting(ADMG_SETTING_TIME_ENCOUNTER_FALLBACK);
+    return selected < TIMES_OF_DAY_COUNT ? selected : OW_TIME_OF_DAY_FALLBACK;
+}
+
+static const struct WildPokemonInfo *ADMG_EncounterInfoAt(u32 headerId, u32 timeOfDay, u32 area)
+{
+    if (headerId >= ADMG_GetWildEncounterHeaderCount() || timeOfDay >= TIMES_OF_DAY_COUNT)
+        return NULL;
+    const struct WildEncounterTypes *types = &gWildMonHeaders[headerId].encounterTypes[timeOfDay];
+    switch (area)
+    {
+    case WILD_AREA_LAND: return types->landMonsInfo;
+    case WILD_AREA_WATER: return types->waterMonsInfo;
+    case WILD_AREA_ROCKS: return types->rockSmashMonsInfo;
+    case WILD_AREA_FISHING: return types->fishingMonsInfo;
+    case WILD_AREA_HIDDEN: return types->hiddenMonsInfo;
+    default: return NULL;
+    }
 }
 
 enum TimeOfDay GetTimeOfDayForEncounters(u32 headerId, enum WildPokemonArea area)
 {
-    const struct WildPokemonInfo *wildMonInfo;
-    enum TimeOfDay timeOfDay = GetTimeOfDay();
-
-    if (!OW_TIME_OF_DAY_ENCOUNTERS)
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_TIME_ENCOUNTERS))
         return TIME_OF_DAY_DEFAULT;
-
+    /* Battle Pike and Battle Pyramid use separate encounter tables and header indices.
+     * Return the configured fallback time before looking up ordinary map encounters. */
     if (InBattlePike() || CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
-        return OW_TIME_OF_DAY_FALLBACK;
+        return ADMG_GetTimeEncounterFallback();
+    enum TimeOfDay time = GenConfigTimeOfDay(GetTimeOfDay());
+    if (ADMG_EncounterInfoAt(headerId, time, area) == NULL
+     && !ADMG_GetFeaturePolicy(ADMG_POLICY_DISABLE_TIME_ENCOUNTER_FALLBACK))
+        return ADMG_GetTimeEncounterFallback();
+    return time;
+}
 
+ADMG_NATIVE_ENTRY u32 ADMG_GetEffectiveEncounterTime(u32 headerId, u32 area)
+{
+    if (headerId >= ADMG_GetWildEncounterHeaderCount() || area > WILD_AREA_HIDDEN)
+        return 0xFFFFFFFF;
+    return GetTimeOfDayForEncounters(headerId, area);
+}
+
+ADMG_NATIVE_ENTRY const struct WildPokemonInfo *ADMG_GetEffectiveEncounterInfo(u32 headerId, u32 area)
+{
+    u32 time = ADMG_GetEffectiveEncounterTime(headerId, area);
+    return time == 0xFFFFFFFF ? NULL : ADMG_EncounterInfoAt(headerId, time, area);
+}
+
+ADMG_NATIVE_ENTRY u32 ADMG_GetWildEncounterSlotCount(u32 area)
+{
     switch (area)
     {
-    default:
-    case WILD_AREA_LAND:
-        wildMonInfo = gWildMonHeaders[headerId].encounterTypes[timeOfDay].landMonsInfo;
-        break;
-    case WILD_AREA_WATER:
-        wildMonInfo = gWildMonHeaders[headerId].encounterTypes[timeOfDay].waterMonsInfo;
-        break;
-    case WILD_AREA_ROCKS:
-        wildMonInfo = gWildMonHeaders[headerId].encounterTypes[timeOfDay].rockSmashMonsInfo;
-        break;
-    case WILD_AREA_FISHING:
-        wildMonInfo = gWildMonHeaders[headerId].encounterTypes[timeOfDay].fishingMonsInfo;
-        break;
-    case WILD_AREA_HIDDEN:
-        wildMonInfo = gWildMonHeaders[headerId].encounterTypes[timeOfDay].hiddenMonsInfo;
-        break;
+    case WILD_AREA_LAND: return NUM_LAND_MONS_ENCOUNTER_SLOTS;
+    case WILD_AREA_WATER: return NUM_WATER_MONS_ENCOUNTER_SLOTS;
+    case WILD_AREA_ROCKS: return NUM_ROCK_SMASH_MONS_ENCOUNTER_SLOTS;
+    case WILD_AREA_FISHING: return NUM_FISHING_MONS_ENCOUNTER_SLOTS;
+    case WILD_AREA_HIDDEN: return NUM_HIDDEN_MONS_ENCOUNTER_SLOTS;
+    default: return 0;
     }
-
-    if (wildMonInfo == NULL && !OW_TIME_OF_DAY_DISABLE_FALLBACK)
-        return OW_TIME_OF_DAY_FALLBACK;
-    else
-        return GenConfigTimeOfDay(timeOfDay);
 }
 
 static nature_t PickWildMonNature(enum Species species)
@@ -987,7 +1016,7 @@ void FishingWildEncounter(u8 rod)
     BattleSetup_StartWildBattle();
 }
 
-u16 GetLocalWildMon(bool8 *isWaterMon)
+u32 GetLocalWildMon(bool8 *isWaterMon)
 {
     ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1, SPECIES_NONE);
 
@@ -1031,7 +1060,7 @@ u16 GetLocalWildMon(bool8 *isWaterMon)
     }
 }
 
-u16 GetLocalWaterMon(void)
+u32 GetLocalWaterMon(void)
 {
     ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1, SPECIES_NONE);
 
@@ -1249,3 +1278,42 @@ bool32 MapHasNoEncounterData(void)
 {
     return (GetCurrentMapWildMonHeaderId() == HEADER_NONE);
 }
+
+ADMG_RETAIN_FUNCTION(ADMG_GetWildEncounterHeaderCount);
+ADMG_RETAIN_FUNCTION(GetCurrentMapWildMonHeaderId);
+ADMG_RETAIN_FUNCTION(ADMG_GetEffectiveEncounterTime);
+ADMG_RETAIN_FUNCTION(ADMG_GetEffectiveEncounterInfo);
+ADMG_RETAIN_FUNCTION(ADMG_GetWildEncounterSlotCount);
+ADMG_RETAIN_FUNCTION(ADMG_GetTimeEncounterFallback);
+
+ADMG_NATIVE_ENTRY u32 ADMG_FindWildEncounterHeader(u32 mapId)
+{
+    u32 count = ADMG_GetWildEncounterHeaderCount();
+    for (u32 i = 0; i < count; i++)
+        if (gWildMonHeaders[i].mapId == mapId)
+            return i;
+    return HEADER_NONE;
+}
+ADMG_RETAIN_FUNCTION(ADMG_FindWildEncounterHeader);
+
+/* Generate an enemy Pokémon using the current map, encounter area and effective time,
+ * without scheduling a battle. The creation path clears both opponent parties
+ * before writing opponent A's first slot.
+ * Fishing reuses the static generator's slot and level selection and chain-fishing updates. */
+ADMG_NATIVE_ENTRY u32 ADMG_GenerateEffectiveEncounter(u32 area, u32 rod)
+{
+    if (area > WILD_AREA_FISHING || (area == WILD_AREA_FISHING && rod > SUPER_ROD))
+        return SPECIES_NONE;
+    const struct WildPokemonInfo *info = ADMG_GetEffectiveEncounterInfo(GetCurrentMapWildMonHeaderId(), area);
+    if (info == NULL || info->wildPokemon == NULL)
+        return SPECIES_NONE;
+    if (area == WILD_AREA_FISHING)
+        return GenerateFishingWildMon(info, rod);
+    if (!TryGenerateWildMon(info, area, 0))
+        return SPECIES_NONE;
+    return GetMonData(&gParties[B_TRAINER_OPPONENT_A][0], MON_DATA_SPECIES);
+}
+ADMG_RETAIN_FUNCTION(ADMG_GenerateEffectiveEncounter);
+
+ADMG_RETAIN_FUNCTION(GetLocalWildMon);
+ADMG_RETAIN_FUNCTION(GetLocalWaterMon);

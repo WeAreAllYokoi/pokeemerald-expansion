@@ -3,6 +3,7 @@
 #include "battle_pyramid.h"
 #include "datetime.h"
 #include "rtc.h"
+#include "admg_feature_policies.h"
 #include "string_util.h"
 #include "strings.h"
 #include "text.h"
@@ -336,7 +337,7 @@ enum TimeOfDay GetTimeOfDay(void)
 
 enum TimeOfDay GetTimeOfDayForDex(void)
 {
-    enum TimeOfDay timeOfDay = OW_TIME_OF_DAY_ENCOUNTERS ? GetTimeOfDay() : TIME_OF_DAY_DEFAULT;
+    enum TimeOfDay timeOfDay = ADMG_GetFeaturePolicy(ADMG_POLICY_TIME_ENCOUNTERS) ? GetTimeOfDay() : TIME_OF_DAY_DEFAULT;
     return GenConfigTimeOfDay(timeOfDay);
 }
 

@@ -1743,12 +1743,12 @@ static void PopulateSpeciesFromTrainerLocation(int matchCallId, u8 *destStr)
     enum Species species[2];
     int numSpecies;
     u8 slot;
-    int i = 0;
+    u32 i = 0;
     enum TimeOfDay timeOfDay;
 
-    if (MAP_GROUP(gWildMonHeaders[i].mapId) != MAP_GROUP(MAP_UNDEFINED)) // ??? This check is nonsense.
+    if (gWildMonHeaders[i].mapId != MAP_UNDEFINED) // Redundant: the loop and the check after it already handle an empty table.
     {
-        while (MAP_GROUP(gWildMonHeaders[i].mapId) != MAP_GROUP(MAP_UNDEFINED))
+        while (gWildMonHeaders[i].mapId != MAP_UNDEFINED)
         {
             if (gWildMonHeaders[i].mapId == gRematchTable[matchCallId].mapId)
                 break;
@@ -1756,7 +1756,7 @@ static void PopulateSpeciesFromTrainerLocation(int matchCallId, u8 *destStr)
             i++;
         }
 
-        if (MAP_GROUP(gWildMonHeaders[i].mapId) != MAP_GROUP(MAP_UNDEFINED))
+        if (gWildMonHeaders[i].mapId != MAP_UNDEFINED)
         {
             timeOfDay = GetTimeOfDayForEncounters(i, WILD_AREA_LAND);
             numSpecies = 0;
