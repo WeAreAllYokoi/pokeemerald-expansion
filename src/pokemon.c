@@ -6862,10 +6862,15 @@ static enum Item ResolveHeldItem(u32 heldItemTemplate)
 
 void CreateMonFromTemplate(struct Pokemon *mon, const struct PokemonTemplate *monTemplate)
 {
+    CreateMonFromTemplateWithTrainerId(mon, monTemplate, OTID_STRUCT_PLAYER_ID);
+}
+
+void CreateMonFromTemplateWithTrainerId(struct Pokemon *mon, const struct PokemonTemplate *monTemplate, struct OriginalTrainerId trainerId)
+{
     enum Species species = ResolveSpecies(monTemplate->species);
     u8 level = ResolveLevel(monTemplate->level);
     u32 personality = ResolvePersonality(species, monTemplate->gender, monTemplate->nature, monTemplate->origin);
-    CreateMon(mon, species, level, personality, OTID_STRUCT_PLAYER_ID);
+    CreateMon(mon, species, level, personality, trainerId);
 
     enum Item heldItem = ResolveHeldItem(monTemplate->heldItem);
     SetMonData(mon, MON_DATA_HELD_ITEM, &heldItem);
