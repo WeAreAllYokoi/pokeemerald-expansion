@@ -3348,13 +3348,17 @@ bool8 ScrCmd_fwdtime(struct ScriptContext *ctx)
 
 bool8 ScrCmd_fwdweekday(struct ScriptContext *ctx)
 {
-    if (!OW_USE_FAKE_RTC)
+    u32 weekdayTarget = ScriptReadWord(ctx);
+    if (weekdayTarget >= WEEKDAY_COUNT)
         return FALSE;
 
     struct SiiRtcInfo *rtc = FakeRtc_GetCurrentTime();
+    if (rtc == NULL || rtc->dayOfWeek >= WEEKDAY_COUNT)
+        return FALSE;
 
-    u32 weekdayTarget = ScriptReadWord(ctx);
-    u32 daysToAdd = ((weekdayTarget - rtc->dayOfWeek) + WEEKDAY_COUNT) % WEEKDAY_COUNT;
+    u32 daysToAdd = (weekdayTarget + WEEKDAY_COUNT - rtc->dayOfWeek) % WEEKDAY_COUNT;
+    if (daysToAdd == 0)
+        return FALSE;
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
