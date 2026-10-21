@@ -13,6 +13,10 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeatureState(ADMG_Word state)
 {
     return 0;
 }
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_ResetFeatureState(ADMG_Word state)
+{
+    return 0;
+}
 ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeatureStateCount(ADMG_Word state)
 {
     switch (state)
@@ -52,6 +56,7 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_InitializeFeatureState(ADMG_Word state, ADMG_Wo
 }
 ADMG_RETAIN_FUNCTION(ADMG_GetFeatureStateBridgeVersion);
 ADMG_RETAIN_FUNCTION(ADMG_GetFeatureState);
+ADMG_RETAIN_FUNCTION(ADMG_ResetFeatureState);
 ADMG_RETAIN_FUNCTION(ADMG_GetFeatureStateCount);
 ADMG_RETAIN_FUNCTION(ADMG_GetFeatureStateRecordSize);
 ADMG_RETAIN_FUNCTION(ADMG_InitializeFeatureState);
