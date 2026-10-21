@@ -78,8 +78,7 @@ EWRAM_DATA const u8 *gRamScriptRetAddr = NULL;
 static EWRAM_DATA u32 sAddressOffset = 0; // For relative addressing in vgoto etc., used by saved scripts (e.g. Mystery Event)
 static EWRAM_DATA u16 sPauseCounter = 0;
 static EWRAM_DATA u16 sMovingNpcId = 0;
-static EWRAM_DATA u16 sMovingNpcMapGroup = 0;
-static EWRAM_DATA u16 sMovingNpcMapNum = 0;
+static EWRAM_DATA MapId sMovingNpcMapId = 0;
 static EWRAM_DATA u16 sFieldEffectScriptId = 0;
 
 static u8 sBrailleWindowId;
@@ -1002,15 +1001,14 @@ bool8 ScrCmd_setmaplayoutindex(struct ScriptContext *ctx)
 
 bool8 ScrCmd_warp(struct ScriptContext *ctx)
 {
-    u8 mapGroup = ScriptReadByte(ctx);
-    u8 mapNum = ScriptReadByte(ctx);
+    MapId mapId = ScriptReadMapId(ctx);
     u8 warpId = ScriptReadByte(ctx);
     u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE | SCREFF_HARDWARE);
 
-    SetWarpDestination(mapGroup, mapNum, warpId, x, y);
+    SetWarpDestination(mapId, warpId, x, y);
     DoWarp();
     ResetInitialPlayerAvatarState();
     return TRUE;
@@ -1018,15 +1016,14 @@ bool8 ScrCmd_warp(struct ScriptContext *ctx)
 
 bool8 ScrCmd_warpsilent(struct ScriptContext *ctx)
 {
-    u8 mapGroup = ScriptReadByte(ctx);
-    u8 mapNum = ScriptReadByte(ctx);
+    MapId mapId = ScriptReadMapId(ctx);
     u8 warpId = ScriptReadByte(ctx);
     u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE | SCREFF_HARDWARE);
 
-    SetWarpDestination(mapGroup, mapNum, warpId, x, y);
+    SetWarpDestination(mapId, warpId, x, y);
     DoDiveWarp();
     ResetInitialPlayerAvatarState();
     return TRUE;
@@ -1034,15 +1031,14 @@ bool8 ScrCmd_warpsilent(struct ScriptContext *ctx)
 
 bool8 ScrCmd_warpdoor(struct ScriptContext *ctx)
 {
-    u8 mapGroup = ScriptReadByte(ctx);
-    u8 mapNum = ScriptReadByte(ctx);
+    MapId mapId = ScriptReadMapId(ctx);
     u8 warpId = ScriptReadByte(ctx);
     u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE | SCREFF_HARDWARE);
 
-    SetWarpDestination(mapGroup, mapNum, warpId, x, y);
+    SetWarpDestination(mapId, warpId, x, y);
     DoDoorWarp();
     ResetInitialPlayerAvatarState();
     return TRUE;
@@ -1050,18 +1046,17 @@ bool8 ScrCmd_warpdoor(struct ScriptContext *ctx)
 
 bool8 ScrCmd_warphole(struct ScriptContext *ctx)
 {
-    u8 mapGroup = ScriptReadByte(ctx);
-    u8 mapNum = ScriptReadByte(ctx);
+    MapId mapId = ScriptReadMapId(ctx);
     s16 x;
     s16 y;
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE | SCREFF_HARDWARE);
 
     PlayerGetDestCoords(&x, &y);
-    if (mapGroup == MAP_GROUP(MAP_UNDEFINED) && mapNum == MAP_NUM(MAP_UNDEFINED))
+    if (mapId == MAP_UNDEFINED)
         SetWarpDestinationToFixedHoleWarp(x - MAP_OFFSET, y - MAP_OFFSET);
     else
-        SetWarpDestination(mapGroup, mapNum, WARP_ID_NONE, x - MAP_OFFSET, y - MAP_OFFSET);
+        SetWarpDestination(mapId, WARP_ID_NONE, x - MAP_OFFSET, y - MAP_OFFSET);
     DoFallWarp();
     ResetInitialPlayerAvatarState();
     return TRUE;
@@ -1070,15 +1065,14 @@ bool8 ScrCmd_warphole(struct ScriptContext *ctx)
 // RS mossdeep gym warp, unused in Emerald
 bool8 ScrCmd_warpteleport(struct ScriptContext *ctx)
 {
-    u8 mapGroup = ScriptReadByte(ctx);
-    u8 mapNum = ScriptReadByte(ctx);
+    MapId mapId = ScriptReadMapId(ctx);
     u8 warpId = ScriptReadByte(ctx);
     u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE | SCREFF_HARDWARE);
 
-    SetWarpDestination(mapGroup, mapNum, warpId, x, y);
+    SetWarpDestination(mapId, warpId, x, y);
     DoTeleportTileWarp();
     ResetInitialPlayerAvatarState();
     return TRUE;
@@ -1086,15 +1080,14 @@ bool8 ScrCmd_warpteleport(struct ScriptContext *ctx)
 
 bool8 ScrCmd_warpmossdeepgym(struct ScriptContext *ctx)
 {
-    u8 mapGroup = ScriptReadByte(ctx);
-    u8 mapNum = ScriptReadByte(ctx);
+    MapId mapId = ScriptReadMapId(ctx);
     u8 warpId = ScriptReadByte(ctx);
     u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE | SCREFF_HARDWARE);
 
-    SetWarpDestination(mapGroup, mapNum, warpId, x, y);
+    SetWarpDestination(mapId, warpId, x, y);
     DoMossdeepGymWarp();
     ResetInitialPlayerAvatarState();
     return TRUE;
@@ -1102,71 +1095,66 @@ bool8 ScrCmd_warpmossdeepgym(struct ScriptContext *ctx)
 
 bool8 ScrCmd_setwarp(struct ScriptContext *ctx)
 {
-    u8 mapGroup = ScriptReadByte(ctx);
-    u8 mapNum = ScriptReadByte(ctx);
+    MapId mapId = ScriptReadMapId(ctx);
     u8 warpId = ScriptReadByte(ctx);
     u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 
-    SetWarpDestination(mapGroup, mapNum, warpId, x, y);
+    SetWarpDestination(mapId, warpId, x, y);
     return FALSE;
 }
 
 bool8 ScrCmd_setdynamicwarp(struct ScriptContext *ctx)
 {
-    u8 mapGroup = ScriptReadByte(ctx);
-    u8 mapNum = ScriptReadByte(ctx);
+    MapId mapId = ScriptReadMapId(ctx);
     u8 warpId = ScriptReadByte(ctx);
     u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
-    SetDynamicWarpWithCoords(0, mapGroup, mapNum, warpId, x, y);
+    SetDynamicWarpWithCoords(0, mapId, warpId, x, y);
     return FALSE;
 }
 
 bool8 ScrCmd_setdivewarp(struct ScriptContext *ctx)
 {
-    u8 mapGroup = ScriptReadByte(ctx);
-    u8 mapNum = ScriptReadByte(ctx);
+    MapId mapId = ScriptReadMapId(ctx);
     u8 warpId = ScriptReadByte(ctx);
     u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 
-    SetFixedDiveWarp(mapGroup, mapNum, warpId, x, y);
+    SetFixedDiveWarp(mapId, warpId, x, y);
     return FALSE;
 }
 
 bool8 ScrCmd_setholewarp(struct ScriptContext *ctx)
 {
-    u8 mapGroup = ScriptReadByte(ctx);
-    u8 mapNum = ScriptReadByte(ctx);
+    MapId mapId = ScriptReadMapId(ctx);
     u8 warpId = ScriptReadByte(ctx);
     u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 
-    SetFixedHoleWarp(mapGroup, mapNum, warpId, x, y);
+    SetFixedHoleWarp(mapId, warpId, x, y);
     return FALSE;
 }
 
 bool8 ScrCmd_setescapewarp(struct ScriptContext *ctx)
 {
-    u8 mapGroup = ScriptReadByte(ctx);
-    u8 mapNum = ScriptReadByte(ctx);
+    MapId mapId = ScriptReadMapId(ctx);
     u8 warpId = ScriptReadByte(ctx);
     u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
-    SetEscapeWarp(mapGroup, mapNum, warpId, x, y);
+    SetEscapeWarp(mapId, warpId, x, y);
     return FALSE;
 }
 
@@ -1323,7 +1311,7 @@ struct ObjectEvent *ScriptHideFollower(void)
     ClearObjectEventMovement(obj, &gSprites[obj->spriteId]);
     gSprites[obj->spriteId].animCmdIndex = 0; // Reset start frame of animation
     // Note: ScriptMovement_ returns TRUE on error
-    if (ScriptMovement_StartObjectMovementScript(obj->localId, obj->mapGroup, obj->mapNum, EnterPokeballMovement))
+    if (ScriptMovement_StartObjectMovementScript(obj->localId, obj->mapId, EnterPokeballMovement))
         return NULL;
     return obj;
 }
@@ -1363,7 +1351,7 @@ bool8 ScrCmd_applymovement(struct ScriptContext *ctx)
     }
 
     gObjectEvents[objectId].directionOverwrite = DIR_NONE;
-    ScriptMovement_StartObjectMovementScript(localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, movementScript);
+    ScriptMovement_StartObjectMovementScript(localId, gSaveBlock1Ptr->location.mapId, movementScript);
     sMovingNpcId = localId;
     if (hideFollower)
     {
@@ -1376,26 +1364,25 @@ bool8 ScrCmd_applymovementat(struct ScriptContext *ctx)
 {
     u16 localId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     const void *movementScript = (const void *)ScriptReadWord(ctx);
-    u8 mapGroup = ScriptReadByte(ctx);
-    u8 mapNum = ScriptReadByte(ctx);
+    MapId mapId = ScriptReadMapId(ctx);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
 
     gObjectEvents[GetObjectEventIdByLocalId(localId)].directionOverwrite = DIR_NONE;
-    ScriptMovement_StartObjectMovementScript(localId, mapNum, mapGroup, movementScript);
+    ScriptMovement_StartObjectMovementScript(localId, mapId, movementScript);
     sMovingNpcId = localId;
     return FALSE;
 }
 
 static bool8 WaitForMovementFinish(void)
 {
-    if (ScriptMovement_IsObjectMovementFinished(sMovingNpcId, sMovingNpcMapNum, sMovingNpcMapGroup))
+    if (ScriptMovement_IsObjectMovementFinished(sMovingNpcId, sMovingNpcMapId))
     {
         struct ObjectEvent *objEvent = GetFollowerObject();
         // If the follower is still entering the pokeball, wait for it to finish too
         // This prevents a `release` after this script command from getting the follower stuck in an intermediate state
         if (sMovingNpcId != OBJ_EVENT_ID_FOLLOWER && objEvent && ObjectEventGetHeldMovementActionId(objEvent) == MOVEMENT_ACTION_ENTER_POKEBALL)
-            return ScriptMovement_IsObjectMovementFinished(objEvent->localId, objEvent->mapNum, objEvent->mapGroup);
+            return ScriptMovement_IsObjectMovementFinished(objEvent->localId, objEvent->mapId);
         return TRUE;
     }
     return FALSE;
@@ -1409,8 +1396,7 @@ bool8 ScrCmd_waitmovement(struct ScriptContext *ctx)
 
     if (localId != LOCALID_NONE)
         sMovingNpcId = localId;
-    sMovingNpcMapGroup = gSaveBlock1Ptr->location.mapGroup;
-    sMovingNpcMapNum = gSaveBlock1Ptr->location.mapNum;
+    sMovingNpcMapId = gSaveBlock1Ptr->location.mapId;
     SetupNativeScript(ctx, WaitForMovementFinish);
     return TRUE;
 }
@@ -1418,17 +1404,12 @@ bool8 ScrCmd_waitmovement(struct ScriptContext *ctx)
 bool8 ScrCmd_waitmovementat(struct ScriptContext *ctx)
 {
     u16 localId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
-    u8 mapGroup;
-    u8 mapNum;
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
 
     if (localId != LOCALID_NONE)
         sMovingNpcId = localId;
-    mapGroup = ScriptReadByte(ctx);
-    mapNum = ScriptReadByte(ctx);
-    sMovingNpcMapGroup = mapGroup;
-    sMovingNpcMapNum = mapNum;
+    sMovingNpcMapId = ScriptReadMapId(ctx);
     SetupNativeScript(ctx, WaitForMovementFinish);
     return TRUE;
 }
@@ -1451,19 +1432,18 @@ bool8 ScrCmd_removeobject(struct ScriptContext *ctx)
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE | SCREFF_HARDWARE);
 
-    RemoveObjectEventByLocalIdAndMap(localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);
+    RemoveObjectEventByLocalIdAndMap(localId, gSaveBlock1Ptr->location.mapId);
     return FALSE;
 }
 
 bool8 ScrCmd_removeobjectat(struct ScriptContext *ctx)
 {
     u16 objectId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
-    u8 mapGroup = ScriptReadByte(ctx);
-    u8 mapNum = ScriptReadByte(ctx);
+    MapId mapId = ScriptReadMapId(ctx);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE | SCREFF_HARDWARE);
 
-    RemoveObjectEventByLocalIdAndMap(objectId, mapNum, mapGroup);
+    RemoveObjectEventByLocalIdAndMap(objectId, mapId);
     return FALSE;
 }
 
@@ -1473,19 +1453,18 @@ bool8 ScrCmd_addobject(struct ScriptContext *ctx)
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
 
-    TrySpawnObjectEvent(objectId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);
+    TrySpawnObjectEvent(objectId, gSaveBlock1Ptr->location.mapId);
     return FALSE;
 }
 
 bool8 ScrCmd_addobjectat(struct ScriptContext *ctx)
 {
     u16 objectId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
-    u8 mapGroup = ScriptReadByte(ctx);
-    u8 mapNum = ScriptReadByte(ctx);
+    MapId mapId = ScriptReadMapId(ctx);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
 
-    TrySpawnObjectEvent(objectId, mapNum, mapGroup);
+    TrySpawnObjectEvent(objectId, mapId);
     return FALSE;
 }
 
@@ -1501,7 +1480,7 @@ bool8 ScrCmd_setobjectxy(struct ScriptContext *ctx)
     if (localId == OBJ_EVENT_ID_NPC_FOLLOWER)
         SetFollowerNPCData(FNPC_DATA_COME_OUT_DOOR, FNPC_DOOR_NO_POS_SET);
 
-    TryMoveObjectEventToMapCoords(localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, x, y);
+    TryMoveObjectEventToMapCoords(localId, gSaveBlock1Ptr->location.mapId, x, y);
     return FALSE;
 }
 
@@ -1523,56 +1502,52 @@ bool8 ScrCmd_copyobjectxytoperm(struct ScriptContext *ctx)
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
-    TryOverrideObjectEventTemplateCoords(localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);
+    TryOverrideObjectEventTemplateCoords(localId, gSaveBlock1Ptr->location.mapId);
     return FALSE;
 }
 
 bool8 ScrCmd_showobjectat(struct ScriptContext *ctx)
 {
     u16 localId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
-    u8 mapGroup = ScriptReadByte(ctx);
-    u8 mapNum = ScriptReadByte(ctx);
+    MapId mapId = ScriptReadMapId(ctx);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
 
-    SetObjectInvisibility(localId, mapNum, mapGroup, FALSE);
+    SetObjectInvisibility(localId, mapId, FALSE);
     return FALSE;
 }
 
 bool8 ScrCmd_hideobjectat(struct ScriptContext *ctx)
 {
     u16 localId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
-    u8 mapGroup = ScriptReadByte(ctx);
-    u8 mapNum = ScriptReadByte(ctx);
+    MapId mapId = ScriptReadMapId(ctx);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
 
-    SetObjectInvisibility(localId, mapNum, mapGroup, TRUE);
+    SetObjectInvisibility(localId, mapId, TRUE);
     return FALSE;
 }
 
 bool8 ScrCmd_setobjectsubpriority(struct ScriptContext *ctx)
 {
     u16 localId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
-    u8 mapGroup = ScriptReadByte(ctx);
-    u8 mapNum = ScriptReadByte(ctx);
+    MapId mapId = ScriptReadMapId(ctx);
     u8 priority = ScriptReadByte(ctx);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
 
-    SetObjectSubpriority(localId, mapNum, mapGroup, priority + 83);
+    SetObjectSubpriority(localId, mapId, priority + 83);
     return FALSE;
 }
 
 bool8 ScrCmd_resetobjectsubpriority(struct ScriptContext *ctx)
 {
     u16 localId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
-    u8 mapGroup = ScriptReadByte(ctx);
-    u8 mapNum = ScriptReadByte(ctx);
+    MapId mapId = ScriptReadMapId(ctx);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
 
-    ResetObjectSubpriority(localId, mapNum, mapGroup);
+    ResetObjectSubpriority(localId, mapId);
     return FALSE;
 }
 
@@ -1588,16 +1563,16 @@ bool8 ScrCmd_faceplayer(struct ScriptContext *ctx)
         switch (DetermineFollowerNPCDirection(&gObjectEvents[gPlayerAvatar.objectEventId], npcFollower))
         {
         case DIR_NORTH:
-            ScriptMovement_StartObjectMovementScript(OBJ_EVENT_ID_NPC_FOLLOWER, npcFollower->mapGroup, npcFollower->mapNum, Common_Movement_FaceUp);
+            ScriptMovement_StartObjectMovementScript(OBJ_EVENT_ID_NPC_FOLLOWER, npcFollower->mapId, Common_Movement_FaceUp);
             break;
         case DIR_SOUTH:
-            ScriptMovement_StartObjectMovementScript(OBJ_EVENT_ID_NPC_FOLLOWER, npcFollower->mapGroup, npcFollower->mapNum, Common_Movement_FaceDown);
+            ScriptMovement_StartObjectMovementScript(OBJ_EVENT_ID_NPC_FOLLOWER, npcFollower->mapId, Common_Movement_FaceDown);
             break;
         case DIR_EAST:
-            ScriptMovement_StartObjectMovementScript(OBJ_EVENT_ID_NPC_FOLLOWER, npcFollower->mapGroup, npcFollower->mapNum, Common_Movement_FaceRight);
+            ScriptMovement_StartObjectMovementScript(OBJ_EVENT_ID_NPC_FOLLOWER, npcFollower->mapId, Common_Movement_FaceRight);
             break;
         case DIR_WEST:
-            ScriptMovement_StartObjectMovementScript(OBJ_EVENT_ID_NPC_FOLLOWER, npcFollower->mapGroup, npcFollower->mapNum, Common_Movement_FaceLeft);
+            ScriptMovement_StartObjectMovementScript(OBJ_EVENT_ID_NPC_FOLLOWER, npcFollower->mapId, Common_Movement_FaceLeft);
             break;
         default:
             break;
@@ -1616,7 +1591,7 @@ bool8 ScrCmd_turnobject(struct ScriptContext *ctx)
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
 
-    ObjectEventTurnByLocalIdAndMap(localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, direction);
+    ObjectEventTurnByLocalIdAndMap(localId, gSaveBlock1Ptr->location.mapId, direction);
     return FALSE;
 }
 
@@ -1721,7 +1696,7 @@ bool8 ScrCmd_releaseall(struct ScriptContext *ctx)
         ClearObjectEventMovement(followerObject, &gSprites[followerObject->spriteId]);
 
     HideFieldMessageBox();
-    playerObjectId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0);
+    playerObjectId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0);
     ObjectEventClearHeldMovementIfFinished(&gObjectEvents[playerObjectId]);
     ScriptMovement_UnfreezeObjectEvents();
     UnfreezeObjectEvents();
@@ -1742,7 +1717,7 @@ bool8 ScrCmd_release(struct ScriptContext *ctx)
     HideFieldMessageBox();
     if (gObjectEvents[gSelectedObjectEvent].active)
         ObjectEventClearHeldMovementIfFinished(&gObjectEvents[gSelectedObjectEvent]);
-    playerObjectId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0);
+    playerObjectId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0);
     ObjectEventClearHeldMovementIfFinished(&gObjectEvents[playerObjectId]);
     ScriptMovement_UnfreezeObjectEvents();
     UnfreezeObjectEvents();
@@ -3067,15 +3042,14 @@ bool8 ScrCmd_trywondercardscript(struct ScriptContext *ctx)
 // For the warp used by the Aqua Hideout, see DoTeleportTileWarp
 bool8 ScrCmd_warpspinenter(struct ScriptContext *ctx)
 {
-    u8 mapGroup = ScriptReadByte(ctx);
-    u8 mapNum = ScriptReadByte(ctx);
+    MapId mapId = ScriptReadMapId(ctx);
     u8 warpId = ScriptReadByte(ctx);
     u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE | SCREFF_HARDWARE);
 
-    SetWarpDestination(mapGroup, mapNum, warpId, x, y);
+    SetWarpDestination(mapId, warpId, x, y);
     SetSpinStartFacingDir(GetPlayerFacingDirection());
     DoSpinEnterWarp();
     ResetInitialPlayerAvatarState();
@@ -3153,15 +3127,14 @@ void SetMovingNpcId(u16 npcId)
 
 bool8 ScrCmd_warpwhitefade(struct ScriptContext *ctx)
 {
-    u8 mapGroup = ScriptReadByte(ctx);
-    u8 mapNum = ScriptReadByte(ctx);
+    MapId mapId = ScriptReadMapId(ctx);
     u8 warpId = ScriptReadByte(ctx);
     u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE | SCREFF_HARDWARE);
 
-    SetWarpDestination(mapGroup, mapNum, warpId, x, y);
+    SetWarpDestination(mapId, warpId, x, y);
     DoWhiteFadeWarp();
     ResetInitialPlayerAvatarState();
     return TRUE;
@@ -3295,8 +3268,7 @@ bool8 ScrCmd_hidefollower(struct ScriptContext *ctx)
     if (obj != NULL && wait)
     {
         sMovingNpcId = obj->localId;
-        sMovingNpcMapGroup = obj->mapGroup;
-        sMovingNpcMapNum = obj->mapNum;
+        sMovingNpcMapId = obj->mapId;
         SetupNativeScript(ctx, WaitForMovementFinish);
     }
 

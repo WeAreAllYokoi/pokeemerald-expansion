@@ -65,18 +65,19 @@ static const struct BgTemplate sBGTemplates[] = {
     }
 };
 
-static const s8 sSeag[][4] = {
-    [SEAGALLOP_VERMILION_CITY]  = {MAP_GROUP(MAP_VERMILION_CITY), MAP_NUM(MAP_VERMILION_CITY),      0x17, 0x20},
-    [SEAGALLOP_ONE_ISLAND]      = {MAP_GROUP(MAP_ONE_ISLAND_HARBOR), MAP_NUM(MAP_ONE_ISLAND_HARBOR),   0x08, 0x05},
-    [SEAGALLOP_TWO_ISLAND]      = {MAP_GROUP(MAP_TWO_ISLAND_HARBOR), MAP_NUM(MAP_TWO_ISLAND_HARBOR),   0x08, 0x05},
-    [SEAGALLOP_THREE_ISLAND]    = {MAP_GROUP(MAP_THREE_ISLAND_HARBOR), MAP_NUM(MAP_THREE_ISLAND_HARBOR), 0x08, 0x05},
-    [SEAGALLOP_FOUR_ISLAND]     = {MAP_GROUP(MAP_FOUR_ISLAND_HARBOR), MAP_NUM(MAP_FOUR_ISLAND_HARBOR),  0x08, 0x05},
-    [SEAGALLOP_FIVE_ISLAND]     = {MAP_GROUP(MAP_FIVE_ISLAND_HARBOR), MAP_NUM(MAP_FIVE_ISLAND_HARBOR),  0x08, 0x05},
-    [SEAGALLOP_SIX_ISLAND]      = {MAP_GROUP(MAP_SIX_ISLAND_HARBOR), MAP_NUM(MAP_SIX_ISLAND_HARBOR),   0x08, 0x05},
-    [SEAGALLOP_SEVEN_ISLAND]    = {MAP_GROUP(MAP_SEVEN_ISLAND_HARBOR), MAP_NUM(MAP_SEVEN_ISLAND_HARBOR), 0x08, 0x05},
-    [SEAGALLOP_CINNABAR_ISLAND] = {MAP_GROUP(MAP_CINNABAR_ISLAND), MAP_NUM(MAP_CINNABAR_ISLAND),     0x15, 0x07},
-    [SEAGALLOP_NAVEL_ROCK]      = {MAP_GROUP(MAP_NAVEL_ROCK_HARBOR_FRLG), MAP_NUM(MAP_NAVEL_ROCK_HARBOR_FRLG),   0x08, 0x05},
-    [SEAGALLOP_BIRTH_ISLAND]    = {MAP_GROUP(MAP_BIRTH_ISLAND_HARBOR_FRLG), MAP_NUM(MAP_BIRTH_ISLAND_HARBOR_FRLG), 0x08, 0x05}
+// The ferry's destinations: the map and where the player arrives
+static const struct { MapId map; s8 x, y; } sSeag[] = {
+    [SEAGALLOP_VERMILION_CITY]  = {MAP_VERMILION_CITY,      0x17, 0x20},
+    [SEAGALLOP_ONE_ISLAND]      = {MAP_ONE_ISLAND_HARBOR,   0x08, 0x05},
+    [SEAGALLOP_TWO_ISLAND]      = {MAP_TWO_ISLAND_HARBOR,   0x08, 0x05},
+    [SEAGALLOP_THREE_ISLAND]    = {MAP_THREE_ISLAND_HARBOR, 0x08, 0x05},
+    [SEAGALLOP_FOUR_ISLAND]     = {MAP_FOUR_ISLAND_HARBOR,  0x08, 0x05},
+    [SEAGALLOP_FIVE_ISLAND]     = {MAP_FIVE_ISLAND_HARBOR,  0x08, 0x05},
+    [SEAGALLOP_SIX_ISLAND]      = {MAP_SIX_ISLAND_HARBOR,   0x08, 0x05},
+    [SEAGALLOP_SEVEN_ISLAND]    = {MAP_SEVEN_ISLAND_HARBOR, 0x08, 0x05},
+    [SEAGALLOP_CINNABAR_ISLAND] = {MAP_CINNABAR_ISLAND,     0x15, 0x07},
+    [SEAGALLOP_NAVEL_ROCK]      = {MAP_NAVEL_ROCK_HARBOR_FRLG,   0x08, 0x05},
+    [SEAGALLOP_BIRTH_ISLAND]    = {MAP_BIRTH_ISLAND_HARBOR_FRLG, 0x08, 0x05}
 };
 
 // Bitpacked array.  In the commented section, right-most bit is the
@@ -307,13 +308,11 @@ static void Task_Seagallop_2(u8 taskId)
 
 static void Task_Seagallop_3(void)
 {
-    const s8 * warpInfo;
 
     if (gSpecialVar_0x8006 >= NELEMS(sSeag))
         gSpecialVar_0x8006 = 0;
 
-    warpInfo = sSeag[gSpecialVar_0x8006];
-    SetWarpDestination(warpInfo[0], warpInfo[1], -1, warpInfo[2], warpInfo[3]);
+    SetWarpDestination(sSeag[gSpecialVar_0x8006].map, -1, sSeag[gSpecialVar_0x8006].x, sSeag[gSpecialVar_0x8006].y);
     PlayRainStoppingSoundEffect();
     PlaySE(SE_EXIT);
     gFieldCallback = FieldCB_DefaultWarpExit;
@@ -498,8 +497,7 @@ u8 GetSeagallopNumber(void)
 
 bool8 IsPlayerLeftOfVermilionSailor(void)
 {
-    if (gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_VERMILION_CITY) 
-       && gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_VERMILION_CITY) 
+    if (gSaveBlock1Ptr->location.mapId == MAP_VERMILION_CITY
        && gSaveBlock1Ptr->pos.x < 24)
         return TRUE;
 

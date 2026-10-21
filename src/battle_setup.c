@@ -161,8 +161,7 @@ static const u8 sBattleTransitionTable_BattleDome[] =
 #define REMATCH(trainer1, trainer2, trainer3, trainer4, trainer5, map)  \
 {                                                                       \
     .trainerIds = {trainer1, trainer2, trainer3, trainer4, trainer5},   \
-    .mapGroup = MAP_GROUP(map),                                         \
-    .mapNum = MAP_NUM(map),                                             \
+    .mapId = map,                                                       \
 }
 
 const struct RematchTrainer gRematchTable[REMATCH_TABLE_ENTRIES] =
@@ -462,16 +461,15 @@ static void CreateBattleStartTask_Debug(u8 transition, u16 song)
 #undef tState
 #undef tTransition
 
-static bool8 CheckSilphScopeInPokemonTower(u16 mapGroup, u16 mapNum)
+static bool8 CheckSilphScopeInPokemonTower(MapId mapId)
 {
-    if (mapGroup == MAP_GROUP(MAP_POKEMON_TOWER_1F)
-     && (mapNum == MAP_NUM(MAP_POKEMON_TOWER_1F)
-      || mapNum == MAP_NUM(MAP_POKEMON_TOWER_2F)
-      || mapNum == MAP_NUM(MAP_POKEMON_TOWER_3F)
-      || mapNum == MAP_NUM(MAP_POKEMON_TOWER_4F)
-      || mapNum == MAP_NUM(MAP_POKEMON_TOWER_5F)
-      || mapNum == MAP_NUM(MAP_POKEMON_TOWER_6F)
-      || mapNum == MAP_NUM(MAP_POKEMON_TOWER_7F))
+    if ((mapId == MAP_POKEMON_TOWER_1F
+      || mapId == MAP_POKEMON_TOWER_2F
+      || mapId == MAP_POKEMON_TOWER_3F
+      || mapId == MAP_POKEMON_TOWER_4F
+      || mapId == MAP_POKEMON_TOWER_5F
+      || mapId == MAP_POKEMON_TOWER_6F
+      || mapId == MAP_POKEMON_TOWER_7F)
      && !(CheckBagHasItem(ITEM_SILPH_SCOPE, 1)))
         return TRUE;
     else
@@ -482,7 +480,7 @@ void BattleSetup_StartWildBattle(void)
 {
     if (GetSafariZoneFlag())
         DoSafariBattle();
-    else if (CheckSilphScopeInPokemonTower(gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum))
+    else if (CheckSilphScopeInPokemonTower(gSaveBlock1Ptr->location.mapId))
         DoGhostBattle();
     else
         DoStandardWildBattle(FALSE);
@@ -975,7 +973,7 @@ enum BattleEnvironments BattleSetup_GetEnvironmentId(void)
         if (MetatileBehavior_IsBridgeOverWater(tileBehavior) == TRUE)
             return BATTLE_ENVIRONMENT_WATER;
     }
-    if (gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_ROUTE113) && gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_ROUTE113))
+    if (gSaveBlock1Ptr->location.mapId == MAP_ROUTE113)
         return BATTLE_ENVIRONMENT_SAND;
     if (GetSavedWeather() == WEATHER_SANDSTORM)
         return BATTLE_ENVIRONMENT_SAND;
@@ -1291,7 +1289,7 @@ void SetMapVarsToTrainerA(void)
     if (TRAINER_BATTLE_PARAM.objEventLocalIdA != LOCALID_NONE)
     {
         gSpecialVar_LastTalked = TRAINER_BATTLE_PARAM.objEventLocalIdA;
-        gSelectedObjectEvent = GetObjectEventIdByLocalIdAndMap(TRAINER_BATTLE_PARAM.objEventLocalIdA, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);
+        gSelectedObjectEvent = GetObjectEventIdByLocalIdAndMap(TRAINER_BATTLE_PARAM.objEventLocalIdA, gSaveBlock1Ptr->location.mapId);
     }
 }
 
@@ -1300,7 +1298,7 @@ void SetMapVarsToTrainerB(void)
     if (TRAINER_BATTLE_PARAM.objEventLocalIdB != LOCALID_NONE)
     {
         gSpecialVar_LastTalked = TRAINER_BATTLE_PARAM.objEventLocalIdB;
-        gSelectedObjectEvent = GetObjectEventIdByLocalIdAndMap(TRAINER_BATTLE_PARAM.objEventLocalIdB, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);
+        gSelectedObjectEvent = GetObjectEventIdByLocalIdAndMap(TRAINER_BATTLE_PARAM.objEventLocalIdB, gSaveBlock1Ptr->location.mapId);
     }
 }
 
@@ -2695,9 +2693,9 @@ static void SetRematchIdForTrainer(const struct RematchTrainer *table, u32 table
 #endif //FREE_MATCH_CALL
 }
 
-static inline bool32 DoesCurrentMapMatchRematchTrainerMap(s32 i, const struct RematchTrainer *table, u16 mapGroup, u16 mapNum)
+static inline bool32 DoesCurrentMapMatchRematchTrainerMap(s32 i, const struct RematchTrainer *table, MapId mapId)
 {
-    return table[i].mapGroup == mapGroup && table[i].mapNum == mapNum;
+    return table[i].mapId == mapId;
 }
 
 bool32 TrainerIsMatchCallRegistered(s32 i)
@@ -2712,7 +2710,7 @@ bool32 TrainerIsMatchCallRegistered(s32 i)
 }
 
 #if FREE_MATCH_CALL == FALSE
-static bool32 UpdateRandomTrainerRematches(const struct RematchTrainer *table, u16 mapGroup, u16 mapNum)
+static bool32 UpdateRandomTrainerRematches(const struct RematchTrainer *table, MapId mapId)
 {
     s32 i;
 
@@ -2721,7 +2719,7 @@ static bool32 UpdateRandomTrainerRematches(const struct RematchTrainer *table, u
 
     for (i = 0; i < REMATCH_SPECIAL_TRAINER_START; i++)
     {
-        if (!DoesCurrentMapMatchRematchTrainerMap(i,table,mapGroup,mapNum) || IsRematchForbidden(i))
+        if (!DoesCurrentMapMatchRematchTrainerMap(i,table,mapId) || IsRematchForbidden(i))
             continue; // Only check permitted trainers within the current map.
 
         if (gSaveBlock1Ptr->trainerRematches[i] != 0)
@@ -2933,9 +2931,9 @@ static bool32 IsRematchStepCounterMaxed(void)
         return FALSE;
 }
 
-void TryUpdateRandomTrainerRematches(u16 mapGroup, u16 mapNum)
+void TryUpdateRandomTrainerRematches(MapId mapId)
 {
-    if (IsRematchStepCounterMaxed() && UpdateRandomTrainerRematches(gRematchTable, mapGroup, mapNum) == TRUE)
+    if (IsRematchStepCounterMaxed() && UpdateRandomTrainerRematches(gRematchTable, mapId) == TRUE)
         gSaveBlock1Ptr->trainerRematchStepCounter = 0;
 }
 #endif //FREE_MATCH_CALL

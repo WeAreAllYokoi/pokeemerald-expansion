@@ -10,7 +10,7 @@ extern bool8 gHasHallOfFameRecords;
 #define CREDITSOVWLDCMD_FF 0xFF
 
 #define CREDITSOVWLDLOADMAP(_map, _x, _y, _delay)           \
-    { CREDITSOVWLDCMD_LOADMAP, MAP_GROUP(_map), MAP_NUM(_map) }, \
+    { CREDITSOVWLDCMD_LOADMAP, _map }, \
     { _x, _y, _delay }
 
 #define CREDITSOVWLDSCROLL(_xspeed, _yspeed, _length) \

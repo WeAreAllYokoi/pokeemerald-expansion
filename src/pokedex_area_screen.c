@@ -78,8 +78,7 @@ enum PokedexAreaLabels
 
 struct OverworldArea
 {
-    u8 mapGroup;
-    u8 mapNum;
+    MapId mapId;
     mapsec_u16_t regionMapSectionId;
 };
 
@@ -119,9 +118,9 @@ EWRAM_DATA u8 gAreaTimeOfDay = 0;
 
 static void FindMapsWithMon(enum Species);
 static void BuildAreaGlowTilemap(void);
-static void SetAreaHasMon(u16, u16);
-static void SetSpecialMapHasMon(u16, u16);
-static mapsec_u16_t GetRegionMapSectionId(u8, u8);
+static void SetAreaHasMon(MapId);
+static void SetSpecialMapHasMon(MapId);
+static mapsec_u16_t GetRegionMapSectionId(MapId);
 static bool8 MapHasSpecies(const struct WildEncounterTypes *, u32, enum Species);
 static bool8 MonListHasSpecies(const struct WildPokemonInfo *, enum Species, u16);
 static void DoAreaGlow(void);
@@ -156,9 +155,9 @@ static const mapsec_u16_t sMovingRegionMapSections[3] =
     MAPSEC_TERRA_CAVE
 };
 
-static const u16 sFeebasData[][3] =
+static const struct { u16 species; MapId map; } sFeebasData[] =
 {
-    {SPECIES_FEEBAS, MAP_GROUP(MAP_ROUTE119), MAP_NUM(MAP_ROUTE119)},
+    {SPECIES_FEEBAS, MAP_ROUTE119},
     {NUM_SPECIES}
 };
 
@@ -312,21 +311,21 @@ static void FindMapsWithMon(enum Species species)
     // in the regular wild encounter table) to the area map.
     // This only applies to Feebas on Route 119, but it was clearly set
     // up to allow handling others.
-    for (i = 0; sFeebasData[i][0] != NUM_SPECIES; i++)
+    for (i = 0; sFeebasData[i].species != NUM_SPECIES; i++)
     {
-        if (species == sFeebasData[i][0])
+        if (species == sFeebasData[i].species)
         {
-            switch (sFeebasData[i][1])
+            switch (MAP_GROUP(sFeebasData[i].map))
             {
             case MAP_GROUP_TOWNS_AND_ROUTES:
             case MAP_GROUP_TOWNS_AND_ROUTES_FRLG:
-                SetAreaHasMon(sFeebasData[i][1], sFeebasData[i][2]);
+                SetAreaHasMon(sFeebasData[i].map);
                 break;
             case MAP_GROUP_DUNGEONS:
             case MAP_GROUP_DUNGEONS_FRLG:
             case MAP_GROUP_SPECIAL_AREA:
             case MAP_GROUP_SPECIAL_AREA_FRLG:
-                SetSpecialMapHasMon(sFeebasData[i][1], sFeebasData[i][2]);
+                SetSpecialMapHasMon(sFeebasData[i].map);
                 break;
             }
         }
@@ -334,26 +333,26 @@ static void FindMapsWithMon(enum Species species)
 
     currentRegionMapType = GetRegionMapType(gMapHeader.regionMapSectionId);
     // Add regular species to the area map
-    for (i = 0; gWildMonHeaders[i].mapGroup != MAP_GROUP(MAP_UNDEFINED); i++)
+    for (i = 0; MAP_GROUP(gWildMonHeaders[i].mapId) != MAP_GROUP(MAP_UNDEFINED); i++)
     {
-        u32 headerSectionId = Overworld_GetMapHeaderByGroupAndId(gWildMonHeaders[i].mapGroup, gWildMonHeaders[i].mapNum)->regionMapSectionId;
+        u32 headerSectionId = GetMapHeader(gWildMonHeaders[i].mapId)->regionMapSectionId;
 
         if (GetRegionMapType(headerSectionId) != currentRegionMapType)
             continue;
 
         if (MapHasSpecies(&gWildMonHeaders[i].encounterTypes[gAreaTimeOfDay], headerSectionId, species))
         {
-            switch (gWildMonHeaders[i].mapGroup)
+            switch (MAP_GROUP(gWildMonHeaders[i].mapId))
             {
             case MAP_GROUP_TOWNS_AND_ROUTES:
             case MAP_GROUP_TOWNS_AND_ROUTES_FRLG:
-                SetAreaHasMon(gWildMonHeaders[i].mapGroup, gWildMonHeaders[i].mapNum);
+                SetAreaHasMon(gWildMonHeaders[i].mapId);
                 break;
             case MAP_GROUP_DUNGEONS:
             case MAP_GROUP_DUNGEONS_FRLG:
             case MAP_GROUP_SPECIAL_AREA:
             case MAP_GROUP_SPECIAL_AREA_FRLG:
-                SetSpecialMapHasMon(gWildMonHeaders[i].mapGroup, gWildMonHeaders[i].mapNum);
+                SetSpecialMapHasMon(gWildMonHeaders[i].mapId);
                 break;
             }
         }
@@ -367,29 +366,28 @@ static void FindMapsWithMon(enum Species species)
         {
             // This is a roamer's species, show where this roamer is currently
             struct OverworldArea *roamerLocation = &sPokedexAreaScreen->overworldAreasWithMons[sPokedexAreaScreen->numOverworldAreas];
-            GetRoamerLocation(i, &roamerLocation->mapGroup, &roamerLocation->mapNum);
-            roamerLocation->regionMapSectionId = Overworld_GetMapHeaderByGroupAndId(roamerLocation->mapGroup, roamerLocation->mapNum)->regionMapSectionId;
+            GetRoamerLocation(i, &roamerLocation->mapId);
+            roamerLocation->regionMapSectionId = GetMapHeader(roamerLocation->mapId)->regionMapSectionId;
             sPokedexAreaScreen->numOverworldAreas++;
         }
     }
 }
 
-static void SetAreaHasMon(u16 mapGroup, u16 mapNum)
+static void SetAreaHasMon(MapId mapId)
 {
     if (sPokedexAreaScreen->numOverworldAreas < MAX_AREA_HIGHLIGHTS)
     {
-        sPokedexAreaScreen->overworldAreasWithMons[sPokedexAreaScreen->numOverworldAreas].mapGroup = mapGroup;
-        sPokedexAreaScreen->overworldAreasWithMons[sPokedexAreaScreen->numOverworldAreas].mapNum = mapNum;
-        sPokedexAreaScreen->overworldAreasWithMons[sPokedexAreaScreen->numOverworldAreas].regionMapSectionId = CorrectSpecialMapSecId(Overworld_GetMapHeaderByGroupAndId(mapGroup, mapNum)->regionMapSectionId);
+        sPokedexAreaScreen->overworldAreasWithMons[sPokedexAreaScreen->numOverworldAreas].mapId = mapId;
+        sPokedexAreaScreen->overworldAreasWithMons[sPokedexAreaScreen->numOverworldAreas].regionMapSectionId = CorrectSpecialMapSecId(GetMapHeader(mapId)->regionMapSectionId);
         sPokedexAreaScreen->numOverworldAreas++;
     }
 }
 
-static void SetSpecialMapHasMon(u16 mapGroup, u16 mapNum)
+static void SetSpecialMapHasMon(MapId mapId)
 {
-    if (!ADMG_IsMapIdValid(mapGroup, mapNum))
+    if (!ADMG_IsMapIdValid(mapId))
     {
-        ADMG_StateAccessRejected(((u32)mapGroup << 16) | mapNum, __func__);
+        ADMG_StateAccessRejected(mapId, __func__);
         return;
     }
 
@@ -397,7 +395,7 @@ static void SetSpecialMapHasMon(u16 mapGroup, u16 mapNum)
 
     if (sPokedexAreaScreen->numSpecialAreas < MAX_AREA_MARKERS)
     {
-        mapsec_u16_t regionMapSectionId = GetRegionMapSectionId(mapGroup, mapNum);
+        mapsec_u16_t regionMapSectionId = GetRegionMapSectionId(mapId);
         if (regionMapSectionId < MAPSEC_NONE)
         {
             // Don't highlight the area if it's a moving area (Marine/Terra Cave)
@@ -435,9 +433,9 @@ static void SetSpecialMapHasMon(u16 mapGroup, u16 mapNum)
     }
 }
 
-static mapsec_u16_t GetRegionMapSectionId(u8 mapGroup, u8 mapNum)
+static mapsec_u16_t GetRegionMapSectionId(MapId mapId)
 {
-    return Overworld_GetMapHeaderByGroupAndId(mapGroup, mapNum)->regionMapSectionId;
+    return GetMapHeader(mapId)->regionMapSectionId;
 }
 
 static bool8 MapHasSpecies(const struct WildEncounterTypes *info, u32 headerSectionId, enum Species species)

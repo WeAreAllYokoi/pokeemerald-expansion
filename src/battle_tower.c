@@ -742,7 +742,7 @@ static void InitTowerChallenge(void)
         gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode] = 0;
 
     ValidateBattleTowerRecordChecksums();
-    SetDynamicWarp(0, gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum, WARP_ID_NONE);
+    SetDynamicWarp(0, gSaveBlock1Ptr->location.mapId, WARP_ID_NONE);
     TRAINER_BATTLE_PARAM.opponentA = 0;
 }
 

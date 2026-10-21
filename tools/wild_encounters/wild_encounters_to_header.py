@@ -138,8 +138,7 @@ class WildEncounterAssembler:
     
     def WriteTerminator(self):
         self.WriteLine("{", 1)
-        self.WriteLine(".mapGroup = MAP_GROUP(MAP_UNDEFINED),", 2)
-        self.WriteLine(".mapNum = MAP_NUM(MAP_UNDEFINED),", 2)
+        self.WriteLine(".mapId = MAP_UNDEFINED,", 2)
         self.WriteLine(".encounterTypes =", 2)
         self.WriteLine("{", 2)
         for time in self.config.times_of_day:
@@ -174,8 +173,7 @@ class WildEncounterAssembler:
             self.WriteLine(f"#ifdef {version}")
 
             self.WriteLine("{", 1)
-            self.WriteLine(f".mapGroup = {map_group},", 2)
-            self.WriteLine(f".mapNum = {map_num},", 2)
+            self.WriteLine(f".mapId = MAP_ID({map_group}, {map_num}),", 2)
             self.WriteLine(".encounterTypes =", 2)
             self.WriteLine("{", 2)
             for time in self.config.times_of_day:

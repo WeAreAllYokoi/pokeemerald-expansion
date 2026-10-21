@@ -242,7 +242,7 @@ void VsSeekerResetObjectMovementAfterChargeComplete(void)
             continue;
 
         movementType = GetRandomFaceDirectionMovementType();
-        TryGetObjectEventIdByLocalIdAndMap(templates[i].localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, &objEventId);
+        TryGetObjectEventIdByLocalIdAndMap(templates[i].localId, gSaveBlock1Ptr->location.mapId, &objEventId);
         objectEvent = &gObjectEvents[objEventId];
 
         if (!ObjectEventIdIsSane(objEventId))
@@ -289,7 +289,7 @@ bool8 UpdateVsSeekerStepCounter(void)
     return FALSE;
 }
 
-void MapResetTrainerRematches(u16 mapGroup, u16 mapNum)
+void MapResetTrainerRematches(MapId mapId)
 {
     (void)ADMG_TryResetNativeRematchMap();
 
@@ -384,7 +384,7 @@ static void Task_VsSeeker_PlaySoundAndGetResponseCode(u8 taskId)
         else VsSeekerResetInBagStepCounter();
         tResponseCode = GetVsSeekerResponseInArea();
         if (!NativeVsSeekerTaskCurrent(taskId)) return;
-        ScriptMovement_StartObjectMovementScript(LOCALID_PLAYER, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, sMovementScript_Wait48);
+        ScriptMovement_StartObjectMovementScript(LOCALID_PLAYER, gSaveBlock1Ptr->location.mapId, sMovementScript_Wait48);
         gTasks[taskId].func = Task_VsSeeker_ShowResponseToPlayer;
     }
 }
@@ -393,7 +393,7 @@ static void Task_VsSeeker_ShowResponseToPlayer(u8 taskId)
 {
     if (!NativeVsSeekerTaskCurrent(taskId)) return;
 
-    if (!ScriptMovement_IsObjectMovementFinished(LOCALID_PLAYER, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup))
+    if (!ScriptMovement_IsObjectMovementFinished(LOCALID_PLAYER, gSaveBlock1Ptr->location.mapId))
         return;
 
     if (gTasks[taskId].tResponseCode == VSSEEKER_RESPONSE_NO_RESPONSE)
@@ -435,8 +435,7 @@ static bool8 GatherNearbyTrainerInfo(void)
     for (i = 0; i < gMapHeader.events->objectEventCount; ++i)
     {
         const struct ObjectEventTemplate *saved = &gSaveBlock1Ptr->objectEventTemplates[i];
-        if (!ADMG_TryGetDeclaredObjectTemplate((u32)gSaveBlock1Ptr->location.mapGroup,
-                (u32)gSaveBlock1Ptr->location.mapNum, saved->localId, &declared))
+        if (!ADMG_TryGetDeclaredObjectTemplate(gSaveBlock1Ptr->location.mapId, saved->localId, &declared))
             return FALSE;
         if (sVsSeeker->native
          && declared->trainerType != TRAINER_TYPE_NORMAL && declared->trainerType != TRAINER_TYPE_BURIED)
@@ -461,8 +460,7 @@ static bool8 GatherNearbyTrainerInfo(void)
         info->templateIndex = i;
         info->graphicsId = saved->kind == OBJ_KIND_CLONE ? declared->graphicsId : saved->graphicsId;
         objectEventId = OBJECT_EVENTS_COUNT;
-        if (TryGetObjectEventIdByLocalIdAndMap(saved->localId, gSaveBlock1Ptr->location.mapNum,
-                gSaveBlock1Ptr->location.mapGroup, &objectEventId) || !ObjectEventIdIsSane(objectEventId))
+        if (TryGetObjectEventIdByLocalIdAndMap(saved->localId, gSaveBlock1Ptr->location.mapId, &objectEventId) || !ObjectEventIdIsSane(objectEventId))
             objectEventId = OBJECT_EVENTS_COUNT;
         info->objectEventId = objectEventId;
         info->xCoord = saved->x; info->yCoord = saved->y;
@@ -590,7 +588,7 @@ void ClearRematchMovementByTrainerId(void)
         || vsSeekerDataIdx != TrainerIdToRematchTableId(gRematchTable, GetTrainerFlagFromScript(objectEventTemplates[i].script)))
             continue;
 
-        TryGetObjectEventIdByLocalIdAndMap(objectEventTemplates[i].localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, &objEventId);
+        TryGetObjectEventIdByLocalIdAndMap(objectEventTemplates[i].localId, gSaveBlock1Ptr->location.mapId, &objEventId);
         objectEvent = &gObjectEvents[objEventId];
         TryOverrideTemplateCoordsForObjectEvent(objectEvent, sFaceDirectionMovementTypeByFacingDirection[objectEvent->facingDirection]);
 
@@ -677,8 +675,7 @@ static bool8 ObjectEventIdIsSane(u8 objectEventId)
     const struct ObjectEvent *object = &gObjectEvents[objectEventId];
     return object->active && object->spriteId < MAX_SPRITES
         && gSprites[object->spriteId].data[0] == objectEventId
-        && object->mapGroup == gSaveBlock1Ptr->location.mapGroup
-        && object->mapNum == gSaveBlock1Ptr->location.mapNum;
+        && object->mapId == gSaveBlock1Ptr->location.mapId;
 }
 
 static u8 GetRandomFaceDirectionMovementType()
@@ -866,7 +863,7 @@ static bool32 HasFightableTrainers(void)
 static void StartTrainerObjectMovementScript(struct VsSeekerTrainerInfo * trainerInfo, const u8 * script)
 {
     UnfreezeObjectEvent(&gObjectEvents[trainerInfo->objectEventId]);
-    ScriptMovement_StartObjectMovementScript(trainerInfo->localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, script);
+    ScriptMovement_StartObjectMovementScript(trainerInfo->localId, gSaveBlock1Ptr->location.mapId, script);
 }
 
 #endif //FREE_MATCH_CALL
@@ -956,8 +953,7 @@ static bool8 NativeVsSeekerActorCurrent(u32 index)
      || actor->visible > TRUE || (actor->visible && info->objectEventId == ADMG_REMATCH_NO_OBJECT))
         return FALSE;
     enum TrainerId current;
-    if (!ADMG_TryGetNativeRematchNpcTrainer(sVsSeeker->nativeContext.mapGroup,
-            sVsSeeker->nativeContext.mapNum, info->localId, &current) || current != info->trainerIdx)
+    if (!ADMG_TryGetNativeRematchNpcTrainer(sVsSeeker->nativeContext.mapId, info->localId, &current) || current != info->trainerIdx)
         return FALSE;
     if (info->objectEventId < OBJECT_EVENTS_COUNT
      && (!ObjectEventIdIsSane(info->objectEventId)
@@ -1013,8 +1009,7 @@ static bool8 NativeVsSeekerStartMovement(u32 index, const u8 *script)
      || !sVsSeeker->nativeActors[index].visible) return FALSE;
     const struct VsSeekerTrainerInfo *info = &sVsSeeker->trainerInfo[index];
     UnfreezeObjectEvent(&gObjectEvents[info->objectEventId]);
-    return ScriptMovement_StartObjectMovementScript(info->localId, sVsSeeker->nativeContext.mapNum,
-                sVsSeeker->nativeContext.mapGroup, script) == FALSE;
+    return ScriptMovement_StartObjectMovementScript(info->localId, sVsSeeker->nativeContext.mapId, script) == FALSE;
 }
 
 static u8 NativeVsSeekerGetResponse(void)
@@ -1156,7 +1151,7 @@ ADMG_NATIVE_ENTRY bool8 ADMG_TryClearNativeRematchFamilyMovement(u32 trainerId)
         const struct ObjectEventTemplate *declared;
         struct ADMG_TrainerRef ref;
         struct ObjectEventTemplate *saved = &gSaveBlock1Ptr->objectEventTemplates[i];
-        if (!ADMG_TryGetDeclaredObjectTemplate(context.mapGroup, context.mapNum, saved->localId, &declared)) return FALSE;
+        if (!ADMG_TryGetDeclaredObjectTemplate(context.mapId, saved->localId, &declared)) return FALSE;
         if (declared->trainerType != TRAINER_TYPE_NORMAL && declared->trainerType != TRAINER_TYPE_BURIED) continue;
         u32 id = GetTrainerFlagFromScript(declared->script), npcFamily;
         if (!ADMG_TryResolveTrainer(id, &ref)) return FALSE;
@@ -1168,11 +1163,10 @@ ADMG_NATIVE_ENTRY bool8 ADMG_TryClearNativeRematchFamilyMovement(u32 trainerId)
         u8 ready, objectId = OBJECT_EVENTS_COUNT;
         if (!ADMG_TryReadNativeReadiness(&context, saved->localId, &ready)) return FALSE;
         matches[i] = TRUE;
-        if (TryGetObjectEventIdByLocalIdAndMap(saved->localId, context.mapNum, context.mapGroup, &objectId)
+        if (TryGetObjectEventIdByLocalIdAndMap(saved->localId, context.mapId, &objectId)
          || objectId >= OBJECT_EVENTS_COUNT || !gObjectEvents[objectId].active
          || gObjectEvents[objectId].localId != saved->localId
-         || gObjectEvents[objectId].mapGroup != context.mapGroup
-         || gObjectEvents[objectId].mapNum != context.mapNum) objectId = OBJECT_EVENTS_COUNT;
+         || gObjectEvents[objectId].mapId != context.mapId) objectId = OBJECT_EVENTS_COUNT;
         if (objectId < OBJECT_EVENTS_COUNT)
         {
             struct ObjectEvent *object = &gObjectEvents[objectId];
@@ -1208,7 +1202,7 @@ ADMG_NATIVE_ENTRY bool8 ADMG_TryClearNativeRematchFamilyMovement(u32 trainerId)
         {
             struct ObjectEvent *object = &gObjectEvents[objectId];
             if (!object->active || object->localId != saved->localId
-             || object->mapGroup != context.mapGroup || object->mapNum != context.mapNum
+             || object->mapId != context.mapId
              || object->facingDirection >= ARRAY_COUNT(sFaceDirectionMovementTypeByFacingDirection)) return FALSE;
             TryOverrideTemplateCoordsForObjectEvent(object, sFaceDirectionMovementTypeByFacingDirection[object->facingDirection]);
             if (!ADMG_IsNativeRematchContextCurrent(&context)
@@ -1287,10 +1281,10 @@ static bool8 NativeRematchResetObjectsValid(void)
 /* Reset operations retire their old scene before the next named RNG effect.
  * Epoch, allocation ticket and map/object containers identify that scene. */
 static bool8 NativeRematchResetSceneCurrent(const struct SaveBlock1 *save,
-    const struct MapEvents *events, u32 group, u32 number, u64 epoch, u32 ticket, bool8 bound)
+    const struct MapEvents *events, MapId mapId, u64 epoch, u32 ticket, bool8 bound)
 {
     return gSaveBlock1Ptr == save && save != NULL && gMapHeader.events == events
-        && (u32)save->location.mapGroup == group && (u32)save->location.mapNum == number
+        && save->location.mapId == mapId
         && ADMG_GetNativeRematchEpoch() == epoch && sNativeVsSeekerTicket == ticket
         && ADMG_HasNativeRematchContext() == bound && !ADMG_IsNativeRematchRestorePending();
 }
@@ -1301,7 +1295,7 @@ ADMG_NATIVE_ENTRY bool8 ADMG_TryResetNativeRematchObjectMovements(void)
      || !NativeRematchResetObjectsValid()) return FALSE;
     const struct SaveBlock1 *save = gSaveBlock1Ptr;
     const struct MapEvents *events = gMapHeader.events;
-    u32 group = (u32)save->location.mapGroup, number = (u32)save->location.mapNum;
+    MapId mapId = save->location.mapId;
     u64 epoch = ADMG_GetNativeRematchEpoch();
     u32 ticket = sNativeVsSeekerTicket;
     bool8 bound = ADMG_HasNativeRematchContext();
@@ -1310,7 +1304,7 @@ ADMG_NATIVE_ENTRY bool8 ADMG_TryResetNativeRematchObjectMovements(void)
         struct ObjectEvent *object = &gObjectEvents[i];
         if (!ADMG_IsNativeRematchMovement(object->movementType)) continue;
         u8 movement = GetRandomFaceDirectionMovementType();
-        if (!NativeRematchResetSceneCurrent(save, events, group, number, epoch, ticket, bound)
+        if (!NativeRematchResetSceneCurrent(save, events, mapId, epoch, ticket, bound)
          || !NativeRematchResetObjectValid(i)) return FALSE;
         /* Original RNG consumption includes inactive native movement slots. */
         if (!object->active) continue;
@@ -1330,7 +1324,7 @@ ADMG_NATIVE_ENTRY bool8 ADMG_TryResetNativeRematchTemplateMovements(void)
      || gMain.inBattle || ADMG_IsNativeRematchRestorePending()) return FALSE;
     const struct SaveBlock1 *save = gSaveBlock1Ptr;
     const struct MapEvents *events = gMapHeader.events;
-    u32 group = (u32)save->location.mapGroup, number = (u32)save->location.mapNum;
+    MapId mapId = save->location.mapId;
     u64 epoch = ADMG_GetNativeRematchEpoch();
     u32 ticket = sNativeVsSeekerTicket;
     bool8 bound = ADMG_HasNativeRematchContext();
@@ -1339,14 +1333,14 @@ ADMG_NATIVE_ENTRY bool8 ADMG_TryResetNativeRematchTemplateMovements(void)
         const struct ObjectEventTemplate *declared;
         const struct ObjectEventTemplate *saved = &save->objectEventTemplates[i];
         if (!ADMG_IsNativeRematchMovement(saved->movementType)) continue;
-        if (!ADMG_TryGetDeclaredObjectTemplate(group, number, saved->localId, &declared)) return FALSE;
+        if (!ADMG_TryGetDeclaredObjectTemplate(mapId, saved->localId, &declared)) return FALSE;
         if (declared->trainerType != TRAINER_TYPE_NORMAL && declared->trainerType != TRAINER_TYPE_BURIED) continue;
         u8 objectId = OBJECT_EVENTS_COUNT;
-        if (TryGetObjectEventIdByLocalIdAndMap(saved->localId, number, group, &objectId)) objectId = OBJECT_EVENTS_COUNT;
+        if (TryGetObjectEventIdByLocalIdAndMap(saved->localId, mapId, &objectId)) objectId = OBJECT_EVENTS_COUNT;
         if (objectId < OBJECT_EVENTS_COUNT)
         {
             const struct ObjectEvent *object = &gObjectEvents[objectId];
-            if (object->localId != saved->localId || object->mapGroup != group || object->mapNum != number
+            if (object->localId != saved->localId || object->mapId != mapId
              || !NativeRematchResetObjectValid(objectId)) return FALSE;
         }
         else if (objectId != OBJECT_EVENTS_COUNT) return FALSE;
@@ -1356,7 +1350,7 @@ ADMG_NATIVE_ENTRY bool8 ADMG_TryResetNativeRematchTemplateMovements(void)
     {
         if (!matches[i]) continue;
         u8 movement = GetRandomFaceDirectionMovementType();
-        if (!NativeRematchResetSceneCurrent(save, events, group, number, epoch, ticket, bound)) return FALSE;
+        if (!NativeRematchResetSceneCurrent(save, events, mapId, epoch, ticket, bound)) return FALSE;
         u8 objectId = objectIds[i];
         struct ObjectEventTemplate *saved = &gSaveBlock1Ptr->objectEventTemplates[i];
         if (objectId < OBJECT_EVENTS_COUNT)

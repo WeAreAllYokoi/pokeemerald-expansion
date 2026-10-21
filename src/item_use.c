@@ -662,15 +662,15 @@ enum Direction GetDirectionToHiddenItem(s16 itemDistanceX, s16 itemDistanceY)
 
 static void PlayerFaceHiddenItem(enum Direction direction)
 {
-    ObjectEventClearHeldMovementIfFinished(&gObjectEvents[GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0)]);
-    ObjectEventClearHeldMovement(&gObjectEvents[GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0)]);
-    UnfreezeObjectEvent(&gObjectEvents[GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0)]);
+    ObjectEventClearHeldMovementIfFinished(&gObjectEvents[GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0)]);
+    ObjectEventClearHeldMovement(&gObjectEvents[GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0)]);
+    UnfreezeObjectEvent(&gObjectEvents[GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0)]);
     PlayerTurnInPlace(direction);
 }
 
 static void Task_HiddenItemNearby(u8 taskId)
 {
-    if (ObjectEventCheckHeldMovementStatus(&gObjectEvents[GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0)]) == TRUE)
+    if (ObjectEventCheckHeldMovementStatus(&gObjectEvents[GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0)]) == TRUE)
         DisplayItemMessageOnField(taskId, sText_ItemFinderNearby, Task_CloseItemfinderMessage);
 }
 
@@ -678,7 +678,7 @@ static void Task_StandingOnHiddenItem(u8 taskId)
 {
     s16 *data = gTasks[taskId].data;
 
-    if (ObjectEventCheckHeldMovementStatus(&gObjectEvents[GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0)]) == TRUE
+    if (ObjectEventCheckHeldMovementStatus(&gObjectEvents[GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0)]) == TRUE
     || tItemFound == FALSE)
     {
         // Spin player around on item
@@ -1456,38 +1456,37 @@ void ItemUseOutOfBattle_CannotUse(u8 taskId)
 
 static bool32 IsValidLocationForVsSeeker(void)
 {
-    u16 mapGroup = gSaveBlock1Ptr->location.mapGroup;
-    u16 mapNum = gSaveBlock1Ptr->location.mapNum;
+    u32 mapGroup = MAP_GROUP(gSaveBlock1Ptr->location.mapId);
+    u32 mapNum = MAP_NUM(gSaveBlock1Ptr->location.mapId);
     enum MapType mapType = gMapHeader.mapType;
 
     typedef struct {
-        u16 mapGroup;
-        u16 mapNum;
+        MapId mapId;
     } Location;
 
     u32 i;
     Location validIndoorLocations[] =
     {
-        { MAP_GROUP(MAP_MT_PYRE_SUMMIT),           MAP_NUM(MAP_MT_PYRE_SUMMIT) },
-        { MAP_GROUP(MAP_SAFARI_ZONE_NORTH),        MAP_NUM(MAP_SAFARI_ZONE_NORTH) },
-        { MAP_GROUP(MAP_SAFARI_ZONE_NORTHEAST),    MAP_NUM(MAP_SAFARI_ZONE_NORTHEAST) },
-        { MAP_GROUP(MAP_SAFARI_ZONE_NORTHWEST),    MAP_NUM(MAP_SAFARI_ZONE_NORTHWEST) },
-        { MAP_GROUP(MAP_SAFARI_ZONE_SOUTH),        MAP_NUM(MAP_SAFARI_ZONE_SOUTH) },
-        { MAP_GROUP(MAP_SAFARI_ZONE_SOUTHEAST),    MAP_NUM(MAP_SAFARI_ZONE_SOUTHEAST) },
-        { MAP_GROUP(MAP_SAFARI_ZONE_SOUTHWEST),    MAP_NUM(MAP_SAFARI_ZONE_SOUTHWEST) },
-        { MAP_GROUP(MAP_SKY_PILLAR_TOP),           MAP_NUM(MAP_SKY_PILLAR_TOP) },
-        { MAP_GROUP(MAP_SOUTHERN_ISLAND_EXTERIOR), MAP_NUM(MAP_SOUTHERN_ISLAND_EXTERIOR) },
-        { MAP_GROUP(MAP_SOUTHERN_ISLAND_INTERIOR), MAP_NUM(MAP_SOUTHERN_ISLAND_INTERIOR) },
-        { MAP_GROUP(MAP_RUSTBORO_CITY_GYM),        MAP_NUM(MAP_RUSTBORO_CITY_GYM) },
-        { MAP_GROUP(MAP_DEWFORD_TOWN_GYM),         MAP_NUM(MAP_DEWFORD_TOWN_GYM) },
-        { MAP_GROUP(MAP_MAUVILLE_CITY_GYM),        MAP_NUM(MAP_MAUVILLE_CITY_GYM) },
-        { MAP_GROUP(MAP_LAVARIDGE_TOWN_GYM_1F),    MAP_NUM(MAP_LAVARIDGE_TOWN_GYM_1F) },
-        { MAP_GROUP(MAP_LAVARIDGE_TOWN_GYM_B1F),   MAP_NUM(MAP_LAVARIDGE_TOWN_GYM_B1F) },
-        { MAP_GROUP(MAP_PETALBURG_CITY_GYM),       MAP_NUM(MAP_PETALBURG_CITY_GYM) },
-        { MAP_GROUP(MAP_FORTREE_CITY_GYM),         MAP_NUM(MAP_FORTREE_CITY_GYM) },
-        { MAP_GROUP(MAP_MOSSDEEP_CITY_GYM),        MAP_NUM(MAP_MOSSDEEP_CITY_GYM) },
-        { MAP_GROUP(MAP_SOOTOPOLIS_CITY_GYM_1F),   MAP_NUM(MAP_SOOTOPOLIS_CITY_GYM_1F) },
-        { MAP_GROUP(MAP_SOOTOPOLIS_CITY_GYM_B1F),  MAP_NUM(MAP_SOOTOPOLIS_CITY_GYM_B1F) },
+        { MAP_MT_PYRE_SUMMIT },
+        { MAP_SAFARI_ZONE_NORTH },
+        { MAP_SAFARI_ZONE_NORTHEAST },
+        { MAP_SAFARI_ZONE_NORTHWEST },
+        { MAP_SAFARI_ZONE_SOUTH },
+        { MAP_SAFARI_ZONE_SOUTHEAST },
+        { MAP_SAFARI_ZONE_SOUTHWEST },
+        { MAP_SKY_PILLAR_TOP },
+        { MAP_SOUTHERN_ISLAND_EXTERIOR },
+        { MAP_SOUTHERN_ISLAND_INTERIOR },
+        { MAP_RUSTBORO_CITY_GYM },
+        { MAP_DEWFORD_TOWN_GYM },
+        { MAP_MAUVILLE_CITY_GYM },
+        { MAP_LAVARIDGE_TOWN_GYM_1F },
+        { MAP_LAVARIDGE_TOWN_GYM_B1F },
+        { MAP_PETALBURG_CITY_GYM },
+        { MAP_FORTREE_CITY_GYM },
+        { MAP_MOSSDEEP_CITY_GYM },
+        { MAP_SOOTOPOLIS_CITY_GYM_1F },
+        { MAP_SOOTOPOLIS_CITY_GYM_B1F },
     };
 
     if (IsMapTypeOutdoors(mapType))
@@ -1495,7 +1494,7 @@ static bool32 IsValidLocationForVsSeeker(void)
 
     for (i = 0; i < ARRAY_COUNT(validIndoorLocations); i++)
     {
-        if (mapNum == validIndoorLocations[i].mapNum && mapGroup == validIndoorLocations[i].mapGroup)
+        if (mapNum == MAP_NUM(validIndoorLocations[i].mapId) && mapGroup == MAP_GROUP(validIndoorLocations[i].mapId))
             return TRUE;
     }
 

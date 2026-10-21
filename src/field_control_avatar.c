@@ -1089,7 +1089,7 @@ static void SetupWarp(struct MapHeader *unused, s8 warpEventId, struct MapPositi
         warpEvent = &gMapHeader.events->warps[warpEventId];
     }
 
-    if (warpEvent->mapNum == MAP_NUM(MAP_DYNAMIC))
+    if (MAP_NUM(warpEvent->mapId) == MAP_NUM(MAP_DYNAMIC))
     {
         SetWarpDestinationToDynamicWarp(warpEvent->warpId);
     }
@@ -1097,11 +1097,11 @@ static void SetupWarp(struct MapHeader *unused, s8 warpEventId, struct MapPositi
     {
         const struct MapHeader *mapHeader;
 
-        SetWarpDestinationToMapWarp(warpEvent->mapGroup, warpEvent->mapNum, warpEvent->warpId);
+        SetWarpDestinationToMapWarp(warpEvent->mapId, warpEvent->warpId);
         UpdateEscapeWarp(position->x, position->y);
-        mapHeader = Overworld_GetMapHeaderByGroupAndId(warpEvent->mapGroup, warpEvent->mapNum);
-        if (mapHeader->events->warps[warpEvent->warpId].mapNum == MAP_NUM(MAP_DYNAMIC))
-            SetDynamicWarp(mapHeader->events->warps[warpEventId].warpId, gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum, warpEventId);
+        mapHeader = GetMapHeader(warpEvent->mapId);
+        if (MAP_NUM(mapHeader->events->warps[warpEvent->warpId].mapId) == MAP_NUM(MAP_DYNAMIC))
+            SetDynamicWarp(mapHeader->events->warps[warpEventId].warpId, gSaveBlock1Ptr->location.mapId, warpEventId);
     }
 }
 
@@ -1397,11 +1397,11 @@ void CancelSignPostMessageBox(struct FieldInput *input)
     CreateTask(Task_OpenStartMenu, 8);
 }
 
-u16 GetBoulderRevealFlagByLocalIdAndMap(u8 localId, u8 mapNum, u8 mapGroup)
+u16 GetBoulderRevealFlagByLocalIdAndMap(u8 localId, MapId mapId)
 {
     // Pushable boulder object events store the flag to reveal the boulder
     // on the floor below in their trainer type field.
-    const struct ObjectEventTemplate *template = GetObjectEventTemplateByLocalIdAndMap(localId, mapNum, mapGroup);
+    const struct ObjectEventTemplate *template = GetObjectEventTemplateByLocalIdAndMap(localId, mapId);
     if (template == NULL)
     {
         ADMG_StateAccessRejected(localId, __func__);
@@ -1416,14 +1416,14 @@ void HandleBoulderFallThroughHole(struct ObjectEvent * object)
         return;
     if (MapGridGetMetatileBehaviorAt(object->currentCoords.x, object->currentCoords.y) == MB_MT_PYRE_HOLE)
     {
-        u16 revealFlag = GetBoulderRevealFlagByLocalIdAndMap(object->localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);
+        u16 revealFlag = GetBoulderRevealFlagByLocalIdAndMap(object->localId, gSaveBlock1Ptr->location.mapId);
         if (!ADMG_IsFlagIdValid(revealFlag))
         {
             ADMG_StateAccessRejected(revealFlag, __func__);
             return;
         }
         PlaySE(SE_FALL);
-        RemoveObjectEventByLocalIdAndMap(object->localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);
+        RemoveObjectEventByLocalIdAndMap(object->localId, gSaveBlock1Ptr->location.mapId);
         FlagClear(revealFlag);
     }
 }

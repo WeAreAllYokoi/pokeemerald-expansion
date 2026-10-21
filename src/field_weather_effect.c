@@ -2649,8 +2649,7 @@ static u8 GetDynamicWeather(void)
     const u32 hashPieces[] =
     {
         gSaveBlock1Ptr->dailySeed,
-        gSaveBlock1Ptr->location.mapGroup,
-        gSaveBlock1Ptr->location.mapNum,
+        gSaveBlock1Ptr->location.mapId,
         gMapHeader.mapLayoutId,
         gMapHeader.regionMapSectionId,
     };

@@ -481,8 +481,9 @@ typedef union // size = 0x24
         /*0x0C*/ enum Species species;
         /*0x0E*/ enum MassOutbreakIndex outbreakIndex;
         /*0x0F*/ u8 unused2;
-        /*0x10*/ u8 locationMapNum;
-        /*0x11*/ u8 locationMapGroup;
+        /*0x10*/ u8 unused6;
+        /*0x11*/ u8 unused7;
+        MapId locationMap;
         /*0x12*/ u8 unused4;
         /*0x13*/ u8 probability; // UNUSED*
         /*0x14*/ u8 level; // UNUSED*

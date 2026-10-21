@@ -129,7 +129,7 @@ static const u8 sMetatileAttrShiftsEmerald[METATILE_ATTRIBUTE_COUNT] = {
 
 const struct MapHeader *const GetMapHeaderFromConnection(const struct MapConnection *connection)
 {
-    return Overworld_GetMapHeaderByGroupAndId(connection->mapGroup, connection->mapNum);
+    return GetMapHeader(connection->mapId);
 }
 
 void InitMap(void)
@@ -767,7 +767,7 @@ bool8 CameraMove(s32 x, s32 y)
         }
 
         SetPositionFromConnection(connection, direction, x, y);
-        LoadMapFromCameraTransition(connection->mapGroup, connection->mapNum);
+        LoadMapFromCameraTransition(connection->mapId);
         gCamera.active = TRUE;
         gCamera.x = old_x - gSaveBlock1Ptr->pos.x;
         gCamera.y = old_y - gSaveBlock1Ptr->pos.y;
@@ -1050,9 +1050,9 @@ void LoadMapTilesetPalettes(struct MapLayout const *mapLayout)
     }
 }
 
-bool32 AreCoordsInsideMap(u8 mapGroup, u8 mapNum, s16 x, s16 y)
+bool32 AreCoordsInsideMap(MapId mapId, s16 x, s16 y)
 {
-    const struct MapLayout *layout = Overworld_GetMapHeaderByGroupAndId(mapGroup, mapNum)->mapLayout;
+    const struct MapLayout *layout = GetMapHeader(mapId)->mapLayout;
     s32 width = layout->width;
     s32 height = layout->height;
     x -= MAP_OFFSET;
@@ -1069,5 +1069,5 @@ bool32 AreCoordsInsideMap(u8 mapGroup, u8 mapNum, s16 x, s16 y)
 
 bool32 AreCoordsInsidePlayerMap(s16 x, s16 y)
 {
-    return AreCoordsInsideMap(gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum, x, y);
+    return AreCoordsInsideMap(gSaveBlock1Ptr->location.mapId, x, y);
 }

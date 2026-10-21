@@ -276,12 +276,12 @@ bool8 MEScrCmd_giveribbon(struct ScriptContext *ctx)
 
 bool8 MEScrCmd_initramscript(struct ScriptContext *ctx)
 {
-    u8 mapGroup = ScriptReadByte(ctx);
-    u8 mapNum = ScriptReadByte(ctx);
+    u32 mapGroup = ScriptReadByte(ctx);
+    u32 mapNum = ScriptReadByte(ctx);
     u8 objectId = ScriptReadByte(ctx);
     u8 *script = (u8 *)(ScriptReadWord(ctx) - ctx->mOffset + ctx->mScriptBase);
     u8 *scriptEnd = (u8 *)(ScriptReadWord(ctx) - ctx->mOffset + ctx->mScriptBase);
-    InitRamScript(script, scriptEnd - script, mapGroup, mapNum, objectId);
+    InitRamScript(script, scriptEnd - script, MAP_ID(mapGroup, mapNum), objectId);
     return FALSE;
 }
 

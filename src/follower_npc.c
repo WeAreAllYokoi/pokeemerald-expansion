@@ -195,7 +195,7 @@ static void TurnNPCIntoFollower(u32 localId, u32 followerFlags, u32 setScript, c
         return;
     }
     if (!ADMG_TryGetObjectEventId(localId, &eventObjId)
-     || !ADMG_TryGetObjectEventFlagId(localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, &flag))
+     || !ADMG_TryGetObjectEventFlagId(localId, gSaveBlock1Ptr->location.mapId, &flag))
         return;
     u32 npcX = gObjectEvents[eventObjId].currentCoords.x;
     u32 npcY = gObjectEvents[eventObjId].currentCoords.y;
@@ -216,7 +216,7 @@ static void TurnNPCIntoFollower(u32 localId, u32 followerFlags, u32 setScript, c
     if (!ADMG_EndStateAccessCheck(scriptGeneration))
         return;
 
-    const struct ObjectEventTemplate *sourceTemplate = GetObjectEventTemplateByLocalIdAndMap(localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);
+    const struct ObjectEventTemplate *sourceTemplate = GetObjectEventTemplateByLocalIdAndMap(localId, gSaveBlock1Ptr->location.mapId);
     if (sourceTemplate == NULL)
     {
         ADMG_StateAccessRejected(localId, __func__);
@@ -231,7 +231,7 @@ static void TurnNPCIntoFollower(u32 localId, u32 followerFlags, u32 setScript, c
     npc.movementType = 0;
     npc.script = script;
     npc.localId = OBJ_EVENT_ID_NPC_FOLLOWER;
-    SetFollowerNPCData(FNPC_DATA_OBJ_ID, TrySpawnObjectEventTemplate(&npc, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, npcX, npcY));
+    SetFollowerNPCData(FNPC_DATA_OBJ_ID, TrySpawnObjectEventTemplate(&npc, gSaveBlock1Ptr->location.mapId, npcX, npcY));
     u32 followerId = GetFollowerNPCData(FNPC_DATA_OBJ_ID);
     if (followerId >= OBJECT_EVENTS_COUNT || gObjectEvents[followerId].spriteId >= MAX_SPRITES)
     {
@@ -862,7 +862,7 @@ void CreateFollowerNPC(u32 gfx, u32 followerFlags, const u8 *scriptPtr)
         .script = scriptPtr
     };
 
-    SetFollowerNPCData(FNPC_DATA_OBJ_ID, TrySpawnObjectEventTemplate(&npc, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, player->currentCoords.x, player->currentCoords.y));
+    SetFollowerNPCData(FNPC_DATA_OBJ_ID, TrySpawnObjectEventTemplate(&npc, gSaveBlock1Ptr->location.mapId, player->currentCoords.x, player->currentCoords.y));
     follower = &gObjectEvents[GetFollowerNPCData(FNPC_DATA_OBJ_ID)];
     follower->movementType = MOVEMENT_TYPE_NONE;
     gSprites[follower->spriteId].callback = MovementType_None;
@@ -1165,7 +1165,7 @@ void SetFollowerNPCSprite(u32 spriteIndex)
     SetFollowerNPCData(FNPC_DATA_CURRENT_SPRITE, spriteIndex);
     oldSpriteId = follower->spriteId;
     newGraphicsId = GetFollowerNPCSprite();
-    clone = *GetObjectEventTemplateByLocalIdAndMap(OBJ_EVENT_ID_NPC_FOLLOWER, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);
+    clone = *GetObjectEventTemplateByLocalIdAndMap(OBJ_EVENT_ID_NPC_FOLLOWER, gSaveBlock1Ptr->location.mapId);
 
     backupFollower = *follower;
     backupFollower.graphicsId = newGraphicsId;
@@ -1175,7 +1175,7 @@ void SetFollowerNPCSprite(u32 spriteIndex)
     clone.graphicsId = newGraphicsId;
     clone.movementType = 0;
     clone.localId = OBJ_EVENT_ID_NPC_FOLLOWER;
-    SetFollowerNPCData(FNPC_DATA_OBJ_ID, TrySpawnObjectEventTemplate(&clone, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, clone.x, clone.y));
+    SetFollowerNPCData(FNPC_DATA_OBJ_ID, TrySpawnObjectEventTemplate(&clone, gSaveBlock1Ptr->location.mapId, clone.x, clone.y));
     if (GetFollowerNPCData(FNPC_DATA_OBJ_ID) != OBJECT_EVENTS_COUNT)
     {
         follower = &gObjectEvents[GetFollowerNPCObjectId()];
@@ -1373,7 +1373,7 @@ void CreateFollowerNPCAvatar(void)
     }
 
     // Create NPC and store ID.
-    SetFollowerNPCData(FNPC_DATA_OBJ_ID, TrySpawnObjectEventTemplate(&clone, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, clone.x, clone.y));
+    SetFollowerNPCData(FNPC_DATA_OBJ_ID, TrySpawnObjectEventTemplate(&clone, gSaveBlock1Ptr->location.mapId, clone.x, clone.y));
     if (GetFollowerNPCData(FNPC_DATA_OBJ_ID) == OBJECT_EVENTS_COUNT)
     {
         ClearFollowerNPCData();
@@ -1831,7 +1831,7 @@ void ScriptSetFollowerNPC(struct ScriptContext *ctx)
     u8 objectId;
     u16 flagId;
     if (!ADMG_TryGetObjectEventId(localId, &objectId)
-     || !ADMG_TryGetObjectEventFlagId(localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, &flagId))
+     || !ADMG_TryGetObjectEventFlagId(localId, gSaveBlock1Ptr->location.mapId, &flagId))
     {
         ADMG_StopInvalidStateCommand(ctx);
         return;
@@ -1903,7 +1903,7 @@ void ScriptHideNPCFollower(struct ScriptContext *ctx)
         if (walkSpeed > 3)
             walkSpeed = 3;
 
-        ScriptMovement_StartObjectMovementScript(OBJ_EVENT_ID_NPC_FOLLOWER, npc->mapGroup, npc->mapNum, FollowerNPCHideMovementsSpeedTable[direction][walkSpeed]);
+        ScriptMovement_StartObjectMovementScript(OBJ_EVENT_ID_NPC_FOLLOWER, npc->mapId, FollowerNPCHideMovementsSpeedTable[direction][walkSpeed]);
         SetFollowerNPCData(FNPC_DATA_WARP_END, FNPC_WARP_REAPPEAR);
     }
 }

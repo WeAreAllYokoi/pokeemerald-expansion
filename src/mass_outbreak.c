@@ -67,8 +67,7 @@ void ZeroMassOutbreak(void)
 {
     gSaveBlock1Ptr->outbreakPokemonSpecies = 0;
     gSaveBlock1Ptr->outbreakPokemonSpecies = 0;
-    gSaveBlock1Ptr->outbreakLocationMapNum = 0;
-    gSaveBlock1Ptr->outbreakLocationMapGroup = 0;
+    gSaveBlock1Ptr->outbreakLocation = 0;
     gSaveBlock1Ptr->outbreakPokemonLevel = 0;
     for (u32 i = 0; i < MAX_MON_MOVES; i++)
         gSaveBlock1Ptr->outbreakPokemonMoves[i] = 0;
@@ -93,9 +92,7 @@ u8 *GetStaticOutbreakMapName(u8 *dest, enum MassOutbreakIndex outbreakIdx)
     const struct MassOutbreak *outbreak = ADMG_GetStaticOutbreakEntry(outbreakIdx);
     if (outbreak == NULL || dest == NULL)
         return dest;
-    u16 mapGroup = MAP_GROUP(outbreak->location);
-    u16 mapNum = MAP_NUM(outbreak->location);
-    return GetMapName(dest, Overworld_GetMapHeaderByGroupAndId(mapGroup, mapNum)->regionMapSectionId, 0);
+    return GetMapName(dest, GetMapHeader(outbreak->location)->regionMapSectionId, 0);
 }
 
 void PrepareTvShowForRandomOutbreak(TVShow *show)
@@ -103,15 +100,13 @@ void PrepareTvShowForRandomOutbreak(TVShow *show)
     u32 outbreakIdx = RandomUniform(RNG_NONE, 0, ARRAY_COUNT(sPokeOutbreakSpeciesList));
     show->massOutbreak.outbreakIndex = outbreakIdx + 1;
     show->massOutbreak.species = sPokeOutbreakSpeciesList[outbreakIdx].species;
-    show->massOutbreak.locationMapNum = MAP_NUM(sPokeOutbreakSpeciesList[outbreakIdx].location);
-    show->massOutbreak.locationMapGroup = MAP_GROUP(sPokeOutbreakSpeciesList[outbreakIdx].location);
+    show->massOutbreak.locationMap = sPokeOutbreakSpeciesList[outbreakIdx].location;
 }
 
 void StartMassOutbreak(struct MassOutbreak outbreak)
 {
     gSaveBlock1Ptr->outbreakPokemonSpecies = outbreak.species;
-    gSaveBlock1Ptr->outbreakLocationMapNum = MAP_NUM(outbreak.location);
-    gSaveBlock1Ptr->outbreakLocationMapGroup = MAP_GROUP(outbreak.location);
+    gSaveBlock1Ptr->outbreakLocation = outbreak.location;
     gSaveBlock1Ptr->outbreakPokemonLevel = outbreak.level;
     for (u32 i = 0; i < MAX_MON_MOVES; i++)
     {
@@ -159,7 +154,7 @@ bool8 DoMassOutbreakEncounterTest(void)
     if (gSaveBlock1Ptr->outbreakDaysLeft == 0)
         return FALSE;
 
-    if (gSaveBlock1Ptr->location.mapNum != gSaveBlock1Ptr->outbreakLocationMapNum || gSaveBlock1Ptr->location.mapGroup != gSaveBlock1Ptr->outbreakLocationMapGroup)
+    if (MAP_NUM(gSaveBlock1Ptr->location.mapId) != MAP_NUM(gSaveBlock1Ptr->outbreakLocation) || MAP_GROUP(gSaveBlock1Ptr->location.mapId) != MAP_GROUP(gSaveBlock1Ptr->outbreakLocation))
         return FALSE;
 
     return (RandomPercentage(RNG_NONE,  gSaveBlock1Ptr->outbreakPokemonProbability));
@@ -242,8 +237,7 @@ void ScrCmd_setdynamicoutbreak(struct ScriptContext *ctx)
     }
     gSaveBlock1Ptr->outbreakPokemonProbability = probability;
     gSaveBlock1Ptr->outbreakDaysLeft = daysLeft;
-    gSaveBlock1Ptr->outbreakLocationMapNum = MAP_NUM(map);
-    gSaveBlock1Ptr->outbreakLocationMapGroup = MAP_GROUP(map);
+    gSaveBlock1Ptr->outbreakLocation = map;
 }
 
 void ScrCmd_editoutbreak(struct ScriptContext *ctx)
@@ -307,8 +301,7 @@ void ScrCmd_editoutbreak(struct ScriptContext *ctx)
 
     if (map != MAP_UNDEFINED)
     {
-        gSaveBlock1Ptr->outbreakLocationMapNum = MAP_NUM(map);
-        gSaveBlock1Ptr->outbreakLocationMapGroup = MAP_GROUP(map);
+        gSaveBlock1Ptr->outbreakLocation = map;
     }
 }
 
@@ -352,7 +345,7 @@ void ScrCmd_getmassoutbreakdata(struct ScriptContext *ctx)
         value = gSaveBlock1Ptr->outbreakDaysLeft;
         break;
     case OUTBREAK_DATA_MAP:
-        value = gSaveBlock1Ptr->outbreakLocationMapNum | (gSaveBlock1Ptr->outbreakLocationMapGroup << 8);
+        value = MAP_NUM(gSaveBlock1Ptr->outbreakLocation) | (MAP_GROUP(gSaveBlock1Ptr->outbreakLocation) << 8);
         break;
     }
     VarSet(varId, value);

@@ -7,21 +7,21 @@
 
 #include "data/heal_locations.h"
 
-u32 GetHealLocationIndexByMap(u16 mapGroup, u16 mapNum)
+u32 GetHealLocationIndexByMap(MapId mapId)
 {
     u32 i;
 
     for (i = 0; i < ARRAY_COUNT(sHealLocations); i++)
     {
-        if (sHealLocations[i].mapGroup == mapGroup && sHealLocations[i].mapNum == mapNum)
+        if (sHealLocations[i].mapId == mapId)
             return i + 1;
     }
     return HEAL_LOCATION_NONE;
 }
 
-const struct HealLocation *GetHealLocationByMap(u16 mapGroup, u16 mapNum)
+const struct HealLocation *GetHealLocationByMap(MapId mapId)
 {
-    u32 index = GetHealLocationIndexByMap(mapGroup, mapNum);
+    u32 index = GetHealLocationIndexByMap(mapId);
 
     if (index == HEAL_LOCATION_NONE)
         return NULL;
@@ -34,8 +34,7 @@ u32 GetHealLocationIndexByWarpData(struct WarpData *warp)
     u32 i;
     for (i = 0; i < ARRAY_COUNT(sHealLocations); i++)
     {
-        if (sHealLocations[i].mapGroup == warp->mapGroup
-        && sHealLocations[i].mapNum == warp->mapNum
+        if (sHealLocations[i].mapId == warp->mapId
         && sHealLocations[i].x == warp->x
         && sHealLocations[i].y == warp->y)
             return i + 1;
@@ -58,8 +57,7 @@ static bool32 IsLastHealLocation(u32 healLocation)
     const struct HealLocation *loc = GetHealLocation(healLocation);
     const struct WarpData *warpData = &gSaveBlock1Ptr->lastHealLocation;
 
-    return warpData->mapGroup == loc->mapGroup
-        && warpData->mapNum == loc->mapNum
+    return warpData->mapId == loc->mapId
         && warpData->warpId == WARP_ID_NONE
         && warpData->x == loc->x
         && warpData->y == loc->y;
@@ -96,8 +94,7 @@ void SetWhiteoutRespawnWarpAndHealerNPC(struct WarpData *warp)
         return;
     }
 
-    warp->mapGroup = sWhiteoutRespawnHealCenterMapIdxs[healLocationId - 1][0];
-    warp->mapNum = sWhiteoutRespawnHealCenterMapIdxs[healLocationId - 1][1];
+    warp->mapId = MAP_ID(sWhiteoutRespawnHealCenterMapIdxs[healLocationId - 1][0], sWhiteoutRespawnHealCenterMapIdxs[healLocationId - 1][1]);
     warp->warpId = WARP_ID_NONE;
     warp->x = sWhiteoutRespawnHealCenterMapIdxs[healLocationId - 1][2];
     warp->y = sWhiteoutRespawnHealCenterMapIdxs[healLocationId - 1][3];

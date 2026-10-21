@@ -701,7 +701,7 @@ static void SetWarpsToRollCredits(void)
     VarSet(VAR_MAP_SCENE_INDIGO_PLATEAU_EXTERIOR, 1);
     FlagSet(FLAG_HIDE_MAP_NAME_POPUP);
     gDisableMapMusicChangeOnMapLoad = MUSIC_DISABLE_KEEP;
-    SetWarpDestination(MAP_GROUP(MAP_INDIGO_PLATEAU_EXTERIOR), MAP_NUM(MAP_INDIGO_PLATEAU_EXTERIOR), -1, 11, 6);
+    SetWarpDestination(MAP_INDIGO_PLATEAU_EXTERIOR, -1, 11, 6);
     DoWarp();
     ResetInitialPlayerAvatarState();
 }

@@ -2614,7 +2614,7 @@ bool32 TryFindHiddenPokemon(void)
         gFieldEffectArguments[1] = gSaveBlock1Ptr->pos.y;
         gFieldEffectArguments[2] = gSprites[gPlayerAvatar.spriteId].subpriority - 1;
         gFieldEffectArguments[3] = 2;
-        ObjectEventGetLocalIdAndMap(&gObjectEvents[gPlayerAvatar.objectEventId], &gFieldEffectArguments[0], &gFieldEffectArguments[1], &gFieldEffectArguments[2]);
+        ObjectEventGetLocalIdAndMap(&gObjectEvents[gPlayerAvatar.objectEventId], &gFieldEffectArguments[0], &gFieldEffectArguments[1]);
         FieldEffectStart(FLDEFF_EXCLAMATION_MARK_ICON);
 
         PlayCry_Script(species, 0);

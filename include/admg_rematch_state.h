@@ -16,8 +16,7 @@ struct ADMG_RematchContext
     u32 service;
     u32 instance;
     u32 selection;
-    u32 mapGroup;
-    u32 mapNum;
+    MapId mapId;
     u64 epoch;
 };
 

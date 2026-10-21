@@ -545,7 +545,7 @@ static bool32 OWE_DoesOWERoamerExist(void)
 static bool32 StartWildBattleWithOWE_CheckRoamer(enum CategoryOWE category)
 {
     if (category < ROAMER_COUNT
-     && IsRoamerAt(category, gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum))
+     && IsRoamerAt(category, gSaveBlock1Ptr->location.mapId))
     {
         CreateRoamerMonInstance(category);
         gEncounteredRoamerIndex = category;
@@ -662,7 +662,7 @@ void TryTriggerOverworldWildEncounter(struct ObjectEvent *obstacle, struct Objec
     struct ObjectEvent *wildMon = playerFollowerIsColliderOWE ? obstacle : collider;
     enum CategoryOWE category = GetOWECategory(wildMon);
     if (category < ROAMER_COUNT
-     && !IsRoamerAt(category, gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum))
+     && !IsRoamerAt(category, gSaveBlock1Ptr->location.mapId))
     {
         RemoveObjectEvent(wildMon);
         return;
@@ -1139,7 +1139,7 @@ void DespawnOWEOnBattleStart(void)
     if (IsOverworldWildEncounter(owe, OWE_MANUAL))
     {
         u16 flagId;
-        if (!ADMG_TryGetObjectEventFlagId(owe->localId, owe->mapNum, owe->mapGroup, &flagId))
+        if (!ADMG_TryGetObjectEventFlagId(owe->localId, owe->mapId, &flagId))
             return;
         u64 generation = ADMG_BeginStateAccessCheck();
         FlagSet(flagId);
@@ -1392,8 +1392,7 @@ static bool32 CheckRestrictedOWEMovementMap(struct ObjectEvent *owe, s32 xNew, s
     if (!WE_OWE_RESTRICT_MAP)
         return FALSE;
     
-    if (owe->mapGroup == gSaveBlock1Ptr->location.mapGroup
-     && owe->mapNum == gSaveBlock1Ptr->location.mapNum)
+    if (owe->mapId == gSaveBlock1Ptr->location.mapId)
         return !AreCoordsInsidePlayerMap(xNew, yNew);
     else
         return AreCoordsInsidePlayerMap(xNew, yNew);

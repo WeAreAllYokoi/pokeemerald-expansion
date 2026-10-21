@@ -205,14 +205,15 @@ bool8 ADMG_TryReadObjectGraphicsVar(u32 slot, u32 *value)
     return TRUE;
 }
 
-bool8 ADMG_IsMapIdValid(u32 mapGroup, u32 mapNum)
+bool8 ADMG_IsMapIdValid(MapId mapId)
 {
-    if (mapGroup >= MAP_GROUPS_COUNT || mapNum >= MAP_GROUP_COUNT[mapGroup])
-    {
-        ADMG_StateAccessRejected(mapGroup, "map identifier");
-        return FALSE;
-    }
-    return TRUE;
+    // A base map is in gMapGroups; an added map (FIRST_ADDED_MAP and up) is a registered row.
+    if (mapId >= FIRST_ADDED_MAP
+        ? mapId - FIRST_ADDED_MAP < RUNTIME_ADDED_MAPS_COUNT
+        : MAP_GROUP(mapId) < MAP_GROUPS_COUNT && MAP_NUM(mapId) < MAP_GROUP_COUNT[MAP_GROUP(mapId)])
+        return TRUE;
+    ADMG_StateAccessRejected(mapId, "map identifier");
+    return FALSE;
 }
 
 bool8 ADMG_TryGetObjectEventId(u32 localId, u8 *objectId)
@@ -233,16 +234,16 @@ bool8 ADMG_TryGetObjectEventId(u32 localId, u8 *objectId)
     return TRUE;
 }
 
-bool8 ADMG_TryGetObjectEventFlagId(u32 localId, u32 mapNum, u32 mapGroup, u16 *flagId)
+bool8 ADMG_TryGetObjectEventFlagId(u32 localId, MapId mapId, u16 *flagId)
 {
     u16 candidate;
-    if (flagId == NULL || localId > 0xFF || !ADMG_IsMapIdValid(mapGroup, mapNum)
-     || GetObjectEventTemplateByLocalIdAndMap(localId, mapNum, mapGroup) == NULL)
+    if (flagId == NULL || localId > 0xFF || !ADMG_IsMapIdValid(mapId)
+     || GetObjectEventTemplateByLocalIdAndMap(localId, mapId) == NULL)
     {
         ADMG_StateAccessRejected(localId, "object flag binding");
         return FALSE;
     }
-    candidate = GetObjectEventFlagIdByLocalIdAndMap(localId, mapNum, mapGroup);
+    candidate = GetObjectEventFlagIdByLocalIdAndMap(localId, mapId);
     if (!ADMG_IsFlagIdValid(candidate))
     {
         ADMG_StateAccessRejected(candidate, "object flag identifier");

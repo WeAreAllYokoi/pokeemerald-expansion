@@ -12,14 +12,14 @@ static bool8 RejectBinding(u32 id, const char *operation)
     return FALSE;
 }
 
-bool8 ADMG_TryGetNativeRematchNpcTrainer(u32 group, u32 number, u32 localId, enum TrainerId *trainerId)
+bool8 ADMG_TryGetNativeRematchNpcTrainer(MapId mapId, u32 localId, enum TrainerId *trainerId)
 {
     const struct ObjectEventTemplate *npc;
     const u8 *operand;
     struct ADMG_TrainerRef ref;
     u32 id;
     if (trainerId == NULL || localId >= ADMG_NATIVE_READINESS_COUNT
-     || !ADMG_TryGetDeclaredRematchNpcTemplate(group, number, localId, &npc))
+     || !ADMG_TryGetDeclaredRematchNpcTemplate(mapId, localId, &npc))
         return RejectBinding(localId, __func__);
     if (npc->trainerType != TRAINER_TYPE_NORMAL && npc->trainerType != TRAINER_TYPE_BURIED)
         return RejectBinding(localId, __func__);
@@ -40,7 +40,8 @@ bool8 ADMG_TryGetNativeRematchNpcTrainer(u32 group, u32 number, u32 localId, enu
 
 bool8 ADMG_TryValidateNativeRematchBindings(void)
 {
-    u32 i, group, number;
+    u32 i;
+    MapId mapId;
     enum TrainerId trainer;
     u32 family;
     u8 position;
@@ -48,17 +49,16 @@ bool8 ADMG_TryValidateNativeRematchBindings(void)
      || (gADMG_KantoVsSeekerCounter & 0xFF) > 100
      || (gADMG_KantoVsSeekerCounter >> 8) > 100)
         return RejectBinding(0, __func__);
-    group = (u32)gSaveBlock1Ptr->location.mapGroup;
-    number = (u32)gSaveBlock1Ptr->location.mapNum;
-    if (!ADMG_IsMapIdValid(group, number))
-        return RejectBinding(group, __func__);
+    mapId = gSaveBlock1Ptr->location.mapId;
+    if (!ADMG_IsMapIdValid(mapId))
+        return RejectBinding(mapId, __func__);
     for (i = 0; i < ADMG_NATIVE_READINESS_COUNT; ++i)
     {
         if (gADMG_KantoNpcReadiness[i] > 5)
             return RejectBinding(i, __func__);
         if (gADMG_KantoNpcReadiness[i] == 0)
             continue;
-        if (!ADMG_TryGetNativeRematchNpcTrainer(group, number, i, &trainer)
+        if (!ADMG_TryGetNativeRematchNpcTrainer(mapId, i, &trainer)
          || !ADMG_TryFindNativeRematch(trainer, TRUE, &family, &position))
             return RejectBinding(i, __func__);
         /* Original readiness is a positive local-NPC predicate. Battle party

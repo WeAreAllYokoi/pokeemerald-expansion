@@ -1778,7 +1778,7 @@ static void InitDomeChallenge(void)
     if (!(gSaveBlock2Ptr->frontier.winStreakActiveFlags & sWinStreakFlags[battleMode][lvlMode]))
         gSaveBlock2Ptr->frontier.domeWinStreaks[battleMode][lvlMode] = 0;
 
-    SetDynamicWarp(0, gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum, WARP_ID_NONE);
+    SetDynamicWarp(0, gSaveBlock1Ptr->location.mapId, WARP_ID_NONE);
     TRAINER_BATTLE_PARAM.opponentA = 0;
 }
 

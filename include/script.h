@@ -66,6 +66,8 @@ void ScriptReturn(struct ScriptContext *ctx);
 u16 ScriptReadHalfword(struct ScriptContext *ctx);
 u16 ScriptPeekHalfword(struct ScriptContext *ctx);
 u32 ScriptReadWord(struct ScriptContext *ctx);
+// A script's map operand: its MapId.
+MapId ScriptReadMapId(struct ScriptContext *ctx);
 u32 ScriptPeekWord(struct ScriptContext *ctx);
 void LockPlayerFieldControls(void);
 void UnlockPlayerFieldControls(void);
@@ -92,7 +94,7 @@ bool8 TryRunOnFrameMapScript(void);
 void TryRunOnWarpIntoMapScript(void);
 u32 CalculateRamScriptChecksum(void);
 void ClearRamScript(void);
-bool8 InitRamScript(const u8 *script, u16 scriptSize, u8 mapGroup, u8 mapNum, u8 objectId);
+bool8 InitRamScript(const u8 *script, u16 scriptSize, MapId mapId, u8 objectId);
 const u8 *GetRamScript(u8 objectId, const u8 *script);
 bool32 ValidateSavedRamScript(void);
 u8 *GetSavedRamScriptIfValid(void);

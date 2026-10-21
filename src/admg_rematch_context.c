@@ -10,15 +10,15 @@ static bool8 RejectNpc(u32 id, const char *operation)
     return FALSE;
 }
 
-static bool8 FindNpc(u32 mapGroup, u32 mapNum, u32 localId, bool8 saved,
+static bool8 FindNpc(MapId mapId, u32 localId, bool8 saved,
                      const struct ObjectEventTemplate **result)
 {
     const struct MapHeader *header;
     const struct ObjectEventTemplate *templates, *found = NULL;
     u32 count, i;
-    if (localId == 0 || localId > 0xFF || !ADMG_IsMapIdValid(mapGroup, mapNum))
+    if (localId == 0 || localId > 0xFF || !ADMG_IsMapIdValid(mapId))
         return RejectNpc(localId, __func__);
-    header = Overworld_GetMapHeaderByGroupAndId(mapGroup, mapNum);
+    header = GetMapHeader(mapId);
     if (header == NULL || header->events == NULL)
         return RejectNpc(localId, __func__);
     count = header->events->objectEventCount;
@@ -26,7 +26,7 @@ static bool8 FindNpc(u32 mapGroup, u32 mapNum, u32 localId, bool8 saved,
         return RejectNpc(count, __func__);
     templates = header->events->objectEvents;
     if (saved && gSaveBlock1Ptr != NULL
-     && gSaveBlock1Ptr->location.mapGroup == mapGroup && gSaveBlock1Ptr->location.mapNum == mapNum)
+     && gSaveBlock1Ptr->location.mapId == mapId)
     {
         if (count > ARRAY_COUNT(gSaveBlock1Ptr->objectEventTemplates))
             return RejectNpc(count, __func__);
@@ -54,25 +54,25 @@ static bool8 NextNpc(const struct ObjectEventTemplate *current,
                      const struct ObjectEventTemplate **next)
 {
     if (current->kind == OBJ_KIND_CLONE)
-        return FindNpc(current->targetMapGroup, current->targetMapNum, current->targetLocalId, FALSE, next);
+        return FindNpc(current->targetMapId, current->targetLocalId, FALSE, next);
     *next = current;
     return TRUE;
 }
 
-static bool8 ResolveObjectTemplate(u32 mapGroup, u32 mapNum, u32 localId, bool8 declared,
+static bool8 ResolveObjectTemplate(MapId mapId, u32 localId, bool8 declared,
                        bool8 requireScript, const struct ObjectEventTemplate **template)
 {
     const struct ObjectEventTemplate *current, *declaration, *slow, *fast;
     if (template == NULL)
         return RejectNpc(localId, __func__);
-    if (!FindNpc(mapGroup, mapNum, localId, TRUE, &current))
+    if (!FindNpc(mapId, localId, TRUE, &current))
         return FALSE;
     if (declared)
     {
         /* Provenance identifies a source NPC only after its destination local
          * ID has been reconciled with the restored map. It cannot manufacture
          * an NPC on a different map from a previous saved template array. */
-        if (!FindNpc(mapGroup, mapNum, localId, FALSE, &declaration))
+        if (!FindNpc(mapId, localId, FALSE, &declaration))
             return FALSE;
         if (current->kind != OBJ_KIND_CLONE)
             current = declaration;
@@ -94,28 +94,28 @@ static bool8 ResolveObjectTemplate(u32 mapGroup, u32 mapNum, u32 localId, bool8 
     return TRUE;
 }
 
-static bool8 ResolveNpc(u32 mapGroup, u32 mapNum, u32 localId, bool8 declared,
+static bool8 ResolveNpc(MapId mapId, u32 localId, bool8 declared,
                        const struct ObjectEventTemplate **template)
 {
-    return ResolveObjectTemplate(mapGroup, mapNum, localId, declared, TRUE, template);
+    return ResolveObjectTemplate(mapId, localId, declared, TRUE, template);
 }
 
-bool8 ADMG_TryGetDeclaredObjectTemplate(u32 mapGroup, u32 mapNum, u32 localId,
+bool8 ADMG_TryGetDeclaredObjectTemplate(MapId mapId, u32 localId,
                                       const struct ObjectEventTemplate **template)
 {
     /* Scenery may legitimately have no script. Trainer-specific readers retain
      * their existing non-null script contract through ResolveNpc. */
-    return ResolveObjectTemplate(mapGroup, mapNum, localId, TRUE, FALSE, template);
+    return ResolveObjectTemplate(mapId, localId, TRUE, FALSE, template);
 }
 
-bool8 ADMG_TryGetRematchNpcTemplate(u32 mapGroup, u32 mapNum, u32 localId,
+bool8 ADMG_TryGetRematchNpcTemplate(MapId mapId, u32 localId,
                                   const struct ObjectEventTemplate **template)
 {
-    return ResolveNpc(mapGroup, mapNum, localId, FALSE, template);
+    return ResolveNpc(mapId, localId, FALSE, template);
 }
 
-bool8 ADMG_TryGetDeclaredRematchNpcTemplate(u32 mapGroup, u32 mapNum, u32 localId,
+bool8 ADMG_TryGetDeclaredRematchNpcTemplate(MapId mapId, u32 localId,
                                           const struct ObjectEventTemplate **template)
 {
-    return ResolveNpc(mapGroup, mapNum, localId, TRUE, template);
+    return ResolveNpc(mapId, localId, TRUE, template);
 }

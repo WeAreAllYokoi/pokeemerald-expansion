@@ -113,8 +113,7 @@ bool8 CheckFeebasAtCoords(s16 x, s16 y)
     u8 route119Section = 0;
     u16 spotId;
 
-    if (gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_ROUTE119)
-     && gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_ROUTE119))
+    if (gSaveBlock1Ptr->location.mapId == MAP_ROUTE119)
     {
         x -= MAP_OFFSET;
         y -= MAP_OFFSET;
@@ -436,14 +435,12 @@ u16 GetCurrentMapWildMonHeaderId(void)
     for (i = 0; ; i++)
     {
         const struct WildPokemonHeader *wildHeader = &gWildMonHeaders[i];
-        if (wildHeader->mapGroup == MAP_GROUP(MAP_UNDEFINED))
+        if (MAP_GROUP(wildHeader->mapId) == MAP_GROUP(MAP_UNDEFINED))
             break;
 
-        if (gWildMonHeaders[i].mapGroup == gSaveBlock1Ptr->location.mapGroup &&
-            gWildMonHeaders[i].mapNum == gSaveBlock1Ptr->location.mapNum)
+        if (gWildMonHeaders[i].mapId == gSaveBlock1Ptr->location.mapId)
         {
-            if (gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_ALTERING_CAVE) &&
-                gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_ALTERING_CAVE))
+            if (gSaveBlock1Ptr->location.mapId == MAP_ALTERING_CAVE)
             {
                 u16 alteringCaveId = VarGet(VAR_ALTERING_CAVE_WILD_SET);
                 if (alteringCaveId >= NUM_ALTERING_CAVE_TABLES)
@@ -670,8 +667,7 @@ static bool8 AllowWildCheckOnNewMetatile(void)
 
 bool8 AreLegendariesInSootopolisPreventingEncounters(void)
 {
-    if (gSaveBlock1Ptr->location.mapGroup != MAP_GROUP(MAP_SOOTOPOLIS_CITY)
-     || gSaveBlock1Ptr->location.mapNum != MAP_NUM(MAP_SOOTOPOLIS_CITY))
+    if (gSaveBlock1Ptr->location.mapId != MAP_SOOTOPOLIS_CITY)
     {
         return FALSE;
     }

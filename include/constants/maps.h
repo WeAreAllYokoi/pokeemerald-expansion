@@ -12,8 +12,16 @@ enum
     MAP_UNDEFINED = (0xFF | (0xFF << 8)),
 };
 
-#define MAP_GROUP(map) (map >> 8)
-#define MAP_NUM(map) (map & 0xFF)
+// A MapId is 32-bit: (group << 8) | num. The base maps keep their values; maps added at run time start at
+// FIRST_ADDED_MAP, so their "groups" are 256 and up and never index gMapGroups.
+#define MAP_GROUP(map) ((map) >> 8)
+#define MAP_NUM(map) ((map) & 0xFF)
+#define MAP_ID(group, num) (((group) << 8) | (num))
+#define FIRST_ADDED_MAP 0x10000
+// A MapId kept in two 16-bit sprite or task data slots
+#define MAP_ID_LO(map) ((u16)(map))
+#define MAP_ID_HI(map) ((u16)((u32)(map) >> 16))
+#define MAP_ID_FROM_HALVES(lo, hi) ((u32)(u16)(lo) | ((u32)(u16)(hi) << 16))
 
 // IDs for dynamic warps. Both are used in the dest_warp_id field for warp events, but they
 // are never read in practice. A dest_map of MAP_DYNAMIC is used to indicate that a

@@ -234,6 +234,13 @@ u16 ScriptPeekHalfword(struct ScriptContext *ctx)
     return value;
 }
 
+MapId ScriptReadMapId(struct ScriptContext *ctx)
+{
+    MapId mapId = ScriptReadByte(ctx) << 8; // group, then number
+
+    return mapId | ScriptReadByte(ctx);
+}
+
 u32 ScriptReadWord(struct ScriptContext *ctx)
 {
     u32 value0 = *(ctx->scriptPtr++);
@@ -500,7 +507,7 @@ void ClearRamScript(void)
 #endif //FREE_MYSTERY_EVENT_BUFFERS
 }
 
-bool8 InitRamScript(const u8 *script, u16 scriptSize, u8 mapGroup, u8 mapNum, u8 localId)
+bool8 InitRamScript(const u8 *script, u16 scriptSize, MapId mapId, u8 localId)
 {
 #if FREE_MYSTERY_EVENT_BUFFERS == FALSE
     struct RamScriptData *scriptData = &gSaveBlock1Ptr->ramScript.data;
@@ -511,8 +518,7 @@ bool8 InitRamScript(const u8 *script, u16 scriptSize, u8 mapGroup, u8 mapNum, u8
         return FALSE;
 
     scriptData->magic = RAM_SCRIPT_MAGIC;
-    scriptData->mapGroup = mapGroup;
-    scriptData->mapNum = mapNum;
+    scriptData->mapId = mapId;
     scriptData->localId = localId;
     memcpy(scriptData->script, script, scriptSize);
     gSaveBlock1Ptr->ramScript.checksum = CalculateRamScriptChecksum();
@@ -529,9 +535,9 @@ const u8 *GetRamScript(u8 localId, const u8 *script)
     gRamScriptRetAddr = NULL;
     if (scriptData->magic != RAM_SCRIPT_MAGIC)
         return script;
-    if (scriptData->mapGroup != gSaveBlock1Ptr->location.mapGroup)
+    if (MAP_GROUP(scriptData->mapId) != MAP_GROUP(gSaveBlock1Ptr->location.mapId))
         return script;
-    if (scriptData->mapNum != gSaveBlock1Ptr->location.mapNum)
+    if (MAP_NUM(scriptData->mapId) != MAP_NUM(gSaveBlock1Ptr->location.mapId))
         return script;
     if (scriptData->localId != localId)
         return script;
@@ -558,9 +564,9 @@ bool32 ValidateSavedRamScript(void)
     struct RamScriptData *scriptData = &gSaveBlock1Ptr->ramScript.data;
     if (scriptData->magic != RAM_SCRIPT_MAGIC)
         return FALSE;
-    if (scriptData->mapGroup != MAP_GROUP(MAP_UNDEFINED))
+    if (MAP_GROUP(scriptData->mapId) != MAP_GROUP(MAP_UNDEFINED))
         return FALSE;
-    if (scriptData->mapNum != MAP_NUM(MAP_UNDEFINED))
+    if (MAP_NUM(scriptData->mapId) != MAP_NUM(MAP_UNDEFINED))
         return FALSE;
     if (scriptData->localId != NO_OBJECT)
         return FALSE;
@@ -580,9 +586,9 @@ u8 *GetSavedRamScriptIfValid(void)
         return NULL;
     if (scriptData->magic != RAM_SCRIPT_MAGIC)
         return NULL;
-    if (scriptData->mapGroup != MAP_GROUP(MAP_UNDEFINED))
+    if (MAP_GROUP(scriptData->mapId) != MAP_GROUP(MAP_UNDEFINED))
         return NULL;
-    if (scriptData->mapNum != MAP_NUM(MAP_UNDEFINED))
+    if (MAP_NUM(scriptData->mapId) != MAP_NUM(MAP_UNDEFINED))
         return NULL;
     if (scriptData->localId != NO_OBJECT)
         return NULL;
@@ -605,7 +611,7 @@ void InitRamScript_NoObjectEvent(u8 *script, u16 scriptSize)
 #if FREE_MYSTERY_EVENT_BUFFERS == FALSE
     if (scriptSize > sizeof(gSaveBlock1Ptr->ramScript.data.script))
         scriptSize = sizeof(gSaveBlock1Ptr->ramScript.data.script);
-    InitRamScript(script, scriptSize, MAP_GROUP(MAP_UNDEFINED), MAP_NUM(MAP_UNDEFINED), NO_OBJECT);
+    InitRamScript(script, scriptSize, MAP_UNDEFINED, NO_OBJECT);
 #endif //FREE_MYSTERY_EVENT_BUFFERS
 }
 

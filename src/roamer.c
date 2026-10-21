@@ -173,14 +173,14 @@ void UpdateLocationHistoryForRoamer(void)
         sLocationHistory[i][1][MAP_GRP] = sLocationHistory[i][0][MAP_GRP];
         sLocationHistory[i][1][MAP_NUM] = sLocationHistory[i][0][MAP_NUM];
 
-        sLocationHistory[i][0][MAP_GRP] = gSaveBlock1Ptr->location.mapGroup;
-        sLocationHistory[i][0][MAP_NUM] = gSaveBlock1Ptr->location.mapNum;
+        sLocationHistory[i][0][MAP_GRP] = MAP_GROUP(gSaveBlock1Ptr->location.mapId);
+        sLocationHistory[i][0][MAP_NUM] = MAP_NUM(gSaveBlock1Ptr->location.mapId);
     }
 }
 
 void RoamerMoveToOtherLocationSet(u32 roamerIndex)
 {
-    u8 mapNum = 0;
+    u32 mapNum = 0;
 
     if (!ROAMER(roamerIndex)->active)
         return;
@@ -219,7 +219,7 @@ void RoamerMove(u32 roamerIndex)
             // Find the location set that starts with the roamer's current map
             if (sRoamerLocation[roamerIndex][MAP_NUM] == sRoamerLocations[locSet][0])
             {
-                u8 mapNum;
+                u32 mapNum;
                 // Choose a new map (excluding the first) within this set
                 // Also exclude a map if the roamer was there 2 moves ago
                 do
@@ -236,9 +236,9 @@ void RoamerMove(u32 roamerIndex)
     }
 }
 
-bool8 IsRoamerAt(u32 roamerIndex, u8 mapGroup, u8 mapNum)
+bool8 IsRoamerAt(u32 roamerIndex, MapId mapId)
 {
-    if (ROAMER(roamerIndex)->active && mapGroup == sRoamerLocation[roamerIndex][MAP_GRP] && mapNum == sRoamerLocation[roamerIndex][MAP_NUM])
+    if (ROAMER(roamerIndex)->active && mapId == MAP_ID(sRoamerLocation[roamerIndex][MAP_GRP], sRoamerLocation[roamerIndex][MAP_NUM]))
         return TRUE;
     else
         return FALSE;
@@ -266,7 +266,7 @@ bool8 TryStartRoamerEncounter(void)
 
     for (i = 0; i < ROAMER_COUNT; i++)
     {
-        if (IsRoamerAt(i, gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum) == TRUE && (Random() % 4) == 0)
+        if (IsRoamerAt(i, gSaveBlock1Ptr->location.mapId) == TRUE && (Random() % 4) == 0)
         {
             CreateRoamerMonInstance(i);
             gEncounteredRoamerIndex = i;
@@ -292,8 +292,7 @@ void SetRoamerInactive(u32 roamerIndex)
     ROAMER(roamerIndex)->active = FALSE;
 }
 
-void GetRoamerLocation(u32 roamerIndex, u8 *mapGroup, u8 *mapNum)
+void GetRoamerLocation(u32 roamerIndex, MapId *mapId)
 {
-    *mapGroup = sRoamerLocation[roamerIndex][MAP_GRP];
-    *mapNum = sRoamerLocation[roamerIndex][MAP_NUM];
+    *mapId = MAP_ID(sRoamerLocation[roamerIndex][MAP_GRP], sRoamerLocation[roamerIndex][MAP_NUM]);
 }

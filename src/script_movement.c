@@ -19,24 +19,24 @@ static void ScriptMovement_TakeStep(u8 taskId, u8 moveScrId, u8 objEventId, cons
 
 static EWRAM_DATA const u8 *sMovementScripts[OBJECT_EVENTS_COUNT] = {0};
 
-bool8 ScriptMovement_StartObjectMovementScript(u8 localId, u8 mapNum, u8 mapGroup, const u8 *movementScript)
+bool8 ScriptMovement_StartObjectMovementScript(u8 localId, MapId mapId, const u8 *movementScript)
 {
     u8 objEventId;
 
-    if (TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup, &objEventId))
+    if (TryGetObjectEventIdByLocalIdAndMap(localId, mapId, &objEventId))
         return TRUE;
     if (!FuncIsActiveTask(ScriptMovement_MoveObjects))
         ScriptMovement_StartMoveObjects(50);
     return ScriptMovement_TryAddNewMovement(GetMoveObjectsTaskId(), objEventId, movementScript);
 }
 
-bool8 ScriptMovement_IsObjectMovementFinished(u8 localId, u8 mapNum, u8 mapGroup)
+bool8 ScriptMovement_IsObjectMovementFinished(u8 localId, MapId mapId)
 {
     u8 objEventId;
     u8 taskId;
     u8 moveScrId;
 
-    if (TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup, &objEventId))
+    if (TryGetObjectEventIdByLocalIdAndMap(localId, mapId, &objEventId))
         return TRUE;
     taskId = GetMoveObjectsTaskId();
     moveScrId = GetMovementScriptIdFromObjectEventId(taskId, objEventId);
@@ -244,7 +244,7 @@ static void ScriptMovement_TakeStep(u8 taskId, u8 moveScrId, u8 objEventId, cons
          && gSprites[obj->spriteId].sTypeFuncId != 0)
         {
             ClearObjectEventMovement(obj, &gSprites[obj->spriteId]);
-            ScriptMovement_StartObjectMovementScript(obj->localId, obj->mapNum, obj->mapGroup, EnterPokeballMovement);
+            ScriptMovement_StartObjectMovementScript(obj->localId, obj->mapId, EnterPokeballMovement);
         }
         return;
     }

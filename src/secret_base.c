@@ -412,7 +412,7 @@ void SetOccupiedSecretBaseEntranceMetatiles(struct MapEvents const *events)
 static void SetSecretBaseWarpDestination(void)
 {
     s8 secretBaseGroup = SECRET_BASE_ID_TO_GROUP(sCurSecretBaseId);
-    SetWarpDestinationToMapWarp(MAP_GROUP(MAP_SECRET_BASE_RED_CAVE1), GET_BASE_MAP_NUM(secretBaseGroup), GET_BASE_WARP_ID(secretBaseGroup));
+    SetWarpDestinationToMapWarp(MAP_ID(MAP_GROUP(MAP_SECRET_BASE_RED_CAVE1), GET_BASE_MAP_NUM(secretBaseGroup)), GET_BASE_WARP_ID(secretBaseGroup));
 }
 
 #define tState data[0]
@@ -454,7 +454,7 @@ void EnterSecretBase(void)
 {
     CreateTask(Task_EnterSecretBase, 0);
     FadeScreen(FADE_TO_BLACK, 0);
-    SetDynamicWarp(0, gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum, WARP_ID_NONE);
+    SetDynamicWarp(0, gSaveBlock1Ptr->location.mapId, WARP_ID_NONE);
 }
 
 bool8 SecretBaseMapPopupEnabled(void)
@@ -496,8 +496,7 @@ static void Task_EnterNewlyCreatedSecretBase(u8 taskId)
     {
         s8 secretBaseGroup = SECRET_BASE_ID_TO_GROUP(sCurSecretBaseId);
         SetWarpDestination(
-            gSaveBlock1Ptr->location.mapGroup,
-            gSaveBlock1Ptr->location.mapNum,
+            gSaveBlock1Ptr->location.mapId,
             WARP_ID_NONE,
             GET_BASE_COMPUTER_X(secretBaseGroup),
             GET_BASE_COMPUTER_Y(secretBaseGroup));
@@ -516,8 +515,8 @@ void EnterNewlyCreatedSecretBase(void)
 
 bool8 CurMapIsSecretBase(void)
 {
-    if (gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_SECRET_BASE_RED_CAVE1)
-     && (u8)gSaveBlock1Ptr->location.mapNum <= MAP_NUM(MAP_SECRET_BASE_SHRUB4))
+    if (MAP_GROUP(gSaveBlock1Ptr->location.mapId) == MAP_GROUP(MAP_SECRET_BASE_RED_CAVE1)
+     && (u8)MAP_NUM(gSaveBlock1Ptr->location.mapId) <= MAP_NUM(MAP_SECRET_BASE_SHRUB4))
         return TRUE;
     else
         return FALSE;
@@ -643,25 +642,23 @@ void InitSecretBaseDecorationSprites(void)
                     return;
                 gSpecialVar_Result = gMapHeader.events->objectEvents[objectEventId].localId;
                 FlagClear(decorationFlag);
-                TrySpawnObjectEvent(gSpecialVar_Result, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);
-                TryMoveObjectEventToMapCoords(gSpecialVar_Result, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, gSpecialVar_0x8006, gSpecialVar_0x8007);
-                TryOverrideObjectEventTemplateCoords(gSpecialVar_Result, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);
+                TrySpawnObjectEvent(gSpecialVar_Result, gSaveBlock1Ptr->location.mapId);
+                TryMoveObjectEventToMapCoords(gSpecialVar_Result, gSaveBlock1Ptr->location.mapId, gSpecialVar_0x8006, gSpecialVar_0x8007);
+                TryOverrideObjectEventTemplateCoords(gSpecialVar_Result, gSaveBlock1Ptr->location.mapId);
                 if (CurMapIsSecretBase() == TRUE && ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases)) != 0)
                 {
                     if (category == DECORCAT_DOLL)
                     {
                         OverrideSecretBaseDecorationSpriteScript(
                             gSpecialVar_Result,
-                            gSaveBlock1Ptr->location.mapNum,
-                            gSaveBlock1Ptr->location.mapGroup,
+                            gSaveBlock1Ptr->location.mapId,
                             DECORCAT_DOLL);
                     }
                     else if (category == DECORCAT_CUSHION)
                     {
                         OverrideSecretBaseDecorationSpriteScript(
                             gSpecialVar_Result,
-                            gSaveBlock1Ptr->location.mapNum,
-                            gSaveBlock1Ptr->location.mapGroup,
+                            gSaveBlock1Ptr->location.mapId,
                             DECORCAT_CUSHION);
                     }
                 }
@@ -691,8 +688,7 @@ void HideSecretBaseDecorationSprites(void)
         {
             RemoveObjectEventByLocalIdAndMap(
                 gMapHeader.events->objectEvents[objectEventId].localId,
-                gSaveBlock1Ptr->location.mapNum,
-                gSaveBlock1Ptr->location.mapGroup);
+                gSaveBlock1Ptr->location.mapId);
             FlagSet(flag);
         }
     }

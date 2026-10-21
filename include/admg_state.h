@@ -10,9 +10,9 @@
 ADMG_NATIVE_ENTRY bool8 ADMG_TryReadFlag(u32 id, bool8 *value);
 ADMG_NATIVE_ENTRY bool8 ADMG_TryReadVar(u32 id, u32 *value, bool8 allowLiteral);
 ADMG_NATIVE_ENTRY bool8 ADMG_TryReadVarIndex(u32 id, u32 count, u32 *value);
-ADMG_NATIVE_ENTRY bool8 ADMG_IsMapIdValid(u32 mapGroup, u32 mapNum);
+ADMG_NATIVE_ENTRY bool8 ADMG_IsMapIdValid(MapId mapId);
 ADMG_NATIVE_ENTRY bool8 ADMG_TryGetObjectEventId(u32 localId, u8 *objectId);
-ADMG_NATIVE_ENTRY bool8 ADMG_TryGetObjectEventFlagId(u32 localId, u32 mapNum, u32 mapGroup, u16 *flagId);
+ADMG_NATIVE_ENTRY bool8 ADMG_TryGetObjectEventFlagId(u32 localId, MapId mapId, u16 *flagId);
 ADMG_NATIVE_ENTRY bool8 ADMG_TryReadObjectGraphicsVar(u32 slot, u32 *value);
 ADMG_NATIVE_ENTRY bool8 ADMG_IsFlagIdValid(u32 id);
 ADMG_NATIVE_ENTRY bool8 ADMG_IsFlagClear(u32 id);

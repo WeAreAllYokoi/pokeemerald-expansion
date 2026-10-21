@@ -155,8 +155,7 @@ struct __attribute__((packed, aligned(4))) ObjectEventTemplate
         {
             u8 targetLocalId;
             u8 padding[3];
-            u16 targetMapNum;
-            u16 targetMapGroup;
+            MapId targetMapId;
         };
     };
     /*0x10*/ const u8 *script;
@@ -169,8 +168,8 @@ struct WarpEvent
     s16 x, y;
     u8 elevation;
     u8 warpId;
-    u8 mapNum;
-    u8 mapGroup;
+    u8 unused[2];
+    MapId mapId;
 };
 
 struct CoordEvent
@@ -215,8 +214,7 @@ struct MapConnection
 {
     u8 direction;
     s32 offset;
-    u8 mapGroup;
-    u8 mapNum;
+    MapId mapId;
 };
 
 struct MapConnections
@@ -289,8 +287,8 @@ struct ObjectEvent
     /*0x06*/ u8 movementType;
     /*0x07*/ u8 trainerType;
     /*0x08*/ u8 localId;
-    /*0x09*/ u8 mapNum;
-    /*0x0A*/ u8 mapGroup;
+    /*0x09*/ u8 unused09;
+    /*0x0A*/ u8 unused0A;
     /*0x0B*/ u8 currentElevation:4;
              u8 previousElevation:4;
     /*0x0C*/ struct Coords16 initialCoords;
@@ -314,7 +312,8 @@ struct ObjectEvent
     /*0x21*/ u8 directionSequenceIndex;
     /*0x22*/ u8 playerCopyableMovement; // COPY_MOVE_*
     /*0x23*/ u8 spriteId;
-    /*size = 0x24*/
+    /*0x24*/ MapId mapId;
+    /*size = 0x28*/
 };
 
 struct ObjectEventGraphicsInfo

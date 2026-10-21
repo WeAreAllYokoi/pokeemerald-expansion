@@ -1265,7 +1265,7 @@ static void SetInitialPositions(u8 taskId)
 static void WarpToInitialPosition(u8 taskId)
 {
     DrawWholeMapView();
-    SetWarpDestination(gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum, WARP_ID_NONE, gTasks[taskId].tInitialX, gTasks[taskId].tInitialY);
+    SetWarpDestination(gSaveBlock1Ptr->location.mapId, WARP_ID_NONE, gTasks[taskId].tInitialX, gTasks[taskId].tInitialY);
     WarpIntoMap();
 }
 
@@ -1377,9 +1377,9 @@ void SetDecoration(void)
             gSpecialVar_0x8005 = gMapHeader.events->objectEvents[j].localId;
             gSpecialVar_0x8006 = sCurDecorMapX;
             gSpecialVar_0x8007 = sCurDecorMapY;
-            TrySpawnObjectEvent(gSpecialVar_0x8005, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);
-            TryMoveObjectEventToMapCoords(gSpecialVar_0x8005, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, gSpecialVar_0x8006, gSpecialVar_0x8007);
-            TryOverrideObjectEventTemplateCoords(gSpecialVar_0x8005, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);
+            TrySpawnObjectEvent(gSpecialVar_0x8005, gSaveBlock1Ptr->location.mapId);
+            TryMoveObjectEventToMapCoords(gSpecialVar_0x8005, gSaveBlock1Ptr->location.mapId, gSpecialVar_0x8006, gSpecialVar_0x8007);
+            TryOverrideObjectEventTemplateCoords(gSpecialVar_0x8005, gSaveBlock1Ptr->location.mapId);
             break;
         }
     }

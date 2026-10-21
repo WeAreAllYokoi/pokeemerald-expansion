@@ -2153,7 +2153,7 @@ void Task_LinkContest_FinalizeConnection(u8 taskId)
             StringGet_Nickname(gContestMons[i].nickname);
 
         DestroyTask(taskId);
-        SetDynamicWarp(0, gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum, WARP_ID_NONE);
+        SetDynamicWarp(0, gSaveBlock1Ptr->location.mapId, WARP_ID_NONE);
         UnlockPlayerFieldControls();
         ScriptContext_Enable();
     }
@@ -2413,7 +2413,7 @@ void LoadLinkContestPlayerPalettes(void)
     {
         for (i = 0; i < gNumLinkContestPlayers; i++)
         {
-            objectEventId = GetObjectEventIdByLocalIdAndMap(sContestantLocalIds[i], gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);
+            objectEventId = GetObjectEventIdByLocalIdAndMap(sContestantLocalIds[i], gSaveBlock1Ptr->location.mapId);
             sprite = &gSprites[gObjectEvents[objectEventId].spriteId];
             version = (u8)gLinkPlayers[i].version;
             if (version == VERSION_RUBY || version == VERSION_SAPPHIRE)

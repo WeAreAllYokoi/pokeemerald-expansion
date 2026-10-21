@@ -1588,19 +1588,19 @@ void StartUnionRoomBattle(u16 battleFlags)
 static void WarpForWirelessMinigame(u16 linkService, u16 x, u16 y)
 {
     VarSet(VAR_CABLE_CLUB_STATE, linkService);
-    SetWarpDestination(gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum, WARP_ID_NONE, x, y);
-    SetDynamicWarpWithCoords(0, gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum, WARP_ID_NONE, x, y);
+    SetWarpDestination(gSaveBlock1Ptr->location.mapId, WARP_ID_NONE, x, y);
+    SetDynamicWarpWithCoords(0, gSaveBlock1Ptr->location.mapId, WARP_ID_NONE, x, y);
     WarpIntoMap();
 }
 
-static void WarpForCableClubActivity(s8 mapGroup, s8 mapNum, s32 x, s32 y, u16 linkService)
+static void WarpForCableClubActivity(MapId mapId, s32 x, s32 y, u16 linkService)
 {
     gSpecialVar_0x8004 = linkService;
     VarSet(VAR_CABLE_CLUB_STATE, linkService);
     gFieldLinkPlayerCount = GetLinkPlayerCount();
     gLocalLinkPlayerId = GetMultiplayerId();
     SetCableClubWarp();
-    SetWarpDestination(mapGroup, mapNum, WARP_ID_NONE, x, y);
+    SetWarpDestination(mapId, WARP_ID_NONE, x, y);
     WarpIntoMap();
 }
 
@@ -1668,7 +1668,7 @@ static void Task_StartActivity(u8 taskId)
         HealPlayerParty();
         SavePlayerParty();
         LoadPlayerBag();
-        WarpForCableClubActivity(MAP_GROUP(MAP_BATTLE_COLOSSEUM_2P), MAP_NUM(MAP_BATTLE_COLOSSEUM_2P), 6, 8, USING_SINGLE_BATTLE);
+        WarpForCableClubActivity(MAP_BATTLE_COLOSSEUM_2P, 6, 8, USING_SINGLE_BATTLE);
         SetMainCallback2(CB2_TransitionToCableClub);
         break;
     case ACTIVITY_BATTLE_DOUBLE:
@@ -1677,7 +1677,7 @@ static void Task_StartActivity(u8 taskId)
         SavePlayerParty();
         LoadPlayerBag();
         CreateTrainerCardInBuffer(gBlockSendBuffer, TRUE);
-        WarpForCableClubActivity(MAP_GROUP(MAP_BATTLE_COLOSSEUM_2P), MAP_NUM(MAP_BATTLE_COLOSSEUM_2P), 6, 8, USING_DOUBLE_BATTLE);
+        WarpForCableClubActivity(MAP_BATTLE_COLOSSEUM_2P, 6, 8, USING_DOUBLE_BATTLE);
         SetMainCallback2(CB2_TransitionToCableClub);
         break;
     case ACTIVITY_BATTLE_MULTI:
@@ -1686,19 +1686,19 @@ static void Task_StartActivity(u8 taskId)
         SavePlayerParty();
         LoadPlayerBag();
         CreateTrainerCardInBuffer(gBlockSendBuffer, TRUE);
-        WarpForCableClubActivity(MAP_GROUP(MAP_BATTLE_COLOSSEUM_4P), MAP_NUM(MAP_BATTLE_COLOSSEUM_4P), 5, 8, USING_MULTI_BATTLE);
+        WarpForCableClubActivity(MAP_BATTLE_COLOSSEUM_4P, 5, 8, USING_MULTI_BATTLE);
         SetMainCallback2(CB2_TransitionToCableClub);
         break;
     case ACTIVITY_TRADE:
         CreateTrainerCardInBuffer(gBlockSendBuffer, TRUE);
         CleanupOverworldWindowsAndTilemaps();
-        WarpForCableClubActivity(MAP_GROUP(MAP_TRADE_CENTER), MAP_NUM(MAP_TRADE_CENTER), 5, 8, USING_TRADE_CENTER);
+        WarpForCableClubActivity(MAP_TRADE_CENTER, 5, 8, USING_TRADE_CENTER);
         SetMainCallback2(CB2_TransitionToCableClub);
         break;
     case ACTIVITY_RECORD_CORNER:
         CreateTrainerCardInBuffer(gBlockSendBuffer, TRUE);
         CleanupOverworldWindowsAndTilemaps();
-        WarpForCableClubActivity(MAP_GROUP(MAP_RECORD_CORNER), MAP_NUM(MAP_RECORD_CORNER), 8, 9, USING_RECORD_CORNER);
+        WarpForCableClubActivity(MAP_RECORD_CORNER, 8, 9, USING_RECORD_CORNER);
         SetMainCallback2(CB2_TransitionToCableClub);
         break;
     case ACTIVITY_TRADE | IN_UNION_ROOM:
@@ -4315,8 +4315,7 @@ static bool32 PollPartnerYesNoResponse(struct WirelessLink_URoom *data)
 
 bool32 InUnionRoom(void)
 {
-    return gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_UNION_ROOM)
-        && gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_UNION_ROOM)
+    return gSaveBlock1Ptr->location.mapId == MAP_UNION_ROOM
         ? TRUE : FALSE;
 }
 

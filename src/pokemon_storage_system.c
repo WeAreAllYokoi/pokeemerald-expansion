@@ -6594,17 +6594,16 @@ static void TrySetCursorFistAnim(void)
 // a Pokémon that knows a required field move.
 struct
 {
-    s8 mapGroup;
-    s8 mapNum;
+    MapId mapId;
     u16 move;
 } static const sRestrictedReleaseMoves[] =
 {
-    {MAP_GROUPS_COUNT, 0, MOVE_SURF},
-    {MAP_GROUPS_COUNT, 0, MOVE_DIVE},
-    {MAP_GROUP(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_1F), MAP_NUM(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_1F), MOVE_STRENGTH},
-    {MAP_GROUP(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_1F), MAP_NUM(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_1F), MOVE_ROCK_SMASH},
-    {MAP_GROUP(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_2F), MAP_NUM(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_2F), MOVE_STRENGTH},
-    {MAP_GROUP(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_2F), MAP_NUM(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_2F), MOVE_ROCK_SMASH},
+    {MAP_ID(MAP_GROUPS_COUNT, 0), MOVE_SURF},
+    {MAP_ID(MAP_GROUPS_COUNT, 0), MOVE_DIVE},
+    {MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_1F, MOVE_STRENGTH},
+    {MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_1F, MOVE_ROCK_SMASH},
+    {MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_2F, MOVE_STRENGTH},
+    {MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_2F, MOVE_ROCK_SMASH},
 };
 
 static void GetRestrictedReleaseMoves(enum Move *moves)
@@ -6613,9 +6612,8 @@ static void GetRestrictedReleaseMoves(enum Move *moves)
 
     for (i = 0; i < ARRAY_COUNT(sRestrictedReleaseMoves); i++)
     {
-        if (sRestrictedReleaseMoves[i].mapGroup == MAP_GROUPS_COUNT
-        || (sRestrictedReleaseMoves[i].mapGroup == gSaveBlock1Ptr->location.mapGroup
-         && sRestrictedReleaseMoves[i].mapNum == gSaveBlock1Ptr->location.mapNum))
+        if (MAP_GROUP(sRestrictedReleaseMoves[i].mapId) == MAP_GROUPS_COUNT
+        || (sRestrictedReleaseMoves[i].mapId == gSaveBlock1Ptr->location.mapId))
         {
             *moves = sRestrictedReleaseMoves[i].move;
             moves++;

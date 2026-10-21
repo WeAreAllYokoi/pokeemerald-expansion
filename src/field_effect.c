@@ -3980,20 +3980,20 @@ static void FlyInFieldEffect_End(struct Task *task)
 #define tTimer         data[3]
 #define tCameraTaskId  data[5]
 #define tLocalId       data[6]
-#define tMapNum        data[7]
-#define tMapGroup      data[8]
+#define tMapIdLo       data[7]
+#define tMapIdHi       data[8]
 
 bool8 FldEff_DestroyDeoxysRock(void)
 {
     u8 taskId;
     u8 objectEventId;
-    if (!TryGetObjectEventIdByLocalIdAndMap(gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2], &objectEventId))
+    if (!TryGetObjectEventIdByLocalIdAndMap(gFieldEffectArguments[0], gFieldEffectArguments[1], &objectEventId))
     {
         taskId = CreateTask(Task_DestroyDeoxysRock, 80);
         gTasks[taskId].tObjectEventId = objectEventId;
         gTasks[taskId].tLocalId = gFieldEffectArguments[0];
-        gTasks[taskId].tMapNum = gFieldEffectArguments[1];
-        gTasks[taskId].tMapGroup = gFieldEffectArguments[2];
+        gTasks[taskId].tMapIdLo = MAP_ID_LO(gFieldEffectArguments[1]);
+        gTasks[taskId].tMapIdHi = MAP_ID_HI(gFieldEffectArguments[1]);
     }
     else
     {
@@ -4093,7 +4093,7 @@ static void DestroyDeoxysRockEffect_WaitAndEnd(s16 *data, u8 taskId)
     if (!gPaletteFade.active && !FuncIsActiveTask(Task_DeoxysRockCameraShake))
     {
         InstallCameraPanAheadCallback();
-        RemoveObjectEventByLocalIdAndMap(tLocalId, tMapNum, tMapGroup);
+        RemoveObjectEventByLocalIdAndMap(tLocalId, MAP_ID_FROM_HALVES(tMapIdLo, tMapIdHi));
         FieldEffectActiveListRemove(FLDEFF_DESTROY_DEOXYS_ROCK);
         DestroyTask(taskId);
     }
@@ -4104,8 +4104,8 @@ static void DestroyDeoxysRockEffect_WaitAndEnd(s16 *data, u8 taskId)
 #undef tTimer
 #undef tCameraTaskId
 #undef tLocalId
-#undef tMapNum
-#undef tMapGroup
+#undef tMapIdLo
+#undef tMapIdHi
 
 static const struct SpriteFrameImage sImages_DeoxysRockFragment[] = {
     obj_frame_tiles(sRockFragment_TopLeft),
@@ -4210,7 +4210,7 @@ static void SpriteCB_DeoxysRockFragment(struct Sprite *sprite)
 bool8 FldEff_MoveDeoxysRock(struct Sprite *sprite)
 {
     u8 objectEventId;
-    if (!TryGetObjectEventIdByLocalIdAndMap(gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2], &objectEventId))
+    if (!TryGetObjectEventIdByLocalIdAndMap(gFieldEffectArguments[0], gFieldEffectArguments[1], &objectEventId))
     {
         struct ObjectEvent *object;
         int xPos, yPos;

@@ -16,8 +16,8 @@ struct PokeblockFeeder
 {
     /*0x00*/ s16 x;
     /*0x02*/ s16 y;
-    /*0x04*/ s8 mapNum;
-    /*0x05*/ u8 stepCounter;
+    /*0x04*/ MapId mapId;
+    /*0x08*/ u8 stepCounter;
     /*0x08*/ struct Pokeblock pokeblock;
 };
 
@@ -140,7 +140,7 @@ void GetPokeblockFeederInFront(void)
 
     for (i = 0; i < NUM_POKEBLOCK_FEEDERS; i++)
     {
-        if (gSaveBlock1Ptr->location.mapNum == sPokeblockFeeders[i].mapNum
+        if (gSaveBlock1Ptr->location.mapId == sPokeblockFeeders[i].mapId
          && sPokeblockFeeders[i].x == x
          && sPokeblockFeeders[i].y == y)
         {
@@ -162,7 +162,7 @@ void GetPokeblockFeederWithinRange(void)
 
     for (i = 0; i < NUM_POKEBLOCK_FEEDERS; i++)
     {
-        if (gSaveBlock1Ptr->location.mapNum == sPokeblockFeeders[i].mapNum)
+        if (gSaveBlock1Ptr->location.mapId == sPokeblockFeeders[i].mapId)
         {
             // Get absolute value of x and y distance from Pokeblock feeder on current map.
             x -= sPokeblockFeeders[i].x;
@@ -211,13 +211,13 @@ void SafariZoneActivatePokeblockFeeder(u8 pkblId)
     for (i = 0; i < NUM_POKEBLOCK_FEEDERS; i++)
     {
         // Find free entry in sPokeblockFeeders
-        if (sPokeblockFeeders[i].mapNum == 0
+        if (sPokeblockFeeders[i].mapId == 0
          && sPokeblockFeeders[i].x == 0
          && sPokeblockFeeders[i].y == 0)
         {
             // Initialize Pokeblock feeder
             GetXYCoordsOneStepInFrontOfPlayer(&x, &y);
-            sPokeblockFeeders[i].mapNum = gSaveBlock1Ptr->location.mapNum;
+            sPokeblockFeeders[i].mapId = gSaveBlock1Ptr->location.mapId;
             sPokeblockFeeders[i].pokeblock = gSaveBlock1Ptr->pokeblocks[pkblId];
             sPokeblockFeeders[i].stepCounter = 100;
             sPokeblockFeeders[i].x = x;

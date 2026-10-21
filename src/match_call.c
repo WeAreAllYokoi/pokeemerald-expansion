@@ -1381,7 +1381,7 @@ static bool32 MatchCall_EndCall(u8 taskId)
         if (!sMatchCallState.triggeredFromScript)
         {
             LoadMessageBoxAndBorderGfx();
-            playerObjectId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0);
+            playerObjectId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0);
             ObjectEventClearHeldMovementIfFinished(&gObjectEvents[playerObjectId]);
             ScriptMovement_UnfreezeObjectEvents();
             UnfreezeObjectEvents();
@@ -1508,7 +1508,7 @@ static bool32 TrainerIsEligibleForRematch(int matchCallId)
 
 static mapsec_u16_t GetRematchTrainerLocation(int matchCallId)
 {
-    const struct MapHeader *mapHeader = Overworld_GetMapHeaderByGroupAndId(gRematchTable[matchCallId].mapGroup, gRematchTable[matchCallId].mapNum);
+    const struct MapHeader *mapHeader = GetMapHeader(gRematchTable[matchCallId].mapId);
     return mapHeader->regionMapSectionId;
 }
 
@@ -1746,18 +1746,17 @@ static void PopulateSpeciesFromTrainerLocation(int matchCallId, u8 *destStr)
     int i = 0;
     enum TimeOfDay timeOfDay;
 
-    if (gWildMonHeaders[i].mapGroup != MAP_GROUP(MAP_UNDEFINED)) // ??? This check is nonsense.
+    if (MAP_GROUP(gWildMonHeaders[i].mapId) != MAP_GROUP(MAP_UNDEFINED)) // ??? This check is nonsense.
     {
-        while (gWildMonHeaders[i].mapGroup != MAP_GROUP(MAP_UNDEFINED))
+        while (MAP_GROUP(gWildMonHeaders[i].mapId) != MAP_GROUP(MAP_UNDEFINED))
         {
-            if (gWildMonHeaders[i].mapGroup == gRematchTable[matchCallId].mapGroup
-             && gWildMonHeaders[i].mapNum == gRematchTable[matchCallId].mapNum)
+            if (gWildMonHeaders[i].mapId == gRematchTable[matchCallId].mapId)
                 break;
 
             i++;
         }
 
-        if (gWildMonHeaders[i].mapGroup != MAP_GROUP(MAP_UNDEFINED))
+        if (MAP_GROUP(gWildMonHeaders[i].mapId) != MAP_GROUP(MAP_UNDEFINED))
         {
             timeOfDay = GetTimeOfDayForEncounters(i, WILD_AREA_LAND);
             numSpecies = 0;

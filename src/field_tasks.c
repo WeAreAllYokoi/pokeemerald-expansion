@@ -866,7 +866,7 @@ static void CrackedFloorPerStepCallback(u8 taskId)
 #undef tFloor2X
 #undef tFloor2Y
 
-#define tMapId data[0]
+// data[0] is unused: the map is in sMuddySlopeMapId
 #define tState data[1]
 #define tPrevX data[2]
 #define tPrevY data[3]
@@ -882,6 +882,9 @@ enum {
     SLOPE_DATA_SIZE
 };
 #define tSlopeAnimTime(i) data[(i) * SLOPE_DATA_SIZE + SLOPE_DATA_START + SLOPE_TIME]
+
+// The map the muddy slope task's coordinates are relative to (one task at a time).
+static EWRAM_DATA MapId sMuddySlopeMapId = 0;
 
 static const u16 sMuddySlopeMetatiles[] = {
     METATILE_General_MuddySlope_Frame0,
@@ -910,14 +913,14 @@ static void Task_MuddySlope(u8 taskId)
 {
     s16 x, y, cameraOffsetX, cameraOffsetY;
     int i;
-    u16 mapId;
+    MapId mapId;
     s16 *data = gTasks[taskId].data;
     PlayerGetDestCoords(&x, &y);
-    mapId = (gSaveBlock1Ptr->location.mapGroup << 8) | gSaveBlock1Ptr->location.mapNum;
+    mapId = gSaveBlock1Ptr->location.mapId;
     switch (tState)
     {
     case 0:
-        tMapId = mapId;
+        sMuddySlopeMapId = mapId;
         tPrevX = x;
         tPrevY = y;
         tState = 1;
@@ -949,9 +952,9 @@ static void Task_MuddySlope(u8 taskId)
         break;
     }
 
-    if (gCamera.active && mapId != tMapId)
+    if (gCamera.active && mapId != sMuddySlopeMapId)
     {
-        tMapId = mapId;
+        sMuddySlopeMapId = mapId;
         cameraOffsetX = gCamera.x;
         cameraOffsetY = gCamera.y;
     }

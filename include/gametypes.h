@@ -67,6 +67,9 @@ typedef mapsec_u8_t metloc_u8_t;
 // Keep nature IDs 32-bit, like species and move IDs
 typedef u32 nature_t;
 
+// Map identities are full-width: MAP_ID(group, num); see constants/maps.h.
+typedef u32 MapId;
+
 // Trainer IDs (TRAINER_* in constants/opponents.h, Kanto trainers, partners and the special IDs of other battle
 // kinds) are content IDs too. The enum only gives them a 32-bit type of their own, so a narrowing is visible.
 enum TrainerId

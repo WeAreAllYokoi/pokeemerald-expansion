@@ -53,8 +53,7 @@
 	.2byte \x, \y
 	.byte \target_local_id
 	.space 3  @ Padding
-	.2byte \target_map_id & 0xFF  @ map num
-	.2byte \target_map_id >> 8    @ map group
+	.4byte \target_map_id
 	.space 8  @ Padding
 	inc _num_npcs
 	.endm
@@ -64,8 +63,8 @@
 	.2byte \x, \y
 	.byte \elevation
 	.byte \warpId
-	.byte \map_id & 0xFF  @ map num
-	.byte \map_id >> 8    @ map group
+	.space 2  @ Padding
+	.4byte \map_id
 	inc _num_warps
 	.endm
 
@@ -158,8 +157,11 @@
 	.byte connection_\direction
 	.space 3  @ Padding
 	.4byte \offset
-	map \map
-	.space 2  @ Padding
+	.ifdef \map
+	.4byte \map
+	.else
+	.error "undefined map (check for typos)"
+	.endif
 	.endm
 
 	@ Defines the flags for a map header. Mirrors the layout of the bitfield in struct MapHeader in include/global.fieldmap.h

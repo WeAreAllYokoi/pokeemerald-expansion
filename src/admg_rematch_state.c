@@ -11,7 +11,7 @@ static EWRAM_DATA u64 sEpoch = 0;
 static EWRAM_DATA bool8 sBound = FALSE;
 static EWRAM_DATA bool8 sEpochExhausted = FALSE;
 static EWRAM_DATA bool8 sRestorePending = FALSE;
-static EWRAM_DATA u32 sMapGroup = 0, sMapNum = 0;
+static EWRAM_DATA MapId sMapId = 0;
 
 static bool8 RejectState(u32 id, const char *operation)
 {
@@ -22,7 +22,7 @@ static bool8 RejectState(u32 id, const char *operation)
 static bool8 BackingAvailable(void)
 {
     if (gSaveBlock1Ptr == NULL || sEpochExhausted
-     || !ADMG_IsMapIdValid((u32)gSaveBlock1Ptr->location.mapGroup, (u32)gSaveBlock1Ptr->location.mapNum)
+     || !ADMG_IsMapIdValid(gSaveBlock1Ptr->location.mapId)
      || !ADMG_IsFlagIdValid(ADMG_KANTO_FLAG_SYS_VS_SEEKER_CHARGING))
         return RejectState(0, __func__);
     return TRUE;
@@ -87,8 +87,7 @@ static void Capture(struct ADMG_RematchContext *context)
     context->service = ADMG_REMATCH_NATIVE_VS_SEEKER;
     context->instance = 0;
     context->selection = ADMG_REMATCH_NATIVE_SIX_SLOT;
-    context->mapGroup = sMapGroup;
-    context->mapNum = sMapNum;
+    context->mapId = sMapId;
     context->epoch = sEpoch;
 }
 
@@ -97,8 +96,8 @@ bool8 ADMG_IsNativeRematchContextCurrent(const struct ADMG_RematchContext *conte
     if (context == NULL || !StateAvailable() || !sBound
      || context->owner != ADMG_TRAINER_KANTO || context->service != ADMG_REMATCH_NATIVE_VS_SEEKER
      || context->instance != 0 || context->selection != ADMG_REMATCH_NATIVE_SIX_SLOT
-     || context->epoch != sEpoch || context->mapGroup != sMapGroup || context->mapNum != sMapNum
-     || (u32)gSaveBlock1Ptr->location.mapGroup != sMapGroup || (u32)gSaveBlock1Ptr->location.mapNum != sMapNum)
+     || context->epoch != sEpoch || context->mapId != sMapId
+     || gSaveBlock1Ptr->location.mapId != sMapId)
         return RejectState(0, __func__);
     return TRUE;
 }
@@ -110,7 +109,7 @@ bool8 ADMG_TryCaptureNativeRematchContext(struct ADMG_RematchContext *context)
         return RejectState(0, __func__);
     if (sBound)
     {
-        if ((u32)gSaveBlock1Ptr->location.mapGroup != sMapGroup || (u32)gSaveBlock1Ptr->location.mapNum != sMapNum)
+        if (gSaveBlock1Ptr->location.mapId != sMapId)
             return RejectState(0, __func__);
     }
     else
@@ -120,8 +119,7 @@ bool8 ADMG_TryCaptureNativeRematchContext(struct ADMG_RematchContext *context)
         for (i = 0; i < ADMG_NATIVE_READINESS_COUNT; ++i)
             if (gADMG_KantoNpcReadiness[i] != 0)
                 return RejectState(i, __func__);
-        sMapGroup = (u32)gSaveBlock1Ptr->location.mapGroup;
-        sMapNum = (u32)gSaveBlock1Ptr->location.mapNum;
+        sMapId = gSaveBlock1Ptr->location.mapId;
         sBound = TRUE;
     }
     Capture(context);
@@ -235,8 +233,7 @@ bool8 ADMG_TryResumeNativeRematches(struct ADMG_RematchContext *context)
      * this into normal continue. It is not a serializer or a restore policy. */
     if (context == NULL || !BackingAvailable() || !RecordValid() || !AdvanceEpoch())
         return RejectState(0, __func__);
-    sMapGroup = (u32)gSaveBlock1Ptr->location.mapGroup;
-    sMapNum = (u32)gSaveBlock1Ptr->location.mapNum;
+    sMapId = gSaveBlock1Ptr->location.mapId;
     sBound = TRUE;
     sRestorePending = FALSE;
     Capture(context);

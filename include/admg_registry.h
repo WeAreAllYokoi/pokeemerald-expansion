@@ -28,6 +28,7 @@ struct ADMG_RegistryCounts
     u32 addedTrainers;  // Rows per difficulty of gADMG_AddedTrainers: the trainers added at run time
     u32 nationalDex;    // National Pokédex numbers, including NATIONAL_DEX_NONE
     u32 moveEffects;    // Rows of gBattleMoveEffects
+    u32 addedMaps;      // Rows of gADMG_AddedMaps: the maps added at run time, from FIRST_ADDED_MAP
 };
 
 // Keep the defaults in a separate source file so callers read the counts from ROM
@@ -44,6 +45,7 @@ extern const struct ADMG_RegistryCounts gADMG_RegistryCounts;
 #define RUNTIME_ADDED_TRAINERS_COUNT   (gADMG_RegistryCounts.addedTrainers)
 #define RUNTIME_NATIONAL_DEX_COUNT     (gADMG_RegistryCounts.nationalDex)
 #define RUNTIME_MOVE_EFFECTS_COUNT     (gADMG_RegistryCounts.moveEffects)
+#define RUNTIME_ADDED_MAPS_COUNT       (gADMG_RegistryCounts.addedMaps)
 
 #define FIRST_ADDED_SPECIES        (NUM_SPECIES + 1)
 #define FIRST_ADDED_MOVE           (MOVES_COUNT_ALL + 1)

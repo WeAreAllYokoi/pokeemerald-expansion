@@ -1459,7 +1459,7 @@ static u32 Debug_GenerateListOutbreakMenu(const struct DebugMenuOption *items)
             StringCopy(gStringVar1, GetSpeciesName(gSaveBlock1Ptr->outbreakPokemonSpecies));
             break;
         case 3:
-            GetMapName(gStringVar1, Overworld_GetMapHeaderByGroupAndId(gSaveBlock1Ptr->outbreakLocationMapGroup, gSaveBlock1Ptr->outbreakLocationMapNum)->regionMapSectionId, 0);
+            GetMapName(gStringVar1, Overworld_GetMapHeaderByGroupAndId(MAP_GROUP(gSaveBlock1Ptr->outbreakLocation), MAP_NUM(gSaveBlock1Ptr->outbreakLocation))->regionMapSectionId, 0);
             break;
         case 4:
             ConvertIntToDecimalStringN(gStringVar1, gSaveBlock1Ptr->outbreakPokemonLevel, STR_CONV_MODE_RIGHT_ALIGN, 3);
@@ -1790,7 +1790,7 @@ static void DebugSelectionStep_UpdateMapGroup(u8 taskId, u8 digits, u32 min, u32
 
 static void DebugSelectionStep_UpdateMapNum(u8 taskId, u8 digits, u32 min, u32 max)
 {
-    u16 mapGroup = DebugSelection_GetData(taskId, gTasks[taskId].tStep - 1);
+    u32 mapGroup = DebugSelection_GetData(taskId, gTasks[taskId].tStep - 1);
     ConvertIntToDecimalStringN(gStringVar2, gTasks[taskId].tInput, STR_CONV_MODE_LEADING_ZEROS, digits);
     ConvertIntToDecimalStringN(gStringVar3, max, STR_CONV_MODE_LEADING_ZEROS, digits);
     StringExpandPlaceholders(gStringVar1, COMPOUND_STRING("Map: {STR_VAR_2} / {STR_VAR_3}"));
@@ -1801,34 +1801,34 @@ static void DebugSelectionStep_UpdateMapNum(u8 taskId, u8 digits, u32 min, u32 m
 
 static u32 DebugSelectionStep_GetLastMapNum(u8 taskId)
 {
-    u16 mapGroup = DebugSelection_GetData(taskId, gTasks[taskId].tStep - 1);
+    u32 mapGroup = DebugSelection_GetData(taskId, gTasks[taskId].tStep - 1);
     return (MAP_GROUP_COUNT[mapGroup] - 1);
 }
 
 static void DebugSelectionStep_UpdateWarp(u8 taskId, u8 digits, u32 min, u32 max)
 {
-    u16 mapGroup = DebugSelection_GetData(taskId, gTasks[taskId].tStep - 2);
-    u16 mapNum = DebugSelection_GetData(taskId, gTasks[taskId].tStep - 1);
+    u32 mapGroup = DebugSelection_GetData(taskId, gTasks[taskId].tStep - 2);
+    u32 mapNum = DebugSelection_GetData(taskId, gTasks[taskId].tStep - 1);
     ConvertIntToDecimalStringN(gStringVar2, gTasks[taskId].tInput, STR_CONV_MODE_LEADING_ZEROS, digits);
     ConvertIntToDecimalStringN(gStringVar3, max, STR_CONV_MODE_LEADING_ZEROS, digits);
     StringExpandPlaceholders(gStringVar1, COMPOUND_STRING("Warp: {STR_VAR_2} / {STR_VAR_3}"));
-    GetMapName(gStringVar2, Overworld_GetMapHeaderByGroupAndId(mapGroup, mapNum)->regionMapSectionId, 0);
+    GetMapName(gStringVar2, GetMapHeader(MAP_ID(mapGroup, mapNum))->regionMapSectionId, 0);
     StringCopy(gStringVar3, COMPOUND_STRING(""));
     DebugNativeStep_PrintWindowSelection(taskId);
 }
 
 static u32 DebugSelectionStep_GetLastWarp(u8 taskId)
 {
-    u16 mapGroup = DebugSelection_GetData(taskId, gTasks[taskId].tStep - 2);
-    u16 mapNum = DebugSelection_GetData(taskId, gTasks[taskId].tStep - 1);
-    u32 count = Overworld_GetMapHeaderByGroupAndId(mapGroup, mapNum)->events->warpCount;
+    u32 mapGroup = DebugSelection_GetData(taskId, gTasks[taskId].tStep - 2);
+    u32 mapNum = DebugSelection_GetData(taskId, gTasks[taskId].tStep - 1);
+    u32 count = GetMapHeader(MAP_ID(mapGroup, mapNum))->events->warpCount;
     return (count - 1);
 }
 
 static bool32 DebugSelection_SetWarp_OnComplete(u8 taskId)
 {
-    SetWarpDestinationToMapWarp(DebugSelection_GetData(taskId, 0),
-        DebugSelection_GetData(taskId, 1), DebugSelection_GetData(taskId, 2));
+    SetWarpDestinationToMapWarp(MAP_ID(DebugSelection_GetData(taskId, 0), DebugSelection_GetData(taskId, 1)),
+        DebugSelection_GetData(taskId, 2));
     DoWarp();
     ResetInitialPlayerAvatarState();
     DebugAction_DestroyExtraWindow(taskId);
@@ -2576,7 +2576,7 @@ static void DebugAction_Trainers_TryBattle(u8 taskId)
 static void DebugAction_Trainers_RechargeVsSeeker(u8 taskId)
 {
     SetTrainerRematchStepCounter(VSSEEKER_RECHARGE_STEPS);
-    MapResetTrainerRematches(gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum);
+    MapResetTrainerRematches(gSaveBlock1Ptr->location.mapId);
     ScriptContext_SetupScript(EventScript_VsSeekerChargingDone);
     Debug_DestroyMenu_Full(taskId);
 }
@@ -2738,13 +2738,12 @@ MASS_OUTRBREAK_SINGLE_COMPLETION(DaysLeft,    OutbreakDaysLeft,    outbreakDaysL
 
 static void DebugSelection_SetMassOutbreakLocation_Init(u8 taskId) {
     Debug_CreateInputDisplayWindow(taskId);
-    DebugSelection_SetData(taskId, 0, gSaveBlock1Ptr->outbreakLocationMapGroup);
-    DebugSelection_SetData(taskId, 1, gSaveBlock1Ptr->outbreakLocationMapNum);
+    DebugSelection_SetData(taskId, 0, MAP_GROUP(gSaveBlock1Ptr->outbreakLocation));
+    DebugSelection_SetData(taskId, 1, MAP_NUM(gSaveBlock1Ptr->outbreakLocation));
 };
 
 static bool32 DebugSelection_SetMassOutbreakLocation_Complete(u8 taskId) {
-    gSaveBlock1Ptr->outbreakLocationMapGroup = DebugSelection_GetData(taskId, 0);
-    gSaveBlock1Ptr->outbreakLocationMapNum = DebugSelection_GetData(taskId, 1);
+    gSaveBlock1Ptr->outbreakLocation = MAP_ID(DebugSelection_GetData(taskId, 0), DebugSelection_GetData(taskId, 1));
     DebugSelectionStep_ReturnToOutbreakMenu(taskId);
     return TRUE;
 };
@@ -2788,8 +2787,8 @@ static void DebugSelection_SetDynamicMassOutbreak_Init(u8 taskId)
 {
     Debug_CreateInputDisplayWindow(taskId);
     DebugSelection_SetData(taskId, 0, gSaveBlock1Ptr->outbreakPokemonSpecies);
-    DebugSelection_SetData(taskId, 1, gSaveBlock1Ptr->outbreakLocationMapGroup);
-    DebugSelection_SetData(taskId, 2, gSaveBlock1Ptr->outbreakLocationMapNum);
+    DebugSelection_SetData(taskId, 1, MAP_GROUP(gSaveBlock1Ptr->outbreakLocation));
+    DebugSelection_SetData(taskId, 2, MAP_NUM(gSaveBlock1Ptr->outbreakLocation));
     DebugSelection_SetData(taskId, 3, gSaveBlock1Ptr->outbreakPokemonLevel);
     for (u32 j = 0; j < MAX_MON_MOVES; j++)
         DebugSelection_SetData(taskId, 4 + j, gSaveBlock1Ptr->outbreakPokemonMoves[j]);
@@ -2800,8 +2799,7 @@ static void DebugSelection_SetDynamicMassOutbreak_Init(u8 taskId)
 static bool32 DebugSelection_SetDynamicMassOutbreak_Complete(u8 taskId)
 {
     gSaveBlock1Ptr->outbreakPokemonSpecies = DebugSelection_GetData(taskId, 0);
-    gSaveBlock1Ptr->outbreakLocationMapGroup = DebugSelection_GetData(taskId, 1);
-    gSaveBlock1Ptr->outbreakLocationMapNum = DebugSelection_GetData(taskId, 2);
+    gSaveBlock1Ptr->outbreakLocation = MAP_ID(DebugSelection_GetData(taskId, 1), DebugSelection_GetData(taskId, 2));
     gSaveBlock1Ptr->outbreakPokemonLevel = DebugSelection_GetData(taskId, 3);
     for (u32 j = 0; j < MAX_MON_MOVES; j++)
         gSaveBlock1Ptr->outbreakPokemonMoves[j] = DebugSelection_GetData(taskId, 4 + j);
@@ -4629,7 +4627,7 @@ static void DebugAction_BerryFunctions_ClearAll(u8 taskId)
         if (gObjectEvents[i].movementType == MOVEMENT_TYPE_BERRY_TREE_GROWTH)
         {
             RemoveBerryTree(GetObjectEventBerryTreeId(i));
-            SetBerryTreeJustPicked(gObjectEvents[i].localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);
+            SetBerryTreeJustPicked(gObjectEvents[i].localId, gSaveBlock1Ptr->location.mapId);
         }
     }
 

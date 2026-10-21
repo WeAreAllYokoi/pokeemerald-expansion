@@ -175,7 +175,7 @@ static void InitFactoryChallenge(void)
     for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
         gFrontierTempParty[i] = 0xFFFF;
 
-    SetDynamicWarp(0, mapSave->location.mapGroup, mapSave->location.mapNum, WARP_ID_NONE);
+    SetDynamicWarp(0, mapSave->location.mapId, WARP_ID_NONE);
     TRAINER_BATTLE_PARAM.opponentA = 0;
 }
 

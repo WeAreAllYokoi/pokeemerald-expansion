@@ -666,8 +666,7 @@ struct SecretBase
 
 struct WarpData
 {
-    s8 mapGroup;
-    s8 mapNum;
+    MapId mapId;
     s8 warpId;
     //u8 padding;
     s16 x, y;
@@ -712,11 +711,10 @@ struct Roamer
 struct RamScriptData
 {
     u8 magic;
-    u8 mapGroup;
-    u8 mapNum;
     u8 localId;
+    u8 unused[2];
+    MapId mapId;
     u8 script[995];
-    //u8 padding;
 };
 
 struct RamScript
@@ -1149,11 +1147,12 @@ struct SaveBlock1
     /*0x27CA*/ //u8 padding4[2];
     /*0x2B50*/ PokeNews pokeNews[POKE_NEWS_COUNT];
     /*0x2B90*/ enum Species outbreakPokemonSpecies;
-    /*0x2B92*/ u8 outbreakLocationMapNum;
-    /*0x2B93*/ u8 outbreakLocationMapGroup;
+    /*0x2B92*/ u8 outbreakUnused0;
+    /*0x2B93*/ u8 outbreakUnused00;
     /*0x2B94*/ u8 outbreakPokemonLevel;
     /*0x2B95*/ u8 outbreakUnused1;
     /*0x2B96*/ u16 outbreakUnused2;
+    MapId outbreakLocation;
     enum Move outbreakPokemonMoves[MAX_MON_MOVES];
     /*0x2BA0*/ u8 outbreakUnused3;
     /*0x2BA1*/ u8 outbreakPokemonProbability;

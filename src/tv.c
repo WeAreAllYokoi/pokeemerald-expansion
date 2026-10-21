@@ -766,8 +766,7 @@ void UpdateTVScreensOnMap(int width, int height)
         break;
 //  case PLAYERS_HOUSE_TV_NONE:
     default:
-        if (gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_LILYCOVE_CITY_COVE_LILY_MOTEL_1F)
-         && gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_LILYCOVE_CITY_COVE_LILY_MOTEL_1F))
+        if (gSaveBlock1Ptr->location.mapId == MAP_LILYCOVE_CITY_COVE_LILY_MOTEL_1F)
         {
             // NPC in Lilycove Hotel is always watching TV
             SetTVMetatilesOnMap(width, height, METATILE_Building_TV_On);
@@ -1395,8 +1394,8 @@ void TryPutSmartShopperOnAir(void)
     TVShow *show;
     u8 i;
 
-    if (!(gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_TRAINER_HILL_ENTRANCE) && gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_TRAINER_HILL_ENTRANCE))
-     && !(gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_BATTLE_FRONTIER_MART) && gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_BATTLE_FRONTIER_MART))
+    if (!(gSaveBlock1Ptr->location.mapId == MAP_TRAINER_HILL_ENTRANCE)
+     && !(gSaveBlock1Ptr->location.mapId == MAP_BATTLE_FRONTIER_MART)
      && RandomChance(RNG_NONE, 1, 3))
     {
         sCurTVShowSlot = FindFirstEmptyRecordMixTVShowSlot(gSaveBlock1Ptr->tvShows);
@@ -1457,8 +1456,7 @@ static void StartMassOutbreakFromShow(TVShow *show)
     if (show->massOutbreak.outbreakIndex == 0) //This condition is only necessary for legacy save files
     {
         gSaveBlock1Ptr->outbreakPokemonSpecies = show->massOutbreak.species;
-        gSaveBlock1Ptr->outbreakLocationMapNum = show->massOutbreak.locationMapNum;
-        gSaveBlock1Ptr->outbreakLocationMapGroup = show->massOutbreak.locationMapGroup;
+        gSaveBlock1Ptr->outbreakLocation = show->massOutbreak.locationMap;
         gSaveBlock1Ptr->outbreakPokemonLevel = show->massOutbreak.level;
         gSaveBlock1Ptr->outbreakPokemonMoves[0] = show->massOutbreak.moves[0];
         gSaveBlock1Ptr->outbreakPokemonMoves[1] = show->massOutbreak.moves[1];
@@ -2546,14 +2544,12 @@ static bool8 ShouldApplyPokeNewsEffect(u8 newsKind)
     switch (newsKind)
     {
     case POKENEWS_SLATEPORT:
-        if (gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_SLATEPORT_CITY)
-         && gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_SLATEPORT_CITY)
+        if (gSaveBlock1Ptr->location.mapId == MAP_SLATEPORT_CITY
          && gSpecialVar_LastTalked == LOCALID_SLATEPORT_ENERGY_GURU)
             return TRUE;
         return FALSE;
     case POKENEWS_LILYCOVE:
-        if (gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_LILYCOVE_CITY_DEPARTMENT_STORE_ROOFTOP)
-         && gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_LILYCOVE_CITY_DEPARTMENT_STORE_ROOFTOP))
+        if (gSaveBlock1Ptr->location.mapId == MAP_LILYCOVE_CITY_DEPARTMENT_STORE_ROOFTOP)
             return TRUE;
         return FALSE;
     }
@@ -3189,18 +3185,18 @@ u32 GetPlayerIDAsU32(void)
 u8 CheckForPlayersHouseNews(void)
 {
     // Check if not in Littleroot house map group
-    if (gSaveBlock1Ptr->location.mapGroup != MAP_GROUP(MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F))
+    if (MAP_GROUP(gSaveBlock1Ptr->location.mapId) != MAP_GROUP(MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F))
         return PLAYERS_HOUSE_TV_NONE;
 
     // Check if not in player's house (dependent on gender)
     if (gSaveBlock2Ptr->playerGender == MALE)
     {
-        if (gSaveBlock1Ptr->location.mapNum != MAP_NUM(MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F))
+        if (MAP_NUM(gSaveBlock1Ptr->location.mapId) != MAP_NUM(MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F))
             return PLAYERS_HOUSE_TV_NONE;
     }
     else
     {
-        if (gSaveBlock1Ptr->location.mapNum != MAP_NUM(MAP_LITTLEROOT_TOWN_MAYS_HOUSE_1F))
+        if (MAP_NUM(gSaveBlock1Ptr->location.mapId) != MAP_NUM(MAP_LITTLEROOT_TOWN_MAYS_HOUSE_1F))
             return PLAYERS_HOUSE_TV_NONE;
     }
 
@@ -3216,11 +3212,11 @@ u8 CheckForPlayersHouseNews(void)
 void GetMomOrDadStringForTVMessage(void)
 {
     // If the player is checking the TV in their house it will only refer to their Mom.
-    if (gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F))
+    if (MAP_GROUP(gSaveBlock1Ptr->location.mapId) == MAP_GROUP(MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F))
     {
         if (gSaveBlock2Ptr->playerGender == MALE)
         {
-            if (gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F))
+            if (MAP_NUM(gSaveBlock1Ptr->location.mapId) == MAP_NUM(MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F))
             {
                 StringCopy(gStringVar1, gText_Mom);
                 VarSet(VAR_TEMP_3, 1);
@@ -3228,7 +3224,7 @@ void GetMomOrDadStringForTVMessage(void)
         }
         else
         {
-            if (gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_LITTLEROOT_TOWN_MAYS_HOUSE_1F))
+            if (MAP_NUM(gSaveBlock1Ptr->location.mapId) == MAP_NUM(MAP_LITTLEROOT_TOWN_MAYS_HOUSE_1F))
             {
                 StringCopy(gStringVar1, gText_Mom);
                 VarSet(VAR_TEMP_3, 1);
@@ -3272,7 +3268,7 @@ void GetMomOrDadStringForTVMessage(void)
 void HideBattleTowerReporter(void)
 {
     VarSet(VAR_BRAVO_TRAINER_BATTLE_TOWER_ON, 0);
-    RemoveObjectEventByLocalIdAndMap(LOCALID_TOWER_LOBBY_REPORTER, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);
+    RemoveObjectEventByLocalIdAndMap(LOCALID_TOWER_LOBBY_REPORTER, gSaveBlock1Ptr->location.mapId);
     FlagSet(FLAG_HIDE_BATTLE_TOWER_REPORTER);
 }
 
@@ -4732,7 +4728,7 @@ static void DoTVShowPokemonNewsMassOutbreak(void)
 
     show = &gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004];
     StartMassOutbreakFromShow(show);
-    GetMapName(gStringVar1, show->massOutbreak.locationMapNum, show->massOutbreak.locationMapGroup);
+    GetMapName(gStringVar1, MAP_NUM(show->massOutbreak.locationMap), MAP_GROUP(show->massOutbreak.locationMap));
     StringCopy(gStringVar2, GetSpeciesName(show->massOutbreak.species));
     TVShowDone();
     ShowFieldMessage(sTVMassOutbreakTextGroup[sTVShowState]);

@@ -267,8 +267,7 @@ void TryStartMirageTowerPulseBlendEffect(void)
         return;
     }
 
-    if (gSaveBlock1Ptr->location.mapGroup != MAP_GROUP(MAP_ROUTE111)
-     || gSaveBlock1Ptr->location.mapNum != MAP_NUM(MAP_ROUTE111)
+    if (gSaveBlock1Ptr->location.mapId != MAP_ROUTE111
      || !FlagGet(FLAG_MIRAGE_TOWER_VISIBLE))
         return;
 
@@ -281,8 +280,7 @@ void TryStartMirageTowerPulseBlendEffect(void)
 
 void ClearMirageTowerPulseBlendEffect(void)
 {
-    if (gSaveBlock1Ptr->location.mapGroup != MAP_GROUP(MAP_ROUTE111)
-     || gSaveBlock1Ptr->location.mapNum   != MAP_NUM(MAP_ROUTE111)
+    if (gSaveBlock1Ptr->location.mapId != MAP_ROUTE111
      || !FlagGet(FLAG_MIRAGE_TOWER_VISIBLE)
      || sMirageTowerPulseBlend == NULL)
         return;
@@ -335,7 +333,7 @@ static void PlayerDescendMirageTower(u8 taskId)
     struct ObjectEvent *fallingPlayer;
     struct ObjectEvent *player;
 
-    TryGetObjectEventIdByLocalIdAndMap(LOCALID_ROUTE111_PLAYER_FALLING, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, &objectEventId);
+    TryGetObjectEventIdByLocalIdAndMap(LOCALID_ROUTE111_PLAYER_FALLING, gSaveBlock1Ptr->location.mapId, &objectEventId);
     fallingPlayer = &gObjectEvents[objectEventId];
     gSprites[fallingPlayer->spriteId].y2 += 4;
     player = &gObjectEvents[gPlayerAvatar.objectEventId];

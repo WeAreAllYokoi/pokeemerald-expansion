@@ -62,7 +62,7 @@ void CopySecondaryTilesetToVram(struct MapLayout const *mapLayout);
 const struct MapHeader *const GetMapHeaderFromConnection(const struct MapConnection *connection);
 const struct MapConnection *GetMapConnectionAtPos(s16 x, s16 y);
 void MapGridSetMetatileImpassabilityAt(s32 x, s32 y, bool32 impassable);
-bool32 AreCoordsInsideMap(u8 mapGroup, u8 mapNum, s16 x, s16 y);
+bool32 AreCoordsInsideMap(MapId mapId, s16 x, s16 y);
 bool32 AreCoordsInsidePlayerMap(s16 x, s16 y);
 
 // field_region_map.c

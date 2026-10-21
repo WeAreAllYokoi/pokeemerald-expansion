@@ -36,7 +36,7 @@ static bool8 ReadAssociatedReadiness(const struct ADMG_RematchContext *context,
         *value = 0;
         return TRUE;
     }
-    if (!ADMG_TryGetNativeRematchNpcTrainer(context->mapGroup, context->mapNum, localId, &npcTrainer)
+    if (!ADMG_TryGetNativeRematchNpcTrainer(context->mapId, localId, &npcTrainer)
      || !ADMG_TryFindNativeRematch(npcTrainer, FALSE, &npcFamily, &position)
      || npcFamily != family)
         return RejectNpcBattle(trainerId, __func__);

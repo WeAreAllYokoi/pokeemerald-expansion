@@ -7,7 +7,7 @@ struct ScriptContext;
 
 void Task_InitVsSeekerAndCheckForTrainersOnScreen(u8 taskId);
 bool8 UpdateVsSeekerStepCounter(void);
-void MapResetTrainerRematches(u16 mapGroup, u16 mapNum);
+void MapResetTrainerRematches(MapId mapId);
 void ClearRematchMovementByTrainerId(void);
 u16 GetRematchTrainerIdVSSeeker(enum TrainerId trainerId);
 bool32 IsVsSeekerEnabled(void);

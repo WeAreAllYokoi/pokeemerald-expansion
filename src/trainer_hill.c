@@ -926,7 +926,7 @@ static bool32 UNUSED OnTrainerHillRoof(void)
 
 const struct WarpEvent* SetWarpDestinationTrainerHill4F(void)
 {
-    const struct MapHeader *header = Overworld_GetMapHeaderByGroupAndId(MAP_GROUP(MAP_TRAINER_HILL_4F), MAP_NUM(MAP_TRAINER_HILL_4F));
+    const struct MapHeader *header = GetMapHeader(MAP_TRAINER_HILL_4F);
 
     return &header->events->warps[1];
 }

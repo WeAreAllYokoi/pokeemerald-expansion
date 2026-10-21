@@ -777,7 +777,7 @@ static bool8 TrainerExclamationMark(u8 taskId, struct Task *task, struct ObjectE
 {
     enum Direction direction;
 
-    ObjectEventGetLocalIdAndMap(trainerObj, &gFieldEffectArguments[0], &gFieldEffectArguments[1], &gFieldEffectArguments[2]);
+    ObjectEventGetLocalIdAndMap(trainerObj, &gFieldEffectArguments[0], &gFieldEffectArguments[1]);
     FieldEffectStart(FLDEFF_EXCLAMATION_MARK_ICON);
     direction = GetFaceDirectionMovementAction(trainerObj->facingDirection);
     ObjectEventSetHeldMovement(trainerObj, direction);
@@ -1019,8 +1019,8 @@ void TryPrepareSecondApproachingTrainer(void)
 }
 
 #define sLocalId    data[0]
-#define sMapNum     data[1]
-#define sMapGroup   data[2]
+#define sMapIdLo     data[1]
+#define sMapIdHi   data[2]
 #define sYVelocity  data[3]
 #define sYOffset    data[4]
 #define sFldEffId   data[7]
@@ -1124,8 +1124,8 @@ static void SetIconSpriteData(struct Sprite *sprite, u16 fldEffId, u8 spriteAnim
     sprite->coordOffsetEnabled = 1;
 
     sprite->sLocalId = gFieldEffectArguments[0];
-    sprite->sMapNum = gFieldEffectArguments[1];
-    sprite->sMapGroup = gFieldEffectArguments[2];
+    sprite->sMapIdLo = MAP_ID_LO(gFieldEffectArguments[1]);
+    sprite->sMapIdHi = MAP_ID_HI(gFieldEffectArguments[1]);
     sprite->sYVelocity = -5;
     sprite->sFldEffId = fldEffId;
 
@@ -1136,7 +1136,7 @@ static void SpriteCB_TrainerIcons(struct Sprite *sprite)
 {
     u8 objEventId;
 
-    if (TryGetObjectEventIdByLocalIdAndMap(sprite->sLocalId, sprite->sMapNum, sprite->sMapGroup, &objEventId)
+    if (TryGetObjectEventIdByLocalIdAndMap(sprite->sLocalId, MAP_ID_FROM_HALVES(sprite->sMapIdLo, sprite->sMapIdHi), &objEventId)
      || sprite->animEnded)
     {
         FieldEffectStop(sprite, sprite->sFldEffId);
@@ -1157,8 +1157,8 @@ static void SpriteCB_TrainerIcons(struct Sprite *sprite)
 }
 
 #undef sLocalId
-#undef sMapNum
-#undef sMapGroup
+#undef sMapIdLo
+#undef sMapIdHi
 #undef sYVelocity
 #undef sYOffset
 #undef sFldEffId
@@ -1190,14 +1190,14 @@ void PlayerFaceTrainerAfterBattle(void)
         objEvent = &gObjectEvents[gApproachingTrainers[gWhichTrainerToFaceAfterBattle].objectEventId];
         gPostBattleMovementScript[0] = GetFaceDirectionMovementAction(GetOppositeDirection(objEvent->facingDirection));
         gPostBattleMovementScript[1] = MOVEMENT_ACTION_STEP_END;
-        ScriptMovement_StartObjectMovementScript(LOCALID_PLAYER, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, gPostBattleMovementScript);
+        ScriptMovement_StartObjectMovementScript(LOCALID_PLAYER, gSaveBlock1Ptr->location.mapId, gPostBattleMovementScript);
     }
     else
     {
         objEvent = &gObjectEvents[gPlayerAvatar.objectEventId];
         gPostBattleMovementScript[0] = GetFaceDirectionMovementAction(objEvent->facingDirection);
         gPostBattleMovementScript[1] = MOVEMENT_ACTION_STEP_END;
-        ScriptMovement_StartObjectMovementScript(LOCALID_PLAYER, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, gPostBattleMovementScript);
+        ScriptMovement_StartObjectMovementScript(LOCALID_PLAYER, gSaveBlock1Ptr->location.mapId, gPostBattleMovementScript);
     }
 
     SetMovingNpcId(LOCALID_PLAYER);

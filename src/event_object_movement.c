@@ -180,15 +180,15 @@ static void ApplyLevitateMovement(u8);
 static bool8 MovementType_Disguise_Callback(struct ObjectEvent *, struct Sprite *);
 static bool8 MovementType_Buried_Callback(struct ObjectEvent *, struct Sprite *);
 static void CreateReflectionEffectSprites(void);
-static u8 GetObjectEventIdByLocalIdAndMapInternal(u8, u8, u8);
-static u32 GetAvailableObjectEventId(u16, u8, u8);
+static u8 GetObjectEventIdByLocalIdAndMapInternal(u8, MapId);
+static u32 GetAvailableObjectEventId(u16, MapId);
 static void SetObjectEventDynamicGraphicsId(struct ObjectEvent *);
 static void RemoveObjectEventInternal(struct ObjectEvent *);
 static u16 GetObjectEventFlagIdByObjectEventId(u8);
 static void UpdateObjectEventVisibility(struct ObjectEvent *, struct Sprite *);
 static void MakeSpriteTemplateFromObjectEventTemplate(const struct ObjectEventTemplate *, struct SpriteTemplate *, const struct SubspriteTable **);
 static void GetObjectEventMovingCameraOffset(s16 *, s16 *);
-const struct ObjectEventTemplate *GetObjectEventTemplateByLocalIdAndMap(u8 localId, u8 mapNum, u8 mapGroup);
+const struct ObjectEventTemplate *GetObjectEventTemplateByLocalIdAndMap(u8 localId, MapId mapId);
 static void RemoveObjectEventIfOutsideView(struct ObjectEvent *);
 static void SpawnObjectEventOnReturnToField(u8, s16, s16);
 static void SetPlayerAvatarObjectEventIdAndObjectId(u8, u8);
@@ -1394,8 +1394,7 @@ void ClearObjectEvent(struct ObjectEvent *objectEvent)
 {
     *objectEvent = (struct ObjectEvent){};
     objectEvent->localId = LOCALID_PLAYER;
-    objectEvent->mapNum = MAP_NUM(MAP_UNDEFINED);
-    objectEvent->mapGroup = MAP_GROUP(MAP_UNDEFINED);
+    objectEvent->mapId = MAP_UNDEFINED;
     objectEvent->movementActionId = MOVEMENT_ACTION_NONE;
 }
 
@@ -1442,22 +1441,22 @@ u8 GetFirstInactiveObjectEventId(void)
     return i;
 }
 
-u8 GetObjectEventIdByLocalIdAndMap(u8 localId, u8 mapNum, u8 mapGroupId)
+u8 GetObjectEventIdByLocalIdAndMap(u8 localId, MapId mapId)
 {
     if (localId < OBJ_EVENT_ID_DYNAMIC_BASE)
     {
         if (PlayerHasFollowerNPC() && localId == OBJ_EVENT_ID_NPC_FOLLOWER)
             return GetFollowerNPCObjectId();
         else
-            return GetObjectEventIdByLocalIdAndMapInternal(localId, mapNum, mapGroupId);
+            return GetObjectEventIdByLocalIdAndMapInternal(localId, mapId);
     }
 
     return GetObjectEventIdByLocalId(localId);
 }
 
-bool8 TryGetObjectEventIdByLocalIdAndMap(u8 localId, u8 mapNum, u8 mapGroupId, u8 *objectEventId)
+bool8 TryGetObjectEventIdByLocalIdAndMap(u8 localId, MapId mapId, u8 *objectEventId)
 {
-    *objectEventId = GetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroupId);
+    *objectEventId = GetObjectEventIdByLocalIdAndMap(localId, mapId);
     if (*objectEventId == OBJECT_EVENTS_COUNT)
         return TRUE;
     else
@@ -1476,12 +1475,12 @@ u8 GetObjectEventIdByXY(s16 x, s16 y)
     return i;
 }
 
-static u8 GetObjectEventIdByLocalIdAndMapInternal(u8 localId, u8 mapNum, u8 mapGroupId)
+static u8 GetObjectEventIdByLocalIdAndMapInternal(u8 localId, MapId mapId)
 {
     u8 i;
     for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
     {
-        if (gObjectEvents[i].active && gObjectEvents[i].localId == localId && gObjectEvents[i].mapNum == mapNum && gObjectEvents[i].mapGroup == mapGroupId)
+        if (gObjectEvents[i].active && gObjectEvents[i].localId == localId && gObjectEvents[i].mapId == mapId)
             return i;
     }
 
@@ -1577,21 +1576,21 @@ static bool8 ShouldInitObjectEventStateFromTemplate(const struct ObjectEventTemp
     return TRUE;
 }
 
-static bool8 ADMG_TryReadObjectTemplateState(const struct ObjectEventTemplate *template, u8 mapNum, u8 mapGroup, u32 *shinyState)
+static bool8 ADMG_TryReadObjectTemplateState(const struct ObjectEventTemplate *template, MapId mapId, u32 *shinyState)
 {
     u32 graphicsId;
     *shinyState = 0;
-    if (template == NULL || gSaveBlock1Ptr == NULL || !ADMG_IsMapIdValid(mapGroup, mapNum)
-     || !ADMG_IsMapIdValid(gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum))
+    if (template == NULL || gSaveBlock1Ptr == NULL || !ADMG_IsMapIdValid(mapId)
+     || !ADMG_IsMapIdValid(gSaveBlock1Ptr->location.mapId))
     {
-        ADMG_StateAccessRejected(mapGroup, __func__);
+        ADMG_StateAccessRejected(mapId, __func__);
         return FALSE;
     }
     if (template->kind == OBJ_KIND_CLONE)
     {
-        if (!ADMG_IsMapIdValid(template->targetMapGroup, template->targetMapNum))
+        if (!ADMG_IsMapIdValid(template->targetMapId))
             return FALSE;
-        const struct MapHeader *header = Overworld_GetMapHeaderByGroupAndId(template->targetMapGroup, template->targetMapNum);
+        const struct MapHeader *header = GetMapHeader(template->targetMapId);
         u32 localId = template->targetLocalId;
         if (header == NULL || header->events == NULL || header->events->objectEvents == NULL
          || localId == 0 || localId > header->events->objectEventCount)
@@ -1619,7 +1618,7 @@ static bool8 ADMG_TryReadObjectTemplateState(const struct ObjectEventTemplate *t
     return TRUE;
 }
 
-static u8 InitObjectEventStateFromTemplate(const struct ObjectEventTemplate *template, u8 mapNum, u8 mapGroup)
+static u8 InitObjectEventStateFromTemplate(const struct ObjectEventTemplate *template, MapId mapId)
 {
     struct ObjectEvent *objectEvent;
     const struct MapHeader *mapHeader;
@@ -1633,22 +1632,21 @@ static u8 InitObjectEventStateFromTemplate(const struct ObjectEventTemplate *tem
     s16 x3 = 0;
     s16 y3 = 0;
     u32 shinyState = 0;
-    if (!ADMG_TryReadObjectTemplateState(template, mapNum, mapGroup, &shinyState))
+    if (!ADMG_TryReadObjectTemplateState(template, mapId, &shinyState))
         return OBJECT_EVENTS_COUNT;
 
     if (template->kind == OBJ_KIND_CLONE)
     {
-        if (!ADMG_IsMapIdValid(template->targetMapGroup, template->targetMapNum))
+        if (!ADMG_IsMapIdValid(template->targetMapId))
             return OBJECT_EVENTS_COUNT;
         isClone = TRUE;
         localId = template->targetLocalId;
-        mapNum = template->targetMapNum;
-        mapGroup = template->targetMapGroup;
+        mapId = template->targetMapId;
         x2 = template->x;
         y2 = template->y;
         x3 = template->x;
         y3 = template->y;
-        mapHeader = Overworld_GetMapHeaderByGroupAndId(mapGroup, mapNum);
+        mapHeader = GetMapHeader(mapId);
         if (mapHeader == NULL || mapHeader->events == NULL || mapHeader->events->objectEvents == NULL
          || localId == 0 || localId > mapHeader->events->objectEventCount)
         {
@@ -1658,7 +1656,7 @@ static u8 InitObjectEventStateFromTemplate(const struct ObjectEventTemplate *tem
         template = &(mapHeader->events->objectEvents[localId - 1]);
     }
 
-    objectEventId = GetAvailableObjectEventId(template->localId, mapNum, mapGroup);
+    objectEventId = GetAvailableObjectEventId(template->localId, mapId);
     if (objectEventId == OBJECT_EVENTS_COUNT)
         return OBJECT_EVENTS_COUNT;
 
@@ -1691,8 +1689,7 @@ static u8 InitObjectEventStateFromTemplate(const struct ObjectEventTemplate *tem
     }
     objectEvent->movementType = template->movementType;
     objectEvent->localId = template->localId;
-    objectEvent->mapNum = mapNum;
-    objectEvent->mapGroup = mapGroup;
+    objectEvent->mapId = mapId;
     objectEvent->initialCoords.x = x;
     objectEvent->initialCoords.y = y;
     objectEvent->currentCoords.x = x;
@@ -1704,7 +1701,7 @@ static u8 InitObjectEventStateFromTemplate(const struct ObjectEventTemplate *tem
     objectEvent->range.rangeX = template->movementRangeX;
     objectEvent->range.rangeY = template->movementRangeY;
     objectEvent->trainerType = template->trainerType;
-    objectEvent->mapNum = mapNum;
+    objectEvent->mapId = mapId;
     objectEvent->trainerRange_berryTreeId = template->trainerRange_berryTreeId;
     objectEvent->previousMovementDirection = gInitialMovementTypeFacingDirections[template->movementType];
     SetObjectEventDirection(objectEvent, objectEvent->previousMovementDirection);
@@ -1718,7 +1715,7 @@ static u8 InitObjectEventStateFromTemplate(const struct ObjectEventTemplate *tem
     return objectEventId;
 }
 
-static u32 GetAvailableObjectEventId(u16 localId, u8 mapNum, u8 mapGroup)
+static u32 GetAvailableObjectEventId(u16 localId, MapId mapId)
 // Looks for an empty slot.
 // Returns the location of the first available slot
 // If no slots are available, or if the object is already
@@ -1733,7 +1730,7 @@ static u32 GetAvailableObjectEventId(u16 localId, u8 mapNum, u8 mapGroup)
         // check if object is already loaded
         if (gObjectEvents[i].active)
         {
-            if (gObjectEvents[i].localId == localId && gObjectEvents[i].mapNum == mapNum && gObjectEvents[i].mapGroup == mapGroup)
+            if (gObjectEvents[i].localId == localId && gObjectEvents[i].mapId == mapId)
                 return OBJECT_EVENTS_COUNT;
         }
         else
@@ -1756,10 +1753,10 @@ void RemoveObjectEvent(struct ObjectEvent *objectEvent)
     objectEvent->graphicsId = objectEvent->shiny = 0;
 }
 
-void RemoveObjectEventByLocalIdAndMap(u8 localId, u8 mapNum, u8 mapGroup)
+void RemoveObjectEventByLocalIdAndMap(u8 localId, MapId mapId)
 {
     u8 objectEventId;
-    if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup, &objectEventId))
+    if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapId, &objectEventId))
     {
         u16 flagId = GetObjectEventFlagIdByObjectEventId(objectEventId);
         if (!ADMG_IsFlagIdValid(flagId))
@@ -1908,7 +1905,7 @@ u16 LoadSheetGraphicsInfo(const struct ObjectEventGraphicsInfo *info, u16 uuid, 
     return tag;
 }
 
-static u8 TrySetupObjectEventSprite(const struct ObjectEventTemplate *objectEventTemplate, struct SpriteTemplate *spriteTemplate, u8 mapNum, u8 mapGroup, s16 cameraX, s16 cameraY)
+static u8 TrySetupObjectEventSprite(const struct ObjectEventTemplate *objectEventTemplate, struct SpriteTemplate *spriteTemplate, MapId mapId, s16 cameraX, s16 cameraY)
 {
     u8 spriteId;
     u8 objectEventId;
@@ -1916,7 +1913,7 @@ static u8 TrySetupObjectEventSprite(const struct ObjectEventTemplate *objectEven
     struct ObjectEvent *objectEvent;
     const struct ObjectEventGraphicsInfo *graphicsInfo;
 
-    objectEventId = InitObjectEventStateFromTemplate(objectEventTemplate, mapNum, mapGroup);
+    objectEventId = InitObjectEventStateFromTemplate(objectEventTemplate, mapId);
     if (objectEventId == OBJECT_EVENTS_COUNT)
         return OBJECT_EVENTS_COUNT;
 
@@ -1964,10 +1961,10 @@ static u8 TrySetupObjectEventSprite(const struct ObjectEventTemplate *objectEven
     return objectEventId;
 }
 
-u8 TrySpawnObjectEventTemplate(const struct ObjectEventTemplate *objectEventTemplate, u8 mapNum, u8 mapGroup, s16 cameraX, s16 cameraY)
+u8 TrySpawnObjectEventTemplate(const struct ObjectEventTemplate *objectEventTemplate, MapId mapId, s16 cameraX, s16 cameraY)
 {
     u32 shinyState;
-    if (!ADMG_TryReadObjectTemplateState(objectEventTemplate, mapNum, mapGroup, &shinyState))
+    if (!ADMG_TryReadObjectTemplateState(objectEventTemplate, mapId, &shinyState))
         return OBJECT_EVENTS_COUNT;
     if (objectEventTemplate->movementType >= ARRAY_COUNT(sMovementTypeCallbacks))
     {
@@ -1986,7 +1983,7 @@ u8 TrySpawnObjectEventTemplate(const struct ObjectEventTemplate *objectEventTemp
     CopyObjectGraphicsInfoToSpriteTemplate_WithMovementType(graphicsId, objectEventTemplateLocal.movementType, &spriteTemplate, &subspriteTables);
     spriteFrameImage.size = graphicsInfo->size;
     spriteTemplate.images = &spriteFrameImage;
-    objectEventId = TrySetupObjectEventSprite(&objectEventTemplateLocal, &spriteTemplate, mapNum, mapGroup, cameraX, cameraY);
+    objectEventId = TrySetupObjectEventSprite(&objectEventTemplateLocal, &spriteTemplate, mapId, cameraX, cameraY);
     if (objectEventId == OBJECT_EVENTS_COUNT)
         return OBJECT_EVENTS_COUNT;
 
@@ -2006,13 +2003,13 @@ u8 SpawnSpecialObjectEvent(struct ObjectEventTemplate *objectEventTemplate)
         return OBJECT_EVENTS_COUNT;
     }
     u32 shinyState;
-    if (!ADMG_TryReadObjectTemplateState(objectEventTemplate, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, &shinyState))
+    if (!ADMG_TryReadObjectTemplateState(objectEventTemplate, gSaveBlock1Ptr->location.mapId, &shinyState))
         return OBJECT_EVENTS_COUNT;
     s16 cameraX;
     s16 cameraY;
 
     GetObjectEventMovingCameraOffset(&cameraX, &cameraY);
-    return TrySpawnObjectEventTemplate(objectEventTemplate, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, cameraX, cameraY);
+    return TrySpawnObjectEventTemplate(objectEventTemplate, gSaveBlock1Ptr->location.mapId, cameraX, cameraY);
 }
 
 u8 SpawnSpecialObjectEventParameterized(u16 graphicsId, u8 movementBehavior, u8 localId, s16 x, s16 y, u8 elevation)
@@ -2035,17 +2032,17 @@ u8 SpawnSpecialObjectEventParameterized(u16 graphicsId, u8 movementBehavior, u8 
     return SpawnSpecialObjectEvent(&objectEventTemplate);
 }
 
-u8 TrySpawnObjectEvent(u8 localId, u8 mapNum, u8 mapGroup)
+u8 TrySpawnObjectEvent(u8 localId, MapId mapId)
 {
     const struct ObjectEventTemplate *objectEventTemplate;
     s16 cameraX, cameraY;
 
-    objectEventTemplate = GetObjectEventTemplateByLocalIdAndMap(localId, mapNum, mapGroup);
+    objectEventTemplate = GetObjectEventTemplateByLocalIdAndMap(localId, mapId);
     if (!objectEventTemplate)
         return OBJECT_EVENTS_COUNT;
 
     GetObjectEventMovingCameraOffset(&cameraX, &cameraY);
-    return TrySpawnObjectEventTemplate(objectEventTemplate, mapNum, mapGroup, cameraX, cameraY);
+    return TrySpawnObjectEventTemplate(objectEventTemplate, mapId, cameraX, cameraY);
 }
 
 void CopyObjectGraphicsInfoToSpriteTemplate(u16 graphicsId, void (*callback)(struct Sprite *), struct SpriteTemplate *spriteTemplate, const struct SubspriteTable **subspriteTables)
@@ -2528,7 +2525,7 @@ static bool8 SpeciesHasType(enum Species species, u8 type)
 static void ObjectEventEmote(struct ObjectEvent *objEvent, u8 emotion)
 {
     emotion %= FOLLOWER_EMOTION_LENGTH;
-    ObjectEventGetLocalIdAndMap(objEvent, &gFieldEffectArguments[0], &gFieldEffectArguments[1], &gFieldEffectArguments[2]);
+    ObjectEventGetLocalIdAndMap(objEvent, &gFieldEffectArguments[0], &gFieldEffectArguments[1]);
     gFieldEffectArguments[7] = emotion;
     FieldEffectStart(FLDEFF_EMOTE);
 }
@@ -2596,8 +2593,8 @@ bool32 CheckMsgCondition(const struct MsgCondition *cond, struct Pokemon *mon, e
     case MSG_COND_MAPSEC:
         return (cond->data.raw == gMapHeader.regionMapSectionId);
     case MSG_COND_MAP:
-        return (gSaveBlock1Ptr->location.mapGroup == cond->data.bytes[0] &&
-                gSaveBlock1Ptr->location.mapNum == cond->data.bytes[1]);
+        return (MAP_GROUP(gSaveBlock1Ptr->location.mapId) == cond->data.bytes[0] &&
+                MAP_NUM(gSaveBlock1Ptr->location.mapId) == cond->data.bytes[1]);
     case MSG_COND_ON_MB:
         return (obj->currentMetatileBehavior == cond->data.bytes[0] ||
                 obj->currentMetatileBehavior == cond->data.bytes[1]);
@@ -3006,7 +3003,7 @@ void TrySpawnObjectEvents(s16 cameraX, s16 cameraY)
                 if (template->graphicsId == OBJ_EVENT_GFX_LIGHT_SPRITE)
                     SpawnLightSprite(npcX, npcY, cameraX, cameraY, template->trainerRange_berryTreeId); // light sprite instead
                 else
-                    TrySpawnObjectEventTemplate(template, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, cameraX, cameraY);
+                    TrySpawnObjectEventTemplate(template, gSaveBlock1Ptr->location.mapId, cameraX, cameraY);
             }
         }
     }
@@ -3245,11 +3242,11 @@ void ObjectEventTurn(struct ObjectEvent *objectEvent, enum Direction direction)
     }
 }
 
-void ObjectEventTurnByLocalIdAndMap(u8 localId, u8 mapNum, u8 mapGroup, enum Direction direction)
+void ObjectEventTurnByLocalIdAndMap(u8 localId, MapId mapId, enum Direction direction)
 {
     u8 objectEventId;
 
-    if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup, &objectEventId))
+    if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapId, &objectEventId))
         ObjectEventTurn(&gObjectEvents[objectEventId], direction);
 }
 
@@ -3328,19 +3325,19 @@ static void SetObjectEventDynamicGraphicsId(struct ObjectEvent *objectEvent)
     }
 }
 
-void SetObjectInvisibility(u8 localId, u8 mapNum, u8 mapGroup, bool8 invisible)
+void SetObjectInvisibility(u8 localId, MapId mapId, bool8 invisible)
 {
     u8 objectEventId;
 
-    if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup, &objectEventId))
+    if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapId, &objectEventId))
         gObjectEvents[objectEventId].invisible = invisible;
 }
 
-void ObjectEventGetLocalIdAndMap(struct ObjectEvent *objectEvent, void *localId, void *mapNum, void *mapGroup)
+// Writes the object's local ID and its whole MapId into two field-effect arguments (s32 each).
+void ObjectEventGetLocalIdAndMap(struct ObjectEvent *objectEvent, void *localId, void *mapId)
 {
     *(u8 *)(localId) = objectEvent->localId;
-    *(u8 *)(mapNum) = objectEvent->mapNum;
-    *(u8 *)(mapGroup) = objectEvent->mapGroup;
+    *(MapId *)(mapId) = objectEvent->mapId;
 }
 
 void AllowObjectAtPosTriggerGroundEffects(s16 x, s16 y)
@@ -3356,13 +3353,13 @@ void AllowObjectAtPosTriggerGroundEffects(s16 x, s16 y)
     }
 }
 
-void SetObjectSubpriority(u8 localId, u8 mapNum, u8 mapGroup, u8 subpriority)
+void SetObjectSubpriority(u8 localId, MapId mapId, u8 subpriority)
 {
     u8 objectEventId;
     struct ObjectEvent *objectEvent;
     struct Sprite *sprite;
 
-    if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup, &objectEventId))
+    if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapId, &objectEventId))
     {
         objectEvent = &gObjectEvents[objectEventId];
         sprite = &gSprites[objectEvent->spriteId];
@@ -3371,12 +3368,12 @@ void SetObjectSubpriority(u8 localId, u8 mapNum, u8 mapGroup, u8 subpriority)
     }
 }
 
-void ResetObjectSubpriority(u8 localId, u8 mapNum, u8 mapGroup)
+void ResetObjectSubpriority(u8 localId, MapId mapId)
 {
     u8 objectEventId;
     struct ObjectEvent *objectEvent;
 
-    if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup, &objectEventId))
+    if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapId, &objectEventId))
     {
         objectEvent = &gObjectEvents[objectEventId];
         objectEvent->fixedPriority = FALSE;
@@ -3384,12 +3381,12 @@ void ResetObjectSubpriority(u8 localId, u8 mapNum, u8 mapGroup)
     }
 }
 
-void SetObjectEventSpritePosByLocalIdAndMap(u8 localId, u8 mapNum, u8 mapGroup, s16 x, s16 y)
+void SetObjectEventSpritePosByLocalIdAndMap(u8 localId, MapId mapId, s16 x, s16 y)
 {
     u8 objectEventId;
     struct Sprite *sprite;
 
-    if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup, &objectEventId))
+    if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapId, &objectEventId))
     {
         sprite = &gSprites[gObjectEvents[objectEventId].spriteId];
         sprite->x2 = x;
@@ -3526,10 +3523,10 @@ void MoveObjectEventToMapCoords(struct ObjectEvent *objectEvent, s16 x, s16 y)
         CameraObjectReset();
 }
 
-void TryMoveObjectEventToMapCoords(u8 localId, u8 mapNum, u8 mapGroup, s16 x, s16 y)
+void TryMoveObjectEventToMapCoords(u8 localId, MapId mapId, s16 x, s16 y)
 {
     u8 objectEventId;
-    if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup, &objectEventId))
+    if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapId, &objectEventId))
     {
         x += MAP_OFFSET;
         y += MAP_OFFSET;
@@ -3760,9 +3757,9 @@ void SetObjectEventDirection(struct ObjectEvent *objectEvent, enum Direction dir
     objectEvent->movementDirection = direction;
 }
 
-static const u8 *GetObjectEventScriptPointerByLocalIdAndMap(u8 localId, u8 mapNum, u8 mapGroup)
+static const u8 *GetObjectEventScriptPointerByLocalIdAndMap(u8 localId, MapId mapId)
 {
-    const struct ObjectEventTemplate *template = GetObjectEventTemplateByLocalIdAndMap(localId, mapNum, mapGroup);
+    const struct ObjectEventTemplate *template = GetObjectEventTemplateByLocalIdAndMap(localId, mapId);
     if (template == NULL)
     {
         ADMG_StateAccessRejected(localId, __func__);
@@ -3778,12 +3775,12 @@ const u8 *GetObjectEventScriptPointerByObjectEventId(u8 objectEventId)
         ADMG_StateAccessRejected(objectEventId, __func__);
         return NULL;
     }
-    return GetObjectEventScriptPointerByLocalIdAndMap(gObjectEvents[objectEventId].localId, gObjectEvents[objectEventId].mapNum, gObjectEvents[objectEventId].mapGroup);
+    return GetObjectEventScriptPointerByLocalIdAndMap(gObjectEvents[objectEventId].localId, gObjectEvents[objectEventId].mapId);
 }
 
-u16 GetObjectEventFlagIdByLocalIdAndMap(u8 localId, u8 mapNum, u8 mapGroup)
+u16 GetObjectEventFlagIdByLocalIdAndMap(u8 localId, MapId mapId)
 {
-    const struct ObjectEventTemplate *obj = GetObjectEventTemplateByLocalIdAndMap(localId, mapNum, mapGroup);
+    const struct ObjectEventTemplate *obj = GetObjectEventTemplateByLocalIdAndMap(localId, mapId);
     if (obj == NULL)
     {
         ADMG_StateAccessRejected(localId, __func__);
@@ -3794,14 +3791,14 @@ u16 GetObjectEventFlagIdByLocalIdAndMap(u8 localId, u8 mapNum, u8 mapGroup)
 
 static u16 GetObjectEventFlagIdByObjectEventId(u8 objectEventId)
 {
-    return GetObjectEventFlagIdByLocalIdAndMap(gObjectEvents[objectEventId].localId, gObjectEvents[objectEventId].mapNum, gObjectEvents[objectEventId].mapGroup);
+    return GetObjectEventFlagIdByLocalIdAndMap(gObjectEvents[objectEventId].localId, gObjectEvents[objectEventId].mapId);
 }
 
-static u8 UNUSED GetObjectTrainerTypeByLocalIdAndMap(u8 localId, u8 mapNum, u8 mapGroup)
+static u8 UNUSED GetObjectTrainerTypeByLocalIdAndMap(u8 localId, MapId mapId)
 {
     u8 objectEventId;
 
-    if (TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup, &objectEventId))
+    if (TryGetObjectEventIdByLocalIdAndMap(localId, mapId, &objectEventId))
         return 0xFF;
 
     return gObjectEvents[objectEventId].trainerType;
@@ -3817,15 +3814,15 @@ u8 GetObjectEventBerryTreeId(u8 objectEventId)
     return gObjectEvents[objectEventId].trainerRange_berryTreeId;
 }
 
-const struct ObjectEventTemplate *GetObjectEventTemplateByLocalIdAndMap(u8 localId, u8 mapNum, u8 mapGroup)
+const struct ObjectEventTemplate *GetObjectEventTemplateByLocalIdAndMap(u8 localId, MapId mapId)
 {
     const struct ObjectEventTemplate *templates;
     const struct MapHeader *mapHeader;
     u8 count;
 
-    if (!ADMG_IsMapIdValid(mapGroup, mapNum))
+    if (!ADMG_IsMapIdValid(mapId))
         return NULL;
-    if (gSaveBlock1Ptr != NULL && gSaveBlock1Ptr->location.mapNum == mapNum && gSaveBlock1Ptr->location.mapGroup == mapGroup)
+    if (gSaveBlock1Ptr != NULL && gSaveBlock1Ptr->location.mapId == mapId)
     {
         if (gMapHeader.events == NULL || gMapHeader.events->objectEventCount > ARRAY_COUNT(gSaveBlock1Ptr->objectEventTemplates))
         {
@@ -3837,7 +3834,7 @@ const struct ObjectEventTemplate *GetObjectEventTemplateByLocalIdAndMap(u8 local
     }
     else
     {
-        mapHeader = Overworld_GetMapHeaderByGroupAndId(mapGroup, mapNum);
+        mapHeader = GetMapHeader(mapId);
         if (mapHeader == NULL || mapHeader->events == NULL)
         {
             ADMG_StateAccessRejected(localId, __func__);
@@ -3870,8 +3867,7 @@ struct ObjectEventTemplate *GetBaseTemplateForObjectEvent(const struct ObjectEve
 {
     int i;
 
-    if (objectEvent->mapNum != gSaveBlock1Ptr->location.mapNum
-     || objectEvent->mapGroup != gSaveBlock1Ptr->location.mapGroup)
+    if (objectEvent->mapId != gSaveBlock1Ptr->location.mapId)
         return NULL;
 
     for (i = 0; i < OBJECT_EVENT_TEMPLATES_COUNT; i++)
@@ -3912,17 +3908,17 @@ void TryOverrideTemplateCoordsForObjectEvent(const struct ObjectEvent *objectEve
         objectEventTemplate->movementType = movementType;
 }
 
-void TryOverrideObjectEventTemplateCoords(u8 localId, u8 mapNum, u8 mapGroup)
+void TryOverrideObjectEventTemplateCoords(u8 localId, MapId mapId)
 {
     u8 objectEventId;
-    if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup, &objectEventId))
+    if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapId, &objectEventId))
         OverrideTemplateCoordsForObjectEvent(&gObjectEvents[objectEventId]);
 }
 
-void OverrideSecretBaseDecorationSpriteScript(u8 localId, u8 mapNum, u8 mapGroup, u8 decorationCategory)
+void OverrideSecretBaseDecorationSpriteScript(u8 localId, MapId mapId, u8 decorationCategory)
 {
     u8 objectEventId;
-    if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup, &objectEventId))
+    if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapId, &objectEventId))
     {
         switch (decorationCategory)
         {
@@ -6111,7 +6107,7 @@ void MovementType_TreeDisguise(struct Sprite *sprite)
     objectEvent = &gObjectEvents[sprite->sObjEventId];
     if (objectEvent->directionSequenceIndex == 0 || (objectEvent->directionSequenceIndex == 1 && !sprite->data[7]))
     {
-        ObjectEventGetLocalIdAndMap(objectEvent, &gFieldEffectArguments[0], &gFieldEffectArguments[1], &gFieldEffectArguments[2]);
+        ObjectEventGetLocalIdAndMap(objectEvent, &gFieldEffectArguments[0], &gFieldEffectArguments[1]);
         objectEvent->fieldEffectSpriteId = FieldEffectStart(FLDEFF_TREE_DISGUISE);
         objectEvent->directionSequenceIndex = 1;
         sprite->data[7]++;
@@ -6132,7 +6128,7 @@ void MovementType_MountainDisguise(struct Sprite *sprite)
     objectEvent = &gObjectEvents[sprite->sObjEventId];
     if (objectEvent->directionSequenceIndex == 0 || (objectEvent->directionSequenceIndex == 1 && !sprite->data[7]))
     {
-        ObjectEventGetLocalIdAndMap(objectEvent, &gFieldEffectArguments[0], &gFieldEffectArguments[1], &gFieldEffectArguments[2]);
+        ObjectEventGetLocalIdAndMap(objectEvent, &gFieldEffectArguments[0], &gFieldEffectArguments[1]);
         objectEvent->fieldEffectSpriteId = FieldEffectStart(FLDEFF_MOUNTAIN_DISGUISE);
         objectEvent->directionSequenceIndex = 1;
         sprite->data[7]++;
@@ -6701,22 +6697,22 @@ static bool8 DoesObjectCollideWithObjectAt(struct ObjectEvent *objectEvent, s16 
     return (GetObjectObjectCollidesWith(objectEvent, x, y, FALSE) < OBJECT_EVENTS_COUNT);
 }
 
-bool8 IsBerryTreeSparkling(u8 localId, u8 mapNum, u8 mapGroup)
+bool8 IsBerryTreeSparkling(u8 localId, MapId mapId)
 {
     u8 objectEventId;
 
-    if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup, &objectEventId)
+    if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapId, &objectEventId)
         && gSprites[gObjectEvents[objectEventId].spriteId].sBerryTreeFlags & BERRY_FLAG_SPARKLING)
         return TRUE;
 
     return FALSE;
 }
 
-void SetBerryTreeJustPicked(u8 localId, u8 mapNum, u8 mapGroup)
+void SetBerryTreeJustPicked(u8 localId, MapId mapId)
 {
     u8 objectEventId;
 
-    if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup, &objectEventId))
+    if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapId, &objectEventId))
         gSprites[gObjectEvents[objectEventId].spriteId].sBerryTreeFlags |= BERRY_FLAG_JUST_PICKED;
 }
 
@@ -8486,7 +8482,7 @@ bool8 MovementAction_FacePlayer_Step0(struct ObjectEvent *objectEvent, struct Sp
 {
     u8 playerObjectId;
 
-    if (!TryGetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0, &playerObjectId))
+    if (!TryGetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, &playerObjectId))
         FaceDirection(objectEvent, sprite, GetDirectionToFace(objectEvent->currentCoords.x,
                                                               objectEvent->currentCoords.y,
                                                               gObjectEvents[playerObjectId].currentCoords.x,
@@ -8499,7 +8495,7 @@ bool8 MovementAction_FaceAwayPlayer_Step0(struct ObjectEvent *objectEvent, struc
 {
     u8 playerObjectId;
 
-    if (!TryGetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0, &playerObjectId))
+    if (!TryGetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, &playerObjectId))
         FaceDirection(objectEvent, sprite, GetOppositeDirection(GetDirectionToFace(objectEvent->currentCoords.x,
                                                                                    objectEvent->currentCoords.y,
                                                                                    gObjectEvents[playerObjectId].currentCoords.x,
@@ -8782,7 +8778,7 @@ bool8 MovementAction_SetVisible_Step0(struct ObjectEvent *objectEvent, struct Sp
 
 bool8 MovementAction_EmoteExclamationMark_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite)
 {
-    ObjectEventGetLocalIdAndMap(objectEvent, &gFieldEffectArguments[0], &gFieldEffectArguments[1], &gFieldEffectArguments[2]);
+    ObjectEventGetLocalIdAndMap(objectEvent, &gFieldEffectArguments[0], &gFieldEffectArguments[1]);
     FieldEffectStart(FLDEFF_EXCLAMATION_MARK_ICON);
     sprite->sActionFuncId = 1;
     return TRUE;
@@ -8790,7 +8786,7 @@ bool8 MovementAction_EmoteExclamationMark_Step0(struct ObjectEvent *objectEvent,
 
 bool8 MovementAction_EmoteQuestionMark_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite)
 {
-    ObjectEventGetLocalIdAndMap(objectEvent, &gFieldEffectArguments[0], &gFieldEffectArguments[1], &gFieldEffectArguments[2]);
+    ObjectEventGetLocalIdAndMap(objectEvent, &gFieldEffectArguments[0], &gFieldEffectArguments[1]);
     gFieldEffectArguments[7] = -1;
     FieldEffectStart(FLDEFF_QUESTION_MARK_ICON);
     sprite->sActionFuncId = 1;
@@ -8799,7 +8795,7 @@ bool8 MovementAction_EmoteQuestionMark_Step0(struct ObjectEvent *objectEvent, st
 
 bool8 MovementAction_EmoteHeart_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite)
 {
-    ObjectEventGetLocalIdAndMap(objectEvent, &gFieldEffectArguments[0], &gFieldEffectArguments[1], &gFieldEffectArguments[2]);
+    ObjectEventGetLocalIdAndMap(objectEvent, &gFieldEffectArguments[0], &gFieldEffectArguments[1]);
     FieldEffectStart(FLDEFF_HEART_ICON);
     sprite->sActionFuncId = 1;
     return TRUE;
@@ -10207,9 +10203,9 @@ void GroundEffect_SpawnOnTallGrass(struct ObjectEvent *objEvent, struct Sprite *
     gFieldEffectArguments[1] = objEvent->currentCoords.y;
     gFieldEffectArguments[2] = objEvent->previousElevation;
     gFieldEffectArguments[3] = 2; // priority
-    gFieldEffectArguments[4] = objEvent->localId << 8 | objEvent->mapNum;
-    gFieldEffectArguments[5] = objEvent->mapGroup;
-    gFieldEffectArguments[6] = (u8)gSaveBlock1Ptr->location.mapNum << 8 | (u8)gSaveBlock1Ptr->location.mapGroup;
+    gFieldEffectArguments[4] = objEvent->localId;
+    gFieldEffectArguments[5] = objEvent->mapId;
+    gFieldEffectArguments[6] = gSaveBlock1Ptr->location.mapId;
     gFieldEffectArguments[7] = TRUE; // skip to end of anim
     FieldEffectStart(FLDEFF_TALL_GRASS);
 }
@@ -10220,9 +10216,9 @@ void GroundEffect_StepOnTallGrass(struct ObjectEvent *objEvent, struct Sprite *s
     gFieldEffectArguments[1] = objEvent->currentCoords.y;
     gFieldEffectArguments[2] = objEvent->previousElevation;
     gFieldEffectArguments[3] = 2; // priority
-    gFieldEffectArguments[4] = objEvent->localId << 8 | objEvent->mapNum;
-    gFieldEffectArguments[5] = objEvent->mapGroup;
-    gFieldEffectArguments[6] = (u8)gSaveBlock1Ptr->location.mapNum << 8 | (u8)gSaveBlock1Ptr->location.mapGroup;
+    gFieldEffectArguments[4] = objEvent->localId;
+    gFieldEffectArguments[5] = objEvent->mapId;
+    gFieldEffectArguments[6] = gSaveBlock1Ptr->location.mapId;
     gFieldEffectArguments[7] = FALSE; // don't skip to end of anim
     FieldEffectStart(FLDEFF_TALL_GRASS);
 }
@@ -10233,9 +10229,9 @@ void GroundEffect_SpawnOnLongGrass(struct ObjectEvent *objEvent, struct Sprite *
     gFieldEffectArguments[1] = objEvent->currentCoords.y;
     gFieldEffectArguments[2] = objEvent->previousElevation;
     gFieldEffectArguments[3] = 2;
-    gFieldEffectArguments[4] = objEvent->localId << 8 | objEvent->mapNum;
-    gFieldEffectArguments[5] = objEvent->mapGroup;
-    gFieldEffectArguments[6] = (u8)gSaveBlock1Ptr->location.mapNum << 8 | (u8)gSaveBlock1Ptr->location.mapGroup;
+    gFieldEffectArguments[4] = objEvent->localId;
+    gFieldEffectArguments[5] = objEvent->mapId;
+    gFieldEffectArguments[6] = gSaveBlock1Ptr->location.mapId;
     gFieldEffectArguments[7] = 1;
     FieldEffectStart(FLDEFF_LONG_GRASS);
 }
@@ -10246,9 +10242,9 @@ void GroundEffect_StepOnLongGrass(struct ObjectEvent *objEvent, struct Sprite *s
     gFieldEffectArguments[1] = objEvent->currentCoords.y;
     gFieldEffectArguments[2] = objEvent->previousElevation;
     gFieldEffectArguments[3] = 2;
-    gFieldEffectArguments[4] = (objEvent->localId << 8) | objEvent->mapNum;
-    gFieldEffectArguments[5] = objEvent->mapGroup;
-    gFieldEffectArguments[6] = (u8)gSaveBlock1Ptr->location.mapNum << 8 | (u8)gSaveBlock1Ptr->location.mapGroup;
+    gFieldEffectArguments[4] = objEvent->localId;
+    gFieldEffectArguments[5] = objEvent->mapId;
+    gFieldEffectArguments[6] = gSaveBlock1Ptr->location.mapId;
     gFieldEffectArguments[7] = 0;
     FieldEffectStart(FLDEFF_LONG_GRASS);
 }
@@ -10426,8 +10422,7 @@ void GroundEffect_JumpOnTallGrass(struct ObjectEvent *objEvent, struct Sprite *s
 
     spriteId = FindTallGrassFieldEffectSpriteId(
         objEvent->localId,
-        objEvent->mapNum,
-        objEvent->mapGroup,
+        objEvent->mapId,
         objEvent->currentCoords.x,
         objEvent->currentCoords.y);
 
@@ -11276,7 +11271,7 @@ bool32 IsVirtualObjectAnimating(u8 virtualObjId)
 
 u32 StartFieldEffectForObjectEvent(u8 fieldEffectId, struct ObjectEvent *objectEvent)
 {
-    ObjectEventGetLocalIdAndMap(objectEvent, &gFieldEffectArguments[0], &gFieldEffectArguments[1], &gFieldEffectArguments[2]);
+    ObjectEventGetLocalIdAndMap(objectEvent, &gFieldEffectArguments[0], &gFieldEffectArguments[1]);
     return FieldEffectStart(fieldEffectId);
 }
 
@@ -11497,7 +11492,7 @@ u8 MovementAction_Fly_Finish(struct ObjectEvent *objectEvent, struct Sprite *spr
 
 bool8 MovementAction_EmoteX_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite)
 {
-    ObjectEventGetLocalIdAndMap(objectEvent, &gFieldEffectArguments[0], &gFieldEffectArguments[1], &gFieldEffectArguments[2]);
+    ObjectEventGetLocalIdAndMap(objectEvent, &gFieldEffectArguments[0], &gFieldEffectArguments[1]);
     FieldEffectStart(FLDEFF_X_ICON);
     sprite->sActionFuncId = 1;
     return TRUE;
@@ -11505,7 +11500,7 @@ bool8 MovementAction_EmoteX_Step0(struct ObjectEvent *objectEvent, struct Sprite
 
 bool8 MovementAction_EmoteDoubleExclamationMark_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite)
 {
-    ObjectEventGetLocalIdAndMap(objectEvent, &gFieldEffectArguments[0], &gFieldEffectArguments[1], &gFieldEffectArguments[2]);
+    ObjectEventGetLocalIdAndMap(objectEvent, &gFieldEffectArguments[0], &gFieldEffectArguments[1]);
     FieldEffectStart(FLDEFF_DOUBLE_EXCL_MARK_ICON);
     sprite->sActionFuncId = 1;
     return TRUE;
