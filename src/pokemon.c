@@ -6470,7 +6470,7 @@ enum Species GetSpeciesPreEvolution(enum Species species)
     return SPECIES_NONE;
 }
 
-void UpdateDaysPassedSinceFormChange(u16 days)
+void UpdateDaysPassedSinceFormChange(u32 days)
 {
     u32 i;
     for (i = 0; i < PARTY_SIZE; i++)

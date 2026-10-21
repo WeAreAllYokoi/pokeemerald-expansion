@@ -984,7 +984,7 @@ enum PokemonCry GetCryIdBySpecies(enum Species species);
 enum Species GetSpeciesPreEvolution(enum Species species);
 void HealPokemon(struct Pokemon *mon);
 void HealBoxPokemon(struct BoxPokemon *boxMon);
-void UpdateDaysPassedSinceFormChange(u16 days);
+void UpdateDaysPassedSinceFormChange(u32 days);
 void TrySetDayLimitToFormChange(struct Pokemon *mon);
 enum Type CheckDynamicMoveType(struct Pokemon *mon, enum Move move, enum BattlerId battler, enum MonState state);
 uq4_12_t GetDynamaxLevelHPMultiplier(u32 dynamaxLevel, bool32 inverseMultiplier);

@@ -125,8 +125,8 @@ static void TryPutPokemonTodayFailedOnTheAir(void);
 static void TryStartRandomMassOutbreak(void);
 static void TryPutRandomPokeNewsOnAir(void);
 static void SortPurchasesByQuantity(void);
-static void UpdateTimeBeforeMassOutbreak(u16);
-static void UpdatePokeNewsCountdown(u16);
+static void UpdateTimeBeforeMassOutbreak(u32);
+static void UpdatePokeNewsCountdown(u32);
 static void ResolveWorldOfMastersShow(u16);
 static void ResolveNumberOneShow(u16);
 static void TryPutFishingAdviceOnAir(void);
@@ -1556,7 +1556,7 @@ static void TryStartRandomMassOutbreak(void)
     }
 }
 
-void UpdateTVShowsPerDay(u16 days)
+void UpdateTVShowsPerDay(u32 days)
 {
     UpdateTimeBeforeMassOutbreak(days);
     UpdatePokeNewsCountdown(days);
@@ -1564,7 +1564,7 @@ void UpdateTVShowsPerDay(u16 days)
     ResolveNumberOneShow(days);
 }
 
-static void UpdateTimeBeforeMassOutbreak(u16 days)
+static void UpdateTimeBeforeMassOutbreak(u32 days)
 {
     u8 i;
     TVShow *show;
@@ -2572,7 +2572,7 @@ static bool8 IsAddingPokeNewsDisallowed(u8 newsKind)
     return FALSE;
 }
 
-static void UpdatePokeNewsCountdown(u16 days)
+static void UpdatePokeNewsCountdown(u32 days)
 {
     u8 i;
 

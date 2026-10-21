@@ -87,7 +87,7 @@ void InitDewfordTrend(void)
     SortTrends(gSaveBlock1Ptr->dewfordTrends, SAVED_TRENDS_COUNT, SORT_MODE_NORMAL);
 }
 
-void UpdateDewfordTrendPerDay(u16 days)
+void UpdateDewfordTrendPerDay(u32 days)
 {
     u16 i;
 
@@ -105,7 +105,7 @@ void UpdateDewfordTrendPerDay(u16 days)
             {
                 // This trend is "boring"
                 // Lose trendiness until it becomes 0
-                if (trend->trendiness >= (u16)rand)
+                if (trend->trendiness >= rand)
                 {
                     trend->trendiness -= rand;
                     if (trend->trendiness == 0)
@@ -118,7 +118,7 @@ void UpdateDewfordTrendPerDay(u16 days)
             }
 
             trendiness = trend->trendiness + rand;
-            if ((u16)trendiness > trend->maxTrendiness)
+            if (trendiness > trend->maxTrendiness)
             {
                 // Reached limit, reset trendiness
                 u32 newTrendiness = trendiness % trend->maxTrendiness;

@@ -40,7 +40,7 @@ void SanitizeTVShowsForRuby(TVShow *shows);
 void TryPutSafariFanClubOnAir(u8 monsCaught, u8 pokeblocksUsed);
 bool8 Put3CheersForPokeblocksOnTheAir(const u8 *partnersName, enum Flavor flavor, u8 color, u8 sheen, u8 language);
 void SetPokemonAnglerSpecies(enum Species species);
-void UpdateTVShowsPerDay(u16 days);
+void UpdateTVShowsPerDay(u32 days);
 void TryPutPokemonTodayOnAir(void);
 void TryPutSecretBaseVisitOnAir(void);
 void PutBattleUpdateOnTheAir(u8 opponentLinkPlayerId, enum Move move, enum Species speciesPlayer, enum Species speciesOpponent);

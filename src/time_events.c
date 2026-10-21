@@ -32,9 +32,9 @@ static void SetMirageRnd(u32 rnd)
     #endif
 }
 
-void UpdateMirageRnd(u16 days)
+void UpdateMirageRnd(u32 days)
 {
-    s32 rnd = GetMirageRnd();
+    u32 rnd = GetMirageRnd();
     while (days)
     {
         rnd = ISO_RANDOMIZE2(rnd);
@@ -114,7 +114,7 @@ void InitBirchState(void)
     *ADMG_REQUIRE_VAR_SPAN(VAR_BIRCH_STATE, 1) = 0;
 }
 
-void UpdateBirchState(u16 days)
+void UpdateBirchState(u32 days)
 {
     u32 *state = ADMG_REQUIRE_VAR_SPAN(VAR_BIRCH_STATE, 1);
     *state += days;

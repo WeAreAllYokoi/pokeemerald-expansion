@@ -137,7 +137,7 @@ void StartStaticMassOutbreak(enum MassOutbreakIndex outbreakIdx)
     StartMassOutbreak(*outbreak);
 }
 
-void UpdateMassOutbreakDaysLeft(u16 days)
+void UpdateMassOutbreakDaysLeft(u32 days)
 {
     if (gSaveBlock1Ptr->outbreakDaysLeft <= days)
         gSaveBlock1Ptr->outbreakDaysLeft = 0;

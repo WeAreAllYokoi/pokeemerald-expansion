@@ -1699,9 +1699,9 @@ void TryInitBattleTowerAwardManObjectEvent(void)
     //TryInitLocalObjectEvent(6);
 }
 
-u16 GetDaysUntilPacifidlogTMAvailable(void)
+u32 GetDaysUntilPacifidlogTMAvailable(void)
 {
-    u16 tmReceivedDay = VarGet(VAR_PACIFIDLOG_TM_RECEIVED_DAY);
+    s32 tmReceivedDay = VarGet(VAR_PACIFIDLOG_TM_RECEIVED_DAY);
     if (gLocalTime.days - tmReceivedDay >= 7)
         return 0;
     else if (gLocalTime.days < 0)
@@ -1710,7 +1710,7 @@ u16 GetDaysUntilPacifidlogTMAvailable(void)
     return 7 - (gLocalTime.days - tmReceivedDay);
 }
 
-u16 SetPacifidlogTMReceivedDay(void)
+u32 SetPacifidlogTMReceivedDay(void)
 {
     VarSet(VAR_PACIFIDLOG_TM_RECEIVED_DAY, gLocalTime.days);
     return gLocalTime.days;
@@ -2191,7 +2191,7 @@ bool32 PlayerNotAtTrainerHillEntrance(void)
     return TRUE;
 }
 
-void UpdateFrontierManiac(u16 daysSince)
+void UpdateFrontierManiac(u32 daysSince)
 {
     u32 *var = ADMG_REQUIRE_VAR_SPAN(VAR_FRONTIER_MANIAC_FACILITY, 1);
     *var += daysSince;
@@ -2983,7 +2983,7 @@ void ShowNatureGirlMessage(void)
     ShowFieldMessage(gNaturesInfo[nature].natureGirlMessage);
 }
 
-void UpdateFrontierGambler(u16 daysSince)
+void UpdateFrontierGambler(u32 daysSince)
 {
     u32 *var = ADMG_REQUIRE_VAR_SPAN(VAR_FRONTIER_GAMBLER_CHALLENGE, 1);
     *var += daysSince;

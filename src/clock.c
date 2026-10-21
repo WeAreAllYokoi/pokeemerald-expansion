@@ -70,9 +70,12 @@ void DoDailyEvents(u32 daysSince)
 static void UpdatePerDay(struct Time *localTime)
 {
     u32 *days = ADMG_REQUIRE_VAR_SPAN(VAR_DAYS, 1);
-    u16 daysSince;
+    u32 daysSince;
 
-    if (*days != localTime->days && *days <= localTime->days)
+    if (localTime->days < 0)
+        return;
+
+    if (*days != (u32)localTime->days && *days <= (u32)localTime->days)
     {
         daysSince = localTime->days - *days;
         DoDailyEvents(daysSince);

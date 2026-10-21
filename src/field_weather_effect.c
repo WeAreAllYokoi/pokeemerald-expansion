@@ -2691,9 +2691,9 @@ static enum OverworldWeather TranslateWeatherNum(enum OverworldWeather weather)
     return WEATHER_NONE;
 }
 
-void UpdateWeatherPerDay(u16 increment)
+void UpdateWeatherPerDay(u32 increment)
 {
-    u16 weatherStage = gSaveBlock1Ptr->weatherCycleStage + increment;
+    u32 weatherStage = gSaveBlock1Ptr->weatherCycleStage + increment;
     weatherStage %= WEATHER_CYCLE_LENGTH;
     gSaveBlock1Ptr->weatherCycleStage = weatherStage;
 }

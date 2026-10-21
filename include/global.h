@@ -219,10 +219,11 @@ struct UCoords32
 
 struct Time
 {
-    /*0x00*/ s16 days;
-    /*0x02*/ s8 hours;
-    /*0x03*/ s8 minutes;
-    /*0x04*/ s8 seconds;
+    /* Day counts across the full SiiRtcInfo year range exceed both signed and unsigned 16-bit limits. */
+    s32 days;
+    s8 hours;
+    s8 minutes;
+    s8 seconds;
 };
 
 struct NPCFollowerPadding
