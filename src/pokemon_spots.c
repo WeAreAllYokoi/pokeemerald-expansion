@@ -60,29 +60,6 @@ enum SpotAnimFrame {
     FRAME_2
 };
 
-enum SpotScale
-{
-    SCALE_1 = 1,
-    SCALE_2 = 2,
-    SCALE_4 = 4
-};
-
-struct MonSpot {
-    u8 x, y;
-    const u32* image;
-};
-
-struct MonSpotTemplate {
-    const struct MonSpot* spots;
-    u8 count;
-    enum SpotScale scale;
-    s8 xOffsetFrame2;
-    s8 yOffsetFrame2;
-    u8 firstColor;
-    u8 lastColor;
-    u8 colorAdjust;
-};
-
 // Static Functions
 static void DrawPokemonSpots(u32 personality, const struct MonSpotTemplate* spotTemplate, u8 *dest, enum SpotAnimFrame SpotAnimFrame);
 static const struct MonSpotTemplate* GetSpeciesSpots(enum Species species);

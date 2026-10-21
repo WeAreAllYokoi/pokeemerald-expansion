@@ -17,38 +17,6 @@
 #define EXHAUSTIVE_SEARCH_POOL_MAX_SIZE 20
 #define INVALID_RANDOM_SPECIES SPECIES_NONE
 
-enum RandomSpeciesDexMode
-{
-    RANDOM_MON_DEX_NATIONAL,
-    RANDOM_MON_DEX_HOENN,
-};
-
-struct RandomSpeciesGeneratorOptions
-{
-    const enum Species *bannedSpecies;
-    const enum Species *speciesPool;
-    bool32 (*filterFunc)(enum Species species, const struct FilterFuncArgs *filterFuncArgs);
-    u32 speciesPoolCount:11;
-    u32 bannedSpeciesCount:11;
-    u32 banLegendary:1;
-    u32 banMythical:1;
-    u32 banSubLegendary:1;
-    u32 banUltraBeast:1;
-    u32 banParadox:1;
-    u32 randomizeForms:1;
-    enum RandomSpeciesDexMode dexMode:1;
-    u32 padding:3;
-};
-
-struct RandomItemGeneratorOptions
-{
-    const enum Item *heldItemPool;
-    const enum HoldEffect *bannedHoldEffects;
-    bool32 (*filterFunc)(enum Item item, const struct FilterFuncArgs *filterFuncArgs);
-    u16 heldItemPoolCount;
-    u16 bannedHoldEffectsCount;
-};
-
 static enum Species GetSpeciesCandidateForm(enum Species species, const struct RandomSpeciesGeneratorOptions *options, const struct FilterFuncArgs *filterFuncArgs);
 static bool32 UNUSED IsInBstRangeFilterFunc(enum Species species, const struct FilterFuncArgs *filterFuncArgs);
 static enum Species GetRandomSpeciesAtIndex(const struct RandomSpeciesGeneratorOptions *options, u32 index);

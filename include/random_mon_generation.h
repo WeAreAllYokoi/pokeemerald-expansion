@@ -1,6 +1,9 @@
 #ifndef GUARD_RANDOM_MON_GENERATION_H
 #define GUARD_RANDOM_MON_GENERATION_H
 
+#include "gba/types.h"
+
+#include "constants/hold_effects.h"
 #include "constants/items.h"
 #include "constants/moves.h"
 #include "constants/pokeball.h"
@@ -13,6 +16,38 @@ struct FilterFuncArgs
 {
     u32 arg1;
     u32 arg2;
+};
+
+enum RandomSpeciesDexMode
+{
+    RANDOM_MON_DEX_NATIONAL,
+    RANDOM_MON_DEX_HOENN,
+};
+
+struct RandomSpeciesGeneratorOptions
+{
+    const enum Species *bannedSpecies;
+    const enum Species *speciesPool;
+    bool32 (*filterFunc)(enum Species species, const struct FilterFuncArgs *filterFuncArgs);
+    u32 speciesPoolCount:11;
+    u32 bannedSpeciesCount:11;
+    u32 banLegendary:1;
+    u32 banMythical:1;
+    u32 banSubLegendary:1;
+    u32 banUltraBeast:1;
+    u32 banParadox:1;
+    u32 randomizeForms:1;
+    enum RandomSpeciesDexMode dexMode:1;
+    u32 padding:3;
+};
+
+struct RandomItemGeneratorOptions
+{
+    const enum Item *heldItemPool;
+    const enum HoldEffect *bannedHoldEffects;
+    bool32 (*filterFunc)(enum Item item, const struct FilterFuncArgs *filterFuncArgs);
+    u16 heldItemPoolCount;
+    u16 bannedHoldEffectsCount;
 };
 
 enum Species GetRandomSpecies(u32 optionId, const struct FilterFuncArgs *filterFuncArgs);
