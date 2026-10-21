@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_policies.h"
 #include "admg_trainer_actor.h"
 #include "admg_state.h"
 #include "admg_trainer.h"
@@ -5233,7 +5234,7 @@ bool32 IsMoveHM(enum Move move)
 
 bool32 CannotForgetMove(enum Move move)
 {
-    if (P_CAN_FORGET_HIDDEN_MOVE)
+    if (ADMG_GetFeaturePolicy(ADMG_POLICY_FORGET_HIDDEN_MOVES))
         return FALSE;
 
     return IsMoveHM(move);

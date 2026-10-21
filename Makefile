@@ -312,7 +312,7 @@ C_OBJS := $(patsubst $(C_SUBDIR)/%.c,$(C_BUILDDIR)/%.o,$(C_SRCS))
 # Project-owned passive retention scaffolding; gameplay/profile switches are unchanged.
 ADMG_INTEGRATION_OBJS := $(C_BUILDDIR)/admg_native.o $(C_BUILDDIR)/admg_exports.o
 $(ADMG_INTEGRATION_OBJS): include/admg_native.h include/admg_retention.h
-$(ADMG_INTEGRATION_OBJS): override CPPFLAGS += -DADMG_INTEGRATION_RECIPE_VERSION=34
+$(ADMG_INTEGRATION_OBJS): override CPPFLAGS += -DADMG_INTEGRATION_RECIPE_VERSION=38
 $(ADMG_INTEGRATION_OBJS): override CFLAGS += -ffunction-sections -fdata-sections
 
 TEST_SRCS_IN := $(wildcard $(TEST_SUBDIR)/*.c $(TEST_SUBDIR)/*/*.c $(TEST_SUBDIR)/*/*/*.c)

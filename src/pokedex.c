@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_policies.h"
 #include "battle_main.h"
 #include "battle_script_commands.h"
 #include "bg.h"
@@ -2222,7 +2223,7 @@ static void PrintMonDexNum(u8 windowId, u8 fontId, const u8 *str, u8 left, u8 to
 {
     static const u8 color[3] = { TEXT_COLOR_TRANSPARENT, TEXT_DYNAMIC_COLOR_6, TEXT_COLOR_LIGHT_GRAY };
     u32 xOffset = 0;
-    if (POKEDEX_PLUS_HGSS)
+    if (ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         xOffset = 4;
     AddTextPrinterParameterized4(windowId, fontId, left * 8 - xOffset, (top * 8) + 1, 0, 0, color, TEXT_SKIP_DRAW, str);
 }
@@ -2231,7 +2232,7 @@ static void PrintMonName(u8 windowId, u8 fontId, const u8 *str, u8 left, u8 top)
 {
     static const u8 color[3] = { TEXT_COLOR_TRANSPARENT, TEXT_DYNAMIC_COLOR_6, TEXT_COLOR_LIGHT_GRAY };
     u32 xOffset = 0;
-    if (POKEDEX_PLUS_HGSS)
+    if (ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         xOffset = 13;
     fontId = GetFontIdToFit(str, fontId, 0, 50 + xOffset);
     AddTextPrinterParameterized4(windowId, fontId, left * 8 - xOffset, (top * 8) + 1, 0, 0, color, TEXT_SKIP_DRAW, str);
@@ -2334,7 +2335,7 @@ void CreateMonDexNum(u16 entryNum, u8 left, u8 top, u16 unused)
 {
     u8 text[7];
     u16 dexNum, offset = 2;
-    if (POKEDEX_PLUS_HGSS)
+    if (ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         offset = 0;
 
     dexNum = sPokedexView->pokedexList[entryNum].dexNum;
@@ -2363,7 +2364,7 @@ void CreateMonDexNum(u16 entryNum, u8 left, u8 top, u16 unused)
 void CreateCaughtBall(bool16 owned, u8 x, u8 y, u16 unused)
 {
     u32 xMultiplier = 8;
-    if (POKEDEX_PLUS_HGSS)
+    if (ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         xMultiplier = 6;
 
     if (owned)
@@ -2388,7 +2389,7 @@ u8 CreateMonName(u32 num, u8 left, u8 top)
 void ClearMonListEntry(u8 x, u8 y, u16 unused)
 {
     u32 xMultiplier = 8;
-    if (POKEDEX_PLUS_HGSS)
+    if (ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         xMultiplier = 6;
 
     FillWindowPixelRect(0, PIXEL_FILL(0), x * xMultiplier, y * 8, 0x60, 16);
@@ -2401,7 +2402,7 @@ void CreateMonSpritesAtPos(u16 selectedMon, u16 ignored)
     u16 dexNum;
     u8 spriteId;
     u32 scrollingMonX = 0x60;
-    if (POKEDEX_PLUS_HGSS)
+    if (ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         scrollingMonX = 0x92;
 
     gPaletteFade.bufferTransferDisabled = TRUE;
@@ -2491,7 +2492,7 @@ static void CreateScrollingPokemonSprite(u8 direction, u16 selectedMon)
     u16 dexNum;
     u8 spriteId;
     u32 scrollingMonX = 0x60;
-    if (POKEDEX_PLUS_HGSS)
+    if (ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         scrollingMonX = 0x92;
 
     sPokedexView->listMovingVOffset = sPokedexView->listVOffset;
@@ -3974,7 +3975,7 @@ static void HighlightSubmenuScreenSelectBarItem(u8 a, u16 b)
 u8 DisplayCaughtMonDexPage(enum Species species, bool32 isShiny, u32 personality)
 {
     u8 taskId = 0;
-    if (POKEDEX_PLUS_HGSS)
+    if (ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         taskId = CreateTask(Task_DisplayCaughtMonDexPageHGSS, 0);
     else
         taskId = CreateTask(Task_DisplayCaughtMonDexPage, 0);
@@ -4218,7 +4219,7 @@ void PrintMonMeasurements(enum Species species, u32 owned)
 
 static u32 GetMeasurementTextPositions(u32 textElement)
 {
-    if (!POKEDEX_PLUS_HGSS)
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         return textElement;
 
     switch (textElement)
@@ -5919,7 +5920,7 @@ static void ClearSearchParameterBoxText(void)
 
 enum Species NationalPokedexNumToSpeciesForm(enum NationalDexOrder nationalNum)
 {
-    if (POKEDEX_PLUS_HGSS && nationalNum && sPokedexView && sPokedexView->formSpecies)
+    if (ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX) && nationalNum && sPokedexView && sPokedexView->formSpecies)
         return sPokedexView->formSpecies;
 
     return NationalPokedexNumToSpecies(nationalNum);

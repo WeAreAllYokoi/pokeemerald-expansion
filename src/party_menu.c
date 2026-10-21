@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_policies.h"
 #include "malloc.h"
 #include "battle.h"
 #include "battle_anim.h"
@@ -8285,7 +8286,7 @@ void IsLastMonThatKnowsSurf(void)
             }
         }
         if (AnyStorageMonWithMove(move) != TRUE)
-            gSpecialVar_Result = !P_CAN_FORGET_HIDDEN_MOVE;
+            gSpecialVar_Result = !ADMG_GetFeaturePolicy(ADMG_POLICY_FORGET_HIDDEN_MOVES);
     }
 }
 

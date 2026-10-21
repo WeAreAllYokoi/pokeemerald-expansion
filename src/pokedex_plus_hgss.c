@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_policies.h"
 #include "type_icon_anim.h"
 #include "battle_main.h"
 #include "battle_util.h"
@@ -424,7 +425,7 @@ static const struct WindowTemplate sInfoScreen_WindowTemplates[] =
 
 bool32 TryInitWindows_HGSS(void)
 {
-    if (!POKEDEX_PLUS_HGSS)
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         return FALSE;
 
     InitWindows(sInfoScreen_WindowTemplates);
@@ -571,7 +572,7 @@ static const struct WindowTemplate sNewEntryInfoScreen_WindowTemplates[] =
 //************************************
 bool32 TryOpenPokedexPage_HGSS(u8 taskId, u8 page)
 {
-    if (!POKEDEX_PLUS_HGSS)
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         return FALSE;
     
     if (LoadPokedexListPage(page))
@@ -584,7 +585,7 @@ bool32 TryOpenPokedexPage_HGSS(u8 taskId, u8 page)
 
 bool32 TryLoadPokedexBgPalette_HGSS(bool8 isSearchResults)
 {
-    if (!POKEDEX_PLUS_HGSS)
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         return FALSE;
 
     if (!HGSS_DARK_MODE)
@@ -733,7 +734,7 @@ static bool8 LoadPokedexListPage(u8 page)
 #define MON_LIST_X 2
 bool32 TryCreateMonListEntry_HGSS(u8 position, u16 b, u16 ignored)
 {
-    if (!POKEDEX_PLUS_HGSS)
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         return FALSE;
 
     s16 entryNum;
@@ -1057,7 +1058,7 @@ static void CreateInterfaceSprites(u8 page)
 
 bool32 TryMoveMonForInfoScreen_HGSS(struct Sprite *sprite)
 {
-    if (!POKEDEX_PLUS_HGSS)
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         return FALSE;
 
     if (sprite->x > MON_PAGE_X)
@@ -1295,7 +1296,7 @@ static void SpriteCB_StatBarsBg(struct Sprite *sprite)
 
 bool32 Task_TryLoadInfoScreen_HGSS(u8 taskId)
 {
-    if (!POKEDEX_PLUS_HGSS)
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         return FALSE;
 
     switch (gMain.state)
@@ -1404,10 +1405,10 @@ bool32 Task_TryLoadInfoScreen_HGSS(u8 taskId)
 
 bool32 TryHandleInfoScreenInput_HGSS(u8 taskId)
 {
-    if (!POKEDEX_PLUS_HGSS)
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         return FALSE;
 
-    if (POKEDEX_PLUS_HGSS && ((JOY_NEW(DPAD_RIGHT) || (JOY_NEW(R_BUTTON) && gSaveBlock2Ptr->optionsButtonMode == OPTIONS_BUTTON_MODE_LR))))
+    if (ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX) && ((JOY_NEW(DPAD_RIGHT) || (JOY_NEW(R_BUTTON) && gSaveBlock2Ptr->optionsButtonMode == OPTIONS_BUTTON_MODE_LR))))
     {
         sPokedexView->selectedScreen = AREA_SCREEN;
         BeginNormalPaletteFade(0xFFFFFFEB, 0, 0, 0x10, RGB_BLACK);
@@ -1428,7 +1429,7 @@ bool32 TryHandleInfoScreenInput_HGSS(u8 taskId)
 //************************************
 bool32 TryLoadAreaScreen_HGSS(u8 taskId)
 {
-    if (!POKEDEX_PLUS_HGSS)
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         return FALSE;
 
     switch (gMain.state)
@@ -1464,7 +1465,7 @@ bool32 TryLoadAreaScreen_HGSS(u8 taskId)
 
 bool32 TrySwitchScreensFromAreaScreen_HGSS(u8 taskId)
 {
-    if (!POKEDEX_PLUS_HGSS)
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         return FALSE;
 
     switch (sPokedexView->screenSwitchState)
@@ -1526,8 +1527,8 @@ void Task_DisplayCaughtMonDexPageHGSS(u8 taskId)
     enum Species species;
     enum NationalDexOrder dexNum;
 
-    if (!POKEDEX_PLUS_HGSS) return; // prevents the compiler from emitting static .rodata
-                                    // if the feature is disabled
+    // Skip the HGSS caught-Pokémon page when its runtime policy is disabled.
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX)) return;
 
     species = gTasks[taskId].tSpecies;
     dexNum = SpeciesToNationalPokedexNum(species);
@@ -4209,7 +4210,7 @@ static void Task_HandleFormsScreenInput(u8 taskId)
     }
 }
 
-#define FORM_SPECIES_END (0xffff)
+/* Use FORM_SPECIES_END from pokemon.h so form lists share the same 32-bit sentinel. */
 
 static void PrintForms(u8 taskId, enum Species species)
 {
@@ -4322,7 +4323,7 @@ static void Task_ExitFormsScreen(u8 taskId)
 
 bool32 TryLoadCryScreen_HGSS(u8 taskId)
 {
-    if (!POKEDEX_PLUS_HGSS)
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         return FALSE;
 
     switch (gMain.state)
@@ -4430,7 +4431,7 @@ bool32 TryLoadCryScreen_HGSS(u8 taskId)
 
 bool32 TrySwitchScreensFromCryScreen_HGSS(u8 taskId)
 {
-    if (!POKEDEX_PLUS_HGSS)
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         return FALSE;
 
     switch (sPokedexView->screenSwitchState)
@@ -4458,7 +4459,7 @@ bool32 TrySwitchScreensFromCryScreen_HGSS(u8 taskId)
 //************************************
 bool32 TryLoadSizeScreen_HGSS(u8 taskId)
 {
-    if (!POKEDEX_PLUS_HGSS)
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         return FALSE;
 
     u8 spriteId;
@@ -4559,7 +4560,7 @@ bool32 TryLoadSizeScreen_HGSS(u8 taskId)
 
 bool32 TryLoadPlayArrowPalette_HGSS(bool8 cryPlaying)
 {
-    if (!POKEDEX_PLUS_HGSS)
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         return FALSE;
 
     u16 color;
@@ -4626,7 +4627,7 @@ bool32 TryLoadPlayArrowPalette_HGSS(bool8 cryPlaying)
 
 bool32 TryLoadSearchMenu_HGSS(u8 taskId)
 {
-    if (!POKEDEX_PLUS_HGSS)
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         return FALSE;
 
     u16 i;
@@ -4712,7 +4713,7 @@ bool32 TryLoadSearchMenu_HGSS(u8 taskId)
 
 void HandleDestroyStatBars_HGSS(void)
 {
-    if (!POKEDEX_PLUS_HGSS)
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         return;
 
     TryDestroyStatBars();
@@ -4720,7 +4721,7 @@ void HandleDestroyStatBars_HGSS(void)
 
 void HandleDestroyStatBarsBg_HGSS(void)
 {
-    if (!POKEDEX_PLUS_HGSS)
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         return;
 
     TryDestroyStatBarsBg();
@@ -4728,7 +4729,7 @@ void HandleDestroyStatBarsBg_HGSS(void)
 
 void HandleCreateStatBars_HGSS(void)
 {
-    if (!POKEDEX_PLUS_HGSS)
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         return;
 
     if (sPokedexView->menuIsOpen == FALSE && sPokedexView->menuY == 8)
@@ -4740,7 +4741,7 @@ void HandleCreateStatBars_HGSS(void)
 
 void HandleCreateStatBarsDPAD_HGSS(void)
 {
-    if (!POKEDEX_PLUS_HGSS)
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         return;
 
     if (!sPokedexView->scrollTimer && !sPokedexView->scrollSpeed &&sPokedexView->justScrolled)
@@ -4749,7 +4750,7 @@ void HandleCreateStatBarsDPAD_HGSS(void)
 
 void HandleCaughtMonPageTypeIcons_HGSS(void)
 {
-    if (!POKEDEX_PLUS_HGSS)
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         return;
 
     SetSpriteInvisibility(0, TRUE);
@@ -4758,7 +4759,7 @@ void HandleCaughtMonPageTypeIcons_HGSS(void)
 
 bool32 TryHandleCaughtMonPageFlicker_HGSS(u8 taskId)
 {
-    if (!POKEDEX_PLUS_HGSS)
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_HGSS_POKEDEX))
         return FALSE;
 
     // Implementation of HGSS screen flickering like vanilla did not
