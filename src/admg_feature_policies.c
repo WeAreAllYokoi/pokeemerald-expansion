@@ -1,4 +1,5 @@
 #include "global.h"
+#include "config/wild_encounter.h"
 #include "admg_feature_policies.h"
 #include "admg_retention.h"
 #include "config/fishing.h"
