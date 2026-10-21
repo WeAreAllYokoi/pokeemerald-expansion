@@ -27,6 +27,14 @@ struct BerryInfo
     u8 sour;
     u8 smoothness;
     u8 drainRate;
+    // Growth, yield and color presets for runtime selection
+    // The saved EnigmaBerryInfo record ends before these fields, so its getters use the original fields
+    u8 growthDurations[6]; // GEN_3, GEN_4, GEN_5, GEN_6_XY, GEN_6_ORAS, GEN_7
+    u8 maxYields[4];       // GEN_3, GEN_4, GEN_6_XY, GEN_6_ORAS
+    u8 minYields[4];
+    enum BerryColor colorXY:4;
+    enum BerryColor colorORAS:4;
+    bool8 hasColorPresets;
 };
 
 struct Berry

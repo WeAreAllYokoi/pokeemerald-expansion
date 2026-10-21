@@ -1,5 +1,6 @@
 #include "global.h"
 #include "admg_feature_bindings.h"
+#include "admg_feature_policies.h"
 #include "item.h"
 #include "berry.h"
 #include "pokeball.h"
@@ -864,8 +865,13 @@ u32 GetItemHoldEffectParam(enum Item itemId)
     return gItemsInfo[SanitizeItemId(itemId)].holdEffectParam;
 }
 
+// Keep both mulch descriptions so GetItemDescription can choose one at runtime
+static const u8 sText_MulchUnsuitableForSoil[] = _("It appears to be\nunsuitable for\nthe soil.");
+
 const u8 *GetItemDescription(enum Item itemId)
 {
+    if (itemId >= ITEM_GROWTH_MULCH && itemId <= ITEM_AMAZE_MULCH && !ADMG_GetFeaturePolicy(ADMG_POLICY_BERRY_MULCH))
+        return sText_MulchUnsuitableForSoil;
     return gItemsInfo[SanitizeItemId(itemId)].description;
 }
 

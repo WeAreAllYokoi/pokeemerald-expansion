@@ -41,16 +41,21 @@ BerryTree_EventScript_WantToPlant::
 	goto_if_eq VAR_RESULT, NO, BerryTree_EventScript_CancelPlanting
 	end
 
+@ Recipe38: the mulch, weeds, pests, six-stage and mutation branches are always assembled; each is chosen by its policy
+@ at run time (ADMG_ScriptTestFeaturePolicy sets the comparison result to EQUAL when the policy is on).
 BerryTree_EventScript_WantToMulch::
-.if OW_BERRY_MULCH_USAGE == TRUE
+	callnative ADMG_ScriptTestFeaturePolicy, requests_effects=1
+	.4byte ADMG_SCRIPT_POLICY_BERRY_MULCH
+	goto_if_ne BerryTree_EventScript_CancelPlanting
 	msgbox BerryTree_Text_WantToMulch, MSGBOX_YESNO
 	goto_if_eq VAR_RESULT, YES, BerryTree_EventScript_ChooseMulchToUse
 	goto_if_eq VAR_RESULT, NO, BerryTree_EventScript_CancelPlanting
-.endif
 	end
 
 BerryTree_EventScript_WantToPlantMulch::
-.if OW_BERRY_MULCH_USAGE == TRUE
+	callnative ADMG_ScriptTestFeaturePolicy, requests_effects=1
+	.4byte ADMG_SCRIPT_POLICY_BERRY_MULCH
+	goto_if_ne BerryTree_EventScript_ChooseBerryToPlant
 	message BerryTree_Text_ItsSoftLoamySoil
 	waitmessage
 	multichoice 0, 0, MULTI_BERRY_PLOT, FALSE
@@ -66,16 +71,15 @@ BerryTree_EventScript_ChooseMulchToUse::
 	special Bag_ChooseMulch
 	waitstate
 	goto_if_eq VAR_ITEM_ID, 0, BerryTree_EventScript_CancelPlanting
-	removeitem VAR_ITEM_ID
+	@ The mulching transaction (ObjectEventInteractionApplyMulch) takes the mulch from the bag.
 	call BerryTree_EventScript_UseMulch
-.endif
 
 BerryTree_EventScript_ChooseBerryToPlant::
 	fadescreen FADE_TO_BLACK
 	closemessage
 	special Bag_ChooseBerry
 	goto_if_eq VAR_ITEM_ID, 0, BerryTree_EventScript_CancelPlanting
-	removeitem VAR_ITEM_ID
+	@ The planting transaction (ObjectEventInteractionPlantBerryTree) takes the berry from the bag.
 	call BerryTree_EventScript_PlantBerry
 
 BerryTree_EventScript_CancelPlanting::
@@ -85,7 +89,15 @@ BerryTree_EventScript_CancelPlanting::
 BerryTree_EventScript_CheckBerryStage1::
 	lockall
 	special ObjectEventInteractionGetBerryCountString
+	callnative ADMG_ScriptTestFeaturePolicy, requests_effects=1
+	.4byte ADMG_SCRIPT_POLICY_BERRY_SIX_STAGES
+	goto_if_eq BerryTree_EventScript_CheckBerryStage1_SixStages
 	message BerryTree_Text_BerryGrowthStage1
+	goto BerryTree_EventScript_ShowGrowthStage
+
+BerryTree_EventScript_CheckBerryStage1_SixStages::
+	message BerryTree_Text_BerryGrowthStage1_SixStages
+BerryTree_EventScript_ShowGrowthStage::
 	waitmessage
 	waitbuttonpress
 	goto BerryTree_EventScript_WantToWater
@@ -93,18 +105,28 @@ BerryTree_EventScript_CheckBerryStage1::
 BerryTree_EventScript_CheckBerryStage2::
 	lockall
 	special ObjectEventInteractionGetBerryName
+	callnative ADMG_ScriptTestFeaturePolicy, requests_effects=1
+	.4byte ADMG_SCRIPT_POLICY_BERRY_SIX_STAGES
+	goto_if_eq BerryTree_EventScript_CheckBerryStage2_SixStages
 	message BerryTree_Text_BerryGrowthStage2
-	waitmessage
-	waitbuttonpress
-	goto BerryTree_EventScript_WantToWater
+	goto BerryTree_EventScript_ShowGrowthStage
+
+BerryTree_EventScript_CheckBerryStage2_SixStages::
+	message BerryTree_Text_BerryGrowthStage2_SixStages
+	goto BerryTree_EventScript_ShowGrowthStage
 
 BerryTree_EventScript_CheckBerryStage3::
 	lockall
 	special ObjectEventInteractionGetBerryName
+	callnative ADMG_ScriptTestFeaturePolicy, requests_effects=1
+	.4byte ADMG_SCRIPT_POLICY_BERRY_SIX_STAGES
+	goto_if_eq BerryTree_EventScript_CheckBerryStage3_SixStages
 	message BerryTree_Text_BerryGrowthStage3
-	waitmessage
-	waitbuttonpress
-	goto BerryTree_EventScript_WantToWater
+	goto BerryTree_EventScript_ShowGrowthStage
+
+BerryTree_EventScript_CheckBerryStage3_SixStages::
+	message BerryTree_Text_BerryGrowthStage3_SixStages
+	goto BerryTree_EventScript_ShowGrowthStage
 
 BerryTree_EventScript_CheckBerryStageTrunk::
 	lockall
@@ -126,10 +148,15 @@ BerryTree_EventScript_CheckBerryStage4::
 	call BerryTree_EventScript_GetCareAdverb
 	lockall
 	special ObjectEventInteractionGetBerryName
+	callnative ADMG_ScriptTestFeaturePolicy, requests_effects=1
+	.4byte ADMG_SCRIPT_POLICY_BERRY_SIX_STAGES
+	goto_if_eq BerryTree_EventScript_CheckBerryStage4_SixStages
 	message BerryTree_Text_BerryGrowthStage4
-	waitmessage
-	waitbuttonpress
-	goto BerryTree_EventScript_WantToWater
+	goto BerryTree_EventScript_ShowGrowthStage
+
+BerryTree_EventScript_CheckBerryStage4_SixStages::
+	message BerryTree_Text_BerryGrowthStage4_SixStages
+	goto BerryTree_EventScript_ShowGrowthStage
 
 @ VAR_0x8005 here is the number of times watered
 @ Buffered by ObjectEventInteractionGetBerryTreeData
@@ -153,9 +180,8 @@ BerryTree_EventScript_CheckBerryFullyGrown::
 	lock
 	faceplayer
 	special ObjectEventInteractionGetBerryCountString
-.if OW_BERRY_MUTATIONS == TRUE
+	@ VAR_RESULT is TRUE only for a mutation, which the mutation policy already gates (GetTreeMutationValue).
 	goto_if_eq VAR_RESULT, TRUE, BerryTree_EventScript_CheckBerryFullyGrown_Mutation
-.endif
 	msgbox BerryTree_Text_WantToPick, MSGBOX_YESNO
 	goto_if_eq VAR_RESULT, YES, BerryTree_EventScript_PickBerry
 	goto_if_eq VAR_RESULT, NO, BerryTree_EventScript_CancelPickingBerry
@@ -167,13 +193,10 @@ BerryTree_EventScript_CheckBerryFullyGrown::
 
 BerryTree_EventScript_PickBerry::
 	special ObjectEventInteractionPickBerryTree
+	@ The harvesting transaction (ObjectEventInteractionPickBerryTree) has already counted the pick and removed the tree.
 	goto_if_eq VAR_0x8004, BERRY_NORMAL_BAG_FULL, BerryTree_EventScript_BerryPocketFull
-.if OW_BERRY_MUTATIONS == TRUE
 	goto_if_eq VAR_0x8004, BERRY_MUTATION_BAG_FULL, BerryTree_EventScript_BerryPocketFull_Mutation
 	goto_if_eq VAR_0x8004, BERRY_MUTATION_SPACE_IN_BAG, BerryTree_EventScript_PickBerry_Mutation
-.endif
-	special IncrementDailyPickedBerries
-	special ObjectEventInteractionRemoveBerryTree
 	message BerryTree_Text_PickedTheBerry
 	delay 10
 	showberrydescription
@@ -210,12 +233,12 @@ BerryTree_EventScript_ItemUsePlantBerry::
 	end
 
 BerryTree_EventScript_WantToWater::
-.if OW_BERRY_PESTS == TRUE
-	call BerryTree_EventScript_CheckForPests
-.endif
-.if OW_BERRY_WEEDS == TRUE
-	call BerryTree_EventScript_CheckForWeed
-.endif
+	callnative ADMG_ScriptTestFeaturePolicy, requests_effects=1
+	.4byte ADMG_SCRIPT_POLICY_BERRY_PESTS
+	call_if_eq BerryTree_EventScript_CheckForPests
+	callnative ADMG_ScriptTestFeaturePolicy, requests_effects=1
+	.4byte ADMG_SCRIPT_POLICY_BERRY_WEEDS
+	call_if_eq BerryTree_EventScript_CheckForWeed
 	checkitem ITEM_WAILMER_PAIL
 	goto_if_eq VAR_RESULT, FALSE, BerryTree_EventScript_DontWater
 	specialvar VAR_RESULT, CanWaterBerryPlot
@@ -245,9 +268,8 @@ BerryTree_EventScript_WaterBerry::
 	end
 
 BerryTree_EventScript_PlantBerry::
+	@ The planting transaction counts the planting (game stat and daily count) once.
 	special ObjectEventInteractionPlantBerryTree
-	incrementgamestat GAME_STAT_PLANTED_BERRIES
-	special IncrementDailyPlantedBerries
 	special ObjectEventInteractionGetBerryCountString
 	message BerryTree_Text_PlantedOneBerry
 	waitmessage
@@ -266,25 +288,22 @@ BerryTree_Text_PlantedOneBerry:
 	.string "the soft, loamy soil.$"
 
 BerryTree_Text_BerryGrowthStage1:
-.if OW_BERRY_SIX_STAGES == TRUE
-	.string "This is where you planted the\n{STR_VAR_1}!$"
-.else
 	.string "One {STR_VAR_1} was planted here.$"
-.endif
+
+BerryTree_Text_BerryGrowthStage1_SixStages:
+	.string "This is where you planted the\n{STR_VAR_1}!$"
 
 BerryTree_Text_BerryGrowthStage2:
-.if OW_BERRY_SIX_STAGES == TRUE
-	.string "The {STR_VAR_1} is sprouting!$"
-.else
 	.string "{STR_VAR_1} has sprouted.$"
-.endif
+
+BerryTree_Text_BerryGrowthStage2_SixStages:
+	.string "The {STR_VAR_1} is sprouting!$"
 
 BerryTree_Text_BerryGrowthStage3:
-.if OW_BERRY_SIX_STAGES == TRUE
-	.string "The {STR_VAR_1}'s seedling is growing well!$"
-.else
 	.string "This {STR_VAR_1} plant is growing taller.$"
-.endif
+
+BerryTree_Text_BerryGrowthStage3_SixStages:
+	.string "The {STR_VAR_1}'s seedling is growing well!$"
 
 BerryTree_Text_BerryGrowthStageTrunk:
 	.string "The {STR_VAR_1}'s trunk is getting bigger!$"
@@ -293,12 +312,11 @@ BerryTree_Text_BerryGrowthStageBudding:
 	.string "The {STR_VAR_1} tree has buds!$"
 
 BerryTree_Text_BerryGrowthStage4:
-.if OW_BERRY_SIX_STAGES == TRUE
-	.string "The {STR_VAR_1} tree is in bloom!$"
-.else
 	.string "These {STR_VAR_1} flowers are blooming\n"
 	.string "{STR_VAR_2}.$"
-.endif
+
+BerryTree_Text_BerryGrowthStage4_SixStages:
+	.string "The {STR_VAR_1} tree is in bloom!$"
 
 BerryTree_Text_CareAdverbGreat:
 	.string "very beautifully$"
@@ -344,7 +362,6 @@ BerryTree_Text_PlantIsDelighted:
 BerryTree_Text_ExclamationPoint:
 	.string "!$"
 
-.if OW_BERRY_MUTATIONS == TRUE
 BerryTree_EventScript_CheckBerryFullyGrown_Mutation:
 	msgbox BerryTree_Text_WantToPick_Mutation, MSGBOX_YESNO
 	goto_if_eq VAR_RESULT, YES, BerryTree_EventScript_PickBerry
@@ -365,8 +382,6 @@ BerryTree_EventScript_BerryPocketFull_Mutation::
 	end
 
 BerryTree_EventScript_PickBerry_Mutation::
-	special IncrementDailyPickedBerries
-	special ObjectEventInteractionRemoveBerryTree
 	message BerryTree_Text_PickedTheBerry_Mutation
 	playfanfare MUS_OBTAIN_BERRY
 	waitmessage
@@ -402,9 +417,7 @@ BerryTree_Text_PutAwayBerry_Mutation:
 	.string "BERRIES POCKET.\p"
 	.string "The soil returned to its soft and\n"
 	.string "loamy state.$"
-.endif
 
-.if OW_BERRY_MULCH_USAGE == TRUE
 BerryTree_EventScript_UseMulch::
 	special ObjectEventInteractionApplyMulch
 	message BerryTree_Text_ScatteredMulch
@@ -419,9 +432,7 @@ BerryTree_Text_WantToMulch:
 BerryTree_Text_ScatteredMulch:
 	.string "{PLAYER} scattered the {STR_VAR_1}\n"
 	.string "on the soft, loamy soil.$"
-.endif
 
-.if OW_BERRY_WEEDS == TRUE
 BerryTree_EventScript_CheckForWeed::
 	specialvar VAR_RESULT, ObjectEventInteractionBerryHasWeed
 	call_if_eq VAR_RESULT, TRUE, BerryTree_EventScript_WeedIsGrowing
@@ -445,9 +456,7 @@ BerryTree_Text_WeedIsGrowing:
 
 BerryTree_Text_PulledOutTheWeed:
 	.string "{PLAYER} pulled out the weed!$"
-.endif
 
-.if OW_BERRY_PESTS == TRUE
 BerryTree_EventScript_CheckForPests::
 	specialvar VAR_RESULT, ObjectEventInteractionBerryHasPests
 	call_if_eq VAR_RESULT, TRUE, BerryTree_EventScript_EncounterPests
@@ -462,4 +471,12 @@ BerryTree_EventScript_EncounterPests::
 
 BerryTree_Text_APokemonAppeared:
 	.string "A Pokémon appeared!$"
-.endif
+
+@ A mod's pest interaction (ADMG_StartBerryPestInteraction): the facing tree's own pest check and scripted wild battle,
+@ then the outcome is recorded once the battle has returned to the field.
+BerryTree_EventScript_PestInteraction::
+	lockall
+	call BerryTree_EventScript_CheckForPests
+	callnative ADMG_ScriptFinishBerryPestInteraction, requests_effects=1
+	releaseall
+	end

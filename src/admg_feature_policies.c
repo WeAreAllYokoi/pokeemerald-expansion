@@ -10,6 +10,13 @@
 #include "config/summary_screen.h"
 #include "config/pokedex_plus_hgss.h"
 #include "config/overworld.h"
+#include "script.h"
+#include "constants/admg_feature_policy_ids.h"
+
+_Static_assert(ADMG_SCRIPT_POLICY_BERRY_MULCH == ADMG_POLICY_BERRY_MULCH, "script policy ID");
+_Static_assert(ADMG_SCRIPT_POLICY_BERRY_WEEDS == ADMG_POLICY_BERRY_WEEDS, "script policy ID");
+_Static_assert(ADMG_SCRIPT_POLICY_BERRY_PESTS == ADMG_POLICY_BERRY_PESTS, "script policy ID");
+_Static_assert(ADMG_SCRIPT_POLICY_BERRY_SIX_STAGES == ADMG_POLICY_BERRY_SIX_STAGES, "script policy ID");
 
 /* Keep this a real call (never inlined) so mods can override feature policies at runtime.
  * Without an override, it returns the corresponding configuration macro's value. */
@@ -41,6 +48,13 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeaturePolicyDefault(ADMG_Word policy)
     case ADMG_POLICY_TIME_ENCOUNTERS: return OW_TIME_OF_DAY_ENCOUNTERS;
     case ADMG_POLICY_DISABLE_TIME_ENCOUNTER_FALLBACK: return OW_TIME_OF_DAY_DISABLE_FALLBACK;
     case ADMG_POLICY_MAP_PREVIEWS: return MPS_ENABLE_MAP_PREVIEWS;
+    case ADMG_POLICY_BERRY_MOISTURE: return OW_BERRY_MOISTURE;
+    case ADMG_POLICY_BERRY_ALWAYS_WATERABLE: return OW_BERRY_ALWAYS_WATERABLE;
+    case ADMG_POLICY_BERRY_MULCH: return OW_BERRY_MULCH_USAGE;
+    case ADMG_POLICY_BERRY_WEEDS: return OW_BERRY_WEEDS;
+    case ADMG_POLICY_BERRY_PESTS: return OW_BERRY_PESTS;
+    case ADMG_POLICY_BERRY_SIX_STAGES: return OW_BERRY_SIX_STAGES;
+    case ADMG_POLICY_BERRY_IMMORTAL: return OW_BERRY_IMMORTAL;
     default: return 0;
     }
 }
@@ -52,7 +66,15 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_IsFeaturePolicyKnown(ADMG_Word policy)
         || policy == ADMG_POLICY_DEXNAV || policy == ADMG_POLICY_DEXNAV_SEARCH_LEVELS
         || policy == ADMG_POLICY_OVERWORLD_ENCOUNTERS
         || policy == ADMG_POLICY_TIME_ENCOUNTERS || policy == ADMG_POLICY_DISABLE_TIME_ENCOUNTER_FALLBACK
-        || policy == ADMG_POLICY_MAP_PREVIEWS;
+        || policy == ADMG_POLICY_MAP_PREVIEWS
+        || (policy >= ADMG_POLICY_BERRY_MOISTURE && policy <= ADMG_POLICY_BERRY_IMMORTAL);
+}
+
+void ADMG_ScriptTestFeaturePolicy(struct ScriptContext *ctx)
+{
+    u32 policy = ScriptReadWord(ctx);
+    Script_RequestEffects(SCREFF_V1);
+    ctx->comparisonResult = ADMG_GetFeaturePolicy(policy) != 0 ? 1 : 0;
 }
 
 ADMG_RETAIN_FUNCTION(ADMG_GetFeaturePolicy);

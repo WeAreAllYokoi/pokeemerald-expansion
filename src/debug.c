@@ -1,5 +1,6 @@
 #include "global.h"
 #include "admg_feature_bindings.h"
+#include "admg_feature_policies.h"
 #include "admg_trainer.h"
 #include "battle.h"
 #include "battle_setup.h"
@@ -4689,7 +4690,7 @@ static void DebugAction_BerryFunctions_Pests(u8 taskId)
 {
     u8 i;
 
-    if (!OW_BERRY_PESTS)
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_BERRY_PESTS))
     {
         Debug_DestroyMenu_Full_Script(taskId, Debug_BerryPestsDisabled);
         return;
@@ -4712,7 +4713,7 @@ static void DebugAction_BerryFunctions_Weeds(u8 taskId)
 {
     u8 i;
 
-    if (!OW_BERRY_WEEDS)
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_BERRY_WEEDS))
     {
         Debug_DestroyMenu_Full_Script(taskId, Debug_BerryWeedsDisabled);
         return;

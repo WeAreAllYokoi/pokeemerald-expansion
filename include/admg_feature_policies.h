@@ -26,10 +26,22 @@ enum ADMG_FeaturePolicyId
     ADMG_POLICY_TIME_ENCOUNTERS = 24,
     ADMG_POLICY_DISABLE_TIME_ENCOUNTER_FALLBACK = 25,
     ADMG_POLICY_MAP_PREVIEWS = 26,
+    ADMG_POLICY_BERRY_MOISTURE = 12,
+    ADMG_POLICY_BERRY_ALWAYS_WATERABLE = 13,
+    ADMG_POLICY_BERRY_MULCH = 14,
+    ADMG_POLICY_BERRY_WEEDS = 15,
+    ADMG_POLICY_BERRY_PESTS = 16,
+    ADMG_POLICY_BERRY_SIX_STAGES = 17,
+    ADMG_POLICY_BERRY_IMMORTAL = 18,
 };
+
+struct ScriptContext;
 
 ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeaturePolicy(ADMG_Word policy);
 ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeaturePolicyDefault(ADMG_Word policy);
 ADMG_NATIVE_ENTRY ADMG_Word ADMG_IsFeaturePolicyKnown(ADMG_Word policy);
+// Script command: callnative ADMG_ScriptTestFeaturePolicy, requests_effects=1 followed by .4byte <policy>; the comparison
+// result is EQUAL when the policy is on (goto_if_eq / goto_if_ne <destination>).
+void ADMG_ScriptTestFeaturePolicy(struct ScriptContext *ctx);
 
 #endif

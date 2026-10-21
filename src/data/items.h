@@ -3477,17 +3477,10 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("Growth Mulch"),
         .pluralName = ITEM_PLURAL_NAME("Growth Mulch"),
         .price = 200,
-    #if OW_BERRY_MULCH_USAGE == TRUE
         .description = COMPOUND_STRING(
             "Speeds up Berry\n"
             "growth, but dries\n"
             "the soil faster."),
-    #else
-        .description = COMPOUND_STRING(
-            "It appears to be\n"
-            "unsuitable for\n"
-            "the soil."),
-    #endif
         .pocket = POCKET_ITEMS,
         .sortType = ITEM_TYPE_GROWTH,
         .type = ITEM_USE_BAG_MENU,
@@ -3503,17 +3496,10 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("Damp Mulch"),
         .pluralName = ITEM_PLURAL_NAME("Damp Mulch"),
         .price = 200,
-    #if OW_BERRY_MULCH_USAGE == TRUE
         .description = COMPOUND_STRING(
             "Causes the soil to\n"
             "dry slower, but\n"
             "slows Berry growth."),
-    #else
-        .description = COMPOUND_STRING(
-            "It appears to be\n"
-            "unsuitable for\n"
-            "the soil."),
-    #endif
         .pocket = POCKET_ITEMS,
         .sortType = ITEM_TYPE_GROWTH,
         .type = ITEM_USE_BAG_MENU,
@@ -3529,17 +3515,10 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("Stable Mulch"),
         .pluralName = ITEM_PLURAL_NAME("Stable Mulch"),
         .price = 200,
-    #if OW_BERRY_MULCH_USAGE == TRUE
         .description = COMPOUND_STRING(
             "Extends the time\n"
             "ripened Berries\n"
             "remain on plants."),
-    #else
-        .description = COMPOUND_STRING(
-            "It appears to be\n"
-            "unsuitable for\n"
-            "the soil."),
-    #endif
         .pocket = POCKET_ITEMS,
         .sortType = ITEM_TYPE_GROWTH,
         .type = ITEM_USE_BAG_MENU,
@@ -3555,17 +3534,10 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("Gooey Mulch"),
         .pluralName = ITEM_PLURAL_NAME("Gooey Mulch"),
         .price = 200,
-    #if OW_BERRY_MULCH_USAGE == TRUE
         .description = COMPOUND_STRING(
             "Ups the times new\n"
             "plants grow where\n"
             "mature ones withered."),
-    #else
-        .description = COMPOUND_STRING(
-            "It appears to be\n"
-            "unsuitable for\n"
-            "the soil."),
-    #endif
         .pocket = POCKET_ITEMS,
         .sortType = ITEM_TYPE_GROWTH,
         .type = ITEM_USE_BAG_MENU,
@@ -3581,17 +3553,10 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("Rich Mulch"),
         .pluralName = ITEM_PLURAL_NAME("Rich Mulch"),
         .price = 200,
-    #if OW_BERRY_MULCH_USAGE == TRUE
         .description = COMPOUND_STRING(
             "A fertilizer for\n"
             "growing Berries that\n"
             "increases the harvest."),
-    #else
-        .description = COMPOUND_STRING(
-            "It appears to be\n"
-            "unsuitable for\n"
-            "the soil."),
-    #endif
         .pocket = POCKET_ITEMS,
         .sortType = ITEM_TYPE_GROWTH,
         .type = ITEM_USE_BAG_MENU,
@@ -3607,17 +3572,10 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("Surprise Mulch"),
         .pluralName = ITEM_PLURAL_NAME("Surprise Mulch"),
         .price = 200,
-    #if OW_BERRY_MULCH_USAGE == TRUE
         .description = COMPOUND_STRING(
             "A fertilizer for\n"
             "growing Berries that\n"
             "causes mutations."),
-    #else
-        .description = COMPOUND_STRING(
-            "It appears to be\n"
-            "unsuitable for\n"
-            "the soil."),
-    #endif
         .pocket = POCKET_ITEMS,
         .sortType = ITEM_TYPE_GROWTH,
         .type = ITEM_USE_BAG_MENU,
@@ -3633,17 +3591,10 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("Boost Mulch"),
         .pluralName = ITEM_PLURAL_NAME("Boost Mulch"),
         .price = 200,
-    #if OW_BERRY_MULCH_USAGE == TRUE
         .description = COMPOUND_STRING(
             "Increases the Berry\n"
             "harvest that can be\n"
             "grown by watering."),
-    #else
-        .description = COMPOUND_STRING(
-            "It appears to be\n"
-            "unsuitable for\n"
-            "the soil."),
-    #endif
         .pocket = POCKET_ITEMS,
         .sortType = ITEM_TYPE_GROWTH,
         .type = ITEM_USE_BAG_MENU,
@@ -3659,17 +3610,10 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("Amaze Mulch"),
         .pluralName = ITEM_PLURAL_NAME("Amaze Mulch"),
         .price = 200,
-    #if OW_BERRY_MULCH_USAGE == TRUE
         .description = COMPOUND_STRING(
             "A fertilizer with the\n"
             "effects of Rich, Boost,\n"
             "and Surprise Mulch."),
-    #else
-        .description = COMPOUND_STRING(
-            "It appears to be\n"
-            "unsuitable for\n"
-            "the soil."),
-    #endif
         .pocket = POCKET_ITEMS,
         .sortType = ITEM_TYPE_GROWTH,
         .type = ITEM_USE_BAG_MENU,

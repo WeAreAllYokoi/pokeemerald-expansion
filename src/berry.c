@@ -1,5 +1,8 @@
 #include "global.h"
 #include "admg_feature_policies.h"
+#include "admg_feature_settings.h"
+#include "admg_retention.h"
+#include "battle.h"
 #include "berry.h"
 #include "event_data.h"
 #include "event_object_movement.h"
@@ -9,13 +12,18 @@
 #include "item.h"
 #include "item_menu.h"
 #include "main.h"
+#include "overworld.h"
 #include "random.h"
+#include "script.h"
 #include "script_pokemon_util.h"
 #include "sprite.h"
 #include "string_util.h"
 #include "text.h"
+#include "tv.h"
 #include "constants/event_object_movement.h"
+#include "constants/game_stat.h"
 #include "constants/items.h"
+#include "constants/vars.h"
 
 static u8 BerryTreeGetNumStagesWatered(struct BerryTree *tree);
 static u8 GetNumStagesWateredByBerryTreeId(u8 id);
@@ -34,6 +42,18 @@ static enum Species GetBerryPestSpecies(u8 berryId);
 static void TryForWeeds(struct BerryTree *tree);
 static void TryForPests(struct BerryTree *tree);
 static void AddTreeBonus(struct BerryTree *tree, u8 bonus);
+
+// Unsaved state and last result of the pest interaction; only one request can run at a time
+static struct
+{
+    u8 state;
+    bool8 encountered;
+    u8 outcome;
+    u8 tree;
+    u32 species;
+} sBerryPestInteraction;
+
+extern const u8 BerryTree_EventScript_PestInteraction[];
 
 // Check include/config/overworld.h configs and throw an error if illegal
 #if OW_BERRY_GROWTH_RATE < GEN_3 || (OW_BERRY_GROWTH_RATE > GEN_7 && OW_BERRY_GROWTH_RATE != GEN_6_ORAS)
@@ -54,8 +74,25 @@ static void AddTreeBonus(struct BerryTree *tree, u8 bonus);
 #error "OW_BERRY_COLORS must be GEN_6_XY or GEN_6_ORAS!"
 #endif
 
-#define GROWTH_DURATION(g3, g4, g5, xy, oras, g7) OW_BERRY_GROWTH_RATE == GEN_3 ? g3 : OW_BERRY_GROWTH_RATE == GEN_4 ? g4 : OW_BERRY_GROWTH_RATE == GEN_5 ? g5 : OW_BERRY_GROWTH_RATE == GEN_6_XY ? xy : OW_BERRY_GROWTH_RATE == GEN_6_ORAS ? oras : g7
-#define YIELD_RATE(g3, g4, xy, oras) OW_BERRY_YIELD_RATE == GEN_3 ? g3 : OW_BERRY_YIELD_RATE == GEN_4 ? g4 : OW_BERRY_YIELD_RATE == GEN_6_XY ? xy : oras
+// Keep the configured values in the original fields and all presets alongside them
+// ADMG_GetBerryGrowthHours/MaxYield/MinYield/Color read the selected preset at runtime
+#define GROWTH_DURATION(g3, g4, g5, xy, oras, g7) (OW_BERRY_GROWTH_RATE == GEN_3 ? g3 : OW_BERRY_GROWTH_RATE == GEN_4 ? g4 : OW_BERRY_GROWTH_RATE == GEN_5 ? g5 : OW_BERRY_GROWTH_RATE == GEN_6_XY ? xy : OW_BERRY_GROWTH_RATE == GEN_6_ORAS ? oras : g7), \
+    .growthDurations = {g3, g4, g5, xy, oras, g7}
+#define YIELD_RATE(g3, g4, xy, oras) (OW_BERRY_YIELD_RATE == GEN_3 ? g3 : OW_BERRY_YIELD_RATE == GEN_4 ? g4 : OW_BERRY_YIELD_RATE == GEN_6_XY ? xy : oras)
+#define MAX_YIELD_RATE(g3, g4, xy, oras) YIELD_RATE(g3, g4, xy, oras), .maxYields = {g3, g4, xy, oras}
+#define MIN_YIELD_RATE(g3, g4, xy, oras) YIELD_RATE(g3, g4, xy, oras), .minYields = {g3, g4, xy, oras}
+#define BERRY_COLORS(xy, oras) (OW_BERRY_COLORS == GEN_6_XY ? xy : oras), .colorXY = xy, .colorORAS = oras, .hasColorPresets = TRUE
+
+// Runtime cultivation controls, with defaults from include/config/overworld.h
+#define BERRY_MOISTURE ADMG_GetFeaturePolicy(ADMG_POLICY_BERRY_MOISTURE)
+#define BERRY_ALWAYS_WATERABLE ADMG_GetFeaturePolicy(ADMG_POLICY_BERRY_ALWAYS_WATERABLE)
+#define BERRY_MULCH_USAGE ADMG_GetFeaturePolicy(ADMG_POLICY_BERRY_MULCH)
+#define BERRY_WEEDS ADMG_GetFeaturePolicy(ADMG_POLICY_BERRY_WEEDS)
+#define BERRY_PESTS ADMG_GetFeaturePolicy(ADMG_POLICY_BERRY_PESTS)
+#define BERRY_SIX_STAGES ADMG_GetFeaturePolicy(ADMG_POLICY_BERRY_SIX_STAGES)
+#define BERRY_IMMORTAL ADMG_GetFeaturePolicy(ADMG_POLICY_BERRY_IMMORTAL)
+#define BERRY_DRAIN_RATE ADMG_GetFeatureSetting(ADMG_SETTING_BERRY_DRAIN_RATE)
+#define BERRY_MUTATION_CHANCE ADMG_GetFeatureSetting(ADMG_SETTING_BERRY_MUTATION_CHANCE)
 
 const struct Berry gBerries[NUM_BERRIES + 1] =
 {
@@ -77,8 +114,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_SOFT,
             .color = BERRY_COLOR_RED,
             .size = 20,
-            .maxYield = YIELD_RATE(3, 5, 15, 20),
-            .minYield = YIELD_RATE(2, 2, 4, 4),
+            .maxYield = MAX_YIELD_RATE(3, 5, 15, 20),
+            .minYield = MIN_YIELD_RATE(2, 2, 4, 4),
             .description1 = COMPOUND_STRING("Blooms with delicate pretty flowers."),
             .description2 = COMPOUND_STRING("The bright red Berry is very spicy."),
             .growthDuration = GROWTH_DURATION(12, 12, 18, 24, 16, 24),
@@ -108,10 +145,10 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
         .info = {
             .name = _("Chesto"),
             .firmness = BERRY_FIRMNESS_SUPER_HARD,
-            .color = OW_BERRY_COLORS == GEN_6_XY ? BERRY_COLOR_PURPLE : BERRY_COLOR_BLUE,
+            .color = BERRY_COLORS(BERRY_COLOR_PURPLE, BERRY_COLOR_BLUE),
             .size = 80,
-            .maxYield = YIELD_RATE(3, 5, 15, 20),
-            .minYield = YIELD_RATE(2, 2, 4, 4),
+            .maxYield = MAX_YIELD_RATE(3, 5, 15, 20),
+            .minYield = MIN_YIELD_RATE(2, 2, 4, 4),
             .description1 = COMPOUND_STRING("The Berry's thick skin and fruit are"),
             .description2 = COMPOUND_STRING("very tough. It is dry-tasting all over."),
             .growthDuration = GROWTH_DURATION(12, 12, 18, 24, 16, 24),
@@ -143,8 +180,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_VERY_SOFT,
             .color = BERRY_COLOR_PINK,
             .size = 40,
-            .maxYield = YIELD_RATE(3, 5, 15, 20),
-            .minYield = YIELD_RATE(2, 2, 4, 4),
+            .maxYield = MAX_YIELD_RATE(3, 5, 15, 20),
+            .minYield = MIN_YIELD_RATE(2, 2, 4, 4),
             .description1 = COMPOUND_STRING("Very sweet and delicious."),
             .description2 = COMPOUND_STRING("Also very tender - handle with care."),
             .growthDuration = GROWTH_DURATION(12, 12, 18, 24, 16, 24),
@@ -176,8 +213,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_HARD,
             .color = BERRY_COLOR_GREEN,
             .size = 32,
-            .maxYield = YIELD_RATE(3, 5, 15, 20),
-            .minYield = YIELD_RATE(2, 2, 4, 4),
+            .maxYield = MAX_YIELD_RATE(3, 5, 15, 20),
+            .minYield = MIN_YIELD_RATE(2, 2, 4, 4),
             .description1 = COMPOUND_STRING("If the leaves grow long and curly,"),
             .description2 = COMPOUND_STRING("the Berry seems to grow very bitter."),
             .growthDuration = GROWTH_DURATION(12, 12, 18, 24, 16, 24),
@@ -209,8 +246,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_SUPER_HARD,
             .color = BERRY_COLOR_YELLOW,
             .size = 50,
-            .maxYield = YIELD_RATE(3, 5, 15, 20),
-            .minYield = YIELD_RATE(2, 2, 4, 4),
+            .maxYield = MAX_YIELD_RATE(3, 5, 15, 20),
+            .minYield = MIN_YIELD_RATE(2, 2, 4, 4),
             .description1 = COMPOUND_STRING("The hard Berry is dense with a rich"),
             .description2 = COMPOUND_STRING("juice. It is quite sour."),
             .growthDuration = GROWTH_DURATION(12, 12, 18, 24, 16, 24),
@@ -242,8 +279,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_VERY_HARD,
             .color = BERRY_COLOR_RED,
             .size = 28,
-            .maxYield = YIELD_RATE(3, 5, 15, 22),
-            .minYield = YIELD_RATE(2, 2, 2, 2),
+            .maxYield = MAX_YIELD_RATE(3, 5, 15, 22),
+            .minYield = MIN_YIELD_RATE(2, 2, 2, 2),
             .description1 = COMPOUND_STRING("Grows slower than Cheri and others."),
             .description2 = COMPOUND_STRING("The smaller the Berry, the tastier."),
             .growthDuration = GROWTH_DURATION(16, 16, 24, 24, 16, 24),
@@ -275,8 +312,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_SUPER_HARD,
             .color = BERRY_COLOR_BLUE,
             .size = 35,
-            .maxYield = YIELD_RATE(3, 5, 15, 20),
-            .minYield = YIELD_RATE(2, 2, 4, 4),
+            .maxYield = MAX_YIELD_RATE(3, 5, 15, 20),
+            .minYield = MIN_YIELD_RATE(2, 2, 4, 4),
             .description1 = COMPOUND_STRING("A peculiar Berry with a mix of flavors."),
             .description2 = COMPOUND_STRING("Berries grow in half a day."),
             .growthDuration = GROWTH_DURATION(12, 16, 24, 24, 16, 24),
@@ -308,8 +345,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_HARD,
             .color = BERRY_COLOR_PINK,
             .size = 47,
-            .maxYield = YIELD_RATE(3, 5, 15, 20),
-            .minYield = YIELD_RATE(2, 2, 4, 4),
+            .maxYield = MAX_YIELD_RATE(3, 5, 15, 20),
+            .minYield = MIN_YIELD_RATE(2, 2, 4, 4),
             .description1 = COMPOUND_STRING("Loves sunlight. The Berry's color"),
             .description2 = COMPOUND_STRING("grows vivid when exposed to the sun."),
             .growthDuration = GROWTH_DURATION(12, 16, 24, 24, 16, 24),
@@ -341,8 +378,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_SUPER_HARD,
             .color = BERRY_COLOR_GREEN,
             .size = 34,
-            .maxYield = YIELD_RATE(2, 5, 20, 18),
-            .minYield = YIELD_RATE(1, 2, 3, 2),
+            .maxYield = MAX_YIELD_RATE(2, 5, 20, 18),
+            .minYield = MIN_YIELD_RATE(1, 2, 3, 2),
             .description1 = COMPOUND_STRING("Slow to grow. If raised with loving"),
             .description2 = COMPOUND_STRING("care, it may grow two Berries."),
             .growthDuration = GROWTH_DURATION(48, 48, 72, 48, 32, 48),
@@ -374,8 +411,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_VERY_HARD,
             .color = BERRY_COLOR_YELLOW,
             .size = 95,
-            .maxYield = YIELD_RATE(3, 5, 20, 27),
-            .minYield = YIELD_RATE(2, 2, 3, 3),
+            .maxYield = MAX_YIELD_RATE(3, 5, 20, 27),
+            .minYield = MIN_YIELD_RATE(2, 2, 3, 3),
             .description1 = COMPOUND_STRING("Closely related to Oran. The large"),
             .description2 = COMPOUND_STRING("Berry has a well-rounded flavor."),
             .growthDuration = GROWTH_DURATION(24, 32, 48, 48, 32, 48),
@@ -407,8 +444,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_SOFT,
             .color = BERRY_COLOR_RED,
             .size = 100,
-            .maxYield = YIELD_RATE(3, 5, 15, 15),
-            .minYield = YIELD_RATE(2, 1, 3, 3),
+            .maxYield = MAX_YIELD_RATE(3, 5, 15, 15),
+            .minYield = MIN_YIELD_RATE(2, 1, 3, 3),
             .description1 = COMPOUND_STRING("The Berry, which looks chewed up,"),
             .description2 = COMPOUND_STRING("brims with spicy substances."),
             .growthDuration = GROWTH_DURATION(24, 20, 30, 24, 16, 24),
@@ -438,10 +475,10 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
         .info = {
             .name = _("Wiki"),
             .firmness = BERRY_FIRMNESS_HARD,
-            .color = OW_BERRY_COLORS == GEN_6_XY ? BERRY_COLOR_PURPLE : BERRY_COLOR_BLUE,
+            .color = BERRY_COLORS(BERRY_COLOR_PURPLE, BERRY_COLOR_BLUE),
             .size = 115,
-            .maxYield = YIELD_RATE(3, 5, 15, 15),
-            .minYield = YIELD_RATE(2, 1, 3, 3),
+            .maxYield = MAX_YIELD_RATE(3, 5, 15, 15),
+            .minYield = MIN_YIELD_RATE(2, 1, 3, 3),
             .description1 = COMPOUND_STRING("The Berry is said to have grown lumpy"),
             .description2 = COMPOUND_STRING("to help Pokémon grip it."),
             .growthDuration = GROWTH_DURATION(24, 20, 30, 24, 16, 24),
@@ -473,8 +510,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_HARD,
             .color = BERRY_COLOR_PINK,
             .size = 126,
-            .maxYield = YIELD_RATE(3, 5, 15, 15),
-            .minYield = YIELD_RATE(2, 1, 3, 3),
+            .maxYield = MAX_YIELD_RATE(3, 5, 15, 15),
+            .minYield = MIN_YIELD_RATE(2, 1, 3, 3),
             .description1 = COMPOUND_STRING("The Berry turns curvy as it grows."),
             .description2 = COMPOUND_STRING("The curvier, the sweeter and tastier."),
             .growthDuration = GROWTH_DURATION(24, 20, 30, 24, 16, 24),
@@ -506,8 +543,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_SUPER_HARD,
             .color = BERRY_COLOR_GREEN,
             .size = 64,
-            .maxYield = YIELD_RATE(3, 5, 15, 15),
-            .minYield = YIELD_RATE(2, 1, 3, 3),
+            .maxYield = MAX_YIELD_RATE(3, 5, 15, 15),
+            .minYield = MIN_YIELD_RATE(2, 1, 3, 3),
             .description1 = COMPOUND_STRING("The flower is dainty. It is rare in its"),
             .description2 = COMPOUND_STRING("ability to grow without light."),
             .growthDuration = GROWTH_DURATION(24, 20, 30, 24, 16, 24),
@@ -539,8 +576,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_SOFT,
             .color = BERRY_COLOR_YELLOW,
             .size = 223,
-            .maxYield = YIELD_RATE(3, 5, 15, 15),
-            .minYield = YIELD_RATE(2, 1, 3, 3),
+            .maxYield = MAX_YIELD_RATE(3, 5, 15, 15),
+            .minYield = MIN_YIELD_RATE(2, 1, 3, 3),
             .description1 = COMPOUND_STRING("The Berry is very big and sour."),
             .description2 = COMPOUND_STRING("It takes at least a day to grow."),
             .growthDuration = GROWTH_DURATION(24, 20, 30, 24, 16, 24),
@@ -572,8 +609,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_VERY_HARD,
             .color = BERRY_COLOR_RED,
             .size = 120,
-            .maxYield = YIELD_RATE(6, 10, 15, 20),
-            .minYield = YIELD_RATE(3, 2, 3, 4),
+            .maxYield = MAX_YIELD_RATE(6, 10, 15, 20),
+            .minYield = MIN_YIELD_RATE(3, 2, 3, 4),
             .description1 = COMPOUND_STRING("The red Berry tastes slightly spicy."),
             .description2 = COMPOUND_STRING("It grows quickly in just four hours."),
             .growthDuration = GROWTH_DURATION(4, 8, 12, 24, 16, 24),
@@ -603,10 +640,10 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
         .info = {
             .name = _("Bluk"),
             .firmness = BERRY_FIRMNESS_SOFT,
-            .color = OW_BERRY_COLORS == GEN_6_XY ? BERRY_COLOR_PURPLE : BERRY_COLOR_BLUE,
+            .color = BERRY_COLORS(BERRY_COLOR_PURPLE, BERRY_COLOR_BLUE),
             .size = 108,
-            .maxYield = YIELD_RATE(6, 10, 15, 20),
-            .minYield = YIELD_RATE(3, 2, 3, 4),
+            .maxYield = MAX_YIELD_RATE(6, 10, 15, 20),
+            .minYield = MIN_YIELD_RATE(3, 2, 3, 4),
             .description1 = COMPOUND_STRING("The Berry is blue on the outside, but"),
             .description2 = COMPOUND_STRING("it blackens the mouth when eaten."),
             .growthDuration = GROWTH_DURATION(4, 8, 12, 24, 16, 24),
@@ -638,8 +675,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_VERY_HARD,
             .color = BERRY_COLOR_PINK,
             .size = 77,
-            .maxYield = YIELD_RATE(6, 10, 15, 20),
-            .minYield = YIELD_RATE(3, 2, 3, 4),
+            .maxYield = MAX_YIELD_RATE(6, 10, 15, 20),
+            .minYield = MIN_YIELD_RATE(3, 2, 3, 4),
             .description1 = COMPOUND_STRING("This Berry was the seventh"),
             .description2 = COMPOUND_STRING("discovered in the world. It is sweet."),
             .growthDuration = GROWTH_DURATION(4, 8, 12, 24, 16, 24),
@@ -671,8 +708,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_SUPER_HARD,
             .color = BERRY_COLOR_GREEN,
             .size = 74,
-            .maxYield = YIELD_RATE(6, 10, 15, 20),
-            .minYield = YIELD_RATE(3, 2, 3, 4),
+            .maxYield = MAX_YIELD_RATE(6, 10, 15, 20),
+            .minYield = MIN_YIELD_RATE(3, 2, 3, 4),
             .description1 = COMPOUND_STRING("The flower is small and white. It has a"),
             .description2 = COMPOUND_STRING("delicate balance of bitter and sour."),
             .growthDuration = GROWTH_DURATION(4, 8, 12, 24, 16, 24),
@@ -704,8 +741,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_HARD,
             .color = BERRY_COLOR_YELLOW,
             .size = 80,
-            .maxYield = YIELD_RATE(6, 10, 15, 20),
-            .minYield = YIELD_RATE(3, 2, 3, 4),
+            .maxYield = MAX_YIELD_RATE(6, 10, 15, 20),
+            .minYield = MIN_YIELD_RATE(3, 2, 3, 4),
             .description1 = COMPOUND_STRING("Weak against wind and cold."),
             .description2 = COMPOUND_STRING("The fruit is spicy and the skin, sour."),
             .growthDuration = GROWTH_DURATION(4, 8, 12, 24, 16, 24),
@@ -737,8 +774,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_VERY_HARD,
             .color = BERRY_COLOR_RED,
             .size = 135,
-            .maxYield = YIELD_RATE(6, 5, 20, 26),
-            .minYield = YIELD_RATE(2, 1, 1, 2),
+            .maxYield = MAX_YIELD_RATE(6, 5, 20, 26),
+            .minYield = MIN_YIELD_RATE(2, 1, 1, 2),
             .description1 = COMPOUND_STRING("However much it is watered,"),
             .description2 = COMPOUND_STRING("it only grows up to six Berries."),
             .growthDuration = GROWTH_DURATION(12, 32, 48, 48, 32, 48),
@@ -770,8 +807,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_HARD,
             .color = BERRY_COLOR_BLUE,
             .size = 150,
-            .maxYield = YIELD_RATE(6, 5, 20, 26),
-            .minYield = YIELD_RATE(2, 1, 1, 2),
+            .maxYield = MAX_YIELD_RATE(6, 5, 20, 26),
+            .minYield = MIN_YIELD_RATE(2, 1, 1, 2),
             .description1 = COMPOUND_STRING("A rare variety shaped like a root."),
             .description2 = COMPOUND_STRING("Grows a very large flower."),
             .growthDuration = GROWTH_DURATION(12, 32, 48, 48, 32, 48),
@@ -801,10 +838,10 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
         .info = {
             .name = _("Qualot"),
             .firmness = BERRY_FIRMNESS_HARD,
-            .color = OW_BERRY_COLORS == GEN_6_XY ? BERRY_COLOR_YELLOW : BERRY_COLOR_PINK,
+            .color = BERRY_COLORS(BERRY_COLOR_YELLOW, BERRY_COLOR_PINK),
             .size = 110,
-            .maxYield = YIELD_RATE(6, 5, 20, 26),
-            .minYield = YIELD_RATE(2, 1, 1, 2),
+            .maxYield = MAX_YIELD_RATE(6, 5, 20, 26),
+            .minYield = MIN_YIELD_RATE(2, 1, 1, 2),
             .description1 = COMPOUND_STRING("Loves water. Grows strong even in"),
             .description2 = COMPOUND_STRING("locations with constant rainfall."),
             .growthDuration = GROWTH_DURATION(12, 32, 48, 48, 32, 48),
@@ -836,8 +873,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_HARD,
             .color = BERRY_COLOR_GREEN,
             .size = 162,
-            .maxYield = YIELD_RATE(6, 5, 20, 26),
-            .minYield = YIELD_RATE(2, 1, 1, 2),
+            .maxYield = MAX_YIELD_RATE(6, 5, 20, 26),
+            .minYield = MIN_YIELD_RATE(2, 1, 1, 2),
             .description1 = COMPOUND_STRING("A Berry that is very valuable and"),
             .description2 = COMPOUND_STRING("rarely seen. It is very delicious."),
             .growthDuration = GROWTH_DURATION(12, 32, 48, 48, 32, 48),
@@ -869,8 +906,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_SOFT,
             .color = BERRY_COLOR_YELLOW,
             .size = 149,
-            .maxYield = YIELD_RATE(6, 5, 20, 26),
-            .minYield = YIELD_RATE(2, 1, 1, 2),
+            .maxYield = MAX_YIELD_RATE(6, 5, 20, 26),
+            .minYield = MIN_YIELD_RATE(2, 1, 1, 2),
             .description1 = COMPOUND_STRING("Despite its tenderness and round"),
             .description2 = COMPOUND_STRING("shape, the Berry is unimaginably sour."),
             .growthDuration = GROWTH_DURATION(12, 32, 48, 48, 32, 48),
@@ -902,8 +939,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_SOFT,
             .color = BERRY_COLOR_RED,
             .size = 200,
-            .maxYield = YIELD_RATE(4, 5, 20, 26),
-            .minYield = YIELD_RATE(2, 1, 1, 2),
+            .maxYield = MAX_YIELD_RATE(4, 5, 20, 26),
+            .minYield = MIN_YIELD_RATE(2, 1, 1, 2),
             .description1 = COMPOUND_STRING("The Berry is lip-bendingly spicy."),
             .description2 = COMPOUND_STRING("It takes time to grow."),
             .growthDuration = GROWTH_DURATION(24, 32, 48, 48, 32, 48),
@@ -933,10 +970,10 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
         .info = {
             .name = _("Cornn"),
             .firmness = BERRY_FIRMNESS_HARD,
-            .color = OW_BERRY_COLORS == GEN_6_XY ? BERRY_COLOR_PURPLE : BERRY_COLOR_BLUE,
+            .color = BERRY_COLORS(BERRY_COLOR_PURPLE, BERRY_COLOR_BLUE),
             .size = 75,
-            .maxYield = YIELD_RATE(4, 10, 15, 15),
-            .minYield = YIELD_RATE(2, 2, 3, 3),
+            .maxYield = MAX_YIELD_RATE(4, 10, 15, 15),
+            .minYield = MIN_YIELD_RATE(2, 2, 3, 3),
             .description1 = COMPOUND_STRING("A Berry from an ancient era. May not"),
             .description2 = COMPOUND_STRING("grow unless planted in quantity."),
             .growthDuration = GROWTH_DURATION(24, 24, 36, 24, 16, 24),
@@ -968,8 +1005,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_HARD,
             .color = BERRY_COLOR_PINK,
             .size = 140,
-            .maxYield = YIELD_RATE(4, 10, 15, 15),
-            .minYield = YIELD_RATE(2, 2, 3, 3),
+            .maxYield = MAX_YIELD_RATE(4, 10, 15, 15),
+            .minYield = MIN_YIELD_RATE(2, 2, 3, 3),
             .description1 = COMPOUND_STRING("A Berry that is widely said to have"),
             .description2 = COMPOUND_STRING("a finely balanced flavor."),
             .growthDuration = GROWTH_DURATION(24, 24, 36, 24, 16, 24),
@@ -1001,8 +1038,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_SOFT,
             .color = BERRY_COLOR_GREEN,
             .size = 226,
-            .maxYield = YIELD_RATE(4, 10, 15, 15),
-            .minYield = YIELD_RATE(2, 2, 3, 3),
+            .maxYield = MAX_YIELD_RATE(4, 10, 15, 15),
+            .minYield = MIN_YIELD_RATE(2, 2, 3, 3),
             .description1 = COMPOUND_STRING("A rare variety that is overgrown with"),
             .description2 = COMPOUND_STRING("hair. It is quite bitter."),
             .growthDuration = GROWTH_DURATION(24, 24, 36, 24, 16, 24),
@@ -1034,8 +1071,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_SUPER_HARD,
             .color = BERRY_COLOR_YELLOW,
             .size = 285,
-            .maxYield = YIELD_RATE(4, 10, 15, 15),
-            .minYield = YIELD_RATE(2, 2, 3, 3),
+            .maxYield = MAX_YIELD_RATE(4, 10, 15, 15),
+            .minYield = MIN_YIELD_RATE(2, 2, 3, 3),
             .description1 = COMPOUND_STRING("Quite sour. Just one bite makes it"),
             .description2 = COMPOUND_STRING("impossible to taste for three days."),
             .growthDuration = GROWTH_DURATION(24, 24, 36, 24, 16, 24),
@@ -1065,10 +1102,10 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
         .info = {
             .name = _("Spelon"),
             .firmness = BERRY_FIRMNESS_SOFT,
-            .color = OW_BERRY_COLORS == GEN_6_XY ? BERRY_COLOR_RED : BERRY_COLOR_PINK,
+            .color = BERRY_COLORS(BERRY_COLOR_RED, BERRY_COLOR_PINK),
             .size = 133,
-            .maxYield = YIELD_RATE(2, 15, 15, 15),
-            .minYield = YIELD_RATE(1, 2, 3, 3),
+            .maxYield = MAX_YIELD_RATE(2, 15, 15, 15),
+            .minYield = MIN_YIELD_RATE(1, 2, 3, 3),
             .description1 = COMPOUND_STRING("The vividly red Berry is very spicy."),
             .description2 = COMPOUND_STRING("Its warts secrete a spicy substance."),
             .growthDuration = GROWTH_DURATION(72, 60, 90, 24, 16, 24),
@@ -1098,10 +1135,10 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
         .info = {
             .name = _("Pamtre"),
             .firmness = BERRY_FIRMNESS_VERY_SOFT,
-            .color = OW_BERRY_COLORS == GEN_6_XY ? BERRY_COLOR_PURPLE : BERRY_COLOR_BLUE,
+            .color = BERRY_COLORS(BERRY_COLOR_PURPLE, BERRY_COLOR_BLUE),
             .size = 244,
-            .maxYield = YIELD_RATE(2, 15, 15, 15),
-            .minYield = YIELD_RATE(1, 3, 3, 3),
+            .maxYield = MAX_YIELD_RATE(2, 15, 15, 15),
+            .minYield = MIN_YIELD_RATE(1, 3, 3, 3),
             .description1 = COMPOUND_STRING("Drifts on the sea from somewhere."),
             .description2 = COMPOUND_STRING("It is thought to grow elsewhere."),
             .growthDuration = GROWTH_DURATION(72, 60, 90, 24, 16, 24),
@@ -1131,10 +1168,10 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
         .info = {
             .name = _("Watmel"),
             .firmness = BERRY_FIRMNESS_SOFT,
-            .color = OW_BERRY_COLORS == GEN_6_XY ? BERRY_COLOR_PINK : BERRY_COLOR_GREEN,
+            .color = BERRY_COLORS(BERRY_COLOR_PINK, BERRY_COLOR_GREEN),
             .size = 250,
-            .maxYield = YIELD_RATE(2, 15, 15, 15),
-            .minYield = YIELD_RATE(1, 2, 3, 3),
+            .maxYield = MAX_YIELD_RATE(2, 15, 15, 15),
+            .minYield = MIN_YIELD_RATE(1, 2, 3, 3),
             .description1 = COMPOUND_STRING("A huge Berry, with some over 20"),
             .description2 = COMPOUND_STRING("inches discovered. Exceedingly sweet."),
             .growthDuration = GROWTH_DURATION(72, 60, 90, 24, 16, 24),
@@ -1166,8 +1203,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_HARD,
             .color = BERRY_COLOR_GREEN,
             .size = 280,
-            .maxYield = YIELD_RATE(2, 15, 15, 15),
-            .minYield = YIELD_RATE(1, 3, 3, 3),
+            .maxYield = MAX_YIELD_RATE(2, 15, 15, 15),
+            .minYield = MIN_YIELD_RATE(1, 3, 3, 3),
             .description1 = COMPOUND_STRING("Bitter to even look at. It is so"),
             .description2 = COMPOUND_STRING("bitter, no one has ever eaten it as is."),
             .growthDuration = GROWTH_DURATION(72, 60, 90, 24, 16, 24),
@@ -1197,10 +1234,10 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
         .info = {
             .name = _("Belue"),
             .firmness = BERRY_FIRMNESS_VERY_SOFT,
-            .color = OW_BERRY_COLORS == GEN_6_XY ? BERRY_COLOR_PURPLE : BERRY_COLOR_BLUE,
+            .color = BERRY_COLORS(BERRY_COLOR_PURPLE, BERRY_COLOR_BLUE),
             .size = 300,
-            .maxYield = YIELD_RATE(2, 15, 15, 15),
-            .minYield = YIELD_RATE(1, 2, 3, 3),
+            .maxYield = MAX_YIELD_RATE(2, 15, 15, 15),
+            .minYield = MIN_YIELD_RATE(1, 2, 3, 3),
             .description1 = COMPOUND_STRING("It is glossy and looks delicious, but"),
             .description2 = COMPOUND_STRING("it is awfully sour. Takes time to grow."),
             .growthDuration = GROWTH_DURATION(72, 60, 90, 24, 16, 24),
@@ -1232,8 +1269,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_SUPER_HARD,
             .color = BERRY_COLOR_RED,
             .size = 90,
-            .maxYield = YIELD_RATE(5, 5, 20, 10),
-            .minYield = YIELD_RATE(2, 1, 3, 2),
+            .maxYield = MAX_YIELD_RATE(5, 5, 20, 10),
+            .minYield = MIN_YIELD_RATE(2, 1, 3, 2),
             .description1 = COMPOUND_STRING("Said to grow in the tropics once,"),
             .description2 = COMPOUND_STRING("it boasts an intensely hot spiciness."),
             .growthDuration = GROWTH_DURATION(84, 72, 108, 48, 32, 48),
@@ -1265,8 +1302,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_SOFT,
             .color = BERRY_COLOR_BLUE,
             .size = 33,
-            .maxYield = YIELD_RATE(5, 5, 20, 10),
-            .minYield = YIELD_RATE(2, 1, 3, 2),
+            .maxYield = MAX_YIELD_RATE(5, 5, 20, 10),
+            .minYield = MIN_YIELD_RATE(2, 1, 3, 2),
             .description1 = COMPOUND_STRING("Its flesh is dotted with many tiny"),
             .description2 = COMPOUND_STRING("bubbles that keep it afloat in water."),
             .growthDuration = GROWTH_DURATION(84, 72, 108, 48, 32, 48),
@@ -1298,8 +1335,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_VERY_SOFT,
             .color = BERRY_COLOR_YELLOW,
             .size = 250,
-            .maxYield = YIELD_RATE(5, 5, 20, 10),
-            .minYield = YIELD_RATE(2, 1, 3, 2),
+            .maxYield = MAX_YIELD_RATE(5, 5, 20, 10),
+            .minYield = MIN_YIELD_RATE(2, 1, 3, 2),
             .description1 = COMPOUND_STRING("Energy drawn from lightning strikes"),
             .description2 = COMPOUND_STRING("makes this Berry grow big and rich."),
             .growthDuration = GROWTH_DURATION(84, 72, 108, 48, 32, 48),
@@ -1331,8 +1368,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_SOFT,
             .color = BERRY_COLOR_GREEN,
             .size = 156,
-            .maxYield = YIELD_RATE(5, 5, 20, 10),
-            .minYield = YIELD_RATE(2, 1, 3, 2),
+            .maxYield = MAX_YIELD_RATE(5, 5, 20, 10),
+            .minYield = MIN_YIELD_RATE(2, 1, 3, 2),
             .description1 = COMPOUND_STRING("This berry has a vegetable-like flavor,"),
             .description2 = COMPOUND_STRING("but is rich in health-promoting fiber."),
             .growthDuration = GROWTH_DURATION(84, 72, 108, 48, 32, 48),
@@ -1364,8 +1401,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_VERY_HARD,
             .color = BERRY_COLOR_BLUE,
             .size = 135,
-            .maxYield = YIELD_RATE(5, 5, 20, 10),
-            .minYield = YIELD_RATE(2, 1, 3, 2),
+            .maxYield = MAX_YIELD_RATE(5, 5, 20, 10),
+            .minYield = MIN_YIELD_RATE(2, 1, 3, 2),
             .description1 = COMPOUND_STRING("This Berry has a refreshing dry and"),
             .description2 = COMPOUND_STRING("sour flavor. Tastes better chilled."),
             .growthDuration = GROWTH_DURATION(84, 72, 108, 48, 32, 48),
@@ -1397,8 +1434,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_SOFT,
             .color = BERRY_COLOR_RED,
             .size = 77,
-            .maxYield = YIELD_RATE(5, 5, 20, 10),
-            .minYield = YIELD_RATE(2, 1, 3, 2),
+            .maxYield = MAX_YIELD_RATE(5, 5, 20, 10),
+            .minYield = MIN_YIELD_RATE(2, 1, 3, 2),
             .description1 = COMPOUND_STRING("Contains a substance that generates"),
             .description2 = COMPOUND_STRING("heat. Can even fire up a chilly heart."),
             .growthDuration = GROWTH_DURATION(84, 72, 108, 48, 32, 48),
@@ -1430,8 +1467,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_HARD,
             .color = BERRY_COLOR_GREEN,
             .size = 90,
-            .maxYield = YIELD_RATE(5, 5, 20, 10),
-            .minYield = YIELD_RATE(2, 1, 3, 2),
+            .maxYield = MAX_YIELD_RATE(5, 5, 20, 10),
+            .minYield = MIN_YIELD_RATE(2, 1, 3, 2),
             .description1 = COMPOUND_STRING("Brilliant green on the outside, inside"),
             .description2 = COMPOUND_STRING("it is packed with black-colored flesh."),
             .growthDuration = GROWTH_DURATION(84, 72, 108, 48, 32, 48),
@@ -1463,8 +1500,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_SOFT,
             .color = BERRY_COLOR_YELLOW,
             .size = 42,
-            .maxYield = YIELD_RATE(5, 5, 20, 10),
-            .minYield = YIELD_RATE(2, 1, 3, 2),
+            .maxYield = MAX_YIELD_RATE(5, 5, 20, 10),
+            .minYield = MIN_YIELD_RATE(2, 1, 3, 2),
             .description1 = COMPOUND_STRING("The sweet pulp has just the hint of a"),
             .description2 = COMPOUND_STRING("a hard-edged and fragrant bite to it."),
             .growthDuration = GROWTH_DURATION(84, 72, 108, 48, 32, 48),
@@ -1496,8 +1533,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_VERY_HARD,
             .color = BERRY_COLOR_BLUE,
             .size = 278,
-            .maxYield = YIELD_RATE(5, 5, 20, 10),
-            .minYield = YIELD_RATE(2, 1, 3, 2),
+            .maxYield = MAX_YIELD_RATE(5, 5, 20, 10),
+            .minYield = MIN_YIELD_RATE(2, 1, 3, 2),
             .description1 = COMPOUND_STRING("This Berry is said to be a cross of"),
             .description2 = COMPOUND_STRING("two Berries blown in from far away."),
             .growthDuration = GROWTH_DURATION(84, 72, 108, 48, 32, 48),
@@ -1527,10 +1564,10 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
         .info = {
             .name = _("Payapa"),
             .firmness = BERRY_FIRMNESS_SOFT,
-            .color = OW_BERRY_COLORS == GEN_6_XY ? BERRY_COLOR_PURPLE : BERRY_COLOR_RED,
+            .color = BERRY_COLORS(BERRY_COLOR_PURPLE, BERRY_COLOR_RED),
             .size = 252,
-            .maxYield = YIELD_RATE(5, 5, 20, 10),
-            .minYield = YIELD_RATE(2, 1, 3, 2),
+            .maxYield = MAX_YIELD_RATE(5, 5, 20, 10),
+            .minYield = MIN_YIELD_RATE(2, 1, 3, 2),
             .description1 = COMPOUND_STRING("Said to sense human emotions, it swells"),
             .description2 = COMPOUND_STRING("roundly when a person approaches."),
             .growthDuration = GROWTH_DURATION(84, 72, 108, 48, 32, 48),
@@ -1562,8 +1599,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_VERY_SOFT,
             .color = BERRY_COLOR_GREEN,
             .size = 42,
-            .maxYield = YIELD_RATE(5, 5, 20, 10),
-            .minYield = YIELD_RATE(2, 1, 3, 2),
+            .maxYield = MAX_YIELD_RATE(5, 5, 20, 10),
+            .minYield = MIN_YIELD_RATE(2, 1, 3, 2),
             .description1 = COMPOUND_STRING("It grows a flower at the tip that lures"),
             .description2 = COMPOUND_STRING("Bug Pokémon with its stringy petals."),
             .growthDuration = GROWTH_DURATION(84, 72, 108, 48, 32, 48),
@@ -1595,8 +1632,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_VERY_SOFT,
             .color = BERRY_COLOR_YELLOW,
             .size = 28,
-            .maxYield = YIELD_RATE(5, 5, 20, 10),
-            .minYield = YIELD_RATE(2, 1, 3, 2),
+            .maxYield = MAX_YIELD_RATE(5, 5, 20, 10),
+            .minYield = MIN_YIELD_RATE(2, 1, 3, 2),
             .description1 = COMPOUND_STRING("Often used for pickles because of its"),
             .description2 = COMPOUND_STRING("dry flavor. Sometimes eaten raw."),
             .growthDuration = GROWTH_DURATION(84, 72, 108, 48, 32, 48),
@@ -1626,10 +1663,10 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
         .info = {
             .name = _("Kasib"),
             .firmness = BERRY_FIRMNESS_HARD,
-            .color = OW_BERRY_COLORS == GEN_6_XY ? BERRY_COLOR_PURPLE : BERRY_COLOR_PINK,
+            .color = BERRY_COLORS(BERRY_COLOR_PURPLE, BERRY_COLOR_PINK),
             .size = 144,
-            .maxYield = YIELD_RATE(5, 5, 20, 10),
-            .minYield = YIELD_RATE(2, 1, 3, 2),
+            .maxYield = MAX_YIELD_RATE(5, 5, 20, 10),
+            .minYield = MIN_YIELD_RATE(2, 1, 3, 2),
             .description1 = COMPOUND_STRING("Old superstitions say it has an odd"),
             .description2 = COMPOUND_STRING("power. A popular good-luck charm."),
             .growthDuration = GROWTH_DURATION(84, 72, 108, 48, 32, 48),
@@ -1661,8 +1698,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_SOFT,
             .color = BERRY_COLOR_RED,
             .size = 23,
-            .maxYield = YIELD_RATE(5, 5, 20, 10),
-            .minYield = YIELD_RATE(2, 1, 3, 2),
+            .maxYield = MAX_YIELD_RATE(5, 5, 20, 10),
+            .minYield = MIN_YIELD_RATE(2, 1, 3, 2),
             .description1 = COMPOUND_STRING("Less bitter if enough of this Berry"),
             .description2 = COMPOUND_STRING("is boiled down. Makes a good jam."),
             .growthDuration = GROWTH_DURATION(84, 72, 108, 48, 32, 48),
@@ -1692,10 +1729,10 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
         .info = {
             .name = _("Colbur"),
             .firmness = BERRY_FIRMNESS_SUPER_HARD,
-            .color = OW_BERRY_COLORS == GEN_6_XY ? BERRY_COLOR_PURPLE : BERRY_COLOR_PINK,
+            .color = BERRY_COLORS(BERRY_COLOR_PURPLE, BERRY_COLOR_PINK),
             .size = 39,
-            .maxYield = YIELD_RATE(5, 5, 20, 10),
-            .minYield = YIELD_RATE(2, 1, 3, 2),
+            .maxYield = MAX_YIELD_RATE(5, 5, 20, 10),
+            .minYield = MIN_YIELD_RATE(2, 1, 3, 2),
             .description1 = COMPOUND_STRING("Tiny hooks on the surface latch onto"),
             .description2 = COMPOUND_STRING("Pokémon to reach far-off places."),
             .growthDuration = GROWTH_DURATION(84, 72, 108, 48, 32, 48),
@@ -1727,8 +1764,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_SUPER_HARD,
             .color = BERRY_COLOR_GREEN,
             .size = 265,
-            .maxYield = YIELD_RATE(5, 5, 20, 10),
-            .minYield = YIELD_RATE(2, 1, 3, 2),
+            .maxYield = MAX_YIELD_RATE(5, 5, 20, 10),
+            .minYield = MIN_YIELD_RATE(2, 1, 3, 2),
             .description1 = COMPOUND_STRING("Very tough with a strong flavor. It"),
             .description2 = COMPOUND_STRING("was used to make medicine in the past."),
             .growthDuration = GROWTH_DURATION(84, 72, 108, 48, 32, 48),
@@ -1760,8 +1797,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_VERY_SOFT,
             .color = BERRY_COLOR_YELLOW,
             .size = 34,
-            .maxYield = YIELD_RATE(5, 5, 20, 10),
-            .minYield = YIELD_RATE(2, 1, 3, 2),
+            .maxYield = MAX_YIELD_RATE(5, 5, 20, 10),
+            .minYield = MIN_YIELD_RATE(2, 1, 3, 2),
             .description1 = COMPOUND_STRING("It can be made into a whistle that"),
             .description2 = COMPOUND_STRING("produces an indescribable sound."),
             .growthDuration = GROWTH_DURATION(84, 72, 108, 48, 32, 48),
@@ -1791,10 +1828,10 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
         .info = {
             .name = _("Liechi"),
             .firmness = BERRY_FIRMNESS_VERY_HARD,
-            .color = OW_BERRY_COLORS == GEN_6_XY ? BERRY_COLOR_RED : BERRY_COLOR_YELLOW,
+            .color = BERRY_COLORS(BERRY_COLOR_RED, BERRY_COLOR_YELLOW),
             .size = 111,
-            .maxYield = YIELD_RATE(2, 5, 10, 13),
-            .minYield = YIELD_RATE(1, 1, 1, 2),
+            .maxYield = MAX_YIELD_RATE(2, 5, 10, 13),
+            .minYield = MIN_YIELD_RATE(1, 1, 1, 2),
             .description1 = COMPOUND_STRING("A mysterious Berry. It is rumored to"),
             .description2 = COMPOUND_STRING("contain the power of the sea."),
             .growthDuration = GROWTH_DURATION(96, 96, 144, 96, 48, 72),
@@ -1824,10 +1861,10 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
         .info = {
             .name = _("Ganlon"),
             .firmness = BERRY_FIRMNESS_VERY_HARD,
-            .color = OW_BERRY_COLORS == GEN_6_XY ? BERRY_COLOR_PURPLE : BERRY_COLOR_BLUE,
+            .color = BERRY_COLORS(BERRY_COLOR_PURPLE, BERRY_COLOR_BLUE),
             .size = 33,
-            .maxYield = YIELD_RATE(2, 5, 10, 13),
-            .minYield = YIELD_RATE(1, 1, 1, 2),
+            .maxYield = MAX_YIELD_RATE(2, 5, 10, 13),
+            .minYield = MIN_YIELD_RATE(1, 1, 1, 2),
             .description1 = COMPOUND_STRING("A mysterious Berry. It is rumored to"),
             .description2 = COMPOUND_STRING("contain the power of the land."),
             .growthDuration = GROWTH_DURATION(96, 96, 144, 96, 48, 72),
@@ -1859,8 +1896,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_VERY_HARD,
             .color = BERRY_COLOR_GREEN,
             .size = 95,
-            .maxYield = YIELD_RATE(2, 5, 10, 13),
-            .minYield = YIELD_RATE(1, 1, 1, 2),
+            .maxYield = MAX_YIELD_RATE(2, 5, 10, 13),
+            .minYield = MIN_YIELD_RATE(1, 1, 1, 2),
             .description1 = COMPOUND_STRING("A mysterious Berry. It is rumored to"),
             .description2 = COMPOUND_STRING("contain the power of the sky."),
             .growthDuration = GROWTH_DURATION(96, 96, 144, 96, 48, 72),
@@ -1892,8 +1929,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_VERY_HARD,
             .color = BERRY_COLOR_PINK,
             .size = 237,
-            .maxYield = YIELD_RATE(2, 5, 10, 13),
-            .minYield = YIELD_RATE(1, 1, 1, 2),
+            .maxYield = MAX_YIELD_RATE(2, 5, 10, 13),
+            .minYield = MIN_YIELD_RATE(1, 1, 1, 2),
             .description1 = COMPOUND_STRING("A mysterious Berry. It is rumored to"),
             .description2 = COMPOUND_STRING("contain the power of all living things."),
             .growthDuration = GROWTH_DURATION(96, 96, 144, 96, 48, 72),
@@ -1925,8 +1962,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_HARD,
             .color = BERRY_COLOR_BLUE,
             .size = 75,
-            .maxYield = YIELD_RATE(2, 5, 10, 13),
-            .minYield = YIELD_RATE(1, 1, 1, 2),
+            .maxYield = MAX_YIELD_RATE(2, 5, 10, 13),
+            .minYield = MIN_YIELD_RATE(1, 1, 1, 2),
             .description1 = COMPOUND_STRING("A very mystifying Berry. No telling"),
             .description2 = COMPOUND_STRING("what may happen or how it can be used."),
             .growthDuration = GROWTH_DURATION(96, 96, 144, 96, 48, 72),
@@ -1956,10 +1993,10 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
         .info = {
             .name = _("Lansat"),
             .firmness = BERRY_FIRMNESS_SOFT,
-            .color = OW_BERRY_COLORS == GEN_6_XY ? BERRY_COLOR_RED : BERRY_COLOR_PINK,
+            .color = BERRY_COLORS(BERRY_COLOR_RED, BERRY_COLOR_PINK),
             .size = 97,
-            .maxYield = YIELD_RATE(2, 5, 5, 7),
-            .minYield = YIELD_RATE(1, 1, 1, 1),
+            .maxYield = MAX_YIELD_RATE(2, 5, 5, 7),
+            .minYield = MIN_YIELD_RATE(1, 1, 1, 1),
             .description1 = COMPOUND_STRING("Said to be a legendary Berry."),
             .description2 = COMPOUND_STRING("Holding it supposedly brings joy."),
             .growthDuration = GROWTH_DURATION(96, 96, 144, 120, 48, 72),
@@ -1991,8 +2028,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_SUPER_HARD,
             .color = BERRY_COLOR_GREEN,
             .size = 153,
-            .maxYield = YIELD_RATE(2, 5, 5, 7),
-            .minYield = YIELD_RATE(1, 1, 1, 1),
+            .maxYield = MAX_YIELD_RATE(2, 5, 5, 7),
+            .minYield = MIN_YIELD_RATE(1, 1, 1, 1),
             .description1 = COMPOUND_STRING("So strong, it was abandoned at the"),
             .description2 = COMPOUND_STRING("world's edge. Considered a mirage."),
             .growthDuration = GROWTH_DURATION(96, 96, 144, 120, 48, 72),
@@ -2022,10 +2059,10 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
         .info = {
             .name = _("Enigma"),
             .firmness = BERRY_FIRMNESS_HARD,
-            .color = OW_BERRY_COLORS == GEN_6_XY ? BERRY_COLOR_PURPLE : BERRY_COLOR_YELLOW,
+            .color = BERRY_COLORS(BERRY_COLOR_PURPLE, BERRY_COLOR_YELLOW),
             .size = 155,
-            .maxYield = YIELD_RATE(2, 5, 5, 13),
-            .minYield = YIELD_RATE(1, 1, 1, 1),
+            .maxYield = MAX_YIELD_RATE(2, 5, 5, 13),
+            .minYield = MIN_YIELD_RATE(1, 1, 1, 1),
             .description1 = COMPOUND_STRING("A completely enigmatic Berry."),
             .description2 = COMPOUND_STRING("Appears to have the power of stars."),
             .growthDuration = GROWTH_DURATION(96, 96, 144, 72, 48, 72),
@@ -2057,8 +2094,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_SOFT,
             .color = BERRY_COLOR_GREEN,
             .size = 41,
-            .maxYield = YIELD_RATE(2, 5, 5, 13),
-            .minYield = YIELD_RATE(1, 1, 1, 1),
+            .maxYield = MAX_YIELD_RATE(2, 5, 5, 13),
+            .minYield = MIN_YIELD_RATE(1, 1, 1, 1),
             .description1 = COMPOUND_STRING("It makes other food eaten at the"),
             .description2 = COMPOUND_STRING("same time taste sweet."),
             .growthDuration = GROWTH_DURATION(96, 96, 144, 72, 48, 72),
@@ -2090,8 +2127,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_SUPER_HARD,
             .color = BERRY_COLOR_RED,
             .size = 267,
-            .maxYield = YIELD_RATE(2, 5, 5, 13),
-            .minYield = YIELD_RATE(1, 1, 1, 1),
+            .maxYield = MAX_YIELD_RATE(2, 5, 5, 13),
+            .minYield = MIN_YIELD_RATE(1, 1, 1, 1),
             .description1 = COMPOUND_STRING("The flesh underneath the Custap"),
             .description2 = COMPOUND_STRING("Berry's skin is sweet and creamy soft."),
             .growthDuration = GROWTH_DURATION(96, 96, 144, 72, 48, 72),
@@ -2123,8 +2160,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_SOFT,
             .color = BERRY_COLOR_YELLOW,
             .size = 33,
-            .maxYield = YIELD_RATE(2, 5, 5, 13),
-            .minYield = YIELD_RATE(1, 1, 1, 1),
+            .maxYield = MAX_YIELD_RATE(2, 5, 5, 13),
+            .minYield = MIN_YIELD_RATE(1, 1, 1, 1),
             .description1 = COMPOUND_STRING("The drupelets that make up this berry"),
             .description2 = COMPOUND_STRING("pop rythmically if handled roughly."),
             .growthDuration = GROWTH_DURATION(96, 96, 144, 72, 48, 72),
@@ -2156,8 +2193,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_VERY_SOFT,
             .color = BERRY_COLOR_BLUE,
             .size = 52,
-            .maxYield = YIELD_RATE(2, 5, 5, 13),
-            .minYield = YIELD_RATE(1, 1, 1, 1),
+            .maxYield = MAX_YIELD_RATE(2, 5, 5, 13),
+            .minYield = MIN_YIELD_RATE(1, 1, 1, 1),
             .description1 = COMPOUND_STRING("People once worked top-shaped pieces"),
             .description2 = COMPOUND_STRING("of this berry free to use as toys."),
             .growthDuration = GROWTH_DURATION(96, 96, 144, 72, 48, 72),
@@ -2187,10 +2224,10 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
         .info = {
             .name = _("Roseli"),
             .firmness = BERRY_FIRMNESS_HARD,
-            .color = OW_BERRY_COLORS == GEN_6_XY ? BERRY_COLOR_PINK : BERRY_COLOR_RED,
+            .color = BERRY_COLORS(BERRY_COLOR_PINK, BERRY_COLOR_RED),
             .size = 35,
-            .maxYield = YIELD_RATE(5, 5, 20, 10),
-            .minYield = YIELD_RATE(2, 1, 3, 2),
+            .maxYield = MAX_YIELD_RATE(5, 5, 20, 10),
+            .minYield = MIN_YIELD_RATE(2, 1, 3, 2),
             .description1 = COMPOUND_STRING("In nature, they grow in wide rings"),
             .description2 = COMPOUND_STRING("for reasons that are still unknown."),
             .growthDuration = GROWTH_DURATION(84, 72, 108, 48, 32, 48),
@@ -2220,10 +2257,10 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
         .info = {
             .name = _("Kee"),
             .firmness = BERRY_FIRMNESS_UNKNOWN,
-            .color = OW_BERRY_COLORS == GEN_6_XY ? BERRY_COLOR_YELLOW : BERRY_COLOR_PINK,
+            .color = BERRY_COLORS(BERRY_COLOR_YELLOW, BERRY_COLOR_PINK),
             .size = 0,
-            .maxYield = YIELD_RATE(2, 5, 10, 13),
-            .minYield = YIELD_RATE(1, 1, 1, 2),
+            .maxYield = MAX_YIELD_RATE(2, 5, 10, 13),
+            .minYield = MIN_YIELD_RATE(1, 1, 1, 2),
             .description1 = COMPOUND_STRING("A berry that is incredibly spicy at"),
             .description2 = COMPOUND_STRING("first, then extremely bitter."),
             .growthDuration = GROWTH_DURATION(96, 96, 144, 96, 48, 72),
@@ -2253,10 +2290,10 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
         .info = {
             .name = _("Marnga"), // "Maranga" is too long
             .firmness = BERRY_FIRMNESS_UNKNOWN,
-            .color = OW_BERRY_COLORS == GEN_6_XY ? BERRY_COLOR_BLUE : BERRY_COLOR_YELLOW,
+            .color = BERRY_COLORS(BERRY_COLOR_BLUE, BERRY_COLOR_YELLOW),
             .size = 0,
-            .maxYield = YIELD_RATE(2, 5, 10, 13),
-            .minYield = YIELD_RATE(1, 1, 1, 2),
+            .maxYield = MAX_YIELD_RATE(2, 5, 10, 13),
+            .minYield = MIN_YIELD_RATE(1, 1, 1, 2),
             .description1 = COMPOUND_STRING("Its outside is very bitter, but its"),
             .description2 = COMPOUND_STRING("inside tastes like a sweet drink."),
             .growthDuration = GROWTH_DURATION(96, 96, 144, 96, 48, 72),
@@ -2288,8 +2325,8 @@ const struct Berry gBerries[NUM_BERRIES + 1] =
             .firmness = BERRY_FIRMNESS_UNKNOWN,
             .color = BERRY_COLOR_PURPLE,
             .size = 0,
-            .maxYield = YIELD_RATE(2, 5, 5, 13),
-            .minYield = YIELD_RATE(1, 1, 1, 1),
+            .maxYield = MAX_YIELD_RATE(2, 5, 5, 13),
+            .minYield = MIN_YIELD_RATE(1, 1, 1, 1),
             .description1 = COMPOUND_STRING("A completely enigmatic Berry."),
             .description2 = COMPOUND_STRING("Appears to have the power of stars."),
             .growthDuration = GROWTH_DURATION(96, 96, 144, 72, 48, 72),
@@ -2380,17 +2417,117 @@ struct BerryTree *GetBerryTreeInfo(u8 id)
     return &gSaveBlock1Ptr->berryTrees[id];
 }
 
-bool32 ObjectEventInteractionWaterBerryTree(void)
+static bool32 IsBerryEnigma(u32 berry)
 {
-    struct BerryTree *tree = GetBerryTreeInfo(GetObjectEventBerryTreeId(gSelectedObjectEvent));
+    return berry == BERRY_ID_ENGIMA_E_READER && IsEnigmaBerryValid();
+}
 
-    if (OW_BERRY_MOISTURE)
+// Growth hours under the selected growth-rate preset (the e-Reader Enigma Berry has only its own value).
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetBerryGrowthHours(ADMG_Word berry)
+{
+    const struct BerryInfo *info = GetBerryInfo(berry);
+    if (IsBerryEnigma(berry))
+        return info->growthDuration;
+    switch (ADMG_GetFeatureSetting(ADMG_SETTING_BERRY_GROWTH_RATE))
+    {
+    case GEN_3: return info->growthDurations[0];
+    case GEN_4: return info->growthDurations[1];
+    case GEN_5: return info->growthDurations[2];
+    case GEN_6_XY: return info->growthDurations[3];
+    case GEN_6_ORAS: return info->growthDurations[4];
+    default: return info->growthDurations[5];
+    }
+}
+
+static u32 GetBerryYieldPresetIndex(void)
+{
+    switch (ADMG_GetFeatureSetting(ADMG_SETTING_BERRY_YIELD_RATE))
+    {
+    case GEN_3: return 0;
+    case GEN_4: return 1;
+    case GEN_6_XY: return 2;
+    default: return 3;
+    }
+}
+
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetBerryMaxYield(ADMG_Word berry)
+{
+    const struct BerryInfo *info = GetBerryInfo(berry);
+    return IsBerryEnigma(berry) ? info->maxYield : info->maxYields[GetBerryYieldPresetIndex()];
+}
+
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetBerryMinYield(ADMG_Word berry)
+{
+    const struct BerryInfo *info = GetBerryInfo(berry);
+    return IsBerryEnigma(berry) ? info->minYield : info->minYields[GetBerryYieldPresetIndex()];
+}
+
+// The selected berry color, used to choose which Pokémon pests bring
+// Berries without color presets keep their original color
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetBerryColor(ADMG_Word berry)
+{
+    const struct BerryInfo *info = GetBerryInfo(berry);
+    if (IsBerryEnigma(berry) || !info->hasColorPresets)
+        return info->color;
+    return ADMG_GetFeatureSetting(ADMG_SETTING_BERRY_COLORS) == GEN_6_XY ? info->colorXY : info->colorORAS;
+}
+
+static bool32 IsBerryTreeWaterable(const struct BerryTree *tree)
+{
+    switch (tree->stage)
+    {
+    case BERRY_STAGE_PLANTED:
+    case BERRY_STAGE_SPROUTED:
+    case BERRY_STAGE_TALLER:
+    case BERRY_STAGE_TRUNK:
+    case BERRY_STAGE_BUDDING:
+    case BERRY_STAGE_FLOWERING:
+        return TRUE;
+    default:
+        return FALSE;
+    }
+}
+
+static bool32 IsBerryPlotReadyForWater(const struct BerryTree *tree)
+{
+    if (!BERRY_MOISTURE || BERRY_ALWAYS_WATERABLE)
+        return TRUE;
+    return tree->moistureLevel == 0;
+}
+
+// Check the tree ID, growth stage, Wailmer Pail and soil conditions
+// Returns ADMG_BERRY_OK if watering is allowed, or the reason it isn't
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_CanWaterBerryTree(ADMG_Word id)
+{
+    const struct BerryTree *tree;
+
+    if (id >= BERRY_TREES_COUNT)
+        return ADMG_BERRY_INVALID_TREE;
+    tree = GetBerryTreeInfo(id);
+    if (!IsBerryTreeWaterable(tree))
+        return ADMG_BERRY_NOT_WATERABLE;
+    if (!CheckBagHasItem(ITEM_WAILMER_PAIL, 1))
+        return ADMG_BERRY_NO_WAILMER_PAIL;
+    if (!IsBerryPlotReadyForWater(tree))
+        return ADMG_BERRY_SOIL_NOT_DRY;
+    return ADMG_BERRY_OK;
+}
+
+// Tree scripts, bag use and the API all water through here
+// Check whether watering is allowed before changing the tree
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_WaterBerryTree(ADMG_Word id)
+{
+    struct BerryTree *tree;
+    u32 result = ADMG_CanWaterBerryTree(id);
+
+    if (result != ADMG_BERRY_OK)
+        return result;
+    tree = GetBerryTreeInfo(id);
+    if (BERRY_MOISTURE)
     {
         tree->moistureLevel = 100;
-        if (OW_BERRY_ALWAYS_WATERABLE)
-        {
-            return TRUE;
-        }
+        if (BERRY_ALWAYS_WATERABLE)
+            return ADMG_BERRY_OK;
         AddTreeBonus(tree, GetWaterBonusByBerryType(tree->berry));
     }
 
@@ -2410,10 +2547,13 @@ bool32 ObjectEventInteractionWaterBerryTree(void)
     case BERRY_STAGE_FLOWERING:
         tree->watered |= (1 << 3);
         break;
-    default:
-        return FALSE;
     }
-    return TRUE;
+    return ADMG_BERRY_OK;
+}
+
+bool32 ObjectEventInteractionWaterBerryTree(void)
+{
+    return ADMG_WaterBerryTree(GetObjectEventBerryTreeId(gSelectedObjectEvent)) == ADMG_BERRY_OK;
 }
 
 bool8 IsPlayerFacingEmptyBerryTreePatch(void)
@@ -2425,12 +2565,12 @@ bool8 IsPlayerFacingEmptyBerryTreePatch(void)
         return FALSE;
 }
 
+// Only check the facing tree here; BerryTree_EventScript_ItemUseWailmerPail waters it
 bool8 TryToWaterBerryTree(void)
 {
     if (GetObjectEventScriptPointerPlayerFacing() != BerryTreeScript)
         return FALSE;
-    else
-        return ObjectEventInteractionWaterBerryTree();
+    return ADMG_CanWaterBerryTree(GetObjectEventBerryTreeId(gSelectedObjectEvent)) == ADMG_BERRY_OK;
 }
 
 void ClearBerryTrees(void)
@@ -2458,7 +2598,7 @@ bool32 BerryTreeGrow(struct BerryTree *tree)
         tree->stage++;
         break;
     case BERRY_STAGE_TALLER:
-        if (OW_BERRY_SIX_STAGES)
+        if (BERRY_SIX_STAGES)
             tree->stage = BERRY_STAGE_TRUNK;
         else
             tree->stage++;
@@ -2468,7 +2608,7 @@ bool32 BerryTreeGrow(struct BerryTree *tree)
         tree->stage = BERRY_STAGE_BERRIES;
         break;
     case BERRY_STAGE_BERRIES:
-        if (OW_BERRY_IMMORTAL)
+        if (BERRY_IMMORTAL)
             break;
         tree->watered = 0;
         tree->berryYield = 0;
@@ -2502,9 +2642,9 @@ void BerryTreeTimeUpdate(s32 minutes)
     {
         tree = &gSaveBlock1Ptr->berryTrees[i];
 
-        if (tree->berry && tree->stage && !tree->stopGrowth && (!OW_BERRY_IMMORTAL || tree->stage != BERRY_STAGE_BERRIES))
+        if (tree->berry && tree->stage && !tree->stopGrowth && (!BERRY_IMMORTAL || tree->stage != BERRY_STAGE_BERRIES))
         {
-            if ((!OW_BERRY_IMMORTAL) && (minutes >= GetStageDurationByBerryType(tree->berry) * 71))
+            if ((!BERRY_IMMORTAL) && (minutes >= GetStageDurationByBerryType(tree->berry) * 71))
             {
                 *tree = gBlankBerryTree;
             }
@@ -2519,10 +2659,10 @@ void BerryTreeTimeUpdate(s32 minutes)
                     time -= 1;
                     if (tree->moistureClock % 60 == 0)
                     {
-                        if (OW_BERRY_MOISTURE)
+                        if (BERRY_MOISTURE)
                         {
-                            drainVal = (OW_BERRY_DRAIN_RATE == GEN_4) ? GetDrainRateByBerryType(tree->berry) : (OW_BERRY_DRAIN_RATE == GEN_6_XY) ? 4 : 25;
-                            if (OW_BERRY_MULCH_USAGE)
+                            drainVal = (BERRY_DRAIN_RATE == GEN_4) ? GetDrainRateByBerryType(tree->berry) : (BERRY_DRAIN_RATE == GEN_6_XY) ? 4 : 25;
+                            if (BERRY_MULCH_USAGE)
                             {
                                 if (tree->mulch == ITEM_TO_MULCH(ITEM_GROWTH_MULCH))
                                     drainVal *= 2;
@@ -2531,18 +2671,18 @@ void BerryTreeTimeUpdate(s32 minutes)
                                 if (tree->mulch == ITEM_TO_MULCH(ITEM_BOOST_MULCH) || tree->mulch == ITEM_TO_MULCH(ITEM_AMAZE_MULCH))
                                     drainVal = 25;
                             }
-                            if (OW_BERRY_ALWAYS_WATERABLE && tree->moistureLevel == 0)
+                            if (BERRY_ALWAYS_WATERABLE && tree->moistureLevel == 0)
                             {
-                                if (tree->berryYield > GetBerryInfo(tree->berry)->minYield + GetBerryInfo(tree->berry)->maxYield / 5)
-                                    tree->berryYield -= GetBerryInfo(tree->berry)->maxYield / 5;
+                                if (tree->berryYield > ADMG_GetBerryMinYield(tree->berry) + ADMG_GetBerryMaxYield(tree->berry) / 5)
+                                    tree->berryYield -= ADMG_GetBerryMaxYield(tree->berry) / 5;
                                 else
-                                    tree->berryYield = GetBerryInfo(tree->berry)->minYield;
+                                    tree->berryYield = ADMG_GetBerryMinYield(tree->berry);
                             }
                             else if (tree->moistureLevel <= drainVal)
                                 tree->moistureLevel = 0;
                             else
                                 tree->moistureLevel -= drainVal;
-                            if (OW_BERRY_DRAIN_RATE == GEN_6_XY && tree->moistureLevel <= 4) // Without variable drain rate (and without mulches), this needs to trigger after 24 hours, hence the extra check
+                            if (BERRY_DRAIN_RATE == GEN_6_XY && tree->moistureLevel <= 4) // Without variable drain rate (and without mulches), this needs to trigger after 24 hours, hence the extra check
                                 tree->moistureLevel = 0;
                         }
                         if (tree->moistureClock == 120)
@@ -2584,14 +2724,14 @@ void PlantBerryTree(u8 id, enum BerryId berry, u8 stage, bool8 allowGrowth)
     tree->minutesUntilNextStage = GetMulchAffectedGrowthRate(GetStageDurationByBerryType(berry), tree->mulch, stage);
     tree->stage = stage;
     tree->moistureLevel = 100;
-    if (OW_BERRY_ALWAYS_WATERABLE)
+    if (BERRY_ALWAYS_WATERABLE)
     {
         // We simulate a tree having grown without water
         u32 berryTreeAge = GetBerryTreeAge(berry, stage);
-        if (GetBerryInfo(berry)->maxYield - berryTreeAge * GetBerryInfo(berry)->maxYield / 5 < GetBerryInfo(berry)->minYield)
-            tree->berryYield = GetBerryInfo(berry)->minYield;
+        if (ADMG_GetBerryMaxYield(berry) - berryTreeAge * ADMG_GetBerryMaxYield(berry) / 5 < ADMG_GetBerryMinYield(berry))
+            tree->berryYield = ADMG_GetBerryMinYield(berry);
         else
-            tree->berryYield = GetBerryInfo(berry)->maxYield - berryTreeAge * GetBerryInfo(berry)->maxYield / 5;
+            tree->berryYield = ADMG_GetBerryMaxYield(berry) - berryTreeAge * ADMG_GetBerryMaxYield(berry) / 5;
     }
     else if (stage == BERRY_STAGE_BERRIES)
     {
@@ -2668,7 +2808,7 @@ static u8 CalcBerryYieldInternal(u16 max, u16 min, u8 water)
     u32 rand;
     u32 extraYield;
 
-    if (water == 0 || OW_BERRY_MOISTURE)
+    if (water == 0 || BERRY_MOISTURE)
     {
         return min;
     }
@@ -2689,14 +2829,13 @@ static u8 CalcBerryYieldInternal(u16 max, u16 min, u8 water)
 
 static u8 CalcBerryYield(struct BerryTree *tree)
 {
-    const struct BerryInfo *berryInfo = GetBerryInfo(tree->berry);
     u8 min = tree->berryYield;
-    u8 max = berryInfo->maxYield;
+    u8 max = ADMG_GetBerryMaxYield(tree->berry);
     u8 result;
-    if (OW_BERRY_MULCH_USAGE && (tree->mulch == ITEM_TO_MULCH(ITEM_RICH_MULCH) || tree->mulch == ITEM_TO_MULCH(ITEM_AMAZE_MULCH)))
+    if (BERRY_MULCH_USAGE && (tree->mulch == ITEM_TO_MULCH(ITEM_RICH_MULCH) || tree->mulch == ITEM_TO_MULCH(ITEM_AMAZE_MULCH)))
         min += 2;
-    if (!(OW_BERRY_MOISTURE && OW_BERRY_ALWAYS_WATERABLE))
-        min += berryInfo->minYield;
+    if (!(BERRY_MOISTURE && BERRY_ALWAYS_WATERABLE))
+        min += ADMG_GetBerryMinYield(tree->berry);
     if (min >= max)
         result = max;
     else
@@ -2713,7 +2852,7 @@ static u32 GetBerryTreeAge(u8 id, u8 stage)
         stage = 6;
     else if (stage > 0)
         stage -= 1;
-    return GetBerryInfo(id)->growthDuration * stage / (OW_BERRY_SIX_STAGES ? 6 : 4);
+    return ADMG_GetBerryGrowthHours(id) * stage / (BERRY_SIX_STAGES ? 6 : 4);
 }
 
 static u8 GetBerryCountByBerryTreeId(u8 id)
@@ -2723,7 +2862,7 @@ static u8 GetBerryCountByBerryTreeId(u8 id)
 
 static u16 GetStageDurationByBerryType(u8 berry)
 {
-    return GetBerryInfo(berry)->growthDuration * 60 / (OW_BERRY_SIX_STAGES ? 6 : 4);
+    return ADMG_GetBerryGrowthHours(berry) * 60 / (BERRY_SIX_STAGES ? 6 : 4);
 }
 
 static u8 GetDrainRateByBerryType(u8 berry)
@@ -2750,9 +2889,7 @@ static u8 GetPestsBonusByBerryType(u8 berry)
 
 bool8 CanWaterBerryPlot(void)
 {
-    if (!OW_BERRY_MOISTURE || OW_BERRY_ALWAYS_WATERABLE)
-        return TRUE;
-    return (gSaveBlock1Ptr->berryTrees[GetObjectEventBerryTreeId(gSelectedObjectEvent)].moistureLevel == 0);
+    return IsBerryPlotReadyForWater(GetBerryTreeInfo(GetObjectEventBerryTreeId(gSelectedObjectEvent)));
 }
 
 void ObjectEventInteractionGetBerryTreeData(void)
@@ -2816,36 +2953,154 @@ void Bag_ChooseMulch(void)
     SetMainCallback2(CB2_ChooseMulch);
 }
 
+
+static bool32 IsBerryPlantingItem(u32 itemId)
+{
+    return itemId >= FIRST_BERRY_INDEX && itemId <= LAST_BERRY_INDEX;
+}
+
+static bool32 IsMulchItem(u32 itemId)
+{
+    return itemId >= ITEM_GROWTH_MULCH && itemId <= ITEM_AMAZE_MULCH;
+}
+
+// Tree scripts, bag use and the API all plant through here
+// Planting removes one berry from the bag and updates the game stat and daily TV count
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_PlantBerryFromBag(ADMG_Word id, ADMG_Word itemId)
+{
+    if (id >= BERRY_TREES_COUNT)
+        return ADMG_BERRY_INVALID_TREE;
+    if (GetStageByBerryTreeId(id) != BERRY_STAGE_NO_BERRY)
+        return ADMG_BERRY_PLOT_OCCUPIED;
+    if (!IsBerryPlantingItem(itemId))
+        return ADMG_BERRY_NOT_A_BERRY;
+    if (!RemoveBagItem(itemId, 1))
+        return ADMG_BERRY_NOT_IN_BAG;
+    PlantBerryTree(id, ItemIdToBerryType(itemId), BERRY_STAGE_PLANTED, TRUE);
+    IncrementGameStat(GAME_STAT_PLANTED_BERRIES);
+    IncrementDailyPlantedBerries();
+    return ADMG_BERRY_OK;
+}
+
+// Apply mulch to empty soil when mulch use is enabled, taking one mulch item from the bag
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_ApplyBerryMulchFromBag(ADMG_Word id, ADMG_Word itemId)
+{
+    if (id >= BERRY_TREES_COUNT)
+        return ADMG_BERRY_INVALID_TREE;
+    if (!BERRY_MULCH_USAGE)
+        return ADMG_BERRY_MULCH_DISABLED;
+    if (GetStageByBerryTreeId(id) != BERRY_STAGE_NO_BERRY)
+        return ADMG_BERRY_PLOT_OCCUPIED;
+    if (!IsMulchItem(itemId))
+        return ADMG_BERRY_NOT_MULCH;
+    if (!RemoveBagItem(itemId, 1))
+        return ADMG_BERRY_NOT_IN_BAG;
+    GetBerryTreeInfo(id)->mulch = ITEM_TO_MULCH(itemId);
+    return ADMG_BERRY_OK;
+}
+
+// Mark the first active berry-tree object with this tree ID as just picked, if one is loaded
+static void SetBerryTreeObjectJustPicked(u32 id)
+{
+    u32 i;
+
+    for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+    {
+        if (gObjectEvents[i].active && gObjectEvents[i].movementType == MOVEMENT_TYPE_BERRY_TREE_GROWTH
+         && gObjectEvents[i].trainerRange_berryTreeId == id)
+        {
+            SetBerryTreeJustPicked(gObjectEvents[i].localId, gSaveBlock1Ptr->location.mapId);
+            return;
+        }
+    }
+}
+
+// Pick a ripe tree's berries into the bag, then update the daily count,
+// remove the tree and mark its loaded object as picked
+// For a mutation, check space for the regular berries and the extra berry separately before adding either
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_HarvestBerryTree(ADMG_Word id)
+{
+    u32 berry, count, mutation;
+
+    if (id >= BERRY_TREES_COUNT)
+        return ADMG_BERRY_INVALID_TREE;
+    if (GetStageByBerryTreeId(id) != BERRY_STAGE_BERRIES)
+        return ADMG_BERRY_NOT_RIPE;
+    berry = GetBerryTypeByBerryTreeId(id);
+    count = GetBerryCountByBerryTreeId(id);
+    mutation = GetTreeMutationValue(id);
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_BERRY_MUTATIONS) || mutation == 0)
+    {
+        if (!AddBagItem(BerryTypeToItemId(berry), count))
+            return ADMG_BERRY_BAG_FULL;
+    }
+    else
+    {
+        if (!CheckBagHasSpace(BerryTypeToItemId(berry), count) || !CheckBagHasSpace(BerryTypeToItemId(mutation), 1))
+            return ADMG_BERRY_MUTATION_BAG_FULL;
+        AddBagItem(BerryTypeToItemId(berry), count);
+        AddBagItem(BerryTypeToItemId(mutation), 1);
+    }
+    // Count the regular berries directly
+    // IncrementDailyPickedBerries would add gSpecialVar_0x8006, which the tree script
+    // has already set to the berry's item ID rather than the number picked
+    VarSet(VAR_DAILY_PICKED_BERRIES, VarGet(VAR_DAILY_PICKED_BERRIES) + count);
+    RemoveBerryTree(id);
+    SetBerryTreeObjectJustPicked(id);
+    return (mutation != 0 && ADMG_GetFeaturePolicy(ADMG_POLICY_BERRY_MUTATIONS)) ? ADMG_BERRY_HARVESTED_WITH_MUTATION : ADMG_BERRY_OK;
+}
+
+// When weeding is enabled and weeds are present, remove them and add the berry's weeding bonus
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_PullBerryTreeWeeds(ADMG_Word id)
+{
+    struct BerryTree *tree;
+
+    if (id >= BERRY_TREES_COUNT)
+        return ADMG_BERRY_INVALID_TREE;
+    if (!BERRY_WEEDS)
+        return ADMG_BERRY_WEEDS_DISABLED;
+    tree = GetBerryTreeInfo(id);
+    if (!tree->weeds)
+        return ADMG_BERRY_NO_WEEDS;
+    tree->weeds = FALSE;
+    AddTreeBonus(tree, GetWeedingBonusByBerryType(tree->berry));
+    return ADMG_BERRY_OK;
+}
+
+// This tree's mutation berry, or BERRY_ID_NONE if mutations are off or there's no valid mutation
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetBerryTreeMutation(ADMG_Word id)
+{
+    return id < BERRY_TREES_COUNT ? GetTreeMutationValue(id) : BERRY_ID_NONE;
+}
+
+// The species pests would bring to the tree's berry under the selected color preset, or SPECIES_NONE.
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetBerryPestSpecies(ADMG_Word berry)
+{
+    return GetBerryPestSpecies(berry);
+}
+
 void ObjectEventInteractionPlantBerryTree(void)
 {
-    PlantBerryTree(GetObjectEventBerryTreeId(gSelectedObjectEvent), ItemIdToBerryType(gSpecialVar_ItemId), BERRY_STAGE_PLANTED, TRUE);
+    ADMG_PlantBerryFromBag(GetObjectEventBerryTreeId(gSelectedObjectEvent), gSpecialVar_ItemId);
     ObjectEventInteractionGetBerryTreeData();
 }
 
 void ObjectEventInteractionApplyMulch(void)
 {
-    u8 mulch = ITEM_TO_MULCH(gSpecialVar_ItemId);
-
-    gSaveBlock1Ptr->berryTrees[GetObjectEventBerryTreeId(gSelectedObjectEvent)].mulch = mulch;
+    ADMG_ApplyBerryMulchFromBag(GetObjectEventBerryTreeId(gSelectedObjectEvent), gSpecialVar_ItemId);
     StringExpandPlaceholders(gStringVar1, gItemsInfo[gSpecialVar_ItemId].name);
 }
 
+// The tree script's outcomes in gSpecialVar_0x8004: BERRY_NORMAL_BAG_FULL (0), BERRY_NORMAL_SPACE_IN_BAG (1),
+// BERRY_MUTATION_BAG_FULL (2), BERRY_MUTATION_SPACE_IN_BAG (3). The transaction already removed a picked tree.
 void ObjectEventInteractionPickBerryTree(void)
 {
-    u8 id = GetObjectEventBerryTreeId(gSelectedObjectEvent);
-    u8 berry = GetBerryTypeByBerryTreeId(id);
-    u8 mutation = GetTreeMutationValue(id);
-
-    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_BERRY_MUTATIONS) || mutation == 0)
+    switch (ADMG_HarvestBerryTree(GetObjectEventBerryTreeId(gSelectedObjectEvent)))
     {
-        gSpecialVar_0x8004 = AddBagItem(BerryTypeToItemId(berry), GetBerryCountByBerryTreeId(id));
-        return;
-    }
-    gSpecialVar_0x8004 = (CheckBagHasSpace(BerryTypeToItemId(berry), GetBerryCountByBerryTreeId(id)) && CheckBagHasSpace(BerryTypeToItemId(mutation), 1)) + 2;
-    if (gSpecialVar_0x8004 == 3)
-    {
-        AddBagItem(BerryTypeToItemId(berry), GetBerryCountByBerryTreeId(id));
-        AddBagItem(BerryTypeToItemId(mutation), 1);
+    case ADMG_BERRY_OK: gSpecialVar_0x8004 = 1; break;
+    case ADMG_BERRY_MUTATION_BAG_FULL: gSpecialVar_0x8004 = 2; break;
+    case ADMG_BERRY_HARVESTED_WITH_MUTATION: gSpecialVar_0x8004 = 3; break;
+    default: gSpecialVar_0x8004 = 0; break;
     }
 }
 
@@ -2857,9 +3112,7 @@ void ObjectEventInteractionRemoveBerryTree(void)
 
 void ObjectEventInteractionPullBerryWeed(void)
 {
-    struct BerryTree *tree = GetBerryTreeInfo(GetObjectEventBerryTreeId(gSelectedObjectEvent));
-    tree->weeds = FALSE;
-    AddTreeBonus(tree, GetWeedingBonusByBerryType(tree->berry));
+    ADMG_PullBerryTreeWeeds(GetObjectEventBerryTreeId(gSelectedObjectEvent));
 }
 
 void ObjectEventInteractionClearBerryPests(void)
@@ -2882,14 +3135,82 @@ bool8 ObjectEventInteractionBerryHasWeed(void)
 bool8 ObjectEventInteractionBerryHasPests(void)
 {
     enum Species species;
-    if (!OW_BERRY_PESTS || !gSaveBlock1Ptr->berryTrees[GetObjectEventBerryTreeId(gSelectedObjectEvent)].pests)
+    if (!BERRY_PESTS || !gSaveBlock1Ptr->berryTrees[GetObjectEventBerryTreeId(gSelectedObjectEvent)].pests)
         return FALSE;
     species = GetBerryPestSpecies(gSaveBlock1Ptr->berryTrees[GetObjectEventBerryTreeId(gSelectedObjectEvent)].berry);
     if (species == SPECIES_NONE)
         return FALSE;
     CreateScriptedWildMon(species, 14 + Random() % 3, ITEM_NONE);
     gSaveBlock1Ptr->berryTrees[GetObjectEventBerryTreeId(gSelectedObjectEvent)].pests = FALSE;
+    if (sBerryPestInteraction.state == ADMG_BERRY_PEST_RUNNING)
+    {
+        sBerryPestInteraction.encountered = TRUE;
+        sBerryPestInteraction.species = species;
+    }
     return TRUE;
+}
+
+// Use the same facing-tree lookup as pressing A, then run the tree's pest-check script
+// A second request can't start while one is running
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_StartBerryPestInteraction(ADMG_Word id)
+{
+    const struct BerryTree *tree;
+
+    if (id >= BERRY_TREES_COUNT)
+        return ADMG_BERRY_PEST_INVALID_TREE;
+    if (!BERRY_PESTS)
+        return ADMG_BERRY_PEST_DISABLED;
+    if (sBerryPestInteraction.state == ADMG_BERRY_PEST_RUNNING)
+        return ADMG_BERRY_PEST_BUSY;
+    if (GetObjectEventScriptPointerPlayerFacing() != BerryTreeScript || GetObjectEventBerryTreeId(gSelectedObjectEvent) != id)
+        return ADMG_BERRY_PEST_NOT_FACING;
+    tree = GetBerryTreeInfo(id);
+    if (!tree->pests)
+        return ADMG_BERRY_PEST_NO_PESTS;
+    if (GetBerryPestSpecies(tree->berry) == SPECIES_NONE)
+        return ADMG_BERRY_PEST_NO_SPECIES;
+    sBerryPestInteraction.state = ADMG_BERRY_PEST_RUNNING;
+    sBerryPestInteraction.tree = id;
+    sBerryPestInteraction.encountered = FALSE;
+    sBerryPestInteraction.species = SPECIES_NONE;
+    sBerryPestInteraction.outcome = 0;
+    LockPlayerFieldControls();
+    ScriptContext_SetupScript(BerryTree_EventScript_PestInteraction);
+    return ADMG_BERRY_PEST_STARTED;
+}
+
+// The pest-check script has returned; record the battle outcome, or 0 if no battle ran
+void ADMG_ScriptFinishBerryPestInteraction(struct ScriptContext *ctx)
+{
+    Script_RequestEffects(SCREFF_V1);
+    if (sBerryPestInteraction.state != ADMG_BERRY_PEST_RUNNING)
+        return;
+    sBerryPestInteraction.outcome = sBerryPestInteraction.encountered ? gBattleOutcome : 0;
+    sBerryPestInteraction.state = ADMG_BERRY_PEST_FINISHED;
+}
+
+// Call once the field is idle if the pest script ended without its finish callback,
+// such as after a whiteout; mark the request interrupted and keep the battle outcome
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_EndInterruptedBerryPestInteraction(void)
+{
+    if (sBerryPestInteraction.state != ADMG_BERRY_PEST_RUNNING)
+        return FALSE;
+    sBerryPestInteraction.outcome = sBerryPestInteraction.encountered ? gBattleOutcome : 0;
+    sBerryPestInteraction.state = ADMG_BERRY_PEST_INTERRUPTED;
+    return TRUE;
+}
+
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetBerryPestInteractionState(void) { return sBerryPestInteraction.state; }
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetBerryPestInteractionTree(void) { return sBerryPestInteraction.tree; }
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetBerryPestInteractionSpecies(void) { return sBerryPestInteraction.species; }
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetBerryPestInteractionOutcome(void) { return sBerryPestInteraction.outcome; }
+
+// Return a finished or interrupted request to idle, keeping its result
+// Leave a running request alone
+ADMG_NATIVE_ENTRY void ADMG_ClearBerryPestInteraction(void)
+{
+    if (sBerryPestInteraction.state != ADMG_BERRY_PEST_RUNNING)
+        sBerryPestInteraction.state = ADMG_BERRY_PEST_IDLE;
 }
 
 // Berry tree growth is frozen at their initial stage (usually, fully grown) until the player has seen the tree
@@ -2923,7 +3244,7 @@ void SetBerryTreesSeen(void)
 
 bool8 PlayerHasMulch(void)
 {
-    if (!OW_BERRY_MULCH_USAGE)
+    if (!BERRY_MULCH_USAGE)
         return FALSE;
     if (CheckBagHasItem(ITEM_GROWTH_MULCH, 1))
         return TRUE;
@@ -3003,7 +3324,7 @@ static u8 TryForMutation(u8 berryTreeId, u8 berry)
         {
             x2 = gObjectEvents[j].currentCoords.x;
             y2 = gObjectEvents[j].currentCoords.y;
-            u32 rate = OW_BERRY_MUTATION_CHANCE;
+            u32 rate = BERRY_MUTATION_CHANCE;
 
             if (mulch == ITEM_TO_MULCH(ITEM_SURPRISE_MULCH) || mulch == ITEM_TO_MULCH(ITEM_AMAZE_MULCH))
                 rate *= 2;
@@ -3063,9 +3384,8 @@ static void SetTreeMutations(u8 id, u8 berry)
 
 static enum Species GetBerryPestSpecies(u8 berryId)
 {
-#if OW_BERRY_PESTS == TRUE
-    const struct BerryInfo *berryInfo = GetBerryInfo(berryId);
-    switch (berryInfo->color)
+    // Keep this lookup available even with pests disabled; the selected berry color determines the species
+    switch (ADMG_GetBerryColor(berryId))
     {
     case BERRY_COLOR_RED:
         return P_FAMILY_LEDYBA ? SPECIES_LEDYBA : SPECIES_NONE;
@@ -3086,7 +3406,6 @@ static enum Species GetBerryPestSpecies(u8 berryId)
         return P_FAMILY_SCATTERBUG ? SPECIES_SPEWPA : SPECIES_NONE;
         break;
     }
-#endif
     return SPECIES_NONE;
 }
 
@@ -3095,7 +3414,7 @@ static enum Species GetBerryPestSpecies(u8 berryId)
 
 static void TryForWeeds(struct BerryTree *tree)
 {
-    if (!OW_BERRY_WEEDS)
+    if (!BERRY_WEEDS)
         return;
     if (tree->weeds == TRUE)
         return;
@@ -3105,7 +3424,8 @@ static void TryForWeeds(struct BerryTree *tree)
 
 static void TryForPests(struct BerryTree *tree)
 {
-    if (!OW_BERRY_WEEDS)
+    // Pests follow BERRY_PESTS independently of weeds
+    if (!BERRY_PESTS)
         return;
     if (tree->pests == TRUE)
         return;
@@ -3115,23 +3435,43 @@ static void TryForPests(struct BerryTree *tree)
 
 static void AddTreeBonus(struct BerryTree *tree, u8 bonus)
 {
-    if (OW_BERRY_MOISTURE) // use watered field to save track of intermediate bonuses
+    if (BERRY_MOISTURE) // Track partial yield bonuses in watered while moisture is enabled
     {
         tree->watered += bonus;
         while (tree->watered > 10)
         {
             tree->watered -= 10;
             bonus = tree->berryYield + 1;
-            if (bonus > GetBerryInfo(tree->berry)->maxYield)
-                bonus = GetBerryInfo(tree->berry)->maxYield;
+            if (bonus > ADMG_GetBerryMaxYield(tree->berry))
+                bonus = ADMG_GetBerryMaxYield(tree->berry);
             tree->berryYield = bonus;
         }
     }
     else
     {
         bonus = tree->berryYield + bonus / 10;
-        if (bonus > GetBerryInfo(tree->berry)->maxYield)
-            bonus = GetBerryInfo(tree->berry)->maxYield;
+        if (bonus > ADMG_GetBerryMaxYield(tree->berry))
+            bonus = ADMG_GetBerryMaxYield(tree->berry);
         tree->berryYield = bonus;
     }
 }
+
+ADMG_RETAIN_FUNCTION(ADMG_GetBerryGrowthHours);
+ADMG_RETAIN_FUNCTION(ADMG_GetBerryMaxYield);
+ADMG_RETAIN_FUNCTION(ADMG_GetBerryMinYield);
+ADMG_RETAIN_FUNCTION(ADMG_GetBerryColor);
+ADMG_RETAIN_FUNCTION(ADMG_CanWaterBerryTree);
+ADMG_RETAIN_FUNCTION(ADMG_WaterBerryTree);
+ADMG_RETAIN_FUNCTION(ADMG_PlantBerryFromBag);
+ADMG_RETAIN_FUNCTION(ADMG_ApplyBerryMulchFromBag);
+ADMG_RETAIN_FUNCTION(ADMG_HarvestBerryTree);
+ADMG_RETAIN_FUNCTION(ADMG_PullBerryTreeWeeds);
+ADMG_RETAIN_FUNCTION(ADMG_GetBerryTreeMutation);
+ADMG_RETAIN_FUNCTION(ADMG_GetBerryPestSpecies);
+ADMG_RETAIN_FUNCTION(ADMG_StartBerryPestInteraction);
+ADMG_RETAIN_FUNCTION(ADMG_EndInterruptedBerryPestInteraction);
+ADMG_RETAIN_FUNCTION(ADMG_GetBerryPestInteractionState);
+ADMG_RETAIN_FUNCTION(ADMG_GetBerryPestInteractionTree);
+ADMG_RETAIN_FUNCTION(ADMG_GetBerryPestInteractionSpecies);
+ADMG_RETAIN_FUNCTION(ADMG_GetBerryPestInteractionOutcome);
+ADMG_RETAIN_FUNCTION(ADMG_ClearBerryPestInteraction);

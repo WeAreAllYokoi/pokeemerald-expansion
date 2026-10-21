@@ -1,6 +1,8 @@
 #ifndef GUARD_BERRY_H
 #define GUARD_BERRY_H
 
+#include "admg_native.h"
+
 void SetEnigmaBerry(u8 *src);
 bool32 IsEnigmaBerryValid(void);
 const struct BerryInfo *GetBerryInfo(enum BerryId berry);
@@ -255,5 +257,67 @@ extern const u16 gBerryPalette_Kee[];
 extern const u16 gBerryPalette_Maranga[];
 
 extern const struct Berry gBerries[];
+
+// Berry queries and actions shared by tree scripts, bag items and the platform API
+enum ADMG_BerryResult
+{
+    ADMG_BERRY_OK = 0,
+    ADMG_BERRY_INVALID_TREE = 1,
+    ADMG_BERRY_PLOT_OCCUPIED = 2,
+    ADMG_BERRY_NOT_A_BERRY = 3,
+    ADMG_BERRY_NOT_IN_BAG = 4,
+    ADMG_BERRY_NOT_WATERABLE = 5,
+    ADMG_BERRY_NO_WAILMER_PAIL = 6,
+    ADMG_BERRY_SOIL_NOT_DRY = 7,
+    ADMG_BERRY_MULCH_DISABLED = 8,
+    ADMG_BERRY_NOT_MULCH = 9,
+    ADMG_BERRY_WEEDS_DISABLED = 10,
+    ADMG_BERRY_NO_WEEDS = 11,
+    ADMG_BERRY_NOT_RIPE = 12,
+    ADMG_BERRY_BAG_FULL = 13,
+    ADMG_BERRY_MUTATION_BAG_FULL = 14,
+    ADMG_BERRY_HARVESTED_WITH_MUTATION = 15,
+};
+
+enum ADMG_BerryPestStart
+{
+    ADMG_BERRY_PEST_STARTED = 0,
+    ADMG_BERRY_PEST_INVALID_TREE = 1,
+    ADMG_BERRY_PEST_DISABLED = 2,
+    ADMG_BERRY_PEST_BUSY = 3,
+    ADMG_BERRY_PEST_NOT_FACING = 4,
+    ADMG_BERRY_PEST_NO_PESTS = 5,
+    ADMG_BERRY_PEST_NO_SPECIES = 6,
+};
+
+enum ADMG_BerryPestState
+{
+    ADMG_BERRY_PEST_IDLE = 0,
+    ADMG_BERRY_PEST_RUNNING = 1,
+    ADMG_BERRY_PEST_FINISHED = 2,
+    ADMG_BERRY_PEST_INTERRUPTED = 3,
+};
+
+struct ScriptContext;
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetBerryGrowthHours(ADMG_Word berry);
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetBerryMaxYield(ADMG_Word berry);
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetBerryMinYield(ADMG_Word berry);
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetBerryColor(ADMG_Word berry);
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_CanWaterBerryTree(ADMG_Word id);
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_WaterBerryTree(ADMG_Word id);
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_PlantBerryFromBag(ADMG_Word id, ADMG_Word itemId);
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_ApplyBerryMulchFromBag(ADMG_Word id, ADMG_Word itemId);
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_HarvestBerryTree(ADMG_Word id);
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_PullBerryTreeWeeds(ADMG_Word id);
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetBerryTreeMutation(ADMG_Word id);
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetBerryPestSpecies(ADMG_Word berry);
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_StartBerryPestInteraction(ADMG_Word id);
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_EndInterruptedBerryPestInteraction(void);
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetBerryPestInteractionState(void);
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetBerryPestInteractionTree(void);
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetBerryPestInteractionSpecies(void);
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetBerryPestInteractionOutcome(void);
+ADMG_NATIVE_ENTRY void ADMG_ClearBerryPestInteraction(void);
+void ADMG_ScriptFinishBerryPestInteraction(struct ScriptContext *ctx);
 
 #endif // GUARD_BERRY_H

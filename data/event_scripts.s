@@ -1,4 +1,5 @@
 #include "constants/admg_state_ids.h"
+#include "constants/admg_feature_policy_ids.h"
 #include "config/general.h"
 #include "config/battle.h"
 #include "config/item.h"
