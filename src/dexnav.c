@@ -2597,6 +2597,8 @@ bool32 TryFindHiddenPokemon(void)
             return FALSE;
 
         sDexNavSearchDataPtr = AllocZeroed(sizeof(struct DexNavSearch));
+        if (sDexNavSearchDataPtr == NULL)
+            return FALSE;
         FlagSet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING));
         // init search data
         sDexNavSearchDataPtr->isHiddenMon = isHiddenMon;
