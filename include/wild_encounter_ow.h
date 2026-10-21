@@ -74,6 +74,44 @@ struct FieldEffectInfoOWE
 
 extern const struct FieldEffectInfoOWE gOverworldWildEncounterFieldEffectInfo[];
 
+/* Results of synchronous manual encounter spawn and removal requests.
+ * No status indicates queued work. */
+enum ADMG_OverworldEncounterRequestStatus
+{
+    ADMG_OWE_REQUEST_SPAWNED = 1,
+    ADMG_OWE_REQUEST_REMOVED,
+    ADMG_OWE_REQUEST_FIELD_NOT_IDLE,
+    ADMG_OWE_REQUEST_UNAVAILABLE,
+    ADMG_OWE_REQUEST_MISSING_TEMPLATE,
+    ADMG_OWE_REQUEST_INVALID_TEMPLATE,
+    ADMG_OWE_REQUEST_HIDDEN_BY_FLAG,
+    ADMG_OWE_REQUEST_ALREADY_PRESENT,
+    ADMG_OWE_REQUEST_POSITION_UNAVAILABLE,
+    ADMG_OWE_REQUEST_OBJECT_CAPACITY,
+    ADMG_OWE_REQUEST_SPRITE_CAPACITY,
+    ADMG_OWE_REQUEST_PALETTE_CAPACITY,
+    ADMG_OWE_REQUEST_TILE_CAPACITY,
+    ADMG_OWE_REQUEST_NO_ENCOUNTER_DATA,
+    ADMG_OWE_REQUEST_GRAPHICS_UNAVAILABLE,
+    ADMG_OWE_REQUEST_SPAWN_FAILED,
+    ADMG_OWE_REQUEST_WRONG_MAP,
+    ADMG_OWE_REQUEST_NOT_PRESENT,
+    ADMG_OWE_REQUEST_INVALID_REQUEST,
+};
+
+struct ADMG_ManualEncounterResult
+{
+    u32 status;
+    u32 objectEventId;
+    u32 localId;
+    u32 mapId;
+    u32 species;
+    u32 level;
+};
+
+u32 ADMG_SpawnManualOverworldEncounter(u32 localId, s32 x, s32 y, u32 overridePosition, struct ADMG_ManualEncounterResult *result);
+u32 ADMG_RemoveManualOverworldEncounter(u32 localId, u32 expectedMap, u32 objectEventId);
+
 /* Availability requires OW_POKEMON_OBJECT_EVENTS and ROAMER_COUNT <= OWE_MAX_ROAMERS. */
 bool32 ADMG_OverworldEncountersAvailable(void);
 bool32 ADMG_OverworldEncountersEnabled(void);

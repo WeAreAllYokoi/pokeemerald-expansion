@@ -162,6 +162,9 @@ u8 CreateObjectGraphicsSprite(u16 graphicsId, void (*callback)(struct Sprite *),
 u8 TrySpawnObjectEvent(u8 localId, MapId mapId);
 u8 SpawnSpecialObjectEventParameterized(u16 graphicsId, u8 movementBehavior, u8 localId, s16 x, s16 y, u8 elevation);
 u8 SpawnSpecialObjectEvent(struct ObjectEventTemplate *objectEventTemplate);
+/* Spawn the template already resolved by the request adapter, so spawning uses
+ * the same encounter data that passed the palette and tile capacity checks. */
+u8 ADMG_SpawnResolvedManualOverworldEncounter(const struct ObjectEventTemplate *objectEventTemplate);
 void SetSpritePosToMapCoords(s16 mapX, s16 mapY, s16 *destX, s16 *destY);
 void CameraObjectReset(void);
 u8 LoadObjectEventPalette(u16);

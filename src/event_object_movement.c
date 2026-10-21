@@ -1613,7 +1613,8 @@ static bool8 ADMG_TryReadObjectTemplateState(const struct ObjectEventTemplate *t
     if (graphicsId >= OBJ_EVENT_GFX_VARS && graphicsId <= OBJ_EVENT_GFX_VAR_F
      && !ADMG_TryReadObjectGraphicsVar(graphicsId - OBJ_EVENT_GFX_VARS, &graphicsId))
         return FALSE;
-    if ((graphicsId & OBJ_EVENT_MON) && !(template->script && template->script[0] == 0x7d)
+    if (template->trainerType != TRAINER_TYPE_OW_WILD_ENCOUNTER
+     && (graphicsId & OBJ_EVENT_MON) && !(template->script && template->script[0] == 0x7d)
      && template->trainerRange_berryTreeId
      && !ADMG_TryReadVar(template->trainerRange_berryTreeId, shinyState, TRUE))
         return FALSE;
@@ -1682,7 +1683,7 @@ static u8 InitObjectEventStateFromTemplate(const struct ObjectEventTemplate *tem
     objectEvent->triggerGroundEffectsOnMove = TRUE;
     objectEvent->graphicsId = template->graphicsId;
     SetObjectEventDynamicGraphicsId(objectEvent);
-    if (IS_OW_MON_OBJ(objectEvent))
+    if (IS_OW_MON_OBJ(objectEvent) && template->trainerType != TRAINER_TYPE_OW_WILD_ENCOUNTER)
     {
         if (template->script && template->script[0] == 0x7d)
             objectEvent->shiny = T1_READ_16(&template->script[2]) >> 15;
@@ -1963,7 +1964,7 @@ static u8 TrySetupObjectEventSprite(const struct ObjectEventTemplate *objectEven
     return objectEventId;
 }
 
-u8 TrySpawnObjectEventTemplate(const struct ObjectEventTemplate *objectEventTemplate, MapId mapId, s16 cameraX, s16 cameraY)
+static u8 TrySpawnObjectEventTemplateInternal(const struct ObjectEventTemplate *objectEventTemplate, MapId mapId, s16 cameraX, s16 cameraY, bool32 resolveOverworldEncounter)
 {
     u32 shinyState;
     if (!ADMG_TryReadObjectTemplateState(objectEventTemplate, mapId, &shinyState))
@@ -1978,7 +1979,7 @@ u8 TrySpawnObjectEventTemplate(const struct ObjectEventTemplate *objectEventTemp
     struct SpriteFrameImage spriteFrameImage;
     const struct ObjectEventGraphicsInfo *graphicsInfo;
     const struct SubspriteTable *subspriteTables = NULL;
-    const struct ObjectEventTemplate objectEventTemplateLocal = TryGetObjectEventTemplateForOWE(objectEventTemplate);
+    const struct ObjectEventTemplate objectEventTemplateLocal = resolveOverworldEncounter ? TryGetObjectEventTemplateForOWE(objectEventTemplate) : *objectEventTemplate;
     u16 graphicsId = objectEventTemplateLocal.graphicsId;
 
     graphicsInfo = GetObjectEventGraphicsInfo(graphicsId);
@@ -1995,6 +1996,22 @@ u8 TrySpawnObjectEventTemplate(const struct ObjectEventTemplate *objectEventTemp
 
     OnOverworldWildEncounterSpawn(&gObjectEvents[objectEventId]);
     return objectEventId;
+}
+
+u8 TrySpawnObjectEventTemplate(const struct ObjectEventTemplate *objectEventTemplate, MapId mapId, s16 cameraX, s16 cameraY)
+{
+    return TrySpawnObjectEventTemplateInternal(objectEventTemplate, mapId, cameraX, cameraY, TRUE);
+}
+
+u8 ADMG_SpawnResolvedManualOverworldEncounter(const struct ObjectEventTemplate *objectEventTemplate)
+{
+    s16 cameraX, cameraY;
+    if (objectEventTemplate == NULL || gSaveBlock1Ptr == NULL
+     || objectEventTemplate->trainerType != TRAINER_TYPE_OW_WILD_ENCOUNTER
+     || IS_LOCALID_GENERATED_OWE(objectEventTemplate->localId))
+        return OBJECT_EVENTS_COUNT;
+    GetObjectEventMovingCameraOffset(&cameraX, &cameraY);
+    return TrySpawnObjectEventTemplateInternal(objectEventTemplate, gSaveBlock1Ptr->location.mapId, cameraX, cameraY, FALSE);
 }
 
 u8 SpawnSpecialObjectEvent(struct ObjectEventTemplate *objectEventTemplate)

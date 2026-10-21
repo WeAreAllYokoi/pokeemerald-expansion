@@ -26,6 +26,8 @@
 #include "sprite.h"
 #include "sound.h"
 #include "task.h"
+#include "main.h"
+#include "link.h"
 #include "trainer_hill.h"
 #include "wild_encounter.h"
 #include "constants/battle_frontier.h"
@@ -1750,11 +1752,14 @@ u32 GetNumberOfActiveOWEs(enum TypeOWE oweType)
     return numActive;
 }
 
-const struct ObjectEventTemplate TryGetObjectEventTemplateForOWE(const struct ObjectEventTemplate *template)
+static bool32 ResolveManualEncounterTemplate(const struct ObjectEventTemplate *template, struct ObjectEventTemplate *result, bool32 refuseInvalid)
 {
     if (template->trainerType != TRAINER_TYPE_OW_WILD_ENCOUNTER
      || IS_LOCALID_GENERATED_OWE(template->localId))
-        return *template;
+    {
+        *result = *template;
+        return TRUE;
+    }
 
     struct ObjectEventTemplate templateOWE = *template;
     struct InfoOWE info = {0};
@@ -1773,10 +1778,14 @@ const struct ObjectEventTemplate TryGetObjectEventTemplateForOWE(const struct Ob
     if (levelTemplate)
         info.level = levelTemplate;
 
+    if (refuseInvalid && (!CheckValidOWESpecies(info.speciesId) || info.level < MIN_LEVEL || info.level > MAX_LEVEL))
+        return FALSE;
+
+    u32 previousObject = GetObjectEventIdByLocalId(template->localId);
     assertf((CheckValidOWESpecies(info.speciesId)
         && info.level >= MIN_LEVEL
         && info.level <= MAX_LEVEL)
-        || gObjectEvents[GetObjectEventIdByLocalId(template->localId)].active,
+        || (previousObject < OBJECT_EVENTS_COUNT && gObjectEvents[previousObject].active),
         "invalid manual overworld encounter template\nspecies: %d\nlevel: %d\ntemplate x: %d\ntemplate y: %d\ncheck if valid wild mon header exists", info.speciesId, info.level, x, y)
     {
         if (!CheckValidOWESpecies(info.speciesId))
@@ -1785,7 +1794,8 @@ const struct ObjectEventTemplate TryGetObjectEventTemplateForOWE(const struct Ob
             templateOWE.trainerType = TRAINER_TYPE_NONE;
             templateOWE.sOverworldEncounterLevel = 0;
             templateOWE.movementType = MOVEMENT_TYPE_NONE;
-            return templateOWE;
+            *result = templateOWE;
+            return TRUE;
         }
         else if (!(info.level >= MIN_LEVEL && info.level <= MAX_LEVEL))
         {
@@ -1809,7 +1819,15 @@ const struct ObjectEventTemplate TryGetObjectEventTemplateForOWE(const struct Ob
     templateOWE.graphicsId = GetGraphicsIdForOWE(&info);
     templateOWE.sOverworldEncounterLevel = info.level;
     
-    return templateOWE;
+    *result = templateOWE;
+    return TRUE;
+}
+
+const struct ObjectEventTemplate TryGetObjectEventTemplateForOWE(const struct ObjectEventTemplate *template)
+{
+    struct ObjectEventTemplate result;
+    ResolveManualEncounterTemplate(template, &result, FALSE);
+    return result;
 }
 
 struct SpritePalette GetOWESpawnDespawnAnimFldEffPalette(enum SpawnDespawnTypeOWE spawnAnim)
@@ -1855,9 +1873,152 @@ bool32 CanRemoveObjectForOWEMovement(struct ObjectEvent *objectEvent)
     return TRUE;
 }
 
-#undef sOverworldEncounterLevel
-#undef sOverworldEncounterAge
-#undef sOverworldEncounterCategory
+
+/* Spawn and removal requests run synchronously after this idle-field check.
+ * Spawns use the current map's saved object templates, preserving their flags and scripts. */
+static bool32 ADMG_OWEFieldIsIdle(void)
+{
+    return gSaveBlock1Ptr != NULL && gSaveBlock2Ptr != NULL
+        && gMapHeader.mapLayout != NULL && gMapHeader.events != NULL && gBackupMapLayout.map != NULL
+        && ADMG_IsMapIdValid(gSaveBlock1Ptr->location.mapId)
+        && gMain.callback2 == CB2_Overworld && !gMain.inBattle
+        && !ScriptContext_IsEnabled() && !ArePlayerFieldControlsLocked();
+}
+
+static u32 ADMG_OWERequestResult(struct ADMG_ManualEncounterResult *result, u32 status)
+{
+    result->status = status;
+    return status;
+}
+
+ADMG_NATIVE_ENTRY u32 ADMG_SpawnManualOverworldEncounter(u32 localId, s32 x, s32 y, u32 overridePosition, struct ADMG_ManualEncounterResult *result)
+{
+    const struct ObjectEventTemplate *declared;
+    struct ObjectEventTemplate seed, prepared;
+    const struct ObjectEventGraphicsInfo *graphics;
+    struct Pokemon previousPartyA[PARTY_SIZE], previousPartyB[PARTY_SIZE];
+    u8 previousPartyCountA, previousPartyCountB;
+    u32 i, freeObjects = 0, freeSprites = 0;
+    u32 objectEventId, species, graphicsId;
+    u16 tileTag, paletteTag;
+    bool32 tilesWereLoaded, paletteWasLoaded, resolved;
+    s32 gridX, gridY;
+    if (result == NULL)
+        return ADMG_OWE_REQUEST_INVALID_REQUEST;
+    *result = (struct ADMG_ManualEncounterResult) { .objectEventId = OBJECT_EVENTS_COUNT, .localId = localId };
+    if (!ADMG_OverworldEncountersAvailable())
+        return ADMG_OWERequestResult(result, ADMG_OWE_REQUEST_UNAVAILABLE);
+    if (!ADMG_OWEFieldIsIdle())
+        return ADMG_OWERequestResult(result, ADMG_OWE_REQUEST_FIELD_NOT_IDLE);
+    result->mapId = gSaveBlock1Ptr->location.mapId;
+    if (localId == LOCALID_NONE || localId > UINT8_MAX || overridePosition > 1
+     || localId == LOCALID_CAMERA || localId >= OBJ_EVENT_ID_NPC_FOLLOWER
+     || IS_LOCALID_GENERATED_OWE(localId)
+     || (localId <= LOCALID_BERRY_BLENDER_PLAYER_END && localId > LOCALID_BERRY_BLENDER_PLAYER_END - MAX_RFU_PLAYERS))
+        return ADMG_OWERequestResult(result, ADMG_OWE_REQUEST_INVALID_REQUEST);
+    declared = GetObjectEventTemplateByLocalIdAndMap(localId, gSaveBlock1Ptr->location.mapId);
+    if (declared == NULL)
+        return ADMG_OWERequestResult(result, ADMG_OWE_REQUEST_MISSING_TEMPLATE);
+    if (declared->kind != OBJ_KIND_NORMAL || declared->trainerType != TRAINER_TYPE_OW_WILD_ENCOUNTER
+     || !ADMG_IsFlagIdValid(declared->flagId)
+     || (declared->sOverworldEncounterLevel != 0 && declared->sOverworldEncounterLevel > MAX_LEVEL))
+        return ADMG_OWERequestResult(result, ADMG_OWE_REQUEST_INVALID_TEMPLATE);
+    if (FlagGet(declared->flagId))
+        return ADMG_OWERequestResult(result, ADMG_OWE_REQUEST_HIDDEN_BY_FLAG);
+    if (GetObjectEventIdByLocalId(localId) < OBJECT_EVENTS_COUNT)
+        return ADMG_OWERequestResult(result, ADMG_OWE_REQUEST_ALREADY_PRESENT);
+    seed = *declared;
+    if (!overridePosition)
+    {
+        x = seed.x;
+        y = seed.y;
+    }
+    if (x < 0 || y < 0 || x > INT16_MAX - MAP_OFFSET || y > INT16_MAX - MAP_OFFSET)
+        return ADMG_OWERequestResult(result, ADMG_OWE_REQUEST_POSITION_UNAVAILABLE);
+    gridX = x + MAP_OFFSET;
+    gridY = y + MAP_OFFSET;
+    if (!AreCoordsInsidePlayerMap(gridX, gridY) || MapGridGetCollisionAt(gridX, gridY)
+     || GetObjectEventIdByPosition(gridX, gridY, 0) < OBJECT_EVENTS_COUNT
+     || MapGridGetElevationAt(gridX, gridY) == ELEVATION_TRANSITION
+     || MapGridGetElevationAt(gridX, gridY) == ELEVATION_MULTI_LEVEL)
+        return ADMG_OWERequestResult(result, ADMG_OWE_REQUEST_POSITION_UNAVAILABLE);
+    for (i = 0; i < OBJECT_EVENTS_COUNT; ++i)
+        freeObjects += !gObjectEvents[i].active;
+    if (freeObjects == 0)
+        return ADMG_OWERequestResult(result, ADMG_OWE_REQUEST_OBJECT_CAPACITY);
+    for (i = 0; i < MAX_SPRITES; ++i)
+        freeSprites += !gSprites[i].inUse;
+    /* Require two free sprite slots: one for the object and one for its spawn effect. */
+    if (freeSprites < 2)
+        return ADMG_OWERequestResult(result, ADMG_OWE_REQUEST_SPRITE_CAPACITY);
+    seed.x = x;
+    seed.y = y;
+    seed.elevation = MapGridGetElevationAt(gridX, gridY);
+
+    /* Resolving encounter data uses and clears the opponent parties as scratch storage.
+     * Preserve both parties and their counts; this request spawns a map object without starting a battle. */
+    memcpy(previousPartyA, gParties[B_TRAINER_OPPONENT_A], sizeof(previousPartyA));
+    memcpy(previousPartyB, gParties[B_TRAINER_OPPONENT_B], sizeof(previousPartyB));
+    previousPartyCountA = gPartiesCount[B_TRAINER_OPPONENT_A];
+    previousPartyCountB = gPartiesCount[B_TRAINER_OPPONENT_B];
+    resolved = ResolveManualEncounterTemplate(&seed, &prepared, TRUE);
+    memcpy(gParties[B_TRAINER_OPPONENT_A], previousPartyA, sizeof(previousPartyA));
+    memcpy(gParties[B_TRAINER_OPPONENT_B], previousPartyB, sizeof(previousPartyB));
+    gPartiesCount[B_TRAINER_OPPONENT_A] = previousPartyCountA;
+    gPartiesCount[B_TRAINER_OPPONENT_B] = previousPartyCountB;
+    if (!resolved)
+        return ADMG_OWERequestResult(result, ADMG_OWE_REQUEST_NO_ENCOUNTER_DATA);
+    graphicsId = prepared.graphicsId;
+    species = graphicsId & OBJ_EVENT_MON_SPECIES_MASK;
+    if (!CheckValidOWESpecies(species) || !(graphicsId & OBJ_EVENT_MON))
+        return ADMG_OWERequestResult(result, ADMG_OWE_REQUEST_INVALID_TEMPLATE);
+    graphics = SpeciesToGraphicsInfo(species, graphicsId & OBJ_EVENT_MON_SHINY, graphicsId & OBJ_EVENT_MON_FEMALE);
+    if (graphics == NULL || graphics == &gSpeciesInfo[SPECIES_NONE].overworldData
+     || graphics->oam == NULL || graphics->images == NULL || graphics->images->data == NULL || graphics->size == 0)
+        return ADMG_OWERequestResult(result, ADMG_OWE_REQUEST_GRAPHICS_UNAVAILABLE);
+    if (!CheckCanLoadOWE_Palette(species, graphicsId & OBJ_EVENT_MON_FEMALE, graphicsId & OBJ_EVENT_MON_SHINY, gridX, gridY))
+        return ADMG_OWERequestResult(result, ADMG_OWE_REQUEST_PALETTE_CAPACITY);
+    if (!CheckCanLoadOWE_Tiles(species, graphicsId & OBJ_EVENT_MON_FEMALE, graphicsId & OBJ_EVENT_MON_SHINY, gridX, gridY))
+        return ADMG_OWERequestResult(result, ADMG_OWE_REQUEST_TILE_CAPACITY);
+
+    tileTag = graphics->tileTag;
+    if (OW_GFX_COMPRESS && tileTag == TAG_NONE && graphics->compressed)
+        tileTag = COMP_OW_TILE_TAG_BASE + graphicsId;
+    tilesWereLoaded = tileTag == TAG_NONE || GetSpriteTileStartByTag(tileTag) != TAG_NONE;
+    paletteTag = graphics->paletteTag;
+    paletteWasLoaded = paletteTag == TAG_NONE || paletteTag == OBJ_EVENT_PAL_TAG_DYNAMIC || IndexOfSpritePaletteTag(paletteTag) != 0xFF;
+    objectEventId = ADMG_SpawnResolvedManualOverworldEncounter(&prepared);
+    if (objectEventId >= OBJECT_EVENTS_COUNT)
+    {
+        /* On failure, free only tile sheets and palettes loaded by this spawn attempt. */
+        if (!tilesWereLoaded && GetSpriteTileStartByTag(tileTag) != TAG_NONE)
+            FreeSpriteTilesByTag(tileTag);
+        if (!paletteWasLoaded && IndexOfSpritePaletteTag(paletteTag) != 0xFF)
+            FreeSpritePaletteByTag(paletteTag);
+        return ADMG_OWERequestResult(result, ADMG_OWE_REQUEST_SPAWN_FAILED);
+    }
+    result->objectEventId = objectEventId;
+    result->species = OW_SPECIES(&gObjectEvents[objectEventId]);
+    result->level = gObjectEvents[objectEventId].sOverworldEncounterLevel;
+    return ADMG_OWERequestResult(result, ADMG_OWE_REQUEST_SPAWNED);
+}
+
+ADMG_NATIVE_ENTRY u32 ADMG_RemoveManualOverworldEncounter(u32 localId, u32 expectedMap, u32 objectEventId)
+{
+    if (!ADMG_OWEFieldIsIdle())
+        return ADMG_OWE_REQUEST_FIELD_NOT_IDLE;
+    if (expectedMap != gSaveBlock1Ptr->location.mapId)
+        return ADMG_OWE_REQUEST_WRONG_MAP;
+    if (objectEventId >= OBJECT_EVENTS_COUNT || !gObjectEvents[objectEventId].active
+     || gObjectEvents[objectEventId].localId != localId || gObjectEvents[objectEventId].mapId != expectedMap
+     || !IsOverworldWildEncounter(&gObjectEvents[objectEventId], OWE_MANUAL))
+        return ADMG_OWE_REQUEST_NOT_PRESENT;
+    RemoveObjectEvent(&gObjectEvents[objectEventId]);
+    return ADMG_OWE_REQUEST_REMOVED;
+}
+
+ADMG_RETAIN_FUNCTION(ADMG_SpawnManualOverworldEncounter);
+ADMG_RETAIN_FUNCTION(ADMG_RemoveManualOverworldEncounter);
 
 /* Retain the encounter entry points, availability queries and field-effect data
  * even when encounters are disabled by default. */
@@ -1869,3 +2030,7 @@ ADMG_RETAIN_FUNCTION(DespawnAllOverworldWildEncounters);
 ADMG_RETAIN_FUNCTION(TryTriggerOverworldWildEncounter);
 ADMG_RETAIN_FUNCTION(TryGetObjectEventTemplateForOWE);
 ADMG_RETAIN_DATA(gOverworldWildEncounterFieldEffectInfo);
+
+#undef sOverworldEncounterLevel
+#undef sOverworldEncounterAge
+#undef sOverworldEncounterCategory
