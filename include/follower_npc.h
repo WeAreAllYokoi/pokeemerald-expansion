@@ -93,6 +93,7 @@ enum FollowerNPCForcedMovementStates
 #define FNPC_NONE   0
 #define FNPC_ALWAYS 2
 
+bool32 ADMG_NPCFollowerStateAvailable(void);
 void SetFollowerNPCData(enum FollowerNPCDataTypes type, u32 value);
 const u8 *GetFollowerNPCScriptPointer(void);
 u32 GetFollowerNPCData(enum FollowerNPCDataTypes type);

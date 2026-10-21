@@ -1,5 +1,8 @@
 #include "global.h"
 #include "admg_feature_bindings.h"
+#include "admg_feature_state.h"
+#include "admg_feature_policies.h"
+#include "admg_retention.h"
 #include "admg_script.h"
 #include "follower_npc.h"
 #include "follower_npc_alternate_sprites.h"
@@ -73,115 +76,159 @@ static void Task_FollowerNPCHandleEscalatorFinish(u8 taskId);
 static void CalculateFollowerNPCEscalatorTrajectoryUp(struct Task *task);
 static void CalculateFollowerNPCEscalatorTrajectoryDown(struct Task *task);
 
-void SetFollowerNPCData(enum FollowerNPCDataTypes type, u32 value)
+/* Follower state requires an enabled policy, bridge version 1, and a nonzero host state address.
+ * Unavailable saved resource references can prevent the host from supplying that address. */
+static struct ADMG_NPCFollower *GetNPCFollowerState(void)
 {
-#if FNPC_ENABLE_NPC_FOLLOWERS
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_NPC_FOLLOWERS)
+     || ADMG_GetFeatureStateBridgeVersion() != 1)
+        return NULL;
+    return (struct ADMG_NPCFollower *)ADMG_GetFeatureState(ADMG_FEATURE_STATE_NPC_FOLLOWER);
+}
+
+ADMG_NATIVE_ENTRY bool32 ADMG_NPCFollowerStateAvailable(void)
+{
+    return GetNPCFollowerState() != NULL;
+}
+
+static bool32 NPCFollowerDataValueValid(enum FollowerNPCDataTypes type, u32 value)
+{
     switch (type)
     {
     case FNPC_DATA_IN_PROGRESS:
-        gSaveBlock3Ptr->NPCfollower.inProgress = value;
+    case FNPC_DATA_WARP_END: return value <= 1;
+    case FNPC_DATA_SURF_BLOB: return value <= FNPC_SURF_BLOB_DESTROY;
+    case FNPC_DATA_COME_OUT_DOOR: return value <= FNPC_DOOR_NO_POS_SET;
+    case FNPC_DATA_FORCED_MOVEMENT: return value <= FNPC_FORCED_STAY;
+    case FNPC_DATA_OBJ_ID: return value <= OBJECT_EVENTS_COUNT;
+    case FNPC_DATA_CURRENT_SPRITE: return value <= FOLLOWER_NPC_SPRITE_INDEX_UNDERWATER;
+    case FNPC_DATA_DELAYED_STATE: return value <= 0xFF;
+    case FNPC_DATA_FOLLOWER_FLAGS: return (value & ~((FOLLOWER_NPC_FLAG_ALL) | FOLLOWER_NPC_FLAG_HAS_RUNNING_FRAMES)) == 0;
+    case FNPC_DATA_EVENT_FLAG:
+    case FNPC_DATA_GFX_ID:
+    case FNPC_DATA_BATTLE_PARTNER: return TRUE; // Accept full 32-bit IDs here; consumers must validate them against their resource limits.
+    default: return FALSE;
+    }
+}
+
+ADMG_NATIVE_ENTRY void SetFollowerNPCData(enum FollowerNPCDataTypes type, u32 value)
+{
+    struct ADMG_NPCFollower *state = GetNPCFollowerState();
+    if (state == NULL) return;
+    if (!NPCFollowerDataValueValid(type, value))
+    {
+        ADMG_StateAccessRejected(value, __func__);
+        return;
+    }
+    Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
+    switch (type)
+    {
+    case FNPC_DATA_IN_PROGRESS:
+        state->inProgress = value;
         break;
     case FNPC_DATA_WARP_END:
-        gSaveBlock3Ptr->NPCfollower.warpEnd = value;
+        state->warpEnd = value;
         break;
     case FNPC_DATA_SURF_BLOB:
-        gSaveBlock3Ptr->NPCfollower.createSurfBlob = value;
+        state->createSurfBlob = value;
         break;
     case FNPC_DATA_COME_OUT_DOOR:
-        gSaveBlock3Ptr->NPCfollower.comeOutDoorStairs = value;
+        state->comeOutDoorStairs = value;
         break;
     case FNPC_DATA_FORCED_MOVEMENT:
-        gSaveBlock3Ptr->NPCfollower.forcedMovement = value;
+        state->forcedMovement = value;
         break;
     case FNPC_DATA_OBJ_ID:
-        gSaveBlock3Ptr->NPCfollower.objId = value;
+        state->objId = value;
         break;
     case FNPC_DATA_CURRENT_SPRITE:
-        gSaveBlock3Ptr->NPCfollower.currentSprite = value;
+        state->currentSprite = value;
         break;
     case FNPC_DATA_DELAYED_STATE:
-        gSaveBlock3Ptr->NPCfollower.delayedState = value;
+        state->delayedState = value;
         break;
     case FNPC_DATA_EVENT_FLAG:
-        gSaveBlock3Ptr->NPCfollower.flag = value;
+        state->flag = value;
         break;
     case FNPC_DATA_GFX_ID:
-        gSaveBlock3Ptr->NPCfollower.graphicsId = value;
+        state->graphicsId = value;
         break;
     case FNPC_DATA_FOLLOWER_FLAGS:
-        gSaveBlock3Ptr->NPCfollower.flags = value;
+        state->flags = value;
         break;
     case FNPC_DATA_BATTLE_PARTNER:
-        gSaveBlock3Ptr->NPCfollower.battlePartner = value;
+        state->battlePartner = value;
         break;
     }
-#endif
 }
 
 static void SetFollowerNPCScriptPointer(const u8 *script)
 {
-#if FNPC_ENABLE_NPC_FOLLOWERS
-    gSaveBlock3Ptr->NPCfollower.script = script;
-#endif
+    struct ADMG_NPCFollower *state = GetNPCFollowerState();
+    if (state == NULL) return;
+    Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
+    state->script = script;
 }
 
 static void PlayerLogCoordinates(struct ObjectEvent *player)
 {
-#if FNPC_ENABLE_NPC_FOLLOWERS
-    gSaveBlock3Ptr->NPCfollower.log.x = player->currentCoords.x;
-    gSaveBlock3Ptr->NPCfollower.log.y = player->currentCoords.y;
-#endif
+    struct ADMG_NPCFollower *state = GetNPCFollowerState();
+    if (state == NULL) return;
+    if (player == NULL) return;
+    Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
+    state->log.x = player->currentCoords.x;
+    state->log.y = player->currentCoords.y;
 }
 
-const u8 *GetFollowerNPCScriptPointer(void)
+ADMG_NATIVE_ENTRY const u8 *GetFollowerNPCScriptPointer(void)
 {
-#if FNPC_ENABLE_NPC_FOLLOWERS
-    if (PlayerHasFollowerNPC())
-        return gSaveBlock3Ptr->NPCfollower.script;
+    struct ADMG_NPCFollower *state = GetNPCFollowerState();
+    if (state != NULL && state->inProgress)
+        return state->script;
 
-#endif
     return NULL;
 }
 
-u32 GetFollowerNPCData(enum FollowerNPCDataTypes type)
+ADMG_NATIVE_ENTRY u32 GetFollowerNPCData(enum FollowerNPCDataTypes type)
 {
-#if FNPC_ENABLE_NPC_FOLLOWERS
+    struct ADMG_NPCFollower *state = GetNPCFollowerState();
+    if (state == NULL) return 0;
     switch (type)
     {
     case FNPC_DATA_IN_PROGRESS:
-        return gSaveBlock3Ptr->NPCfollower.inProgress;
+        return state->inProgress;
     case FNPC_DATA_WARP_END:
-        return gSaveBlock3Ptr->NPCfollower.warpEnd;
+        return state->warpEnd;
     case FNPC_DATA_SURF_BLOB:
-        return gSaveBlock3Ptr->NPCfollower.createSurfBlob;
+        return state->createSurfBlob;
     case FNPC_DATA_COME_OUT_DOOR:
-        return gSaveBlock3Ptr->NPCfollower.comeOutDoorStairs;
+        return state->comeOutDoorStairs;
     case FNPC_DATA_FORCED_MOVEMENT:
-        return gSaveBlock3Ptr->NPCfollower.forcedMovement;
+        return state->forcedMovement;
     case FNPC_DATA_OBJ_ID:
-        return gSaveBlock3Ptr->NPCfollower.objId;
+        return state->objId;
     case FNPC_DATA_CURRENT_SPRITE:
-        return gSaveBlock3Ptr->NPCfollower.currentSprite;
+        return state->currentSprite;
     case FNPC_DATA_DELAYED_STATE:
-        return gSaveBlock3Ptr->NPCfollower.delayedState;
+        return state->delayedState;
     case FNPC_DATA_EVENT_FLAG:
-        return gSaveBlock3Ptr->NPCfollower.flag;
+        return state->flag;
     case FNPC_DATA_GFX_ID:
-        return gSaveBlock3Ptr->NPCfollower.graphicsId;
+        return state->graphicsId;
     case FNPC_DATA_FOLLOWER_FLAGS:
-        return gSaveBlock3Ptr->NPCfollower.flags;
+        return state->flags;
     case FNPC_DATA_BATTLE_PARTNER:
-        return gSaveBlock3Ptr->NPCfollower.battlePartner;
+        return state->battlePartner;
     }
-#endif
     return 0;
 }
 
-void ClearFollowerNPCData(void)
+ADMG_NATIVE_ENTRY void ClearFollowerNPCData(void)
 {
-#if FNPC_ENABLE_NPC_FOLLOWERS
-    memset(&gSaveBlock3Ptr->NPCfollower, 0, sizeof(gSaveBlock3Ptr->NPCfollower));
-#endif
+    if (ADMG_GetFeatureStateBridgeVersion() != 1)
+        return;
+    Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
+    ADMG_ResetFeatureState(ADMG_FEATURE_STATE_NPC_FOLLOWER);
 }
 
 static void TurnNPCIntoFollower(u32 localId, u32 followerFlags, u32 setScript, const u8 *scriptPtr)
@@ -190,7 +237,7 @@ static void TurnNPCIntoFollower(u32 localId, u32 followerFlags, u32 setScript, c
     struct ObjectEvent *follower;
     u8 eventObjId;
     u16 flag;
-    if (gSaveBlock1Ptr == NULL || gSaveBlock3Ptr == NULL)
+    if (gSaveBlock1Ptr == NULL || !ADMG_NPCFollowerStateAvailable())
     {
         ADMG_StateAccessRejected(localId, __func__);
         return;
@@ -848,6 +895,14 @@ static void CalculateFollowerNPCEscalatorTrajectoryDown(struct Task *task)
 
 void CreateFollowerNPC(u32 gfx, u32 followerFlags, const u8 *scriptPtr)
 {
+    if (!ADMG_NPCFollowerStateAvailable() || gSaveBlock1Ptr == NULL
+     || gPlayerAvatar.objectEventId >= OBJECT_EVENTS_COUNT)
+        return;
+    if (gfx > 0xFFFF || !NPCFollowerDataValueValid(FNPC_DATA_FOLLOWER_FLAGS, followerFlags))
+    {
+        ADMG_StateAccessRejected(gfx, __func__);
+        return;
+    }
     if (PlayerHasFollowerNPC())
         return;
 
@@ -864,7 +919,13 @@ void CreateFollowerNPC(u32 gfx, u32 followerFlags, const u8 *scriptPtr)
     };
 
     SetFollowerNPCData(FNPC_DATA_OBJ_ID, TrySpawnObjectEventTemplate(&npc, gSaveBlock1Ptr->location.mapId, player->currentCoords.x, player->currentCoords.y));
-    follower = &gObjectEvents[GetFollowerNPCData(FNPC_DATA_OBJ_ID)];
+    u32 followerId = GetFollowerNPCData(FNPC_DATA_OBJ_ID);
+    if (followerId >= OBJECT_EVENTS_COUNT || gObjectEvents[followerId].spriteId >= MAX_SPRITES)
+    {
+        ADMG_StateAccessRejected(followerId, __func__);
+        return;
+    }
+    follower = &gObjectEvents[followerId];
     follower->movementType = MOVEMENT_TYPE_NONE;
     gSprites[follower->spriteId].callback = MovementType_None;
 
@@ -1823,7 +1884,7 @@ void ScriptSetFollowerNPC(struct ScriptContext *ctx)
     if (PlayerHasFollowerNPC())
         return;
 
-    if (gSaveBlock1Ptr == NULL || gSaveBlock3Ptr == NULL)
+    if (gSaveBlock1Ptr == NULL || !ADMG_NPCFollowerStateAvailable())
     {
         ADMG_StateAccessRejected(localId, __func__);
         ADMG_StopInvalidStateCommand(ctx);
@@ -1858,7 +1919,7 @@ void ScriptCreateFollowerNPC(struct ScriptContext *ctx)
     const u8 *script = (const u8 *)ScriptReadWord(ctx);
     u32 battlePartner = ScriptReadHalfword(ctx);
 
-    if (!FNPC_ENABLE_NPC_FOLLOWERS || PlayerHasFollowerNPC())
+    if (!ADMG_NPCFollowerStateAvailable() || PlayerHasFollowerNPC())
         return;
 
     SetFollowerNPCData(FNPC_DATA_BATTLE_PARTNER, battlePartner);
@@ -1872,7 +1933,7 @@ void ScriptDestroyFollowerNPC(struct ScriptContext *ctx)
 
 void ScriptFaceFollowerNPC(struct ScriptContext *ctx)
 {
-    if (!FNPC_ENABLE_NPC_FOLLOWERS || !PlayerHasFollowerNPC())
+    if (!ADMG_NPCFollowerStateAvailable() || !PlayerHasFollowerNPC())
         return;
 
     struct ObjectEvent *player, *follower;
@@ -1891,10 +1952,10 @@ static const u8 *const FollowerNPCHideMovementsSpeedTable[][4] =
 
 void ScriptHideNPCFollower(struct ScriptContext *ctx)
 {
-    if (!FNPC_ENABLE_NPC_FOLLOWERS || !PlayerHasFollowerNPC())
+    u32 walkSpeed = ScriptReadByte(ctx);
+    if (!ADMG_NPCFollowerStateAvailable() || !PlayerHasFollowerNPC())
         return;
 
-    u32 walkSpeed = ScriptReadByte(ctx);
     struct ObjectEvent *npc = &gObjectEvents[GetFollowerNPCObjectId()];
 
     if (npc->invisible == FALSE)
@@ -1921,10 +1982,22 @@ void ScriptUpdateFollowingMon(struct ScriptContext *ctx)
 
 void ScriptChangeFollowerNPCBattlePartner(struct ScriptContext *ctx)
 {
-    if (!FNPC_ENABLE_NPC_FOLLOWERS || !PlayerHasFollowerNPC())
-        return;
-
     u32 newBattlePartner = ScriptReadHalfword(ctx);
+    if (!ADMG_NPCFollowerStateAvailable() || !PlayerHasFollowerNPC())
+        return;
 
     SetFollowerNPCData(FNPC_DATA_BATTLE_PARTNER, newBattlePartner);
 }
+
+ADMG_RETAIN_FUNCTION(ADMG_NPCFollowerStateAvailable);
+ADMG_RETAIN_FUNCTION(SetFollowerNPCData);
+ADMG_RETAIN_FUNCTION(GetFollowerNPCData);
+ADMG_RETAIN_FUNCTION(ClearFollowerNPCData);
+ADMG_RETAIN_FUNCTION(GetFollowerNPCScriptPointer);
+ADMG_RETAIN_FUNCTION(ScriptSetFollowerNPC);
+ADMG_RETAIN_FUNCTION(ScriptCreateFollowerNPC);
+ADMG_RETAIN_FUNCTION(ScriptDestroyFollowerNPC);
+ADMG_RETAIN_FUNCTION(ScriptFaceFollowerNPC);
+ADMG_RETAIN_FUNCTION(ScriptHideNPCFollower);
+ADMG_RETAIN_FUNCTION(ScriptCheckFollowerNPC);
+ADMG_RETAIN_FUNCTION(ScriptChangeFollowerNPCBattlePartner);
