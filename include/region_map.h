@@ -142,6 +142,28 @@ u32 FilterFlyDestination(struct RegionMap* regionMap);
 void SetFlyDestination(struct RegionMap* regionMap);
 
 extern const struct RegionMapLocation gRegionMapEntries[];
+
+// A region map section added at run time (FIRST_ADDED_MAPSEC and up).
+struct ADMG_AddedMapSection
+{
+    struct RegionMapLocation location; // name, and x, y, width, height on its region map (width 0: not on the map)
+    u8 region;          // enum Region
+    u8 regionMapType;   // enum RegionMapType: the region map it is drawn on
+    u8 popupTheme;      // the map name popup's theme (MAPPOPUP_THEME_*)
+    u8 unused;
+    u32 visitedFlag;    // a Fly destination once this flag is set; 0: not a Fly destination
+    u32 healLocation;   // where Fly lands: a heal location, or HEAL_LOCATION_NONE for flyMap's default arrival
+    MapId flyMap;
+};
+
+extern const struct ADMG_AddedMapSection gADMG_AddedMapSections[];
+
+// A section's row: a base section's, or an added one's. Base sections read exactly as before.
+const struct RegionMapLocation *GetRegionMapLocation(mapsec_u16_t mapSecId);
+// An added section's row, or NULL for a base or unregistered section.
+const struct ADMG_AddedMapSection *GetAddedMapSection(mapsec_u16_t mapSecId);
+// A section with a name: below MAPSEC_NONE, or a registered added section.
+bool32 IsMapSecNamed(mapsec_u16_t mapSecId);
 extern const struct RegionMapInfo gRegionMapInfos[];
 
 #endif //GUARD_REGION_MAP_H

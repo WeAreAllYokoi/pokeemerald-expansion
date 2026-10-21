@@ -3789,7 +3789,7 @@ static void PrintEvolutionTargetSpeciesAndMethod(u8 taskId, enum Species species
                     break;
                 case IF_IN_MAPSEC:
                     StringAppend(gStringVar4, COMPOUND_STRING("in "));
-                    StringCopy(gStringVar2, gRegionMapEntries[evolutions[i].params[j].arg1].name);
+                    StringCopy(gStringVar2, (*GetRegionMapLocation(evolutions[i].params[j].arg1)).name);
                     StringAppend(gStringVar4, gStringVar2);
                     break;
                 case IF_IN_MAP:

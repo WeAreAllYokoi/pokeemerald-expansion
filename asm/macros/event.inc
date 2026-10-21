@@ -1475,7 +1475,7 @@
 	@ Sets which healing location (HEAL_LOCATION_*) the player will return to if all of the Pokemon in their party faint.
 	.macro setrespawn heallocation:req
 	.byte SCR_OP_SETRESPAWN
-	.2byte \heallocation
+	.4byte \heallocation
 	.endm
 
 	@ Checks the player's gender. Stores the result (MALE (0) or FEMALE (1)) in VAR_RESULT.

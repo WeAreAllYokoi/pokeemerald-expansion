@@ -1,4 +1,5 @@
 #include "global.h"
+#include "region_map.h"
 #include "regions.h"
 
 
@@ -70,8 +71,24 @@ static const u16 sKantoSubregionMapsecs[KANTO_SUBREGION_COUNT][30] = {
     }
 };
 
+enum Region GetAddedMapSecRegion(u32 mapSecId)
+{
+    const struct ADMG_AddedMapSection *added = GetAddedMapSection(mapSecId);
+    return added != NULL ? added->region : REGION_HOENN;
+}
+
 enum KantoSubRegion GetKantoSubregion(u32 mapSecId)
 {
+    if (GetAddedMapSection(mapSecId) != NULL)
+    {
+        switch (GetAddedMapSection(mapSecId)->regionMapType)
+        {
+        case REGION_MAP_SEVII123: return KANTO_SUBREGION_SEVII123;
+        case REGION_MAP_SEVII45:  return KANTO_SUBREGION_SEVII45;
+        case REGION_MAP_SEVII67:  return KANTO_SUBREGION_SEVII67;
+        default:                  return KANTO_SUBREGION_KANTO;
+        }
+    }
     for (u32 i = KANTO_SUBREGION_KANTO; i <= KANTO_SUBREGION_SEVII67; i++)
     {
         for (u32 j = 0; sKantoSubregionMapsecs[i][j] != MAPSEC_NONE; j++)

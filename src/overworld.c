@@ -766,7 +766,7 @@ void SetWarpDestinationToDynamicWarp(u8 unusedWarpId)
     sWarpDestination = gSaveBlock1Ptr->dynamicWarp;
 }
 
-void SetWarpDestinationToHealLocation(u8 healLocationId)
+void SetWarpDestinationToHealLocation(u32 healLocationId)
 {
     const struct HealLocation *healLocation = GetHealLocation(healLocationId);
     if (healLocation)
@@ -793,7 +793,7 @@ void SetWarpDestinationForTeleport(void)
     sWarpDestination = gSaveBlock1Ptr->lastHealLocation;
 }
 
-void SetLastHealLocationWarp(u8 healLocationId)
+void SetLastHealLocationWarp(u32 healLocationId)
 {
     const struct HealLocation *healLocation = GetHealLocation(healLocationId);
     if (healLocation)
@@ -846,7 +846,7 @@ static void SetWarpDestinationToContinueGameWarp(void)
     sWarpDestination = gSaveBlock1Ptr->continueGameWarp;
 }
 
-void SetContinueGameWarpToHealLocation(u8 healLocationId)
+void SetContinueGameWarpToHealLocation(u32 healLocationId)
 {
     const struct HealLocation *healLocation = GetHealLocation(healLocationId);
     if (healLocation)

@@ -1162,8 +1162,33 @@ void PokedexAreaScreen_UpdateRegionMapVariablesAndVideoRegs(s16 x, s16 y)
     }
 }
 
+const struct ADMG_AddedMapSection gADMG_AddedMapSections[1] = {0};
+static const u8 sText_NoMapSectionName[] = _("");
+static const struct RegionMapLocation sNoMapSection = {.name = sText_NoMapSectionName};
+
+const struct ADMG_AddedMapSection *GetAddedMapSection(mapsec_u16_t mapSecId)
+{
+    if (mapSecId >= FIRST_ADDED_MAPSEC && mapSecId - FIRST_ADDED_MAPSEC < RUNTIME_ADDED_MAPSECS_COUNT)
+        return &gADMG_AddedMapSections[mapSecId - FIRST_ADDED_MAPSEC];
+    return NULL;
+}
+
+const struct RegionMapLocation *GetRegionMapLocation(mapsec_u16_t mapSecId)
+{
+    if (mapSecId >= FIRST_ADDED_MAPSEC)
+        return GetAddedMapSection(mapSecId) != NULL ? &GetAddedMapSection(mapSecId)->location : &sNoMapSection;
+    return &gRegionMapEntries[mapSecId];
+}
+
+bool32 IsMapSecNamed(mapsec_u16_t mapSecId)
+{
+    return mapSecId < MAPSEC_NONE || GetAddedMapSection(mapSecId) != NULL;
+}
+
 enum RegionMapType GetRegionMapType(u32 mapSecId)
 {
+    if (GetAddedMapSection(mapSecId) != NULL)
+        return GetAddedMapSection(mapSecId)->regionMapType;
     switch (GetRegionForSectionId(mapSecId))
     {
     case REGION_KANTO:
@@ -1193,6 +1218,16 @@ static mapsec_u16_t GetMapSecIdAt(u16 x, u16 y)
     }
     y -= MAPCURSOR_Y_MIN;
     x -= MAPCURSOR_X_MIN;
+
+    // Added sections drawn on this region map lie over the base grid.
+    for (u32 i = 0; i < RUNTIME_ADDED_MAPSECS_COUNT; i++)
+    {
+        const struct ADMG_AddedMapSection *added = &gADMG_AddedMapSections[i];
+        if (added->location.width != 0 && added->regionMapType == GetRegionMapType(gMapHeader.regionMapSectionId)
+         && x >= added->location.x && x < added->location.x + added->location.width
+         && y >= added->location.y && y < added->location.y + added->location.height)
+            return FIRST_ADDED_MAPSEC + i;
+    }
 
     switch (GetCurrentRegion())
     {
@@ -1308,26 +1343,26 @@ static void InitMapBasedOnPlayerLocation(void)
 
     xOnMap = x;
 
-    dimensionScale = mapWidth / gRegionMapEntries[sRegionMap->mapSecId].width;
+    dimensionScale = mapWidth / (*GetRegionMapLocation(sRegionMap->mapSecId)).width;
     if (dimensionScale == 0)
     {
         dimensionScale = 1;
     }
     x /= dimensionScale;
-    if (x >= gRegionMapEntries[sRegionMap->mapSecId].width)
+    if (x >= (*GetRegionMapLocation(sRegionMap->mapSecId)).width)
     {
-        x = gRegionMapEntries[sRegionMap->mapSecId].width - 1;
+        x = (*GetRegionMapLocation(sRegionMap->mapSecId)).width - 1;
     }
 
-    dimensionScale = mapHeight / gRegionMapEntries[sRegionMap->mapSecId].height;
+    dimensionScale = mapHeight / (*GetRegionMapLocation(sRegionMap->mapSecId)).height;
     if (dimensionScale == 0)
     {
         dimensionScale = 1;
     }
     y /= dimensionScale;
-    if (y >= gRegionMapEntries[sRegionMap->mapSecId].height)
+    if (y >= (*GetRegionMapLocation(sRegionMap->mapSecId)).height)
     {
-        y = gRegionMapEntries[sRegionMap->mapSecId].height - 1;
+        y = (*GetRegionMapLocation(sRegionMap->mapSecId)).height - 1;
     }
 
     switch (sRegionMap->mapSecId)
@@ -1363,8 +1398,8 @@ static void InitMapBasedOnPlayerLocation(void)
         GetMarineCaveCoords(&sRegionMap->cursorPosX, &sRegionMap->cursorPosY);
         return;
     }
-    sRegionMap->cursorPosX = gRegionMapEntries[sRegionMap->mapSecId].x + x + MAPCURSOR_X_MIN;
-    sRegionMap->cursorPosY = gRegionMapEntries[sRegionMap->mapSecId].y + y + MAPCURSOR_Y_MIN;
+    sRegionMap->cursorPosX = (*GetRegionMapLocation(sRegionMap->mapSecId)).x + x + MAPCURSOR_X_MIN;
+    sRegionMap->cursorPosY = (*GetRegionMapLocation(sRegionMap->mapSecId)).y + y + MAPCURSOR_Y_MIN;
 }
 
 static void RegionMap_InitializeStateBasedOnSSTidalLocation(void)
@@ -1401,28 +1436,32 @@ static void RegionMap_InitializeStateBasedOnSSTidalLocation(void)
         mapHeader = GetMapHeader(mapId);
 
         sRegionMap->mapSecId = mapHeader->regionMapSectionId;
-        dimensionScale = mapHeader->mapLayout->width / gRegionMapEntries[sRegionMap->mapSecId].width;
+        dimensionScale = mapHeader->mapLayout->width / (*GetRegionMapLocation(sRegionMap->mapSecId)).width;
         if (dimensionScale == 0)
             dimensionScale = 1;
         x = xOnMap / dimensionScale;
-        if (x >= gRegionMapEntries[sRegionMap->mapSecId].width)
-            x = gRegionMapEntries[sRegionMap->mapSecId].width - 1;
+        if (x >= (*GetRegionMapLocation(sRegionMap->mapSecId)).width)
+            x = (*GetRegionMapLocation(sRegionMap->mapSecId)).width - 1;
 
-        dimensionScale = mapHeader->mapLayout->height / gRegionMapEntries[sRegionMap->mapSecId].height;
+        dimensionScale = mapHeader->mapLayout->height / (*GetRegionMapLocation(sRegionMap->mapSecId)).height;
         if (dimensionScale == 0)
             dimensionScale = 1;
         y = yOnMap / dimensionScale;
-        if (y >= gRegionMapEntries[sRegionMap->mapSecId].height)
-            y = gRegionMapEntries[sRegionMap->mapSecId].height - 1;
+        if (y >= (*GetRegionMapLocation(sRegionMap->mapSecId)).height)
+            y = (*GetRegionMapLocation(sRegionMap->mapSecId)).height - 1;
         break;
     }
     sRegionMap->playerIsInCave = FALSE;
-    sRegionMap->cursorPosX = gRegionMapEntries[sRegionMap->mapSecId].x + x + MAPCURSOR_X_MIN;
-    sRegionMap->cursorPosY = gRegionMapEntries[sRegionMap->mapSecId].y + y + MAPCURSOR_Y_MIN;
+    sRegionMap->cursorPosX = (*GetRegionMapLocation(sRegionMap->mapSecId)).x + x + MAPCURSOR_X_MIN;
+    sRegionMap->cursorPosY = (*GetRegionMapLocation(sRegionMap->mapSecId)).y + y + MAPCURSOR_Y_MIN;
 }
 
 static u8 GetMapsecType(mapsec_u16_t mapSecId)
 {
+    const struct ADMG_AddedMapSection *added = GetAddedMapSection(mapSecId);
+
+    if (added != NULL)
+        return added->visitedFlag == 0 ? MAPSECTYPE_ROUTE : FlagGet(added->visitedFlag) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
     switch (mapSecId)
     {
     case MAPSEC_NONE:
@@ -1873,9 +1912,9 @@ u8 *GetMapName(u8 *dest, mapsec_u16_t regionMapId, u16 padLength)
     {
         str = GetSecretBaseMapName(dest);
     }
-    else if (regionMapId < MAPSEC_NONE)
+    else if (IsMapSecNamed(regionMapId))
     {
-        str = StringCopy(dest, gRegionMapEntries[regionMapId].name);
+        str = StringCopy(dest, (*GetRegionMapLocation(regionMapId)).name);
     }
     else
     {
@@ -1920,10 +1959,10 @@ u8 *GetMapNameHandleAquaHideout(u8 *dest, mapsec_u16_t mapSecId)
 
 static void GetMapSecDimensions(mapsec_u16_t mapSecId, u16 *x, u16 *y, u16 *width, u16 *height)
 {
-    *x = gRegionMapEntries[mapSecId].x;
-    *y = gRegionMapEntries[mapSecId].y;
-    *width = gRegionMapEntries[mapSecId].width;
-    *height = gRegionMapEntries[mapSecId].height;
+    *x = (*GetRegionMapLocation(mapSecId)).x;
+    *y = (*GetRegionMapLocation(mapSecId)).y;
+    *width = (*GetRegionMapLocation(mapSecId)).width;
+    *height = (*GetRegionMapLocation(mapSecId)).height;
 }
 
 bool8 IsRegionMapZoomed(void)
@@ -2330,16 +2369,45 @@ static const struct FlyLocation sFlyLocations[] =
 #define sIconMapSec   data[0]
 #define sFlickerTimer data[1]
 
-static void CreateFlyDestIcons(void)
+static void CreateFlyDestIcon(mapsec_u16_t mapSecId, u32 flag)
 {
-    enum RegionMapType regionMapType = GetRegionMapType(gMapHeader.regionMapSectionId);
-    u32 i;
     u16 x;
     u16 y;
     u16 width;
     u16 height;
     u16 shape;
     u8 spriteId;
+
+    GetMapSecDimensions(mapSecId, &x, &y, &width, &height);
+    x = (x + MAPCURSOR_X_MIN) * 8 + 4;
+    y = (y + MAPCURSOR_Y_MIN) * 8 + 4;
+
+    if (width == 2)
+        shape = SPRITE_SHAPE(16x8);
+    else if (height == 2)
+        shape = SPRITE_SHAPE(8x16);
+    else
+        shape = SPRITE_SHAPE(8x8);
+
+    spriteId = CreateSpriteUnchecked(&sFlyDestIconSpriteTemplate, x, y, 10);
+    if (spriteId != MAX_SPRITES)
+    {
+        gSprites[spriteId].oam.shape = shape;
+
+        if (FlagGet(flag))
+            gSprites[spriteId].callback = SpriteCB_FlyDestIcon;
+        else
+            shape += 3;
+
+        StartSpriteAnim(&gSprites[spriteId], shape);
+        gSprites[spriteId].sIconMapSec = mapSecId;
+    }
+}
+
+static void CreateFlyDestIcons(void)
+{
+    enum RegionMapType regionMapType = GetRegionMapType(gMapHeader.regionMapSectionId);
+    u32 i;
 
     for (i = 0; i < ARRAY_COUNT(sFlyLocations); ++i)
     {
@@ -2355,30 +2423,19 @@ static void CreateFlyDestIcons(void)
         if (sFlyLocations[i].regionMapType != regionMapType)
             continue;
 
-        GetMapSecDimensions(sFlyLocations[i].mapsec, &x, &y, &width, &height);
-        x = (x + MAPCURSOR_X_MIN) * 8 + 4;
-        y = (y + MAPCURSOR_Y_MIN) * 8 + 4;
-
-        if (width == 2)
-            shape = SPRITE_SHAPE(16x8);
-        else if (height == 2)
-            shape = SPRITE_SHAPE(8x16);
-        else
-            shape = SPRITE_SHAPE(8x8);
-
-        spriteId = CreateSpriteUnchecked(&sFlyDestIconSpriteTemplate, x, y, 10);
-        if (spriteId != MAX_SPRITES)
+        CreateFlyDestIcon(sFlyLocations[i].mapsec, sFlyLocations[i].flag);
+    }
+    for (i = 0; i < RUNTIME_ADDED_MAPSECS_COUNT; i++)
+    {
+        const struct ADMG_AddedMapSection *added = &gADMG_AddedMapSections[i];
+        if (added->visitedFlag == 0 || added->location.width == 0 || added->regionMapType != regionMapType)
+            continue;
+        if (!ADMG_IsFlagIdValid(added->visitedFlag))
         {
-            gSprites[spriteId].oam.shape = shape;
-
-            if (FlagGet(sFlyLocations[i].flag))
-                gSprites[spriteId].callback = SpriteCB_FlyDestIcon;
-            else
-                shape += 3;
-
-            StartSpriteAnim(&gSprites[spriteId], shape);
-            gSprites[spriteId].sIconMapSec = sFlyLocations[i].mapsec;
+            ADMG_StateAccessRejected(added->visitedFlag, __func__);
+            continue;
         }
+        CreateFlyDestIcon(FIRST_ADDED_MAPSEC + i, added->visitedFlag);
     }
 }
 
@@ -2534,6 +2591,11 @@ u32 FilterFlyDestination(struct RegionMap* regionMap)
     case MAPSEC_EVER_GRANDE_CITY:
         return (FlagGet(FLAG_LANDMARK_POKEMON_LEAGUE) && regionMap->posWithinMapSec == 0 ? HEAL_LOCATION_EVER_GRANDE_CITY_POKEMON_LEAGUE : HEAL_LOCATION_EVER_GRANDE_CITY);
     default:
+        if (regionMap->mapSecId >= FIRST_ADDED_MAPSEC)
+        {
+            const struct ADMG_AddedMapSection *added = GetAddedMapSection(regionMap->mapSecId);
+            return added != NULL && added->healLocation != HEAL_LOCATION_NONE ? added->healLocation : WARP_ID_NONE;
+        }
         if (sMapHealLocations[regionMap->mapSecId].healLocation != HEAL_LOCATION_NONE)
             return sMapHealLocations[regionMap->mapSecId].healLocation;
         else
@@ -2547,6 +2609,8 @@ void SetFlyDestination(struct RegionMap* regionMap)
 
     if (flyDestination != WARP_ID_NONE)
         SetWarpDestinationToHealLocation(flyDestination);
+    else if (GetAddedMapSection(regionMap->mapSecId) != NULL)
+        SetWarpDestinationToMapWarp(GetAddedMapSection(regionMap->mapSecId)->flyMap, WARP_ID_NONE);
     else
         SetWarpDestinationToMapWarp(sMapHealLocations[regionMap->mapSecId].map, WARP_ID_NONE);
 }

@@ -1,4 +1,5 @@
 #include "global.h"
+#include "regions.h"
 #include "rtc.h"
 #include "overworld.h"
 #include "random.h"
@@ -4010,11 +4011,15 @@ void SanitizeTVShowLocationsForRuby(TVShow *shows)
         switch (shows[i].common.kind)
         {
         case TVSHOW_WORLD_OF_MASTERS:
-            if (shows[i].worldOfMasters.location > KANTO_MAPSEC_START)
+            if (shows[i].worldOfMasters.location >= FIRST_ADDED_MAPSEC
+                ? GetRegionForSectionId(shows[i].worldOfMasters.location) == REGION_KANTO
+                : shows[i].worldOfMasters.location > KANTO_MAPSEC_START)
                 memset(&shows[i], 0, sizeof(TVShow));
             break;
         case TVSHOW_POKEMON_TODAY_FAILED:
-            if (shows[i].pokemonTodayFailed.location > KANTO_MAPSEC_START)
+            if (shows[i].pokemonTodayFailed.location >= FIRST_ADDED_MAPSEC
+                ? GetRegionForSectionId(shows[i].pokemonTodayFailed.location) == REGION_KANTO
+                : shows[i].pokemonTodayFailed.location > KANTO_MAPSEC_START)
                 memset(&shows[i], 0, sizeof(TVShow));
             break;
         }

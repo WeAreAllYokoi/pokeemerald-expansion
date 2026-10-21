@@ -679,7 +679,13 @@ static void LoadMapNamePopUpWindowBg(void)
     if (OW_POPUP_GENERATION == GEN_5)
         secondaryPopUpWindowId = GetSecondaryPopUpWindowId();
 
-    if (regionMapSectionId >= KANTO_MAPSEC_START)
+    const struct ADMG_AddedMapSection *added = GetAddedMapSection(regionMapSectionId);
+
+    if (regionMapSectionId >= FIRST_ADDED_MAPSEC)
+    {
+        regionMapSectionId = 0; // an added section's theme is in its row
+    }
+    else if (regionMapSectionId >= KANTO_MAPSEC_START)
     {
         if (regionMapSectionId > KANTO_MAPSEC_END)
             regionMapSectionId -= KANTO_MAPSEC_COUNT;
@@ -689,7 +695,7 @@ static void LoadMapNamePopUpWindowBg(void)
 
     if (OW_POPUP_GENERATION == GEN_5)
     {
-        popUpThemeId = sRegionMapSectionId_To_PopUpThemeIdMapping_BW[regionMapSectionId];
+        popUpThemeId = added != NULL ? MAPPOPUP_THEME_BW_DEFAULT : sRegionMapSectionId_To_PopUpThemeIdMapping_BW[regionMapSectionId];
         switch (popUpThemeId)
         {
         // add additional gen 5-style pop-up themes as cases here
@@ -709,7 +715,7 @@ static void LoadMapNamePopUpWindowBg(void)
     }
     else
     {
-        popUpThemeId = sMapSectionToThemeId[regionMapSectionId];
+        popUpThemeId = added != NULL && added->popupTheme < ARRAY_COUNT(sMapPopUp_Table) ? added->popupTheme : sMapSectionToThemeId[regionMapSectionId];
         LoadBgTiles(GetWindowAttribute(popupWindowId, WINDOW_BG), sMapPopUp_OutlineTable[popUpThemeId], 0x400, 0x21D);
         CallWindowFunction(popupWindowId, DrawMapNamePopUpFrame);
         PutWindowTilemap(popupWindowId);

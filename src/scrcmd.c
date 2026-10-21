@@ -2719,7 +2719,11 @@ bool8 ScrCmd_waitfieldeffect(struct ScriptContext *ctx)
 
 bool8 ScrCmd_setrespawn(struct ScriptContext *ctx)
 {
-    u16 healLocationId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    // A word: a base heal location or variable (below 0x10000), or an added heal location.
+    u32 healLocationId = ScriptReadWord(ctx);
+
+    if (healLocationId < 0x10000)
+        healLocationId = ADMG_SCRIPT_VALUE(ctx, healLocationId, FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 

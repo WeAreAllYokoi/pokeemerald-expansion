@@ -16,4 +16,6 @@ const struct ADMG_RegistryCounts gADMG_RegistryCounts =
     .moveEffects = NUM_BATTLE_MOVE_EFFECTS,
     .addedMaps = 0,
     .addedLayouts = 0,
+    .addedMapSections = 0,
+    .addedHealLocations = 0,
 };

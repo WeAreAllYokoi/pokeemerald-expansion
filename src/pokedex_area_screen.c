@@ -396,7 +396,7 @@ static void SetSpecialMapHasMon(MapId mapId)
     if (sPokedexAreaScreen->numSpecialAreas < MAX_AREA_MARKERS)
     {
         mapsec_u16_t regionMapSectionId = GetRegionMapSectionId(mapId);
-        if (regionMapSectionId < MAPSEC_NONE)
+        if (IsMapSecNamed(regionMapSectionId))
         {
             // Don't highlight the area if it's a moving area (Marine/Terra Cave)
             for (i = 0; i < ARRAY_COUNT(sMovingRegionMapSections); i++)
@@ -962,10 +962,10 @@ static void CreateAreaMarkerSprites(void)
     for (i = 0; i < sPokedexAreaScreen->numSpecialAreas; i++)
     {
         mapSecId = sPokedexAreaScreen->specialAreaRegionMapSectionIds[i];
-        x = 8 * (gRegionMapEntries[mapSecId].x + 1) + 4;
-        y = 8 * (gRegionMapEntries[mapSecId].y) + 28;
-        x += 4 * (gRegionMapEntries[mapSecId].width - 1);
-        y += 4 * (gRegionMapEntries[mapSecId].height - 1);
+        x = 8 * ((*GetRegionMapLocation(mapSecId)).x + 1) + 4;
+        y = 8 * ((*GetRegionMapLocation(mapSecId)).y) + 28;
+        x += 4 * ((*GetRegionMapLocation(mapSecId)).width - 1);
+        y += 4 * ((*GetRegionMapLocation(mapSecId)).height - 1);
         spriteId = CreateSpriteUnchecked(&sAreaMarkerSpriteTemplate, x, y, 0);
         if (spriteId != MAX_SPRITES)
         {
