@@ -67,14 +67,14 @@ enum EncounterType
 #define LIT_STAR_TILE_TAG       0x4010
 #define HELD_ITEM_TAG           0xd750
 
-// DexNav search variable
-#define DEXNAV_MASK_SPECIES         0x3FFF  // First 14 bits
-#define DEXNAV_MASK_ENVIRONMENT     0xC000  // Last two bit
-
 /* Search-history access does not require DexNav gameplay to be enabled.
  * ADMG_GetDexNavSearchLevel returns 0xFFFFFFFF for SPECIES_NONE, an invalid species ID,
  * or unavailable state. Zero is a valid stored search level. */
 ADMG_NATIVE_ENTRY bool32 ADMG_DexNavEnabled(void);
+ADMG_NATIVE_ENTRY bool32 ADMG_DexNavSelectionAvailable(void);
+ADMG_NATIVE_ENTRY u32 ADMG_GetDexNavRegisteredSpecies(void);
+ADMG_NATIVE_ENTRY u32 ADMG_GetDexNavRegisteredEnvironment(void);
+ADMG_NATIVE_ENTRY bool32 ADMG_SetDexNavSelection(u32 species, u32 environment);
 ADMG_NATIVE_ENTRY bool32 ADMG_DexNavSearchLevelsAvailable(void);
 ADMG_NATIVE_ENTRY u32 ADMG_GetDexNavSearchLevel(u32 species);
 ADMG_NATIVE_ENTRY bool32 ADMG_SetDexNavSearchLevel(u32 species, u32 level);

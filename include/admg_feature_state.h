@@ -9,6 +9,13 @@
 /* NativeHost allocates these records when first requested and saves them through
  * a NativeSaveStore platform section. It supplies the state getter and bridge version;
  * the C defaults return zero to indicate that the bridge and state are unavailable. */
+/* The variable bound to DN_VAR_SPECIES stores the full 32-bit species ID.
+ * Store the encounter environment separately. */
+struct ADMG_DexNavSelection
+{
+    u32 environment;
+};
+
 struct ADMG_DexNavSearchLevel
 {
     u8 level;
@@ -45,6 +52,7 @@ enum ADMG_FeatureStateId
     ADMG_FEATURE_STATE_ITEMS_SEEN = 2,
     ADMG_FEATURE_STATE_NPC_FOLLOWER = 3,
     ADMG_FEATURE_STATE_DEXNAV_SEARCH_LEVELS = 4,
+    ADMG_FEATURE_STATE_DEXNAV_SELECTION = 5,
 };
 ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeatureStateBridgeVersion(void);
 ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeatureState(ADMG_Word state);

@@ -1,5 +1,6 @@
 #include "global.h"
 #include "admg_feature_state.h"
+#include "admg_feature_bindings.h"
 #include "clock.h"
 #include "new_game.h"
 #include "random.h"
@@ -257,5 +258,10 @@ static void ResetItemFlags(void)
 static void ResetDexNav(void)
 {
     ADMG_ResetFeatureState(ADMG_FEATURE_STATE_DEXNAV_SEARCH_LEVELS);
+    ADMG_ResetFeatureState(ADMG_FEATURE_STATE_DEXNAV_SELECTION);
+    u32 binding = ADMG_GetFeatureBinding(ADMG_BINDING_DN_VAR_SPECIES);
+    u32 *registered = binding != 0 && binding <= 0xFFFF ? GetVarPointer((u16)binding) : NULL;
+    if (registered != NULL)
+        *registered = SPECIES_NONE;
     gSaveBlock3Ptr->dexNavChain = 0;
 }

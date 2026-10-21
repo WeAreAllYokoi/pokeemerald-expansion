@@ -836,7 +836,7 @@ static void DexNavSearchBail(const u8 *script)
     ScriptContext_SetupScript(script);
 }
 
-static bool8 InitDexNavSearch(enum Species species, u32 environment)
+static __attribute__((noipa)) bool8 InitDexNavSearch(enum Species species, u32 environment)
 {
     if (!ADMG_DexNavEnabled())
         return FALSE;
@@ -952,7 +952,8 @@ bool32 TryStartDexNavSearch(void)
 {
     if (!ADMG_DexNavEnabled())
         return FALSE;
-    enum Species val = VarGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_VAR_SPECIES));
+    u32 species = ADMG_GetDexNavRegisteredSpecies();
+    u32 environment = ADMG_GetDexNavRegisteredEnvironment();
 
     if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING)) && sDexNavSearchDataPtr != NULL && sDexNavSearchDataPtr->hiddenSearch)
     {
@@ -960,13 +961,14 @@ bool32 TryStartDexNavSearch(void)
         return FALSE;
     }
 
-    if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING)) || (val & DEXNAV_MASK_SPECIES) == SPECIES_NONE)
+    if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING)) || species == SPECIES_NONE
+     || !IsSpeciesIdValid(species) || environment > ENCOUNTER_TYPE_HIDDEN)
         return FALSE;
 
     HideMapNamePopUpWindow();
     ChangeBgY_ScreenOff(0, 0, 0);
     PlaySE(SE_DEX_SEARCH);
-    return InitDexNavSearch(val & DEXNAV_MASK_SPECIES, val >> 14);
+    return InitDexNavSearch(species, environment);
 }
 
 void EndDexNavSearch(void)
@@ -2245,7 +2247,10 @@ static bool8 DexNav_DoGfxSetup(void)
         gMain.state++;
         break;
     case 7:
-        PrintSearchableSpecies(VarGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_VAR_SPECIES)) & DEXNAV_MASK_SPECIES);
+        {
+            u32 registered = ADMG_GetDexNavRegisteredSpecies();
+            PrintSearchableSpecies(IsSpeciesIdValid(registered) ? registered : SPECIES_NONE);
+        }
         DexNavLoadEncounterData();
         gMain.state++;
         break;
@@ -2442,14 +2447,11 @@ static void Task_DexNavMain(u8 taskId)
         // check selection is valid. Play sound if invalid
         species = DexNavGetSpecies();
 
-        if (species != SPECIES_NONE)
+        if (species != SPECIES_NONE && ADMG_SetDexNavSelection(species, sDexNavUiDataPtr->environment))
         {
             PrintSearchableSpecies(species);
             //PlaySE(SE_DEX_SEARCH);
             PlayCry_Script(species, 0);
-
-            // create value to store in a var
-            VarSet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_VAR_SPECIES), ((sDexNavUiDataPtr->environment << 14) | species));
         }
         else
         {
@@ -2728,7 +2730,8 @@ ADMG_NATIVE_ENTRY bool32 ADMG_DexNavEnabled(void)
         && ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING) != 0
         && ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_DETECTOR_MODE) != 0
         && ADMG_GetFeatureBinding(ADMG_BINDING_DN_VAR_SPECIES) != 0
-        && ADMG_GetFeatureBinding(ADMG_BINDING_DN_VAR_STEP_COUNTER) != 0;
+        && ADMG_GetFeatureBinding(ADMG_BINDING_DN_VAR_STEP_COUNTER) != 0
+        && ADMG_DexNavSelectionAvailable();
 }
 
 ADMG_NATIVE_ENTRY bool32 ADMG_DexNavSearchLevelsAvailable(void)
@@ -2783,3 +2786,63 @@ ADMG_RETAIN_FUNCTION(ADMG_GetEffectiveDexNavSearchLevel);
 ADMG_RETAIN_FUNCTION(TryIncrementSpeciesSearchLevel);
 ADMG_RETAIN_FUNCTION(Task_OpenDexNavFromStartMenu);
 ADMG_RETAIN_FUNCTION(TryStartDexNavSearch);
+
+/* Keep all 32 bits of the bound variable for the species ID.
+ * Do not pack the encounter environment into it. */
+static u32 *ADMG_DexNavRegisteredSpeciesPointer(void)
+{
+    u32 binding = ADMG_GetFeatureBinding(ADMG_BINDING_DN_VAR_SPECIES);
+    return binding != 0 && binding <= 0xFFFF ? GetVarPointer((u16)binding) : NULL;
+}
+
+static struct ADMG_DexNavSelection *ADMG_DexNavSelectionState(void)
+{
+    if (ADMG_GetFeatureStateBridgeVersion() != 1)
+        return NULL;
+    return (struct ADMG_DexNavSelection *)ADMG_GetFeatureState(ADMG_FEATURE_STATE_DEXNAV_SELECTION);
+}
+
+ADMG_NATIVE_ENTRY bool32 ADMG_DexNavSelectionAvailable(void)
+{
+    return ADMG_DexNavRegisteredSpeciesPointer() != NULL && ADMG_DexNavSelectionState() != NULL;
+}
+
+ADMG_NATIVE_ENTRY u32 ADMG_GetDexNavRegisteredSpecies(void)
+{
+    u32 *species = ADMG_DexNavRegisteredSpeciesPointer();
+    if (species == NULL || ADMG_DexNavSelectionState() == NULL || !IsSpeciesIdValid(*species))
+        return 0xFFFFFFFF;
+    return *species;
+}
+
+ADMG_NATIVE_ENTRY u32 ADMG_GetDexNavRegisteredEnvironment(void)
+{
+    struct ADMG_DexNavSelection *selection;
+    if (ADMG_DexNavRegisteredSpeciesPointer() == NULL)
+        return 0xFFFFFFFF;
+    selection = ADMG_DexNavSelectionState();
+    return selection == NULL || selection->environment > ENCOUNTER_TYPE_HIDDEN ? 0xFFFFFFFF : selection->environment;
+}
+
+ADMG_NATIVE_ENTRY bool32 ADMG_SetDexNavSelection(u32 species, u32 environment)
+{
+    u32 *registered;
+    struct ADMG_DexNavSelection *selection;
+    if (!IsSpeciesIdValid(species) || environment > ENCOUNTER_TYPE_HIDDEN)
+        return FALSE;
+    registered = ADMG_DexNavRegisteredSpeciesPointer();
+    if (registered == NULL)
+        return FALSE;
+    selection = ADMG_DexNavSelectionState();
+    if (selection == NULL)
+        return FALSE;
+    /* Check the species, environment and required state before changing either value. */
+    *registered = species;
+    selection->environment = environment;
+    return TRUE;
+}
+
+ADMG_RETAIN_FUNCTION(ADMG_DexNavSelectionAvailable);
+ADMG_RETAIN_FUNCTION(ADMG_GetDexNavRegisteredSpecies);
+ADMG_RETAIN_FUNCTION(ADMG_GetDexNavRegisteredEnvironment);
+ADMG_RETAIN_FUNCTION(ADMG_SetDexNavSelection);
