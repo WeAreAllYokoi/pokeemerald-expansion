@@ -11,7 +11,6 @@
 #include "event_data.h"
 #include "script.h"
 
-static void FakeRtc_CalcTimeDifference(struct Time *result, struct SiiRtcInfo *t1, struct Time *t2);
 
 void FakeRtc_Reset(void)
 {
@@ -70,46 +69,18 @@ void FakeRtc_AdvanceTimeBy(u32 days, u32 hours, u32 minutes, u32 seconds)
 
 void FakeRtc_ForwardTimeTo(u32 hour, u32 minute, u32 second)
 {
-    if (!FakeRtc_IsActive())
+    if (!FakeRtc_IsActive() || hour >= HOURS_PER_DAY || minute >= MINUTES_PER_HOUR || second >= SECONDS_PER_MINUTE)
         return;
 
-    Script_PauseFakeRtc();
-    struct Time diff, target;
-    struct SiiRtcInfo *fakeRtc = FakeRtc_GetCurrentTime();
+    struct SiiRtcInfo *rtc = FakeRtc_GetCurrentTime();
+    u32 current = rtc->hour * MINUTES_PER_HOUR * SECONDS_PER_MINUTE + rtc->minute * SECONDS_PER_MINUTE + rtc->second;
+    u32 target = hour * MINUTES_PER_HOUR * SECONDS_PER_MINUTE + minute * SECONDS_PER_MINUTE + second;
+    u32 secondsPerDay = HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE;
+    u32 delta = (target + secondsPerDay - current) % secondsPerDay;
 
-    target.hours = hour;
-    target.minutes = minute;
-    target.seconds = second;
-
-    FakeRtc_CalcTimeDifference(&diff, fakeRtc, &target);
-    FakeRtc_AdvanceTimeBy(0, diff.hours, diff.minutes, diff.seconds);
-    Script_ResumeFakeRtc();
-}
-
-static void FakeRtc_CalcTimeDifference(struct Time *result, struct SiiRtcInfo *t1, struct Time *t2)
-{
-    result->seconds = t2->seconds - t1->second;
-    result->minutes = t2->minutes - t1->minute;
-    result->hours = t2->hours - t1->hour;
-    result->days = t2->days - t1->day;
-
-    if (result->seconds < 0)
-    {
-        result->seconds += SECONDS_PER_MINUTE;
-        --result->minutes;
-    }
-
-    if (result->minutes < 0)
-    {
-        result->minutes += MINUTES_PER_HOUR;
-        --result->hours;
-    }
-
-    if (result->hours < 0)
-    {
-        result->hours += HOURS_PER_DAY;
-        --result->days;
-    }
+    /* Advance synchronously on the game thread without changing the pause flag.
+     * A clock paused by the caller must remain paused after this operation. */
+    FakeRtc_AdvanceTimeBy(0, 0, 0, delta);
 }
 
 void FakeRtc_ManuallySetTime(u32 day, u32 hour, u32 minute, u32 second)
@@ -120,7 +91,7 @@ void FakeRtc_ManuallySetTime(u32 day, u32 hour, u32 minute, u32 second)
     FakeRtc_AdvanceTimeBy(day, hour, minute, second);
 }
 
-u32 FakeRtc_GetSecondsRatio(void)
+ADMG_NATIVE_ENTRY u32 FakeRtc_GetSecondsRatio(void)
 {
     return (OW_ALTERED_TIME_RATIO == GEN_8_PLA)   ? 60 :
            (OW_ALTERED_TIME_RATIO == GEN_9)       ? 20 :
