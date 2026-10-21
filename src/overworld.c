@@ -1990,10 +1990,9 @@ void CB2_NewGame(void)
     SetFieldVBlankCallback();
     SetMainCallback1(CB1_Overworld);
     SetMainCallback2(CB2_Overworld);
-#if OW_USE_FAKE_RTC
-    // Wall clock now track local time so we set it to 10AM to match initial wall clock time
-    RtcCalcLocalTimeOffset(0, 10, 0, 0);
-#endif
+    // When the fake clock is active, start the new game at 10 AM to match the initial wall clock setting.
+    if (FakeRtc_IsActive())
+        RtcCalcLocalTimeOffset(0, 10, 0, 0);
 }
 
 void CB2_WhiteOut(void)

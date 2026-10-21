@@ -4,7 +4,8 @@
 #include "siirtc.h"
 
 void FakeRtc_Reset(void);
-struct SiiRtcInfo* FakeRtc_GetCurrentTime(void);
+bool32 FakeRtc_IsActive(void);
+struct SiiRtcInfo *FakeRtc_GetCurrentTime(void);
 void FakeRtc_GetRawInfo(struct SiiRtcInfo *rtc);
 void FakeRtc_AdvanceTimeBy(u32 days, u32 hours, u32 minutes, u32 seconds);
 void FakeRtc_ManuallySetTime(u32 day, u32 hour, u32 minute, u32 second);

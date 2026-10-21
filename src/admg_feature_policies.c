@@ -23,13 +23,14 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeaturePolicyDefault(ADMG_Word policy)
     case ADMG_POLICY_HGSS_POKEDEX: return POKEDEX_PLUS_HGSS;
     case ADMG_POLICY_SUMMARY_IV_EV: return P_SUMMARY_SCREEN_IV_EV_INFO;
     case ADMG_POLICY_BERRY_MUTATIONS: return OW_BERRY_MUTATIONS;
+    case ADMG_POLICY_FAKE_RTC: return OW_USE_FAKE_RTC;
     default: return 0;
     }
 }
 
 ADMG_NATIVE_ENTRY ADMG_Word ADMG_IsFeaturePolicyKnown(ADMG_Word policy)
 {
-    return policy >= ADMG_POLICY_FISHING_CHAIN && policy <= ADMG_POLICY_BERRY_MUTATIONS;
+    return policy >= ADMG_POLICY_FISHING_CHAIN && policy <= ADMG_POLICY_FAKE_RTC;
 }
 
 ADMG_RETAIN_FUNCTION(ADMG_GetFeaturePolicy);

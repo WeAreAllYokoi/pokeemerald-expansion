@@ -1,5 +1,7 @@
 #include "global.h"
 #include "admg_feature_bindings.h"
+#include "admg_feature_policies.h"
+#include "admg_feature_state.h"
 #include "string_util.h"
 #include "strings.h"
 #include "text.h"
@@ -13,34 +15,35 @@ static void FakeRtc_CalcTimeDifference(struct Time *result, struct SiiRtcInfo *t
 
 void FakeRtc_Reset(void)
 {
-#if OW_USE_FAKE_RTC
-    memset(&gSaveBlock3Ptr->fakeRTC, 0, sizeof(gSaveBlock3Ptr->fakeRTC));
-    gSaveBlock3Ptr->fakeRTC.year = 0; // offset by gGen3Epoch.year
-    gSaveBlock3Ptr->fakeRTC.month = gGen3Epoch.month;
-    gSaveBlock3Ptr->fakeRTC.day = gGen3Epoch.day;
-    gSaveBlock3Ptr->fakeRTC.dayOfWeek = gGen3Epoch.dayOfWeek;
-#endif
+    if (ADMG_GetFeatureStateBridgeVersion() != 1)
+        return;
+    ADMG_Word address = ADMG_GetFeatureState(ADMG_FEATURE_STATE_CLOCK);
+    if (address != 0)
+        ADMG_InitializeFeatureState(ADMG_FEATURE_STATE_CLOCK, address, 1);
 }
 
 struct SiiRtcInfo *FakeRtc_GetCurrentTime(void)
 {
-#if OW_USE_FAKE_RTC
-    return &gSaveBlock3Ptr->fakeRTC;
-#else
-    return NULL;
-#endif
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_FAKE_RTC) || ADMG_GetFeatureStateBridgeVersion() != 1)
+        return NULL;
+    return (struct SiiRtcInfo *)ADMG_GetFeatureState(ADMG_FEATURE_STATE_CLOCK);
+}
+
+bool32 FakeRtc_IsActive(void)
+{
+    return FakeRtc_GetCurrentTime() != NULL;
 }
 
 void FakeRtc_GetRawInfo(struct SiiRtcInfo *rtc)
 {
     struct SiiRtcInfo *fakeRtc = FakeRtc_GetCurrentTime();
-    if (fakeRtc != NULL)
+    if (fakeRtc != NULL && rtc != NULL)
         memcpy(rtc, fakeRtc, sizeof(struct SiiRtcInfo));
 }
 
 void FakeRtc_TickTimeForward(void)
 {
-    if (!OW_USE_FAKE_RTC)
+    if (!FakeRtc_IsActive())
         return;
 
     if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_OW_FLAG_PAUSE_TIME)))
@@ -51,7 +54,7 @@ void FakeRtc_TickTimeForward(void)
 
 void FakeRtc_AdvanceTimeBy(u32 days, u32 hours, u32 minutes, u32 seconds)
 {
-    if (!OW_USE_FAKE_RTC)
+    if (!FakeRtc_IsActive())
         return;
 
     struct DateTime dateTime;
@@ -67,7 +70,7 @@ void FakeRtc_AdvanceTimeBy(u32 days, u32 hours, u32 minutes, u32 seconds)
 
 void FakeRtc_ForwardTimeTo(u32 hour, u32 minute, u32 second)
 {
-    if (!OW_USE_FAKE_RTC)
+    if (!FakeRtc_IsActive())
         return;
 
     Script_PauseFakeRtc();
@@ -111,6 +114,8 @@ static void FakeRtc_CalcTimeDifference(struct Time *result, struct SiiRtcInfo *t
 
 void FakeRtc_ManuallySetTime(u32 day, u32 hour, u32 minute, u32 second)
 {
+    if (!FakeRtc_IsActive())
+        return;
     FakeRtc_Reset();
     FakeRtc_AdvanceTimeBy(day, hour, minute, second);
 }
