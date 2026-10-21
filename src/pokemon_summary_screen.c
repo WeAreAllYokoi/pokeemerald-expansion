@@ -4325,7 +4325,7 @@ static void CreateMoveTypeIcons(void)
     }
 }
 
-void SetTypeSpritePosAndPal(enum Type typeId, u8 x, u8 y, u8 spriteArrayId)
+ADMG_NATIVE_ENTRY void SetTypeSpritePosAndPal(enum Type typeId, u8 x, u8 y, u8 spriteArrayId)
 {
     struct Sprite *sprite = &gSprites[sMonSummaryScreen->spriteIds[spriteArrayId]];
     if (typeId & TYPE_ICON_CONTEST_CATEGORY_FLAG)
