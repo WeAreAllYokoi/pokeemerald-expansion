@@ -328,7 +328,7 @@ static void BuildNormalStartMenu(void)
     if (FlagGet(FLAG_SYS_POKEDEX_GET) == TRUE)
         AddStartMenuAction(MENU_ACTION_POKEDEX);
 
-    if (ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_DEXNAV_GET) != 0 && FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_DEXNAV_GET)))
+    if (ADMG_DexNavEnabled() && ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_DEXNAV_GET) != 0 && FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_DEXNAV_GET)))
         AddStartMenuAction(MENU_ACTION_DEXNAV);
 
     if (FlagGet(FLAG_SYS_POKEMON_GET) == TRUE)

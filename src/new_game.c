@@ -256,8 +256,6 @@ static void ResetItemFlags(void)
 
 static void ResetDexNav(void)
 {
-#if USE_DEXNAV_SEARCH_LEVELS == TRUE
-    memset(gSaveBlock3Ptr->dexNavSearchLevels, 0, sizeof(gSaveBlock3Ptr->dexNavSearchLevels));
-#endif
+    ADMG_ResetFeatureState(ADMG_FEATURE_STATE_DEXNAV_SEARCH_LEVELS);
     gSaveBlock3Ptr->dexNavChain = 0;
 }

@@ -1,4 +1,8 @@
 #include "global.h"
+#include "admg_feature_policies.h"
+#include "admg_feature_state.h"
+#include "admg_registry.h"
+#include "admg_retention.h"
 #include "admg_feature_bindings.h"
 #include "type_icon_anim.h"
 #include "battle_main.h"
@@ -782,13 +786,7 @@ static void LoadSearchIconData(void)
 
 static u8 GetSearchLevel(enum Species species)
 {
-    u8 searchLevel;
-#if USE_DEXNAV_SEARCH_LEVELS == TRUE
-    searchLevel = gSaveBlock3Ptr->dexNavSearchLevels[species];
-#else
-    searchLevel = 0;
-#endif
-    return searchLevel;
+    return ADMG_GetEffectiveDexNavSearchLevel(species);
 }
 
 static void SetUpDexNavSearch(void)
@@ -840,6 +838,8 @@ static void DexNavSearchBail(const u8 *script)
 
 static bool8 InitDexNavSearch(enum Species species, u32 environment)
 {
+    if (!ADMG_DexNavEnabled())
+        return FALSE;
     sDexNavSearchDataPtr = AllocZeroed(sizeof(struct DexNavSearch));
     if (sDexNavSearchDataPtr == NULL)
     {
@@ -950,9 +950,11 @@ static void RevealHiddenSearch(void)
 
 bool32 TryStartDexNavSearch(void)
 {
+    if (!ADMG_DexNavEnabled())
+        return FALSE;
     enum Species val = VarGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_VAR_SPECIES));
 
-    if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING)) && sDexNavSearchDataPtr->hiddenSearch)
+    if (FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING)) && sDexNavSearchDataPtr != NULL && sDexNavSearchDataPtr->hiddenSearch)
     {
         RevealHiddenSearch();
         return FALSE;
@@ -1038,6 +1040,8 @@ static void RevealHiddenMon(void)
 
 bool32 OnStep_DexNavSearch(void)
 {
+    if (!ADMG_DexNavEnabled())
+        return FALSE;
     if (!FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING)) || sDexNavSearchDataPtr == NULL)
         return FALSE;
 
@@ -2289,7 +2293,7 @@ static void DexNav_RunSetup(void)
 // Entry point for the dexnav GUI
 static void DexNavGuiInit(MainCallback callback)
 {
-    assertf(DEXNAV_ENABLED, "DexNav was opened when DEXNAV_ENABLED config was disabled.\nCheck include/config/dexnav.h")
+    assertf(ADMG_DexNavEnabled(), "DexNav was opened when DEXNAV_ENABLED config was disabled.\nCheck include/config/dexnav.h")
     {
         SetMainCallback2(callback);
         return;
@@ -2308,6 +2312,11 @@ static void DexNavGuiInit(MainCallback callback)
 
 void Task_OpenDexNavFromStartMenu(u8 taskId)
 {
+    if (!ADMG_DexNavEnabled())
+    {
+        DestroyTask(taskId);
+        return;
+    }
     if (!gPaletteFade.active)
     {
         CleanupOverworldWindowsAndTilemaps();
@@ -2483,7 +2492,7 @@ bool32 TryFindHiddenPokemon(void)
         return FALSE;
     }
 
-    if (DEXNAV_ENABLED == 0 || sDexNavSearchDataPtr == NULL)
+    if (!ADMG_DexNavEnabled())
     {
         if (stepPtr != NULL)
             (*stepPtr) = 0;
@@ -2680,12 +2689,11 @@ u32 CalculateDexNavShinyRolls(void)
     return chainBonus + rndBonus;
 }
 
-void TryIncrementSpeciesSearchLevel()
+void TryIncrementSpeciesSearchLevel(void)
 {
-#if USE_DEXNAV_SEARCH_LEVELS == TRUE
-    if (gMapHeader.regionMapSectionId != MAPSEC_BATTLE_FRONTIER && gSaveBlock3Ptr->dexNavSearchLevels[gDexNavSpecies] < 255)
-        gSaveBlock3Ptr->dexNavSearchLevels[gDexNavSpecies]++;
-#endif
+    if (ADMG_GetFeaturePolicy(ADMG_POLICY_DEXNAV_SEARCH_LEVELS)
+     && gMapHeader.regionMapSectionId != MAPSEC_BATTLE_FRONTIER)
+        ADMG_IncrementDexNavSearchLevel(gDexNavSpecies);
 }
 
 void ResetDexNavSearch(void)
@@ -2701,3 +2709,75 @@ void IncrementDexNavChain(void)
     if (gSaveBlock3Ptr->dexNavChain < DEXNAV_CHAIN_MAX)
         gSaveBlock3Ptr->dexNavChain++;
 }
+
+/* Request host-owned search history after species composition is complete.
+ * The host allocates it on first use and saves it with feature state.
+ * Its lifetime is independent of the DexNav GUI. */
+static struct ADMG_DexNavSearchLevel *ADMG_DexNavLevels(void)
+{
+    if (ADMG_GetFeatureStateBridgeVersion() != 1)
+        return NULL;
+    return (struct ADMG_DexNavSearchLevel *)ADMG_GetFeatureState(ADMG_FEATURE_STATE_DEXNAV_SEARCH_LEVELS);
+}
+
+ADMG_NATIVE_ENTRY bool32 ADMG_DexNavEnabled(void)
+{
+    return ADMG_GetFeaturePolicy(ADMG_POLICY_DEXNAV)
+        && ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_SEARCHING) != 0
+        && ADMG_GetFeatureBinding(ADMG_BINDING_DN_FLAG_DETECTOR_MODE) != 0
+        && ADMG_GetFeatureBinding(ADMG_BINDING_DN_VAR_SPECIES) != 0
+        && ADMG_GetFeatureBinding(ADMG_BINDING_DN_VAR_STEP_COUNTER) != 0;
+}
+
+ADMG_NATIVE_ENTRY bool32 ADMG_DexNavSearchLevelsAvailable(void)
+{
+    return ADMG_DexNavLevels() != NULL;
+}
+
+ADMG_NATIVE_ENTRY u32 ADMG_GetDexNavSearchLevel(u32 species)
+{
+    struct ADMG_DexNavSearchLevel *levels;
+    if (!IsSpeciesIdValid(species) || species == SPECIES_NONE)
+        return 0xFFFFFFFF;
+    levels = ADMG_DexNavLevels();
+    return levels == NULL ? 0xFFFFFFFF : levels[species].level;
+}
+
+ADMG_NATIVE_ENTRY bool32 ADMG_SetDexNavSearchLevel(u32 species, u32 level)
+{
+    struct ADMG_DexNavSearchLevel *levels;
+    if (!IsSpeciesIdValid(species) || species == SPECIES_NONE || level > 255)
+        return FALSE;
+    levels = ADMG_DexNavLevels();
+    if (levels == NULL)
+        return FALSE;
+    levels[species].level = level;
+    return TRUE;
+}
+
+ADMG_NATIVE_ENTRY bool32 ADMG_IncrementDexNavSearchLevel(u32 species)
+{
+    u32 level = ADMG_GetDexNavSearchLevel(species);
+    if (level > 255)
+        return FALSE;
+    return level == 255 || ADMG_SetDexNavSearchLevel(species, level + 1);
+}
+
+ADMG_NATIVE_ENTRY u32 ADMG_GetEffectiveDexNavSearchLevel(u32 species)
+{
+    u32 level;
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_DEXNAV_SEARCH_LEVELS))
+        return 0;
+    level = ADMG_GetDexNavSearchLevel(species);
+    return level <= 255 ? level : 0;
+}
+
+ADMG_RETAIN_FUNCTION(ADMG_DexNavEnabled);
+ADMG_RETAIN_FUNCTION(ADMG_DexNavSearchLevelsAvailable);
+ADMG_RETAIN_FUNCTION(ADMG_GetDexNavSearchLevel);
+ADMG_RETAIN_FUNCTION(ADMG_SetDexNavSearchLevel);
+ADMG_RETAIN_FUNCTION(ADMG_IncrementDexNavSearchLevel);
+ADMG_RETAIN_FUNCTION(ADMG_GetEffectiveDexNavSearchLevel);
+ADMG_RETAIN_FUNCTION(TryIncrementSpeciesSearchLevel);
+ADMG_RETAIN_FUNCTION(Task_OpenDexNavFromStartMenu);
+ADMG_RETAIN_FUNCTION(TryStartDexNavSearch);

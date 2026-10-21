@@ -2,6 +2,7 @@
 #include "admg_feature_policies.h"
 #include "admg_retention.h"
 #include "config/fishing.h"
+#include "config/dexnav.h"
 #include "config/pokemon.h"
 #include "config/summary_screen.h"
 #include "config/pokedex_plus_hgss.h"
@@ -26,13 +27,16 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeaturePolicyDefault(ADMG_Word policy)
     case ADMG_POLICY_FAKE_RTC: return OW_USE_FAKE_RTC;
     case ADMG_POLICY_NPC_FOLLOWERS: return FNPC_ENABLE_NPC_FOLLOWERS;
     case ADMG_POLICY_ENEMY_HP_PERCENTAGE: return B_HP_PERCENTAGE_DISPLAY;
+    case ADMG_POLICY_DEXNAV: return DEXNAV_ENABLED;
+    case ADMG_POLICY_DEXNAV_SEARCH_LEVELS: return USE_DEXNAV_SEARCH_LEVELS;
     default: return 0;
     }
 }
 
 ADMG_NATIVE_ENTRY ADMG_Word ADMG_IsFeaturePolicyKnown(ADMG_Word policy)
 {
-    return policy >= ADMG_POLICY_FISHING_CHAIN && policy <= ADMG_POLICY_ENEMY_HP_PERCENTAGE;
+    return (policy >= ADMG_POLICY_FISHING_CHAIN && policy <= ADMG_POLICY_ENEMY_HP_PERCENTAGE)
+        || policy == ADMG_POLICY_DEXNAV || policy == ADMG_POLICY_DEXNAV_SEARCH_LEVELS;
 }
 
 ADMG_RETAIN_FUNCTION(ADMG_GetFeaturePolicy);
