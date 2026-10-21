@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_feature_records.h"
 #include "event_data.h"
 #include "admg_script.h"
 #include "main.h"
@@ -61,6 +62,18 @@ static const struct MassOutbreak *ADMG_GetStaticOutbreakEntry(u32 index)
         return NULL;
     }
     return &sPokeOutbreakSpeciesList[index];
+}
+
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_CopyStaticOutbreak(ADMG_Word index, struct MassOutbreak *outbreak)
+{
+    const struct MassOutbreak *entry;
+    if (outbreak == NULL)
+        return FALSE;
+    entry = ADMG_GetStaticOutbreakEntry(index);
+    if (entry == NULL)
+        return FALSE;
+    *outbreak = *entry;
+    return TRUE;
 }
 
 void ZeroMassOutbreak(void)
