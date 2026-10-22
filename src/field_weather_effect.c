@@ -151,7 +151,7 @@ bool8 Clouds_Finish(void)
     return FALSE;
 }
 
-STATIC_ASSERT(OW_SHADOW_INTENSITY >= 0 && OW_SHADOW_INTENSITY <= 16, ObjEventShadowTransparencyNotInRange)
+STATIC_ASSERT(ADMG_DEFAULT_OW_SHADOW_INTENSITY >= 0 && ADMG_DEFAULT_OW_SHADOW_INTENSITY <= 16, ObjEventShadowTransparencyNotInRange)
 
 void Sunny_InitVars(void)
 {

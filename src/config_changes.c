@@ -12,6 +12,9 @@
 #include "config/overworld.h"
 #include "config/pokedex_plus_hgss.h"
 #include "config/pokemon.h"
+#include "config/item.h"
+#include "config/summary_screen.h"
+#include "config/wild_encounter.h"
 #include "admg_retention.h"
 
 #define UNPACK_BATTLE_CONFIG_GEN_CHANGES(_name, _field, ...) ._field = _name,

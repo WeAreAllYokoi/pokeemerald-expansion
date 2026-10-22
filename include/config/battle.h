@@ -82,7 +82,9 @@
 #define B_EXTRAPOLATED_MOVE_FLAGS   TRUE       // Adds flags to moves that they don't officially have, but would likely have if they were in the latest core series game.
 #define B_HIDDEN_POWER_COUNTER      GEN_LATEST // In Gen3 and earlier, Counter and Mirror Coat treat Hidden Power as physical regardless of type.
 #define B_MODERN_TRICK_CHOICE_LOCK  GEN_LATEST // In Gen5+, if a choice item is swapped for another choice item, the Trick/Switcheroo user can choose another move before being locked into it.
-#define B_PROTECT_FAILURE_RATE      GEN_LATEST // In Gen5+, protection moves fail 1/3 of the time instead of 1/2.
+#define ADMG_DEFAULT_B_PROTECT_FAILURE_RATE      GEN_LATEST // Consecutive uses succeed at 1, 1/3, 1/9 and 1/27 for GEN_5+,
+// or 1, 1/2, 1/4 and 1/8 for earlier settings; further uses keep the last chance
+#define B_PROTECT_FAILURE_RATE ADMG_CONFIG_EXTRA(B_PROTECT_FAILURE_RATE)
 
 // Ability data settings
 #define B_UPDATED_ABILITY_DATA      GEN_LATEST // Affects flags.
@@ -159,7 +161,8 @@
                                                    // If OW_TIMES_OF_DAY is set to GEN_3, Morning Sun is boosted during the day instead of the morning. If it is set to GEN_4 or higher, Moonlight is also boosted in the evening.
 #define B_DREAM_EATER_LIQUID_OOZE       GEN_LATEST // In Gen5+, Dream Eater is affected by Liquid Ooze.
 #define B_DREAM_EATER_SUBSTITUTE        GEN_LATEST // In Gen5+, Dream Eater can successfully hit and drain from a Substitute.
-#define B_SNATCH                        GEN_LATEST // In Gen5+, Snatch no longer steals moves that were already stolen by another Pokémon's Snatch on the same turn.
+#define ADMG_DEFAULT_B_SNATCH                        GEN_LATEST // In Gen5+, Snatch no longer steals moves that were already stolen by another Pokémon's Snatch on the same turn.
+#define B_SNATCH ADMG_CONFIG_EXTRA(B_SNATCH)
 #define B_FOCUS_PUNCH_FAILURE           GEN_LATEST // To determine if focus is lost: In Gen7+, check if the current move and the selected move are Focus Punch. In Gens5-6, check if the selected move is Focus Punch. In Gen4 and earlier, check if the current move is Focus Punch.
                                                    // In Gen5+, the check for Focus Punch fail will occur before effects like PP consumption and flinching. In Gen4 and earlier, it was after.
 #define B_COUNTER_MIRROR_COAT_ALLY      GEN_LATEST // In Gen5+, an ally's attack does not count for uses of Counter/Mirror Coat/Metal Burst. In Gen4 and earlier, if the last attack taken was from an ally, Counter/Mirror Coat/Metal Burst would fail.
@@ -319,7 +322,8 @@
 #define B_SHOW_PARTNER_TARGET             FALSE // Shows the battler partner will target.
 
 // Move description menu
-#define B_SHOW_MOVE_DESCRIPTION     TRUE       // Shows move information in battler
+#define ADMG_DEFAULT_B_SHOW_MOVE_DESCRIPTION     TRUE       // Shows move information in battler
+#define B_SHOW_MOVE_DESCRIPTION ADMG_CONFIG_EXTRA(B_SHOW_MOVE_DESCRIPTION)
 
 // Weather settings
 // Search for 'rain', 'sunny day', and 'hail' for move-specific or species-specific weather interactions.
@@ -363,28 +367,35 @@
 #define B_QUICK_MOVE_CURSOR_TO_RUN ADMG_CONFIG_EXTRA(B_QUICK_MOVE_CURSOR_TO_RUN)
 #define ADMG_DEFAULT_B_RUN_TRAINER_BATTLE                TRUE       // If set to TRUE, players can run from Trainer battles as in Gen9+. This is treated as a white out.
 #define B_RUN_TRAINER_BATTLE ADMG_CONFIG_EXTRA(B_RUN_TRAINER_BATTLE)
-#define B_MOVE_DESCRIPTION_BUTTON           L_BUTTON   // If set to a button other than B_LAST_USED_BALL_BUTTON, pressing this button will open the move description menu.
+#define ADMG_DEFAULT_B_MOVE_DESCRIPTION_BUTTON           L_BUTTON   // If set to a button other than B_LAST_USED_BALL_BUTTON, pressing this button will open the move description menu.
+#define B_MOVE_DESCRIPTION_BUTTON ADMG_CONFIG_EXTRA(B_MOVE_DESCRIPTION_BUTTON)
 #define B_SHOW_USELESS_Z_MOVE_INFO          FALSE      // If set to TRUE, Z-Moves without additional effects, like newer generation status moves, will say "No additional effect."
 #define B_ANIMATE_MON_AFTER_KO              TRUE       // If set to TRUE, if a Pokémon on the opposing side faints, the non-fainted Pokémon will play their animations.
 #define B_ANIMATE_MON_AFTER_FAILED_POKEBALL TRUE       // If set to TRUE, a wild Pokémon that breaks of a thrown Poké Ball will play its animation.
 #define B_SHOW_DYNAMAX_MESSAGE              FALSE      // If set to TRUE, an additional battle message is shown after Dynamaxing or Gigantamaxing.
-#define B_HPBAR_COLOR_THRESHOLD             GEN_LATEST // In Gen5+, HP bar color thresholds were changed to be based on the actual HP values instead of the pixel length of the HP bar, leading to more accurate HP bar colors.
+#define ADMG_DEFAULT_B_HPBAR_COLOR_THRESHOLD             GEN_LATEST // In Gen5+, HP bar color thresholds were changed to be based on the actual HP values instead of the pixel length of the HP bar, leading to more accurate HP bar colors.
+#define B_HPBAR_COLOR_THRESHOLD ADMG_CONFIG_EXTRA(B_HPBAR_COLOR_THRESHOLD)
 #define B_HP_PERCENTAGE_DISPLAY             FALSE      // If set to TRUE, Pokémon on the opposing side's HP will be displayed in percentage alongside the HP bar. In single battles, this extends the healthbox to add the percentage below the HP bar. In double battles, the same input used to toggle your side's HP values will also toggle the opposing side's percentage display.
 
 // Catching settings
 #define B_SEMI_INVULNERABLE_CATCH       GEN_LATEST // In Gen4+, you cannot throw a ball against a Pokémon that is in a semi-invulnerable state (Dig/Fly/etc).
-#define B_CATCHING_CHARM_BOOST          100        // % increase in critical capture odds if the player has the Catching Charm.
+#define ADMG_DEFAULT_B_CATCHING_CHARM_BOOST          100        // % increase in critical capture odds if the player has the Catching Charm.
+#define B_CATCHING_CHARM_BOOST ADMG_CONFIG_EXTRA(B_CATCHING_CHARM_BOOST)
 #define B_INCAPACITATED_CATCH_BONUS     GEN_LATEST // In Gen5+, the catch rate bonus for a sleeping or frozen Pokémon is 2.5x instead of 2x.
 #define B_LOW_LEVEL_CATCH_BONUS         GEN_LATEST // In Gen9+, a bonus is added to the catch rate when catching a Pokémon lower than level 13. In Gen8, the bonus is applied to Pokémon lower than level 20.
 #define B_MISSING_BADGE_CATCH_MALUS     GEN_LATEST // In Gen9+, a penalty is added to the catch rate when trying to catch a Pokémon 5 levels above the current obedience level, based on the number of Badges obtained.
-#define B_CRITICAL_CAPTURE              TRUE       // If set to TRUE, Critical Captures will be enabled.
-#define B_CRITICAL_CAPTURE_LOCAL_DEX    TRUE       // If set to FALSE, the Critical Capture chance is based off of the National Pokédex, estimated by enabled generations.
+#define ADMG_DEFAULT_B_CRITICAL_CAPTURE              TRUE       // If set to TRUE, Critical Captures will be enabled.
+#define B_CRITICAL_CAPTURE ADMG_CONFIG_EXTRA(B_CRITICAL_CAPTURE)
+#define ADMG_DEFAULT_B_CRITICAL_CAPTURE_LOCAL_DEX    TRUE       // If set to FALSE, the Critical Capture chance is based off of the National Pokédex, estimated by enabled generations.
+#define B_CRITICAL_CAPTURE_LOCAL_DEX ADMG_CONFIG_EXTRA(B_CRITICAL_CAPTURE_LOCAL_DEX)
 #define B_CRITICAL_CAPTURE_IF_OWNED     GEN_LATEST // In Gen9+, a capture will appear critical if the Pokémon you're trying to catch is of a species that you have already caught.
 #define B_FLAG_VICTORY_CATCH_RANDOM     0          // If set, you will be prompted to throw a ball after the encounter has been defeated, catch rate is random. You can't capture the encounter in any other way.
 #define B_FLAG_VICTORY_CATCH_GUARANTEED 0          // If set, you will be prompted to throw a ball after the encounter has been defeated, guaranteed to catch. You can't capture the encounter in any other way.
 
-#define B_LAST_USED_BALL            TRUE       // If set to TRUE, the "last used Ball" feature from Gen7+ will be implemented
-#define B_LAST_USED_BALL_BUTTON     R_BUTTON   // If last used Ball is implemented, this button (or button combination) will trigger throwing the last used Ball.
+#define ADMG_DEFAULT_B_LAST_USED_BALL            TRUE       // If set to TRUE, the "last used Ball" feature from Gen7+ will be implemented
+#define B_LAST_USED_BALL ADMG_CONFIG_EXTRA(B_LAST_USED_BALL)
+#define ADMG_DEFAULT_B_LAST_USED_BALL_BUTTON     R_BUTTON   // If last used Ball is implemented, this button (or button combination) will trigger throwing the last used Ball.
+#define B_LAST_USED_BALL_BUTTON ADMG_CONFIG_EXTRA(B_LAST_USED_BALL_BUTTON)
 #define B_LAST_USED_BALL_CYCLE      TRUE       // If set to TRUE, then holding B_LAST_USED_BALL_BUTTON while pressing the D-Pad cycles through the Balls.
 #define ADMG_DEFAULT_B_CATCH_SWAP_INTO_PARTY     GEN_LATEST // In Gen7+, the option to swap caught Pokémon into the party will appear, allowing you to send a different Pokémon to the Box.
 #define B_CATCH_SWAP_INTO_PARTY ADMG_CONFIG_EXTRA(B_CATCH_SWAP_INTO_PARTY)
@@ -393,14 +404,17 @@
 
 // Other settings
 #define B_MULTI_BATTLE_WHITEOUT         GEN_LATEST // In Gen4+, Multi Battles end when the player as well as their partner don't have any Pokémon left.
-#define B_EVOLUTION_AFTER_WHITEOUT      GEN_LATEST // In Gen6+, Pokémon that qualify for evolution after battle will evolve even if the player loses.
+#define ADMG_DEFAULT_B_EVOLUTION_AFTER_WHITEOUT      GEN_LATEST // In Gen6+, Pokémon that qualify for evolution after battle will evolve even if the player loses.
+#define B_EVOLUTION_AFTER_WHITEOUT ADMG_CONFIG_EXTRA(B_EVOLUTION_AFTER_WHITEOUT)
 #define B_AFFECTION_MECHANICS           TRUE       // In Gen6+, there's a stat called affection that can trigger different effects in battle. From LGPE onwards, these effects use friendship instead.
 #define B_TRAINER_CLASS_POKE_BALLS      GEN_LATEST // In Gen7+, Trainers will use certain kinds of Poké Balls depending on their Trainer class.
 #define B_TRAINER_MON_RANDOM_ABILITY    0          // If this is set to 0, trainers mons with no set ability only use the first ability of a mon. If set to 1 it will roll a random non-hidden ability. If set to 2, it will roll any ability (including hidden ability) with equal chance
 #define B_OBEDIENCE_MECHANICS           GEN_LATEST // In PLA onwards (GEN_8 here), obedience restrictions also apply to non-outsider Pokémon, albeit based on their met level rather than their current level.
 #define B_USE_FROSTBITE                 FALSE      // In PLA, Frostbite replaces Freeze. Enabling this flag does the same here. Moves can still be cherry-picked to either Freeze or Frostbite. Freeze-Dry, Secret Power & Tri Attack depend on this config.
-#define B_TOXIC_REVERSAL                GEN_LATEST // In Gen5+, bad poison will change to regular poison at the end of battles.
-#define B_TRY_CATCH_TRAINER_BALL        GEN_LATEST // In Gen4+, trying to catch a Trainer's Pokémon no longers consume the Poké Ball.
+#define ADMG_DEFAULT_B_TOXIC_REVERSAL                GEN_LATEST // In Gen5+, bad poison will change to regular poison at the end of battles.
+#define B_TOXIC_REVERSAL ADMG_CONFIG_EXTRA(B_TOXIC_REVERSAL)
+#define ADMG_DEFAULT_B_TRY_CATCH_TRAINER_BALL        GEN_LATEST // In Gen4+, trying to catch a Trainer's Pokémon no longers consume the Poké Ball.
+#define B_TRY_CATCH_TRAINER_BALL ADMG_CONFIG_EXTRA(B_TRY_CATCH_TRAINER_BALL)
 #define ADMG_DEFAULT_B_SLEEP_CLAUSE                  FALSE      // Keep Sleep Clause enabled regardless of B_FLAG_SLEEP_CLAUSE
 #define B_SLEEP_CLAUSE ADMG_CONFIG_EXTRA(B_SLEEP_CLAUSE)
 #define B_PARTNER_MONS_MARKED_SEEN      FALSE      // If set to TRUE, if your Double Battle partner sends out a Pokémon you haven't encountered yet, it will be marked as SEEN in your Pokédex.
@@ -431,9 +445,12 @@
 #define B_NEW_SURF_PARTICLE_PALETTE     FALSE    // If set to TRUE, it updates Surf's wave palette.
 
 // Poké Ball animation and sounds
-#define B_ENEMY_THROW_BALLS          GEN_LATEST  // In Gen6+, enemy Trainers throw Poké Balls into battle instead of them just appearing on the ground and opening.
-#define B_ENEMY_THROW_BALLS_SOUND    GEN_LATEST  // In Gen5+, enemy Trainer's Poké Balls make a sound when thrown to send out a Pokémon. This can only be used when B_ENEMY_THROW_BALLS is set to GEN_6 or later.
-#define B_PLAYER_THROW_BALLS_SOUND   GEN_LATEST  // In Gen5+, the player's Poké Balls make a sound when thrown to send out a Pokémon.
+#define ADMG_DEFAULT_B_ENEMY_THROW_BALLS          GEN_LATEST  // In Gen6+, enemy Trainers throw Poké Balls into battle instead of them just appearing on the ground and opening.
+#define B_ENEMY_THROW_BALLS ADMG_CONFIG_EXTRA(B_ENEMY_THROW_BALLS)
+#define ADMG_DEFAULT_B_ENEMY_THROW_BALLS_SOUND    GEN_LATEST  // In Gen5+, enemy Trainer's Poké Balls make a sound when thrown to send out a Pokémon. This can only be used when B_ENEMY_THROW_BALLS is set to GEN_6 or later.
+#define B_ENEMY_THROW_BALLS_SOUND ADMG_CONFIG_EXTRA(B_ENEMY_THROW_BALLS_SOUND)
+#define ADMG_DEFAULT_B_PLAYER_THROW_BALLS_SOUND   GEN_LATEST  // In Gen5+, the player's Poké Balls make a sound when thrown to send out a Pokémon.
+#define B_PLAYER_THROW_BALLS_SOUND ADMG_CONFIG_EXTRA(B_PLAYER_THROW_BALLS_SOUND)
 
 #define SHOW_TYPES_NEVER    0                    // Never show types in battle.
 #define SHOW_TYPES_ALWAYS   1                    // Always show types in battle.
@@ -452,7 +469,8 @@
 #define B_ENEMY_MON_SHADOW_STYLE        GEN_LATEST // In Gen4+, all opposing Pokémon will have a shadow drawn beneath them.
 
 //  Battle UI settings
-#define B_MOVE_REARRANGEMENT_IN_BATTLE  GEN_LATEST  //  In Gen4+, move slots can no longer be rearranged in battle.
+#define ADMG_DEFAULT_B_MOVE_REARRANGEMENT_IN_BATTLE  GEN_LATEST  //  In Gen4+, move slots can no longer be rearranged in battle.
+#define B_MOVE_REARRANGEMENT_IN_BATTLE ADMG_CONFIG_EXTRA(B_MOVE_REARRANGEMENT_IN_BATTLE)
 
 #define B_POOL_SETTING_CONSISTENT_RNG       FALSE    // If set to TRUE, the same Trainer will always generate the same pool on the same save file.
 #define B_POOL_SETTING_USE_FIXED_SEED       FALSE    // If set to TRUE, RNG will use the fixed seed defined in B_POOL_SETTING_FIXED_SEED.

@@ -7,7 +7,8 @@
 #define I_KEY_ESCAPE_ROPE               GEN_LATEST  // In Gen8+, the Escape Rope is a Key Item. Keep in mind that this will make it free to buy in Marts.
 #define I_HEALTH_RECOVERY               GEN_LATEST  // In Gen7+, certain healing items recover a different amount of HP than they did previously.
 #define I_SITRUS_BERRY_HEAL             GEN_LATEST  // In Gen4+, Sitrus Berries heal 30 HP instead of 25% of max HP.
-#define I_VITAMIN_EV_CAP                GEN_LATEST  // In Gen8+, Vitamins no longer have a cap of 100 EVs per stat.
+#define ADMG_DEFAULT_I_VITAMIN_EV_CAP                GEN_LATEST  // In Gen8+, Vitamins no longer have a cap of 100 EVs per stat.
+#define I_VITAMIN_EV_CAP ADMG_CONFIG_EXTRA(I_VITAMIN_EV_CAP)
 #define I_BERRY_EV_JUMP                 GEN_LATEST  // In Gen4 only, EV-lowering Berries lower a stat's EVs to 100 if they are above 100.
 #define I_GRISEOUS_ORB_FORM_CHANGE      GEN_LATEST  // In Gen9+, the Griseous Orb no longer changes Giratina's form when held.
 #define I_GEM_BOOST_POWER               GEN_LATEST  // In Gen6+, the power multiplier of Gems is 1.3x instead of 1.5x.
@@ -19,7 +20,8 @@
 #define I_POWER_ITEM_BOOST              GEN_LATEST  // In Gen7+, Pokémon holding Power items gain 8 extra EVs instead of 4.
 #define I_PREMIER_BALL_BONUS            GEN_LATEST  // In LGPE onwards (Gen8+ here), the player is given a Premier Ball for every 10 Poké Balls of any type in the same purchase. Previously, this only applied to regular Poké Balls and only 1 could be obtained per purchase.
 #define I_ROTOM_CATALOG_THUNDER_SHOCK   GEN_LATEST  // In Gen9+, changing Rotom to its base form will teach it Thunder Shock even if it knows another move.
-#define I_REPEL_INCLUDE_FAINTED         GEN_LATEST  // In Gen1 and Gen6+, Repels use the level of the first party member to check which wild Pokémon to prevent encounters with, even if that member is fainted. In Gens2-5, they use the level of the first non-fainted Pokémon.
+#define ADMG_DEFAULT_I_REPEL_INCLUDE_FAINTED         GEN_LATEST  // In Gen1 and Gen6+, Repels use the level of the first party member to check which wild Pokémon to prevent encounters with, even if that member is fainted. In Gens2-5, they use the level of the first non-fainted Pokémon.
+#define I_REPEL_INCLUDE_FAINTED ADMG_CONFIG_EXTRA(I_REPEL_INCLUDE_FAINTED)
 #define I_LAX_INCENSE_BOOST             GEN_LATEST  // In Gen4+, Lax Incense lowers accuracy by 10% instead of 5%.
 
 // TM config

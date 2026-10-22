@@ -194,7 +194,7 @@ static const u8 sMapSectionToThemeId[MAPSEC_COUNT - KANTO_MAPSEC_COUNT - 1] =
     [MAPSEC_TRAINER_HILL - KANTO_MAPSEC_COUNT] = MAPPOPUP_THEME_MARBLE,
 };
 
-#if OW_POPUP_GENERATION == GEN_5
+#if !TESTING || ADMG_DEFAULT_OW_POPUP_GENERATION == GEN_5 // Always include Gen 5 assets in normal builds; test builds only need them for a Gen 5 default
 // Gen5 assets
 static const u8 sMapPopUpTilesPrimary_BW[] = INCGFX_U8("graphics/map_popup/bw/bw_primary.png", ".4bpp");
 static const u8 sMapPopUpTilesSecondary_BW[] = INCGFX_U8("graphics/map_popup/bw/bw_secondary.png", ".4bpp");
@@ -578,7 +578,7 @@ static void ShowMapNamePopUpWindow(void)
     u8 *withoutPrefixPtr;
     u8 x;
     const u8 *mapDisplayHeaderSource;
-    u8 mapNamePopUpWindowId, secondaryPopUpWindowId;
+    u8 mapNamePopUpWindowId = 0, secondaryPopUpWindowId = 0; // Only used for the Gen 5 popup
 
     if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
     {
@@ -674,7 +674,7 @@ static void LoadMapNamePopUpWindowBg(void)
     u8 popUpThemeId;
     u8 popupWindowId = GetMapNamePopUpWindowId();
     mapsec_u16_t regionMapSectionId = gMapHeader.regionMapSectionId;
-    u8 secondaryPopUpWindowId;
+    u8 secondaryPopUpWindowId = 0; // Only used for the Gen 5 popup
 
     if (OW_POPUP_GENERATION == GEN_5)
         secondaryPopUpWindowId = GetSecondaryPopUpWindowId();

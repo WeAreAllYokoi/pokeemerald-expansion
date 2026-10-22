@@ -2942,29 +2942,34 @@ static const struct SpriteTemplate sSpriteTemplate_MoveInfoWindow =
     .callback = SpriteCB_MoveInfoWin
 };
 
-#if B_LAST_USED_BALL_BUTTON == R_BUTTON && B_LAST_USED_BALL_CYCLE == TRUE
-    static const u8 ALIGNED(4) sLastUsedBallWindowGfx[] = INCGFX_U8("graphics/battle_interface/last_used_ball_r_cycle.png", ".4bpp");
-#elif B_LAST_USED_BALL_CYCLE == TRUE
-    static const u8 ALIGNED(4) sLastUsedBallWindowGfx[] = INCGFX_U8("graphics/battle_interface/last_used_ball_l_cycle.png", ".4bpp");
-#elif B_LAST_USED_BALL_BUTTON == R_BUTTON
-    static const u8 ALIGNED(4) sLastUsedBallWindowGfx[] = INCGFX_U8("graphics/battle_interface/last_used_ball_r.png", ".4bpp");
-#else
-    static const u8 ALIGNED(4) sLastUsedBallWindowGfx[] = INCGFX_U8("graphics/battle_interface/last_used_ball_l.png", ".4bpp");
-#endif
-static const struct SpriteSheet sSpriteSheet_LastUsedBallWindow =
+// Keep all four last-used-ball windows and both move-info windows available
+// B_LAST_USED_BALL_BUTTON and B_LAST_USED_BALL_CYCLE choose the ball window;
+// B_MOVE_DESCRIPTION_BUTTON chooses the move-info window
+static const u8 ALIGNED(4) sLastUsedBallWindowGfx_RCycle[] = INCGFX_U8("graphics/battle_interface/last_used_ball_r_cycle.png", ".4bpp");
+static const u8 ALIGNED(4) sLastUsedBallWindowGfx_LCycle[] = INCGFX_U8("graphics/battle_interface/last_used_ball_l_cycle.png", ".4bpp");
+static const u8 ALIGNED(4) sLastUsedBallWindowGfx_R[] = INCGFX_U8("graphics/battle_interface/last_used_ball_r.png", ".4bpp");
+static const u8 ALIGNED(4) sLastUsedBallWindowGfx_L[] = INCGFX_U8("graphics/battle_interface/last_used_ball_l.png", ".4bpp");
+static const struct SpriteSheet sSpriteSheets_LastUsedBallWindow[] =
 {
-    sLastUsedBallWindowGfx, sizeof(sLastUsedBallWindowGfx), TAG_LAST_BALL_WINDOW
+    {sLastUsedBallWindowGfx_RCycle, sizeof(sLastUsedBallWindowGfx_RCycle), TAG_LAST_BALL_WINDOW},
+    {sLastUsedBallWindowGfx_LCycle, sizeof(sLastUsedBallWindowGfx_LCycle), TAG_LAST_BALL_WINDOW},
+    {sLastUsedBallWindowGfx_R, sizeof(sLastUsedBallWindowGfx_R), TAG_LAST_BALL_WINDOW},
+    {sLastUsedBallWindowGfx_L, sizeof(sLastUsedBallWindowGfx_L), TAG_LAST_BALL_WINDOW},
 };
 
-#if B_MOVE_DESCRIPTION_BUTTON == R_BUTTON
-static const u8 sMoveInfoWindowGfx[] = INCGFX_U8("graphics/battle_interface/move_info_window_r.png", ".4bpp");
-#else
-static const u8 sMoveInfoWindowGfx[] = INCGFX_U8("graphics/battle_interface/move_info_window_l.png", ".4bpp");
-#endif
-
-static const struct SpriteSheet sSpriteSheet_MoveInfoWindow =
+static const struct SpriteSheet *LastUsedBallWindowSheet(void)
 {
-    sMoveInfoWindowGfx, sizeof(sMoveInfoWindowGfx), MOVE_INFO_WINDOW_TAG
+    if (B_LAST_USED_BALL_CYCLE == TRUE)
+        return &sSpriteSheets_LastUsedBallWindow[B_LAST_USED_BALL_BUTTON == R_BUTTON ? 0 : 1];
+    return &sSpriteSheets_LastUsedBallWindow[B_LAST_USED_BALL_BUTTON == R_BUTTON ? 2 : 3];
+}
+
+static const u8 sMoveInfoWindowGfx_R[] = INCGFX_U8("graphics/battle_interface/move_info_window_r.png", ".4bpp");
+static const u8 sMoveInfoWindowGfx_L[] = INCGFX_U8("graphics/battle_interface/move_info_window_l.png", ".4bpp");
+static const struct SpriteSheet sSpriteSheets_MoveInfoWindow[] =
+{
+    {sMoveInfoWindowGfx_R, sizeof(sMoveInfoWindowGfx_R), MOVE_INFO_WINDOW_TAG},
+    {sMoveInfoWindowGfx_L, sizeof(sMoveInfoWindowGfx_L), MOVE_INFO_WINDOW_TAG},
 };
 
 #define LAST_USED_BALL_X_F    14
@@ -3037,7 +3042,7 @@ void TryAddLastUsedBallItemSprites(void)
     // window
     LoadSpritePalette(&sSpritePalette_AbilityPopUp);
     if (GetSpriteTileStartByTag(TAG_LAST_BALL_WINDOW) == 0xFFFF)
-        LoadSpriteSheet(&sSpriteSheet_LastUsedBallWindow);
+        LoadSpriteSheet(LastUsedBallWindowSheet());
 
     if (gBattleStruct->ballSpriteIds[1] == MAX_SPRITES)
     {
@@ -3079,7 +3084,7 @@ void TryToAddMoveInfoWindow(void)
 
     LoadSpritePalette(&sSpritePalette_AbilityPopUp);
     if (GetSpriteTileStartByTag(MOVE_INFO_WINDOW_TAG) == 0xFFFF)
-        LoadSpriteSheet(&sSpriteSheet_MoveInfoWindow);
+        LoadSpriteSheet(&sSpriteSheets_MoveInfoWindow[B_MOVE_DESCRIPTION_BUTTON == R_BUTTON ? 0 : 1]);
 
     if (gBattleStruct->moveInfoSpriteId == MAX_SPRITES)
     {
@@ -3292,7 +3297,9 @@ void SwapBallToDisplay(bool32 sameBall)
 
 void ArrowsChangeColorLastBallCycle(bool32 showArrows)
 {
-#if B_LAST_USED_BALL == TRUE && B_LAST_USED_BALL_CYCLE == TRUE
+    if (!(B_LAST_USED_BALL == TRUE && B_LAST_USED_BALL_CYCLE == TRUE))
+        return;
+    {
     u16 paletteNum = 16 + gSprites[gBattleStruct->ballSpriteIds[1]].oam.paletteNum;
     struct PlttData *defaultPlttArrow;
     struct PlttData *defaultPlttOutline;
@@ -3324,7 +3331,7 @@ void ArrowsChangeColorLastBallCycle(bool32 showArrows)
         pltOutline->g = defaultPlttOutline->g;
         pltOutline->b = defaultPlttOutline->b;
     }
-#endif
+    }
 }
 
 void CategoryIcons_LoadSpritesGfx(void)

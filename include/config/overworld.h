@@ -100,13 +100,16 @@
 #define OW_TIME_OF_DAY_FALLBACK         TIME_MORNING // The time of day that encounter tables fall back to. If you set OW_TIMES_OF_DAY to GEN_3, change this to TIME_DAY or you won't have any encounters!
 
 // Lighting
-#define OW_SHADOW_INTENSITY             4       // Ranges from 0 to 16, where 0 is fully transparent and 16 is black.
-#define OW_OBJECT_SUBPRIORITY           148     // The higher the value, the farther back compared to other sprites. Shadows should be behind object events.
+#define ADMG_DEFAULT_OW_SHADOW_INTENSITY             4       // Ranges from 0 to 16, where 0 is fully transparent and 16 is black.
+#define OW_SHADOW_INTENSITY ADMG_CONFIG_EXTRA(OW_SHADOW_INTENSITY)
+#define ADMG_DEFAULT_OW_OBJECT_SUBPRIORITY           148     // The higher the value, the farther back compared to other sprites. Shadows should be behind object events.
+#define OW_OBJECT_SUBPRIORITY ADMG_CONFIG_EXTRA(OW_OBJECT_SUBPRIORITY)
 #define ADMG_DEFAULT_OW_ENABLE_DNS                   TRUE    // If set to TRUE, the overworld will be tinted depending on time of day.
 #define OW_ENABLE_DNS ADMG_CONFIG_EXTRA(OW_ENABLE_DNS)
 
 // Object Event Shadows
-#define OW_OBJECT_VANILLA_SHADOWS      FALSE    // When FALSE, every object in the overworld has a shadow. WARNING: This means every object will take up two sprites instead of one. When TRUE, an object's shadow is only shown when jumping.
+#define ADMG_DEFAULT_OW_OBJECT_VANILLA_SHADOWS      FALSE    // When FALSE, every object in the overworld has a shadow. WARNING: This means every object will take up two sprites instead of one. When TRUE, an object's shadow is only shown when jumping.
+#define OW_OBJECT_VANILLA_SHADOWS ADMG_CONFIG_EXTRA(OW_OBJECT_VANILLA_SHADOWS)
 
 // Overworld flags
 // To use the following features in scripting, replace the 0s with the flag ID you're assigning it to.
@@ -119,7 +122,8 @@
 #define BATTLE_PYRAMID_RANDOM_ENCOUNTERS    FALSE    // If set to TRUE, battle pyramid Pokemon will be generated randomly based on the round's challenge instead of hardcoded in src/data/battle_frontier/battle_pyramid_level_50_wild_mons.h (or open_level_wild_mons.h)
 
 // Map pop-up config
-#define OW_POPUP_GENERATION        GEN_3    // Different generations display location names in overworld pop-ups differently.
+#define ADMG_DEFAULT_OW_POPUP_GENERATION        GEN_3    // Different generations display location names in overworld pop-ups differently.
+#define OW_POPUP_GENERATION ADMG_CONFIG_EXTRA(OW_POPUP_GENERATION)
                                             // Only choices are GEN_3 and GEN_5, all others will default to Gen3 pop-ups.
                                             // Due to changes in project scope, as detailed in docs/team_procedures/scope.md,
                                             // no other overworld popups will be implemented in expansion.

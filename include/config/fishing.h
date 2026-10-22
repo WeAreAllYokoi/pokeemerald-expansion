@@ -1,11 +1,17 @@
 #ifndef GUARD_CONFIG_FISHING_H
 #define GUARD_CONFIG_FISHING_H
 
-#define I_FISHING_BITE_ODDS         GEN_LATEST // In Gen 1 and Gen 2, the Old Rod has a 100% chance for a bite, Good Rod has a 66% chance for a bite, and Super Rod has a 50% chance for a bite. In Gen 3, all rods have a base 50% chance for a bite. In Gen 4 onwards, the Old Rod has a base 25% chance for a bite, Good Rod has a 50% chance for a bite, and Super Rod has a 75% chance for a bite.
+#define ADMG_DEFAULT_I_FISHING_BITE_ODDS         GEN_LATEST // Base bite chances for Old, Good and Super Rods:
+// Before GEN_3: 100%, 33%, 50%; GEN_3: 50% for all three; GEN_4+: 25%, 50%, 75%
+#define I_FISHING_BITE_ODDS ADMG_CONFIG_EXTRA(I_FISHING_BITE_ODDS)
 #define ADMG_DEFAULT_I_FISHING_MINIGAME          GEN_3      // Each generation uses a variation of reeling in Pokémon once they have been hooked. NOTE: Only the Gen 1/2 and Gen 3 minigames are implemented right now!
 #define I_FISHING_MINIGAME ADMG_CONFIG_EXTRA(I_FISHING_MINIGAME)
-#define I_FISHING_ENVIRONMENT       GEN_LATEST // In Gen 3, the battle environment when fighting a hooked Pokémon is based on the tile the player is standing on. In Gen 4 onwards, the environment is based on tile that is being fished in, resulting in it usually being a water environment.
-#define I_FISHING_STICKY_BOOST      GEN_LATEST // In Gen 3, a Pokemon with Suction Cups or Sticky Hold in the first slot of the party causes the chance for a bite to increase by about 35%. In Gen 4 onwards, it doubles the base bite chance.
+#define ADMG_DEFAULT_I_FISHING_ENVIRONMENT       GEN_LATEST // In Gen 3, the battle environment when fighting a hooked Pokémon is based on the tile the player is standing on. In Gen 4 onwards, the environment is based on tile that is being fished in, resulting in it usually being a water environment.
+#define I_FISHING_ENVIRONMENT ADMG_CONFIG_EXTRA(I_FISHING_ENVIRONMENT)
+#define ADMG_DEFAULT_I_FISHING_STICKY_BOOST      GEN_LATEST // Suction Cups or Sticky Hold in the first party slot boosts bite odds, excluding Eggs
+// Before GEN_4, try an 85% bite roll first, then the normal roll if it fails
+// From GEN_4 onward, double the calculated bite chance, up to 100%
+#define I_FISHING_STICKY_BOOST ADMG_CONFIG_EXTRA(I_FISHING_STICKY_BOOST)
 #define ADMG_DEFAULT_I_FISHING_FOLLOWER_BOOST    FALSE      // Boost bite odds using the friendship of the Pokémon chosen by GetFirstLiveMon()
 // That lookup follows the follower eligibility rules
 #define I_FISHING_FOLLOWER_BOOST ADMG_CONFIG_EXTRA(I_FISHING_FOLLOWER_BOOST)
