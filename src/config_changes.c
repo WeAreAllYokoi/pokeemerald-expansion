@@ -4,6 +4,14 @@
 #include "constants/config_changes.h"
 #include "config/pokerus.h"
 #include "config/ai.h"
+#include "config/battle.h"
+#include "config/caps.h"
+#include "config/fishing.h"
+#include "config/general.h"
+#include "config/name_box.h"
+#include "config/overworld.h"
+#include "config/pokedex_plus_hgss.h"
+#include "config/pokemon.h"
 #include "admg_retention.h"
 
 #define UNPACK_BATTLE_CONFIG_GEN_CHANGES(_name, _field, ...) ._field = _name,
@@ -79,6 +87,8 @@ ARM_FUNC u32 GetConfigInternal(enum ConfigTag _config)
 
 #if !TESTING
 #define UNPACK_CONFIG_MAXIMUM(_name, _field, _typeMaxValue, ...) case CONFIG_##_name: return GET_CONFIG_MAXIMUM(_typeMaxValue);
+#define UNPACK_ADMG_CONFIG_EXTRA_DEFAULT(_name, _maximum) case CONFIG_##_name: return ADMG_DEFAULT_##_name;
+#define UNPACK_ADMG_CONFIG_EXTRA_MAXIMUM(_name, _maximum) case CONFIG_##_name: return _maximum;
 
 ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetConfigDefault(ADMG_Word tag)
 {
@@ -87,6 +97,7 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetConfigDefault(ADMG_Word tag)
     BATTLE_CONFIG_DEFINITIONS(UNPACK_CONFIG_GETTERS)
     POKEMON_CONFIG_DEFINITIONS(UNPACK_CONFIG_GETTERS)
     AI_CONFIG_DEFINITIONS(UNPACK_CONFIG_GETTERS)
+    ADMG_CONFIG_EXTRA_DEFINITIONS(UNPACK_ADMG_CONFIG_EXTRA_DEFAULT)
     default:
         return 0;
     }
@@ -106,6 +117,7 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetConfigMaximum(ADMG_Word tag)
     BATTLE_CONFIG_DEFINITIONS(UNPACK_CONFIG_MAXIMUM)
     POKEMON_CONFIG_DEFINITIONS(UNPACK_CONFIG_MAXIMUM)
     AI_CONFIG_DEFINITIONS(UNPACK_CONFIG_MAXIMUM)
+    ADMG_CONFIG_EXTRA_DEFINITIONS(UNPACK_ADMG_CONFIG_EXTRA_MAXIMUM)
     default:
         return 0;
     }
@@ -113,7 +125,7 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetConfigMaximum(ADMG_Word tag)
 
 ADMG_NATIVE_ENTRY ADMG_Word ADMG_IsConfigKnown(ADMG_Word tag)
 {
-    return tag < CONFIG_COUNT;
+    return tag < CONFIG_COUNT || (tag > ADMG_CONFIG_EXTRA_FIRST && tag < ADMG_CONFIG_EXTRA_END);
 }
 
 ADMG_RETAIN_FUNCTION(ADMG_GetConfig);

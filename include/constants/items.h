@@ -1070,7 +1070,7 @@ enum Item
     #define CONFUSE_BERRY_HEAL_FRACTION 8
 #endif
 
-#define CONFUSE_BERRY_HP_FRACTION ((B_CONFUSE_BERRIES_HEAL >= GEN_7) ? 4 : 2)
+#define CONFUSE_BERRY_HP_FRACTION ((GetConfig(B_CONFUSE_BERRIES_HEAL) >= GEN_7) ? 4 : 2)
 
 #define UNPACK_BERRY_ID(_berry) BERRY_ID_##_berry,
 

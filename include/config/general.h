@@ -87,4 +87,11 @@
 // Naming Screen
 #define AUTO_LOWERCASE_KEYBOARD      GEN_LATEST  // Starting in GEN_6, after entering the first uppercase character, the keyboard switches to lowercase letters.
 
+// Read through ADMG_GetConfig in normal builds and use ADMG_DEFAULT_<name> in test builds
+#if TESTING
+#define ADMG_CONFIG_EXTRA(name) ADMG_DEFAULT_##name
+#else
+#define ADMG_CONFIG_EXTRA(name) ((int)ADMG_GetConfig(CONFIG_##name))
+#endif
+
 #endif // GUARD_CONFIG_GENERAL_H

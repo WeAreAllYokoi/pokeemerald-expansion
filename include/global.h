@@ -26,6 +26,11 @@
 #include "constants/items.h"
 #include "constants/moves.h"
 #include "config/save.h"
+#include "constants/admg_config_extra.h"
+#if !TESTING
+#include "admg_native.h"
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetConfig(ADMG_Word tag); // ADMG_CONFIG_EXTRA reads through here outside test builds
+#endif
 
 // Prevent cross-jump optimization.
 #define BLOCK_CROSS_JUMP asm("");

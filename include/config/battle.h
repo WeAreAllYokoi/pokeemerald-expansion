@@ -347,16 +347,22 @@
 #define B_NEW_TERRAIN_BACKGROUNDS   FALSE      // If set to TRUE, uses new terrain backgrounds for Electric, Misty, Grassy and Psychic Terrain.
 
 // Interface settings
-#define B_FAST_INTRO_PKMN_TEXT              TRUE       // If set to TRUE, battle intro text prints at the same time as the animation of Pokémon, as opposing to waiting for the animation to end.
-#define B_FAST_INTRO_NO_SLIDE               FALSE      // If set to TRUE, the slide animation that happens at the beginning of battles is skipped.
-#define B_FAST_HP_DRAIN                     TRUE       // If set to TRUE, HP bars will move faster.
-#define B_FAST_EXP_GROW                     TRUE       // If set to TRUE, EXP bars will move faster.
+#define ADMG_DEFAULT_B_FAST_INTRO_PKMN_TEXT              TRUE       // If set to TRUE, battle intro text prints at the same time as the animation of Pokémon, as opposing to waiting for the animation to end.
+#define B_FAST_INTRO_PKMN_TEXT ADMG_CONFIG_EXTRA(B_FAST_INTRO_PKMN_TEXT)
+#define ADMG_DEFAULT_B_FAST_INTRO_NO_SLIDE               FALSE      // If set to TRUE, the slide animation that happens at the beginning of battles is skipped.
+#define B_FAST_INTRO_NO_SLIDE ADMG_CONFIG_EXTRA(B_FAST_INTRO_NO_SLIDE)
+#define ADMG_DEFAULT_B_FAST_HP_DRAIN                     TRUE       // If set to TRUE, HP bars will move faster.
+#define B_FAST_HP_DRAIN ADMG_CONFIG_EXTRA(B_FAST_HP_DRAIN)
+#define ADMG_DEFAULT_B_FAST_EXP_GROW                     TRUE       // If set to TRUE, EXP bars will move faster.
+#define B_FAST_EXP_GROW ADMG_CONFIG_EXTRA(B_FAST_EXP_GROW)
 #define B_SHOW_TARGETS                      TRUE       // If set to TRUE, all available targets will be shown before selecting a move in Double Battles.
 #define B_SHOW_CATEGORY_ICON                TRUE       // If set to TRUE, an icon in the summary and move relearner will show a move's category.
 #define B_HIDE_HEALTHBOX_IN_ANIMS           TRUE       // If set to TRUE, healthboxes will be hidden during move animations.
 #define B_WAIT_TIME_MULTIPLIER              16         // This determines how long text pauses for in battle. Vanilla is 16. Lower values result in faster battles.
-#define B_QUICK_MOVE_CURSOR_TO_RUN          FALSE      // If set to TRUE, pushing B in the battle menu in a wild encounter will move the cursor to the Run option.
-#define B_RUN_TRAINER_BATTLE                TRUE       // If set to TRUE, players can run from Trainer battles as in Gen9+. This is treated as a white out.
+#define ADMG_DEFAULT_B_QUICK_MOVE_CURSOR_TO_RUN          FALSE      // If set to TRUE, pushing B in the battle menu in a wild encounter will move the cursor to the Run option.
+#define B_QUICK_MOVE_CURSOR_TO_RUN ADMG_CONFIG_EXTRA(B_QUICK_MOVE_CURSOR_TO_RUN)
+#define ADMG_DEFAULT_B_RUN_TRAINER_BATTLE                TRUE       // If set to TRUE, players can run from Trainer battles as in Gen9+. This is treated as a white out.
+#define B_RUN_TRAINER_BATTLE ADMG_CONFIG_EXTRA(B_RUN_TRAINER_BATTLE)
 #define B_MOVE_DESCRIPTION_BUTTON           L_BUTTON   // If set to a button other than B_LAST_USED_BALL_BUTTON, pressing this button will open the move description menu.
 #define B_SHOW_USELESS_Z_MOVE_INFO          FALSE      // If set to TRUE, Z-Moves without additional effects, like newer generation status moves, will say "No additional effect."
 #define B_ANIMATE_MON_AFTER_KO              TRUE       // If set to TRUE, if a Pokémon on the opposing side faints, the non-fainted Pokémon will play their animations.
@@ -380,8 +386,10 @@
 #define B_LAST_USED_BALL            TRUE       // If set to TRUE, the "last used Ball" feature from Gen7+ will be implemented
 #define B_LAST_USED_BALL_BUTTON     R_BUTTON   // If last used Ball is implemented, this button (or button combination) will trigger throwing the last used Ball.
 #define B_LAST_USED_BALL_CYCLE      TRUE       // If set to TRUE, then holding B_LAST_USED_BALL_BUTTON while pressing the D-Pad cycles through the Balls.
-#define B_CATCH_SWAP_INTO_PARTY     GEN_LATEST // In Gen7+, the option to swap caught Pokémon into the party will appear, allowing you to send a different Pokémon to the Box.
-#define B_CATCH_SWAP_CHECK_HMS      TRUE       // If set to TRUE, the catch swap feature above will prevent returning Pokémon to the Box if they know HMs.
+#define ADMG_DEFAULT_B_CATCH_SWAP_INTO_PARTY     GEN_LATEST // In Gen7+, the option to swap caught Pokémon into the party will appear, allowing you to send a different Pokémon to the Box.
+#define B_CATCH_SWAP_INTO_PARTY ADMG_CONFIG_EXTRA(B_CATCH_SWAP_INTO_PARTY)
+#define ADMG_DEFAULT_B_CATCH_SWAP_CHECK_HMS      TRUE       // If set to TRUE, the catch swap feature above will prevent returning Pokémon to the Box if they know HMs.
+#define B_CATCH_SWAP_CHECK_HMS ADMG_CONFIG_EXTRA(B_CATCH_SWAP_CHECK_HMS)
 
 // Other settings
 #define B_MULTI_BATTLE_WHITEOUT         GEN_LATEST // In Gen4+, Multi Battles end when the player as well as their partner don't have any Pokémon left.
@@ -393,7 +401,8 @@
 #define B_USE_FROSTBITE                 FALSE      // In PLA, Frostbite replaces Freeze. Enabling this flag does the same here. Moves can still be cherry-picked to either Freeze or Frostbite. Freeze-Dry, Secret Power & Tri Attack depend on this config.
 #define B_TOXIC_REVERSAL                GEN_LATEST // In Gen5+, bad poison will change to regular poison at the end of battles.
 #define B_TRY_CATCH_TRAINER_BALL        GEN_LATEST // In Gen4+, trying to catch a Trainer's Pokémon no longers consume the Poké Ball.
-#define B_SLEEP_CLAUSE                  FALSE      // Enables Sleep Clause all the time in every case, overriding B_FLAG_SLEEP_CLAUSE. Use that for modularity.
+#define ADMG_DEFAULT_B_SLEEP_CLAUSE                  FALSE      // Keep Sleep Clause enabled regardless of B_FLAG_SLEEP_CLAUSE
+#define B_SLEEP_CLAUSE ADMG_CONFIG_EXTRA(B_SLEEP_CLAUSE)
 #define B_PARTNER_MONS_MARKED_SEEN      FALSE      // If set to TRUE, if your Double Battle partner sends out a Pokémon you haven't encountered yet, it will be marked as SEEN in your Pokédex.
 #define B_MULTI_HALF_TEAMS              FALSE      // If TRUE, trainers will be capped at 3 Pokémon each when there are 2 trainers on one side in a battle. If FALSE, per-battle capping may still be set using `Multi Party: Half` in `trainers.party`
 #define B_TERA_ORB_ALWAYS_CHARGED       FALSE      // If TRUE, causes the Tera Orb to always be charged all the time in every case, overriding B_FLAG_TERA_ORB_CHARGED. Use that for modularity.
@@ -430,7 +439,8 @@
 #define SHOW_TYPES_ALWAYS   1                    // Always show types in battle.
 #define SHOW_TYPES_CAUGHT   2                    // Only show types if you've caught a Pokémon of that species.
 #define SHOW_TYPES_SEEN     3                    // Only show types if you've seen a Pokémon of that species.
-#define B_SHOW_TYPES        SHOW_TYPES_NEVER     // When to show type indicators next to Pokémon HP bars, while choosing a move after selecting a target Pokémon.
+#define ADMG_DEFAULT_B_SHOW_TYPES        SHOW_TYPES_NEVER     // When to show type indicators next to Pokémon HP bars, while choosing a move after selecting a target Pokémon.
+#define B_SHOW_TYPES ADMG_CONFIG_EXTRA(B_SHOW_TYPES)
 
 #define SHOW_EFFECTIVENESS_NEVER    0           // Never show type effectiveness when selecting moves.
 #define SHOW_EFFECTIVENESS_ALWAYS   1           // Always show type effectiveness when selecting moves.

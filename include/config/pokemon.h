@@ -24,8 +24,10 @@
 
 // Breeding settings
 #define P_NIDORAN_M_DITTO_BREED        GEN_LATEST                // Since Gen 5, when Nidoran♂ breeds with Ditto it can produce Nidoran♀ offspring. Before, it would only yield male offspring. This change also applies to Volbeat.
-#define P_INCENSE_BREEDING             GEN_LATEST                // Since Gen 9, cross-generation Baby Pokémon don't require Incense being held by the parents to be obtained via breeding.
-#define P_EGG_HATCH_LEVEL              GEN_LATEST                // Since Gen 4, Pokémon will hatch from Eggs at level 1 instead of 5.
+#define ADMG_DEFAULT_P_INCENSE_BREEDING             GEN_LATEST                // Since Gen 9, cross-generation Baby Pokémon don't require Incense being held by the parents to be obtained via breeding.
+#define P_INCENSE_BREEDING ADMG_CONFIG_EXTRA(P_INCENSE_BREEDING)
+#define ADMG_DEFAULT_P_EGG_HATCH_LEVEL              GEN_LATEST                // Since Gen 4, Pokémon will hatch from Eggs at level 1 instead of 5.
+#define P_EGG_HATCH_LEVEL ADMG_CONFIG_EXTRA(P_EGG_HATCH_LEVEL)
 #define P_BALL_INHERITANCE             GEN_LATEST                // Since Gen 6, Eggs from the Day Care will inherit the Poké Ball from their mother. From Gen 7 onwards, the father can pass it down as well, as long as it's of the same species as the mother.
 #define P_MOVE_INHERITANCE             GEN_LATEST                // Prior to Gen 6, Eggs would inherit Egg moves from their father, TM moves from their father, level-up moves shared by both parents in that order. In Gen 6 and higher, Eggs would inherit level-up moves shared by both parents, Egg moves from their father, Egg moves from their mother in that order.
 #define P_NATURE_INHERITANCE           GEN_LATEST                // In Gen 3, Everstone grants Ditto and mothers a 50% chance to pass on Nature. Since Gen 4, anyone can pass on a Nature. Since Gen 5, the chance is 100%.
