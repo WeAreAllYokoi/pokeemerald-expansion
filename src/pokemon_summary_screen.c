@@ -1440,7 +1440,7 @@ static bool8 DecompressGraphics(void)
     {
     case 0:
         ResetTempTileDataBuffers();
-        DecompressAndCopyTileDataToVram(1, &gSummaryScreen_Gfx, 0, 0, 0);
+        DecompressAndCopyTileDataToVram(1, P_SUMMARY_SCREEN_IV_EV_TILESET ? gSummaryScreenIvEv_Gfx : gSummaryScreen_Gfx, 0, 0, 0);
         sMonSummaryScreen->switchCounter++;
         break;
     case 1:

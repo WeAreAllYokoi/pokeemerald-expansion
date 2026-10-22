@@ -187,7 +187,7 @@ const struct FieldMoveInfo gFieldMoveInfo[FIELD_MOVES_COUNT] =
     [FIELD_MOVE_ROCK_CLIMB] =
     {
         .fieldMoveFunc = SetUpFieldMove_RockClimb,
-#if OW_ROCK_CLIMB_FIELD_MOVE
+#if ADMG_DEFAULT_OW_ROCK_CLIMB_FIELD_MOVE // Store the default here; FieldMove_UnlockType reads the runtime setting
         .unlockType = ALWAYS_UNLOCKED,
 #else
         .unlockType = CANT_UNLOCK,
@@ -199,7 +199,7 @@ const struct FieldMoveInfo gFieldMoveInfo[FIELD_MOVES_COUNT] =
     [FIELD_MOVE_DEFOG] =
     {
         .fieldMoveFunc = SetUpFieldMove_Defog,
-#if OW_DEFOG_FIELD_MOVE
+#if ADMG_DEFAULT_OW_DEFOG_FIELD_MOVE // Store the default here; FieldMove_UnlockType reads the runtime setting
         .unlockType = ALWAYS_UNLOCKED,
 #else
         .unlockType = CANT_UNLOCK,

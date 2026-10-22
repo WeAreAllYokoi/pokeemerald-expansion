@@ -35,11 +35,7 @@ EventScript_SprayWoreOff::
 	return
 
 EventScript_HandleMultipleSprays::
-.if I_REPEL_LURE_MENU == TRUE
 	goto EventScript_ChooseWhichSpray
-.else
-	goto EventScript_UseSingleSpray
-.endif
 	return
 
 
@@ -105,7 +101,6 @@ EventScript_UseLastUsedSpray_2:
 	goto EventScript_UseLastUsedSpray_1
 
 
-.if I_REPEL_LURE_MENU == TRUE
 EventScript_ChooseWhichSpray::
 	message Text_SprayWoreOffAskUseAnother
 	waitmessage
@@ -126,7 +121,6 @@ EventScript_ChooseWhichSpray_3:
 	compare VAR_RESULT, VAR_0x8003
 	goto_if_ne EventScript_ChooseWhichSpray_2
 	goto EventScript_ChooseWhichSpray_1
-.endif
 
 
 EventScript_UseSpray::

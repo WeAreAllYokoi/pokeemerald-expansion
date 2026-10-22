@@ -42,21 +42,31 @@ static inline bool32 SetUpFieldMove(enum FieldMove fieldMove)
     return info != NULL && info->fieldMoveFunc != NULL ? info->fieldMoveFunc() : FALSE;
 }
 
+// Rock Climb and Defog use their runtime settings; other moves keep the table's unlock type
+static inline enum FieldMoveUnlockType FieldMove_UnlockType(enum FieldMove fieldMove, const struct FieldMoveInfo *info)
+{
+    if (fieldMove == FIELD_MOVE_ROCK_CLIMB)
+        return OW_ROCK_CLIMB_FIELD_MOVE ? ALWAYS_UNLOCKED : CANT_UNLOCK;
+    if (fieldMove == FIELD_MOVE_DEFOG)
+        return OW_DEFOG_FIELD_MOVE ? ALWAYS_UNLOCKED : CANT_UNLOCK;
+    return info->unlockType;
+}
+
 static inline bool32 IsFieldMoveUnlocked(enum FieldMove fieldMove)
 {
     const struct FieldMoveInfo *info = FieldMove_GetInfo(fieldMove);
-    if (info == NULL || info->unlockType >= FIELD_MOVE_UNLOCK_COUNT
-     || gFieldMoveUnlocks[info->unlockType].isUnlockedFunc == NULL)
+    if (info == NULL || FieldMove_UnlockType(fieldMove, info) >= FIELD_MOVE_UNLOCK_COUNT
+     || gFieldMoveUnlocks[FieldMove_UnlockType(fieldMove, info)].isUnlockedFunc == NULL)
         return FALSE;
-    return gFieldMoveUnlocks[info->unlockType].isUnlockedFunc(fieldMove);
+    return gFieldMoveUnlocks[FieldMove_UnlockType(fieldMove, info)].isUnlockedFunc(fieldMove);
 }
 
 static inline const u8 *FieldMove_GetLockedMessage(enum FieldMove fieldMove)
 {
     const struct FieldMoveInfo *info = FieldMove_GetInfo(fieldMove);
-    if (info == NULL || info->unlockType >= FIELD_MOVE_UNLOCK_COUNT)
+    if (info == NULL || FieldMove_UnlockType(fieldMove, info) >= FIELD_MOVE_UNLOCK_COUNT)
         return gText_EmptyString2;
-    const u8 *message = gFieldMoveUnlocks[info->unlockType].lockedMessage;
+    const u8 *message = gFieldMoveUnlocks[FieldMove_UnlockType(fieldMove, info)].lockedMessage;
     return message != NULL ? message : gText_EmptyString2;
 }
 

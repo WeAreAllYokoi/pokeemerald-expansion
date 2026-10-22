@@ -11,7 +11,8 @@
 #define P_SUMMARY_SCREEN_IV_EV_BOX_ONLY ADMG_CONFIG_EXTRA(P_SUMMARY_SCREEN_IV_EV_BOX_ONLY)
 #define ADMG_DEFAULT_P_SUMMARY_SCREEN_IV_HYPERTRAIN   TRUE   // If TRUE, stats that have been hyper trained will show as 31/S when viewing them in the summary screen
 #define P_SUMMARY_SCREEN_IV_HYPERTRAIN ADMG_CONFIG_EXTRA(P_SUMMARY_SCREEN_IV_HYPERTRAIN)
-#define P_SUMMARY_SCREEN_IV_EV_TILESET   FALSE  // If TRUE, loads an alternate tileset to allow changing the "STATS" label in the summary screen skills page. Note: if it's still loading the alternate tileset after changing this and recompiling, you may need a `make clean` before compilation.
+#define ADMG_DEFAULT_P_SUMMARY_SCREEN_IV_EV_TILESET   FALSE  // If TRUE, use the alternate summary tileset that allows the STATS label to change
+#define P_SUMMARY_SCREEN_IV_EV_TILESET ADMG_CONFIG_EXTRA(P_SUMMARY_SCREEN_IV_EV_TILESET)
 #define P_SUMMARY_SCREEN_IV_EV_VALUES    FALSE  // If TRUE, will show the actual IV value instead of the letter grade.
 /*
 LETTER GRADE GUIDE:

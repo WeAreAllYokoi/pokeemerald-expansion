@@ -745,12 +745,12 @@ UNUSED static const struct BoxPokemon sBoxPokemonConstantsFit =
         .move4 = MOVES_COUNT_ALL - 1,
     },
     .secure.type2 = {
-        .hpEV = MAX_PER_STAT_EVS,
-        .attackEV = MAX_PER_STAT_EVS,
-        .defenseEV = MAX_PER_STAT_EVS,
-        .speedEV = MAX_PER_STAT_EVS,
-        .spAttackEV = MAX_PER_STAT_EVS,
-        .spDefenseEV = MAX_PER_STAT_EVS,
+        .hpEV = MAX_PER_STAT_EVS_SOURCE,
+        .attackEV = MAX_PER_STAT_EVS_SOURCE,
+        .defenseEV = MAX_PER_STAT_EVS_SOURCE,
+        .speedEV = MAX_PER_STAT_EVS_SOURCE,
+        .spAttackEV = MAX_PER_STAT_EVS_SOURCE,
+        .spDefenseEV = MAX_PER_STAT_EVS_SOURCE,
     },
     .secure.type3 = {
         .metLocation = min(MAPSEC_COUNT, min(METLOC_SPECIAL_EGG, min(METLOC_IN_GAME_TRADE, METLOC_FATEFUL_ENCOUNTER))),

@@ -23,9 +23,7 @@ u32 GetNumberSprayStrength(void);
 u32 GetSprayId(void);
 u32 GetLastUsedSprayType(void);
 u32 SetSprayMenuCursorPosition(int, int);
-#if I_REPEL_LURE_MENU == TRUE
 void DrawSprayMenu(void);
-#endif
 void HandleSprayMenuChoice(void);
 
 // Validate the shared backing before selection arithmetic or menu effects.
@@ -75,7 +73,9 @@ u32 CountOrGetSprays(u32 func)
 
 u32 GetNumberSprayStrength(void)
 {
-    return CountOrGetSprays(SPRAY_COUNT);
+    u32 count = CountOrGetSprays(SPRAY_COUNT);
+    // With I_REPEL_LURE_MENU off, report at most one choice even if several spray types are available
+    return (I_REPEL_LURE_MENU == TRUE || count < 2) ? count : 1;
 }
 
 u32 GetSprayId(void)
@@ -105,7 +105,6 @@ u32 SetSprayMenuCursorPosition(int currentSpray, int count)
     return 0;
 }
 
-#if I_REPEL_LURE_MENU == TRUE
 void DrawSprayMenu(void)
 {
     if (!ADMG_ValidateSprayMenuState())
@@ -140,7 +139,6 @@ void DrawSprayMenu(void)
 
     DrawMultichoiceMenuInternal(18, yCoord, 0, FALSE, menuPos, menuItems, count+1);
 }
-#endif
 
 void HandleSprayMenuChoice(void)
 {

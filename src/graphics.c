@@ -1718,11 +1718,9 @@ const u16 gMoveTypes_Pal[] = INCBIN_U16("graphics/types/move_types.gbapal");
 const u32 gSummaryMoveSelect_Gfx[] = INCGFX_U32("graphics/summary_screen/move_select.png", ".4bpp.smol");
 const u16 gSummaryMoveSelect_Pal[] = INCGFX_U16("graphics/summary_screen/move_select.png", ".gbapal");
 
-#if P_SUMMARY_SCREEN_IV_EV_TILESET
-const u32 gSummaryScreen_Gfx[]                = INCGFX_U32("graphics/summary_screen/iv_ev_tiles.png", ".4bpp.smol");
-#else
+// Keep both summary tilesets so P_SUMMARY_SCREEN_IV_EV_TILESET can choose one at runtime
+const u32 gSummaryScreenIvEv_Gfx[]            = INCGFX_U32("graphics/summary_screen/iv_ev_tiles.png", ".4bpp.smol");
 const u32 gSummaryScreen_Gfx[]                = INCGFX_U32("graphics/summary_screen/tiles.png", ".4bpp.smol");
-#endif // P_SUMMARY_SCREEN_IV_EV_TILESET
 const u16 gSummaryScreen_Pal[]                = INCGFX_U16("graphics/summary_screen/tiles.png", ".gbapal");
 const u32 gSummaryPage_Info_Tilemap[]         = INCGFX_U32("graphics/summary_screen/page_info.bin", ".smolTM");
 const u32 gSummaryPage_Skills_Tilemap[]       = INCGFX_U32("graphics/summary_screen/page_skills.bin", ".smolTM");

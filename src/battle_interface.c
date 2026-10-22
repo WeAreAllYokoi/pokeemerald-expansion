@@ -2890,28 +2890,25 @@ void FreeAbilityPopUpGfx(void)
 
 // last used ball
 
-static const struct OamData sOamData_LastUsedBall =
-{
-    .y = 0,
-    .affineMode = 0,
-    .objMode = 0,
-    .mosaic = 0,
-    .bpp = 0,
-    .shape = (B_LAST_USED_BALL_CYCLE == TRUE ? SPRITE_SHAPE(32x64) : SPRITE_SHAPE(32x32)),
-    .x = 0,
-    .matrixNum = 0,
-    .size = (B_LAST_USED_BALL_CYCLE == TRUE ? SPRITE_SIZE(32x64) : SPRITE_SIZE(32x32)),
-    .tileNum = 0,
-    .priority = 1,
-    .paletteNum = 0,
-    .affineParam = 0,
-};
+// Keep both window shapes; B_LAST_USED_BALL_CYCLE chooses one when the sprite is created
+#define LAST_USED_BALL_OAM(_shape, _size) { .y = 0, .affineMode = 0, .objMode = 0, .mosaic = 0, .bpp = 0, .shape = _shape, \
+    .x = 0, .matrixNum = 0, .size = _size, .tileNum = 0, .priority = 1, .paletteNum = 0, .affineParam = 0 }
+static const struct OamData sOamData_LastUsedBallCycle = LAST_USED_BALL_OAM(SPRITE_SHAPE(32x64), SPRITE_SIZE(32x64));
+static const struct OamData sOamData_LastUsedBall = LAST_USED_BALL_OAM(SPRITE_SHAPE(32x32), SPRITE_SIZE(32x32));
 
 static const struct SpriteTemplate sSpriteTemplate_LastUsedBallWindow =
 {
     .tileTag = TAG_LAST_BALL_WINDOW,
     .paletteTag = TAG_ABILITY_POP_UP,
     .oam = &sOamData_LastUsedBall,
+    .callback = SpriteCB_LastUsedBallWin
+};
+
+static const struct SpriteTemplate sSpriteTemplate_LastUsedBallWindowCycle =
+{
+    .tileTag = TAG_LAST_BALL_WINDOW,
+    .paletteTag = TAG_ABILITY_POP_UP,
+    .oam = &sOamData_LastUsedBallCycle,
     .callback = SpriteCB_LastUsedBallWin
 };
 
@@ -3046,7 +3043,7 @@ void TryAddLastUsedBallItemSprites(void)
 
     if (gBattleStruct->ballSpriteIds[1] == MAX_SPRITES)
     {
-        gBattleStruct->ballSpriteIds[1] = CreateSprite(&sSpriteTemplate_LastUsedBallWindow,
+        gBattleStruct->ballSpriteIds[1] = CreateSprite(B_LAST_USED_BALL_CYCLE == TRUE ? &sSpriteTemplate_LastUsedBallWindowCycle : &sSpriteTemplate_LastUsedBallWindow,
                                                        LAST_BALL_WIN_X_0,
                                                        LAST_USED_WIN_Y, 5);
         gSprites[gBattleStruct->ballSpriteIds[1]].sHide = FALSE;

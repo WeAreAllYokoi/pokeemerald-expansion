@@ -231,6 +231,8 @@ enum OtIdMethod
 #define MAX_IV_MASK 31
 #define USE_RANDOM_IVS (MAX_PER_STAT_IVS + 1)
 #define MAX_PER_STAT_EVS ((P_EV_CAP >= GEN_6) ? 252 : 255)
+// EV limit from the configured default, used by the bit-field fit check and debug menu
+#define MAX_PER_STAT_EVS_SOURCE ((ADMG_DEFAULT_P_EV_CAP >= GEN_6) ? 252 : 255)
 #define MAX_TOTAL_EVS 510
 #define EV_ITEM_RAISE_LIMIT ((I_VITAMIN_EV_CAP >= GEN_8) ? MAX_PER_STAT_EVS : 100)
 

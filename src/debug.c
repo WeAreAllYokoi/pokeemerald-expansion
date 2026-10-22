@@ -3501,7 +3501,7 @@ static const struct DebugSelectionStep sEVsSelectionStep = {
     .stepUpdate = DebugSelectionStep_UpdateEVs,
     .stepConfirm = DebugSelectionStep_GenericInputConfirm,
     .minValue = 0,
-    .maxValue = MAX_PER_STAT_EVS,
+    .maxValue = MAX_PER_STAT_EVS_SOURCE,
     .digits = 3,
     .substepCount = 6
 };
