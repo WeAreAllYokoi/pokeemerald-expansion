@@ -7,6 +7,10 @@
 #include "shop_criteria.h"
 
 static EWRAM_DATA const u32 *sDynamicShopItemListRef = NULL;
+// Remember the original count so closing Buy restores it along with the list
+// Otherwise, reopening Buy would only scan part of the list
+static EWRAM_DATA u16 *sDynamicShopItemTotal = NULL;
+static EWRAM_DATA u16 sDynamicShopItemTotalRef = 0;
 
 // Remove the UNUSED if you'll use the functions!
 static UNUSED bool32 ShopCriteriaByBadgeCount(u32 count);
@@ -16,6 +20,8 @@ static UNUSED bool32 ShopCriteriaByVar(u32 varId, u32 varValue);
 void TryBuildDynamicShopItemList(const u32 **ogItemList, u16 *resultingTotal)
 {
     sDynamicShopItemListRef = *ogItemList;
+    sDynamicShopItemTotal = resultingTotal;
+    sDynamicShopItemTotalRef = *resultingTotal;
 
     u32 *list = AllocZeroed((*resultingTotal + 1) * sizeof(*list));
     u32 overallIdx = 0, idx = 0;
@@ -43,6 +49,9 @@ void TryFreeDynamicShopItemList(const u32 **ogItemList)
 {
     Free((u32 *)*ogItemList);
     *ogItemList = sDynamicShopItemListRef;
+    if (sDynamicShopItemTotal != NULL)
+        *sDynamicShopItemTotal = sDynamicShopItemTotalRef;
+    sDynamicShopItemTotal = NULL;
 }
 
 // Add new Criterias below!
