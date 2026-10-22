@@ -32,8 +32,9 @@ import typing
 
 
 CONFIG_ENABLED_PAT = re.compile(r"^#define P_LEARNSET_HELPER_TEACHABLE\s+(?P<cfg_val>[^ ]*)", flags=re.MULTILINE)
-ALPHABETICAL_ORDER_ENABLED_PAT = re.compile(r"^#define HGSS_SORT_TMS_BY_NUM\s+(?P<cfg_val>[^ ]*)", flags=re.MULTILINE)
-TM_LITERACY_PAT = re.compile(r"^#define P_TM_LITERACY\s+GEN_(?P<cfg_val>[^ ]*)", flags=re.MULTILINE)
+# Read the build defaults for options that can change at runtime
+ALPHABETICAL_ORDER_ENABLED_PAT = re.compile(r"^#define (?:ADMG_DEFAULT_)?HGSS_SORT_TMS_BY_NUM\s+(?P<cfg_val>[^ ]*)", flags=re.MULTILINE)
+TM_LITERACY_PAT = re.compile(r"^#define (?:ADMG_DEFAULT_)?P_TM_LITERACY\s+GEN_(?P<cfg_val>[^ ]*)", flags=re.MULTILINE)
 TMHM_MACRO_PAT = re.compile(r"F\((\w+)\)")
 SNAKIFY_PAT = re.compile(r"(?!^)([A-Z]+)")
 
@@ -70,12 +71,44 @@ def extract_tm_litteracy_config() -> bool:
                 config = True
     return config
 
-def prepare_output(all_learnables: dict[str, set[str]], tms: list[str], tutors: list[str], special_movesets, repo_teaching_types, header: str) -> str:
+def species_teachables(species_data, tms: list[str], tutors: list[str], special_movesets, all_learnables, tm_litteracy_config: bool) -> list[str]:
     """
-    Build the file content for teachable_learnsets.h.
+    One species-family's teachable moves for a TM order and a P_TM_LITERACY rule.
+    """
+    species = species_data["name"]
+    teaching_type = species_data["teaching_type"]
+    species_upper =  SNAKIFY_PAT.sub(r"_\1", species).upper()
+    if teaching_type == "ALL_TEACHABLES":
+        part1 = list(filter(lambda m: m not in special_movesets["signatureTeachables"], tms))
+        part2 = list(filter(lambda m: m not in special_movesets["signatureTeachables"], tutors))
+    else:
+        if teaching_type == "TM_ILLITERATE":
+            learnables = all_learnables[species_upper]
+            if not tm_litteracy_config:
+                learnables = filter(lambda m: m not in special_movesets["universalMoves"], learnables)
+        else:
+            learnables = all_learnables[species_upper] + special_movesets["universalMoves"]
+        part1 = list(filter(lambda m: m in learnables, tms))
+        part2 = list(filter(lambda m: m in learnables, tutors))
+
+    repo_species_teachables = part1 + part2
+    if species_upper == "TERAPAGOS":
+         repo_species_teachables = filter(lambda m: m != "MOVE_TERA_BLAST", repo_species_teachables)
+
+    return list(dict.fromkeys(repo_species_teachables))
+
+def prepare_output(all_learnables: dict[str, set[str]], tms_by_num: list[str], tutors: list[str], special_movesets, repo_teaching_types, header: str, sort_tms_by_num: bool) -> str:
+    """
+    Build teachable_learnsets.h for both TM orders and TM-literacy settings.
+
+    Keep the original name for the configured defaults and reuse arrays when
+    variants match. sTeachableLearnsetVariants maps the choices for
+    GetSpeciesTeachableLearnset, indexed by [sort by TM number][TM literacy].
     """
 
     tm_litteracy_config = extract_tm_litteracy_config()
+    tm_orders = (sorted(tms_by_num), list(tms_by_num))  # [FALSE: alphabetical, TRUE: TM number]
+    source_key = (int(sort_tms_by_num), int(tm_litteracy_config))
 
     cursor = 0
     new = header + dedent("""
@@ -84,39 +117,49 @@ def prepare_output(all_learnables: dict[str, set[str]], tms: list[str], tutors: 
     };
     """)
 
-    joinpat = ",\n    "
+    def array(name, moves):
+        joinpat = ",\n    "
+        return f"static const enum Move {name}[] = " + "{\n" + "\n".join([
+            f"    {joinpat.join(chain(moves, ('MOVE_UNAVAILABLE',)))},",
+            "};\n",
+        ])
+
+    variant_rows = []
     for species_data in repo_teaching_types:
         if isinstance(species_data, str):
             new += (species_data)
             continue
         species = species_data["name"]
-        teaching_type = species_data["teaching_type"]
-        new += f"static const enum Move s{species}TeachableLearnset[] = "
-        new += "{\n"
-        species_upper =  SNAKIFY_PAT.sub(r"_\1", species).upper()
-        if teaching_type == "ALL_TEACHABLES":
-            part1 = list(filter(lambda m: m not in special_movesets["signatureTeachables"], tms))
-            part2 = list(filter(lambda m: m not in special_movesets["signatureTeachables"], tutors))
-        else:
-            if teaching_type == "TM_ILLITERATE":
-                learnables = all_learnables[species_upper]
-                if not tm_litteracy_config:
-                    learnables = filter(lambda m: m not in special_movesets["universalMoves"], learnables)
-            else:
-                learnables = all_learnables[species_upper] + special_movesets["universalMoves"]
-            part1 = list(filter(lambda m: m in learnables, tms))
-            part2 = list(filter(lambda m: m in learnables, tutors))
+        source_name = f"s{species}TeachableLearnset"
+        variants = {}
+        for sort_key in (0, 1):
+            for literate_key in (0, 1):
+                variants[(sort_key, literate_key)] = species_teachables(species_data, tm_orders[sort_key], tutors, special_movesets, all_learnables, bool(literate_key))
+        new += array(source_name, variants[source_key])
+        names = {tuple(variants[source_key]): source_name}
+        for key in sorted(variants):
+            moves = tuple(variants[key])
+            if moves not in names:
+                names[moves] = f"{source_name}_Sort{key[0]}Literate{key[1]}"
+                new += array(names[moves], moves)
+        row = [names[tuple(variants[key])] for key in sorted(variants)]
+        if any(name != source_name for name in row):
+            variant_rows.append((source_name, row))
 
+    new += dedent("""
+    #define ADMG_TEACHABLE_LEARNSET_VARIANTS
+    struct TeachableLearnsetVariants
+    {
+        const enum Move *source;
+        const enum Move *variants[2][2]; // [HGSS_SORT_TMS_BY_NUM][P_TM_LITERACY > GEN_6]
+    };
 
-        repo_species_teachables = part1 + part2
-        if species_upper == "TERAPAGOS":
-             repo_species_teachables = filter(lambda m: m != "MOVE_TERA_BLAST", repo_species_teachables)
-
-        repo_species_teachables = list(dict.fromkeys(repo_species_teachables))
-        new += "\n".join([
-            f"    {joinpat.join(chain(repo_species_teachables, ('MOVE_UNAVAILABLE',)))},",
-            "};\n",
-        ])
+    static const struct TeachableLearnsetVariants sTeachableLearnsetVariants[] =
+    {
+    """)
+    for source_name, row in variant_rows:
+        new += f"    {{ {source_name}, {{ {{ {row[0]}, {row[1]} }}, {{ {row[2]}, {row[3]} }} }} }},\n"
+    new += "};\n"
 
     return new
 
@@ -217,11 +260,13 @@ def main():
     assert SOURCE_TEACHING_TYPES_JSON.is_file(), f"{SOURCE_TEACHING_TYPES_JSON=} is not a file"
 
     repo_tms = list(extract_repo_tms())
+    repo_tms_by_num = list(repo_tms)
 
     with open("./include/config/pokedex_plus_hgss.h", "r") as cfg_pokemon_fp:
         cfg_pokemon = cfg_pokemon_fp.read()
         cfg_defined = ALPHABETICAL_ORDER_ENABLED_PAT.search(cfg_pokemon)
-        if cfg_defined is None or cfg_defined.group("cfg_val") in ("FALSE", "0"):
+        sort_tms_by_num = not (cfg_defined is None or cfg_defined.group("cfg_val") in ("FALSE", "0"))
+        if not sort_tms_by_num:
             repo_tms = sorted(repo_tms)
 
     h_align = max(map(lambda move: len(move), chain(special_movesets["universalMoves"], repo_tms, repo_tutors))) + 2
@@ -233,7 +278,7 @@ def main():
     with open(SOURCE_TEACHING_TYPES_JSON, "r") as source_fp:
         repo_teaching_types = json.load(source_fp)
 
-    content = prepare_output(all_learnables, repo_tms, repo_tutors, special_movesets, repo_teaching_types, header)
+    content = prepare_output(all_learnables, repo_tms_by_num, repo_tutors, special_movesets, repo_teaching_types, header, sort_tms_by_num)
     with open("./src/data/pokemon/teachable_learnsets.h", "w") as teachables_fp:
         teachables_fp.write(content)
 

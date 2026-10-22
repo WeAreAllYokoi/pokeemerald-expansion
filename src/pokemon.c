@@ -10,6 +10,7 @@
 #include "battle_ai_util.h"
 #include "battle_anim.h"
 #include "battle_controllers.h"
+#include "config/pokedex_plus_hgss.h"
 #include "battle_message.h"
 #include "battle_pike.h"
 #include "battle_pyramid.h"
@@ -3224,12 +3225,31 @@ const struct LevelUpMove *GetSpeciesLevelUpLearnset(enum Species species)
     return learnset;
 }
 
+// make_teachables.py builds the variants in sTeachableLearnsetVariants
+// Pick one for HGSS_SORT_TMS_BY_NUM and P_TM_LITERACY, keeping the supplied learnset
+// if the settings match the defaults or there's no matching table entry
+static const enum Move *SelectTeachableLearnsetVariant(const enum Move *learnset)
+{
+#ifdef ADMG_TEACHABLE_LEARNSET_VARIANTS
+    u32 sortByNum = HGSS_SORT_TMS_BY_NUM != FALSE;
+    u32 literate = P_TM_LITERACY > GEN_6;
+    if (sortByNum == (ADMG_DEFAULT_HGSS_SORT_TMS_BY_NUM != FALSE) && literate == (ADMG_DEFAULT_P_TM_LITERACY > GEN_6))
+        return learnset;
+    for (u32 i = 0; i < ARRAY_COUNT(sTeachableLearnsetVariants); i++)
+    {
+        if (sTeachableLearnsetVariants[i].source == learnset)
+            return sTeachableLearnsetVariants[i].variants[sortByNum][literate];
+    }
+#endif
+    return learnset;
+}
+
 const enum Move *GetSpeciesTeachableLearnset(enum Species species)
 {
     const enum Move *learnset = gSpeciesInfo[SanitizeSpeciesId(species)].teachableLearnset;
     if (learnset == NULL)
         return gSpeciesInfo[SPECIES_NONE].teachableLearnset;
-    return learnset;
+    return SelectTeachableLearnsetVariant(learnset);
 }
 
 const enum Move *GetSpeciesEggMoves(enum Species species)

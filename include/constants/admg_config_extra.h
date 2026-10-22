@@ -160,6 +160,8 @@
     F(P_SUMMARY_SCREEN_IV_EV_TILESET, 1) \
     F(OW_POISON_DAMAGE, GEN_COUNT - 1) \
     F(I_REPEL_LURE_MENU, 1) \
+    F(HGSS_SORT_TMS_BY_NUM, 1) \
+    F(P_TM_LITERACY, GEN_COUNT - 1) \
 
 #define ADMG_CONFIG_EXTRA_TAG(_name, _maximum) CONFIG_##_name,
 
