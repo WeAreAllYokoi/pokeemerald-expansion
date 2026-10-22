@@ -1110,7 +1110,8 @@ static bool32 AI_IsMoveEffectInPlus(enum BattlerId battlerAtk, enum BattlerId ba
                 if (AI_CanBurn(battlerAtk, battlerDef, abilityDef, GetPartnerBattler(battlerAtk), move, MOVE_NONE))
                     return TRUE;
                 break;
-            case MOVE_EFFECT_FREEZE_OR_FROSTBITE:
+            case MOVE_EFFECT_FREEZE: // Handle either effect from the move data
+            case MOVE_EFFECT_FROSTBITE:
                 if (CanBeFrozen(battlerAtk, battlerDef, abilityDef))
                     return TRUE;
                 break;

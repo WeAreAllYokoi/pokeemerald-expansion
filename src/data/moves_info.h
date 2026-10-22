@@ -1,3 +1,6 @@
+// Choose the effect for this data from the compiled B_USE_FROSTBITE value
+#define MOVE_EFFECT_FREEZE_OR_FROSTBITE (B_USE_FROSTBITE ? MOVE_EFFECT_FROSTBITE : MOVE_EFFECT_FREEZE)
+
 #include "battle_dynamax.h"
 #include "battle_anim_scripts.h"
 #include "constants/battle.h"

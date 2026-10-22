@@ -123,11 +123,8 @@ enum MoveEffect
     MOVE_EFFECT_ID_MAX = 0xFFFFFFFF,
 };
 
-#if B_USE_FROSTBITE == TRUE
-#define MOVE_EFFECT_FREEZE_OR_FROSTBITE MOVE_EFFECT_FROSTBITE
-#else
-#define MOVE_EFFECT_FREEZE_OR_FROSTBITE MOVE_EFFECT_FREEZE
-#endif
+// moves_info.h and battle_environment.h define MOVE_EFFECT_FREEZE_OR_FROSTBITE
+// from the compiled B_USE_FROSTBITE value; runtime game checks use GetConfig(B_USE_FROSTBITE)
 
 enum SetMoveEffectFlags
 {

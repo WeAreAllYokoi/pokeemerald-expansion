@@ -11432,7 +11432,7 @@ void BS_TryPsychoShift(void)
         gBattleCommunication[MULTISTRING_CHOOSER] = 4;
     }
     else if ((gBattleMons[gBattlerAttacker].status1 & STATUS1_FROSTBITE)
-          && CanSetNonVolatileStatus(gBattlerAttacker, gBattlerTarget, attackerAbility, targetAbility, MOVE_EFFECT_FREEZE_OR_FROSTBITE, CHECK_TRIGGER))
+          && CanSetNonVolatileStatus(gBattlerAttacker, gBattlerTarget, attackerAbility, targetAbility, GetConfig(B_USE_FROSTBITE) ? MOVE_EFFECT_FROSTBITE : MOVE_EFFECT_FREEZE, CHECK_TRIGGER))
     {
         gBattleCommunication[MULTISTRING_CHOOSER] = 5;
     }
