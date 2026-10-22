@@ -311,6 +311,15 @@ def emit_locked(lock, registry, output, source):
                                  "id": row["id"], "canonical_target": row.get("canonical_target"),
                                  "source_owner": "kanto", "new_writable_authority": False})
     header = ["/* Generated from the reviewed immutable S3-B lock. */", "#ifndef ADMG_STATE_IDS_H", "#define ADMG_STATE_IDS_H"]
+    # A feature-binding bank's public range is its bound identities; the rest of the aligned reservation stays unrouted.
+    bound = {}
+    for entry in lock["entries"]:
+        if entry.get("route") == "feature_binding":
+            bound.setdefault("feature_binding_" + ("flags" if entry["kind"] == "flag" else "vars"), []).append(entry["assigned_id"])
+    for name, ids in bound.items():
+        if sorted(ids) != list(range(banks[name]["first"], banks[name]["first"] + len(ids))):
+            raise ValueError("feature bindings must be contiguous from their reservation: " + name)
+        banks[name] = dict(banks[name], last=banks[name]["first"] + len(ids) - 1, count=len(ids))
     for name, bank in sorted(banks.items()):
         prefix = "ADMG_STATE_" + name.upper()
         header += [f"#define {prefix}_FIRST 0x{bank['first']:04X}",
