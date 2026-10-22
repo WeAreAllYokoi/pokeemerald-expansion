@@ -7337,9 +7337,9 @@ static inline uq4_12_t GetTargetDamageModifier(struct DamageContext *ctx)
     {
         u32 targetCount = GetMoveTargetCount(ctx);
         if (targetCount == 2)
-            return B_MULTIPLE_TARGETS_DMG >= GEN_4 ? UQ_4_12(0.75) : UQ_4_12(0.5);
+            return GetConfig(B_MULTIPLE_TARGETS_DMG) >= GEN_4 ? UQ_4_12(0.75) : UQ_4_12(0.5);
         else if (targetCount >= 3)
-            return B_MULTIPLE_TARGETS_DMG >= GEN_4 ? UQ_4_12(0.75) : UQ_4_12(1.0);
+            return GetConfig(B_MULTIPLE_TARGETS_DMG) >= GEN_4 ? UQ_4_12(0.75) : UQ_4_12(1.0);
     }
     return UQ_4_12(1.0);
 }
@@ -7348,7 +7348,7 @@ static inline uq4_12_t GetParentalBondModifier(enum BattlerId battlerAtk)
 {
     if (gSpecialStatuses[battlerAtk].parentalBondState != PARENTAL_BOND_2ND_HIT)
         return UQ_4_12(1.0);
-    return B_PARENTAL_BOND_DMG >= GEN_7 ? UQ_4_12(0.25) : UQ_4_12(0.5);
+    return GetConfig(B_PARENTAL_BOND_DMG) >= GEN_7 ? UQ_4_12(0.25) : UQ_4_12(0.5);
 }
 
 static inline uq4_12_t GetSameTypeAttackBonusModifier(struct DamageContext *ctx)
@@ -9316,10 +9316,10 @@ void SortBattlersBySpeed(enum BattlerId *battlers, bool32 slowToFast)
 
 void TryRestoreHeldItems(void)
 {
-    if (!B_TRAINERS_KNOCK_OFF_ITEMS && B_RESTORE_HELD_BATTLE_ITEMS < GEN_9)
+    if (!GetConfig(B_TRAINERS_KNOCK_OFF_ITEMS) && GetConfig(B_RESTORE_HELD_BATTLE_ITEMS) < GEN_9)
         return;
 
-    bool32 returnNPCItems = B_RETURN_STOLEN_NPC_ITEMS >= GEN_5 && gBattleTypeFlags & BATTLE_TYPE_TRAINER;
+    bool32 returnNPCItems = GetConfig(B_RETURN_STOLEN_NPC_ITEMS) >= GEN_5 && gBattleTypeFlags & BATTLE_TYPE_TRAINER;
 
     for (u32 i = 0; i < PARTY_SIZE; i++)
     {
@@ -9782,7 +9782,7 @@ void GetBattlerTypes(enum BattlerId battler, bool32 ignoreTera, enum Type types[
     if (!isTera && gBattleMons[battler].volatiles.roostActive)
     {
         if (types[0] == TYPE_FLYING && types[1] == TYPE_FLYING)
-            types[0] = types[1] = B_ROOST_PURE_FLYING >= GEN_5 ? TYPE_NORMAL : TYPE_MYSTERY;
+            types[0] = types[1] = GetConfig(B_ROOST_PURE_FLYING) >= GEN_5 ? TYPE_NORMAL : TYPE_MYSTERY;
         else if (types[0] == TYPE_FLYING)
             types[0] = TYPE_MYSTERY;
         else if (types[1] == TYPE_FLYING)

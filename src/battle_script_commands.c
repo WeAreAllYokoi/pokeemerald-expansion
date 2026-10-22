@@ -4130,7 +4130,7 @@ static void Cmd_getmoneyreward(void)
         ADMG_StateAccessRejected(FLAG_BADGE01_GET, __func__);
         return;
     }
-    if (gBattleOutcome != B_OUTCOME_WON && B_WHITEOUT_MONEY > GEN_3)
+    if (gBattleOutcome != B_OUTCOME_WON && GetConfig(B_WHITEOUT_MONEY) > GEN_3)
     {
         for (u32 i = 0; i < ARRAY_COUNT(gBadgeFlags); ++i)
         {
@@ -6502,7 +6502,7 @@ static void Cmd_tryspiteppreduce(void)
 
         if (i != MAX_MON_MOVES && gBattleMons[gBattlerTarget].pp[i] > (B_CAN_SPITE_FAIL >= GEN_4 ? 0 : 1))
         {
-            s32 ppToDeduct = B_PP_REDUCED_BY_SPITE >= GEN_4 ? 4 : (Random() & 3) + 2;
+            s32 ppToDeduct = GetConfig(B_PP_REDUCED_BY_SPITE) >= GEN_4 ? 4 : (Random() & 3) + 2;
             // G-Max Depletion only deducts 2 PP.
             if (IsMaxMove(gCurrentMove) && MoveHasAdditionalEffect(gCurrentMove, MOVE_EFFECT_SPITE))
                 ppToDeduct = 2;
@@ -7988,7 +7988,7 @@ static void ComputeBallData(u32 wildMonBattler, u32 playerBattler, struct BallDa
         break;
     case BALL_NET:
         if (IS_BATTLER_ANY_TYPE(wildMonBattler, TYPE_WATER, TYPE_BUG))
-            ball->multiplier = B_NET_BALL_MODIFIER >= GEN_7 ? 350 : 300;
+            ball->multiplier = GetConfig(B_NET_BALL_MODIFIER) >= GEN_7 ? 350 : 300;
         break;
     case BALL_NEST:
         ball->multiplier = 100;

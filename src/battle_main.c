@@ -5390,7 +5390,7 @@ static void HandleEndTurn_FinishBattle(void)
             bool32 changedForm = TryRevertPartyMonFormChange(i);
 
             // Recalculate the stats of every party member before the end
-            if (!changedForm && B_RECALCULATE_STATS >= GEN_5)
+            if (!changedForm && GetConfig(B_RECALCULATE_STATS) >= GEN_5)
                 CalculateMonStats(&gParties[B_TRAINER_PLAYER][i]);
         }
         RecordedBattle_SetPlaybackFinished();

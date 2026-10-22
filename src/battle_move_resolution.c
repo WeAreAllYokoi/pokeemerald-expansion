@@ -5090,7 +5090,7 @@ static enum MoveEndResult MoveEndRampage(struct BattleCalcValues *cv)
 
     if (gBattleMons[cv->battlerAtk].volatiles.rampageTurns == 0
      || gSpecialStatuses[cv->battlerAtk].dancerUsedMove
-     || B_RAMPAGE_CONFUSION < GEN_5)
+     || GetConfig(B_RAMPAGE_CONFUSION) < GEN_5)
     {
         result = MOVEEND_RESULT_CONTINUE;
     }
@@ -5959,25 +5959,25 @@ static enum Move GetMetronomeMove(void)
 {
     enum Move move = MOVE_NONE;
 
-#if B_METRONOME_MOVES >= GEN_9
-    u32 moveCount = MOVES_COUNT_GEN9;
-#elif B_METRONOME_MOVES >= GEN_8
-    u32 moveCount = MOVES_COUNT_GEN8;
-#elif B_METRONOME_MOVES >= GEN_7
-    u32 moveCount = MOVES_COUNT_GEN7;
-#elif B_METRONOME_MOVES >= GEN_6
-    u32 moveCount = MOVES_COUNT_GEN6;
-#elif B_METRONOME_MOVES >= GEN_5
-    u32 moveCount = MOVES_COUNT_GEN5;
-#elif B_METRONOME_MOVES >= GEN_4
-    u32 moveCount = MOVES_COUNT_GEN4;
-#elif B_METRONOME_MOVES >= GEN_3
-    u32 moveCount = MOVES_COUNT_GEN3;
-#elif B_METRONOME_MOVES >= GEN_2
-    u32 moveCount = MOVES_COUNT_GEN2;
-#else
-    u32 moveCount = MOVES_COUNT_GEN1;
-#endif
+    u32 moveCount, metronome = GetConfig(B_METRONOME_MOVES);
+    if (metronome >= GEN_9)
+        moveCount = MOVES_COUNT_GEN9;
+    else if (metronome >= GEN_8)
+        moveCount = MOVES_COUNT_GEN8;
+    else if (metronome >= GEN_7)
+        moveCount = MOVES_COUNT_GEN7;
+    else if (metronome >= GEN_6)
+        moveCount = MOVES_COUNT_GEN6;
+    else if (metronome >= GEN_5)
+        moveCount = MOVES_COUNT_GEN5;
+    else if (metronome >= GEN_4)
+        moveCount = MOVES_COUNT_GEN4;
+    else if (metronome >= GEN_3)
+        moveCount = MOVES_COUNT_GEN3;
+    else if (metronome >= GEN_2)
+        moveCount = MOVES_COUNT_GEN2;
+    else
+        moveCount = MOVES_COUNT_GEN1;
 
     move = RandomUniformExcept(RNG_METRONOME, 1, moveCount - 1, InvalidMetronomeMove);
     return move;
@@ -6042,7 +6042,7 @@ enum Move GetNaturePowerMove(void)
     if (gFieldTimers.terrain != B_TERRAIN_NONE)
         move = gBattleTerrainInfo[gFieldTimers.terrain].naturePowerMove;
     else if (gBattleEnvironmentInfo[gBattleEnvironment].naturePower == MOVE_NONE)
-        move = B_NATURE_POWER_MOVES >= GEN_4 ? MOVE_TRI_ATTACK : MOVE_SWIFT;
+        move = GetConfig(B_NATURE_POWER_MOVES) >= GEN_4 ? MOVE_TRI_ATTACK : MOVE_SWIFT;
 
     return move;
 }

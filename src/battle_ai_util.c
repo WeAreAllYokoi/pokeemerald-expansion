@@ -3627,7 +3627,7 @@ bool32 ShouldBurn(enum BattlerId battlerAtk, enum BattlerId battlerDef, enum Abi
 
 bool32 ShouldFreezeOrFrostbite(enum BattlerId battlerAtk, enum BattlerId battlerDef, enum Ability abilityDef)
 {
-    if (!B_USE_FROSTBITE)
+    if (!GetConfig(B_USE_FROSTBITE))
     {
         if (CanBeFrozen(battlerAtk, battlerDef, abilityDef))
         {

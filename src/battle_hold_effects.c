@@ -891,7 +891,7 @@ static enum ItemEffect ItemRestorePp(enum BattlerId battler, enum Item itemId)
 static enum ItemEffect HealConfuseBerry(enum BattlerId battler, enum Item itemId, enum Flavor flavorId)
 {
     enum ItemEffect effect = ITEM_NO_EFFECT;
-    u32 hpFraction = B_CONFUSE_BERRIES_HEAL >= GEN_7 ? 4 : 2;
+    u32 hpFraction = GetConfig(B_CONFUSE_BERRIES_HEAL) >= GEN_7 ? 4 : 2;
     enum Ability ability = GetBattlerAbility(battler);
 
     if (HasEnoughHpToEatBerry(battler, ability, hpFraction, itemId)

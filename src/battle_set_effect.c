@@ -165,7 +165,7 @@ static void HandleSetEffectUproar(struct BattleCalcValues *cv, struct SetEffect 
     {
         gBattleMons[se->effectBattler].volatiles.multipleTurns = TRUE;
         gLockedMoves[se->effectBattler] = cv->move;
-        gBattleMons[se->effectBattler].volatiles.uproarTurns = B_UPROAR_TURNS >= GEN_5
+        gBattleMons[se->effectBattler].volatiles.uproarTurns = GetConfig(B_UPROAR_TURNS) >= GEN_5
                                                              ? B_UPROAR_TURN_COUNT - 2
                                                              : RandomUniform(RNG_CONFUSION_TURNS, 2, B_UPROAR_TURN_COUNT);
 
