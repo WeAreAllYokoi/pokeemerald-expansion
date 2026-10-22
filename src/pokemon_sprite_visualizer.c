@@ -485,7 +485,7 @@ static const struct SubmenuText sSubmenuText[] =
 
     [SUBMENU_SPRITE_COORDS] =
     {
-#if B_ENEMY_MON_SHADOW_STYLE >= GEN_4 && P_GBA_STYLE_SPECIES_GFX == FALSE
+#if ADMG_DEFAULT_B_ENEMY_MON_SHADOW_STYLE >= GEN_4 && P_GBA_STYLE_SPECIES_GFX == FALSE // Keep the debug labels consistent with the compiled shadow fields
         .instructions = COMPOUND_STRING("{START_BUTTON} Shiny\n{B_BUTTON} Back  {A_BUTTON} Shadow Coords$"),
         .instructionsGender = COMPOUND_STRING("{START_BUTTON} Shiny {SELECT_BUTTON} Gender\n{B_BUTTON} Back  {A_BUTTON} Shadow Coords$"),
 #else
@@ -497,7 +497,7 @@ static const struct SubmenuText sSubmenuText[] =
 
     [SUBMENU_SHADOW_COORDS] =
     {
-#if B_ENEMY_MON_SHADOW_STYLE >= GEN_4 && P_GBA_STYLE_SPECIES_GFX == FALSE
+#if ADMG_DEFAULT_B_ENEMY_MON_SHADOW_STYLE >= GEN_4 && P_GBA_STYLE_SPECIES_GFX == FALSE // Keep the debug labels consistent with the compiled shadow fields
         .instructions = COMPOUND_STRING("{START_BUTTON} Shiny\n{B_BUTTON} Back  {A_BUTTON} Move BGs$"),
         .instructionsGender = COMPOUND_STRING("{START_BUTTON} Shiny\n{B_BUTTON} Back  {A_BUTTON} Move BGs$"),
 #else

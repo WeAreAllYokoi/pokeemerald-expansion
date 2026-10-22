@@ -31,7 +31,8 @@
 // To use this feature, replace the 0 with the flag ID you're assigning it to.
 // Eg: Replace with FLAG_UNUSED_0x264 so you can use that flag to toggle the feature.
 #define I_EXP_SHARE_FLAG        0           // If this flag is set, every Pokémon in the party will gain experience, regardless if they participated in the battle or not.
-#define I_EXP_SHARE_ITEM        GEN_5       // In Gen6+, the Exp. Share is a Key item that toggles the effect described above.
+#define ADMG_DEFAULT_I_EXP_SHARE_ITEM        GEN_5       // In Gen6+, the Exp. Share is a Key item that toggles the effect described above.
+#define I_EXP_SHARE_ITEM ADMG_CONFIG_EXTRA(I_EXP_SHARE_ITEM)
 
 // Repel/Lure config
 // These two settings are both independent and complementary.

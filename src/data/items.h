@@ -9739,7 +9739,7 @@ const struct ItemInfo gItemsInfo[] =
     {
         .name = ITEM_NAME("Exp. Share"),
         .holdEffect = HOLD_EFFECT_EXP_SHARE,
-    #if I_EXP_SHARE_ITEM >= GEN_6
+    #if ADMG_DEFAULT_I_EXP_SHARE_ITEM >= GEN_6 // Build the Exp. Share item data from the configured default
         .description = COMPOUND_STRING(
             "This device allows\n"
             "all party members\n"

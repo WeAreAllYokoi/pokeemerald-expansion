@@ -466,7 +466,8 @@
 #define B_SHOW_EFFECTIVENESS        SHOW_EFFECTIVENESS_SEEN // If not SHOW_EFFECTIVENESS_NEVER, the PP string is replaced by a type effectiveness indicator based on the move and the target.
 
 // Pokémon battle sprite settings
-#define B_ENEMY_MON_SHADOW_STYLE        GEN_LATEST // In Gen4+, all opposing Pokémon will have a shadow drawn beneath them.
+#define ADMG_DEFAULT_B_ENEMY_MON_SHADOW_STYLE        GEN_LATEST // In Gen4+, all opposing Pokémon will have a shadow drawn beneath them.
+#define B_ENEMY_MON_SHADOW_STYLE ADMG_CONFIG_EXTRA(B_ENEMY_MON_SHADOW_STYLE)
 
 //  Battle UI settings
 #define ADMG_DEFAULT_B_MOVE_REARRANGEMENT_IN_BATTLE  GEN_LATEST  //  In Gen4+, move slots can no longer be rearranged in battle.

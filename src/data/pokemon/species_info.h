@@ -16,7 +16,7 @@
 #define FOOTPRINT(sprite)
 #endif
 
-#if B_ENEMY_MON_SHADOW_STYLE >= GEN_4 && P_GBA_STYLE_SPECIES_GFX == FALSE
+#if ADMG_DEFAULT_B_ENEMY_MON_SHADOW_STYLE >= GEN_4 && P_GBA_STYLE_SPECIES_GFX == FALSE // Build the species shadow fields from the configured defaults
 #define SHADOW(x, y, size)  .enemyShadowXOffset = x, .enemyShadowYOffset = y, .enemyShadowSize = size,
 #define NO_SHADOW           .suppressEnemyShadow = TRUE,
 #else
