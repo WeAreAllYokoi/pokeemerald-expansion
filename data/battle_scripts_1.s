@@ -2639,10 +2639,9 @@ BattleScript_EffectSkillSwap_AfterAbilityPopUp:
 	recordability BS_TARGET
 	printstring STRINGID_PKMNSWAPPEDABILITIES
 	waitmessage B_WAIT_TIME_LONG
-.if B_SKILL_SWAP >= GEN_4
+	jumpifgenconfiglowerthan CONFIG_B_SKILL_SWAP, GEN_4, BattleScript_MoveEnd
 	switchinabilities BS_ATTACKER
 	switchinabilities BS_TARGET
-.endif
 	goto BattleScript_MoveEnd
 
 BattleScript_EffectImprison::
@@ -2904,25 +2903,25 @@ BattleScript_LocalBattleLostPrintWhiteOut::
 	getmoneyreward
 	printstring STRINGID_PLAYERWHITEOUT
 	waitmessage B_WAIT_TIME_LONG
-.if B_WHITEOUT_MONEY >= GEN_4
+	jumpifgenconfiglowerthan CONFIG_B_WHITEOUT_MONEY, GEN_4, BattleScript_LocalBattleLostWhiteOutGen3
 	jumpifbattletype BATTLE_TYPE_TRAINER, BattleScript_LocalBattleLostEnd
 	printstring STRINGID_PLAYERWHITEOUT2_WILD
 	waitmessage B_WAIT_TIME_LONG
 	printstring STRINGID_PLAYERWHITEOUT3
 	waitmessage B_WAIT_TIME_LONG
 	end
+BattleScript_LocalBattleLostWhiteOutGen3:
+	printstring STRINGID_PLAYERWHITEOUT3
+	waitmessage B_WAIT_TIME_LONG
+	end
 BattleScript_LocalBattleLostEnd::
+	jumpifgenconfiglowerthan CONFIG_B_WHITEOUT_MONEY, GEN_4, BattleScript_LocalBattleLostEndGen3
 	printstring STRINGID_PLAYERWHITEOUT2_TRAINER
 	waitmessage B_WAIT_TIME_LONG
 	printstring STRINGID_PLAYERWHITEOUT3
 	waitmessage B_WAIT_TIME_LONG
+BattleScript_LocalBattleLostEndGen3:
 	end
-.else
-	printstring STRINGID_PLAYERWHITEOUT3
-	waitmessage B_WAIT_TIME_LONG
-BattleScript_LocalBattleLostEnd::
-	end
-.endif
 
 BattleScript_CheckDomeDrew::
 	jumpifbyte CMP_EQUAL, gBattleOutcome, B_OUTCOME_DREW, BattleScript_LocalBattleLostEnd_
@@ -6345,11 +6344,12 @@ BattleScript_QuestionForfeitBattle::
 
 BattleScript_ForfeitBattleGaveMoney::
 	getmoneyreward
-.if B_WHITEOUT_MONEY >= GEN_4
+	jumpifgenconfiglowerthan CONFIG_B_WHITEOUT_MONEY, GEN_4, BattleScript_ForfeitBattleGaveMoneyGen3
 	printstring STRINGID_PLAYERWHITEOUT2_TRAINER
-.else
+	goto BattleScript_ForfeitBattleGaveMoneyWait
+BattleScript_ForfeitBattleGaveMoneyGen3:
 	printstring STRINGID_PLAYERWHITEOUT3
-.endif
+BattleScript_ForfeitBattleGaveMoneyWait:
 	waitmessage B_WAIT_TIME_LONG
 	end
 
