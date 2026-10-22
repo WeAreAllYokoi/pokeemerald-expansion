@@ -4,6 +4,7 @@
 #include "constants/config_changes.h"
 #include "config/pokerus.h"
 #include "config/ai.h"
+#include "admg_retention.h"
 
 #define UNPACK_BATTLE_CONFIG_GEN_CHANGES(_name, _field, ...) ._field = _name,
 #define UNPACK_POKEMON_CONFIG_GEN_CHANGES(_name, _field, ...) ._field = P_##_name,
@@ -58,6 +59,9 @@ ARM_FUNC u32 GetConfigInternal(enum ConfigTag _config)
     else
 #endif
     {
+#if !TESTING
+        return ADMG_GetConfig(_config); // Battle scripts use the same selector as the GetConfig accessors
+#endif
         switch (_config)
         {
         BATTLE_CONFIG_DEFINITIONS(UNPACK_CONFIG_OVERRIDE_GETTERS)
@@ -72,6 +76,51 @@ ARM_FUNC u32 GetConfigInternal(enum ConfigTag _config)
         }
      }
 }
+
+#if !TESTING
+#define UNPACK_CONFIG_MAXIMUM(_name, _field, _typeMaxValue, ...) case CONFIG_##_name: return GET_CONFIG_MAXIMUM(_typeMaxValue);
+
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetConfigDefault(ADMG_Word tag)
+{
+    switch (tag)
+    {
+    BATTLE_CONFIG_DEFINITIONS(UNPACK_CONFIG_GETTERS)
+    POKEMON_CONFIG_DEFINITIONS(UNPACK_CONFIG_GETTERS)
+    AI_CONFIG_DEFINITIONS(UNPACK_CONFIG_GETTERS)
+    default:
+        return 0;
+    }
+}
+
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetConfig(ADMG_Word tag)
+{
+    return ADMG_GetConfigDefault(tag);
+}
+
+// The option's declared maximum, or its type's maximum if none was given
+// SetConfig uses the same limit in test builds
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetConfigMaximum(ADMG_Word tag)
+{
+    switch (tag)
+    {
+    BATTLE_CONFIG_DEFINITIONS(UNPACK_CONFIG_MAXIMUM)
+    POKEMON_CONFIG_DEFINITIONS(UNPACK_CONFIG_MAXIMUM)
+    AI_CONFIG_DEFINITIONS(UNPACK_CONFIG_MAXIMUM)
+    default:
+        return 0;
+    }
+}
+
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_IsConfigKnown(ADMG_Word tag)
+{
+    return tag < CONFIG_COUNT;
+}
+
+ADMG_RETAIN_FUNCTION(ADMG_GetConfig);
+ADMG_RETAIN_FUNCTION(ADMG_GetConfigDefault);
+ADMG_RETAIN_FUNCTION(ADMG_GetConfigMaximum);
+ADMG_RETAIN_FUNCTION(ADMG_IsConfigKnown);
+#endif
 
 #if TESTING
 u32 GetClampedValue(enum ConfigTag _config, u32 newValue)

@@ -22,13 +22,20 @@ struct ConfigChanges
 
 #if TESTING
 extern struct ConfigChanges *gConfigChangesTestOverride;
-#define GET_CONFIG_VALUE(_field, _default) (gConfigChangesTestOverride == NULL ? (_default) : gConfigChangesTestOverride->_field)
+#define GET_CONFIG_VALUE(_tag, _field, _default) (gConfigChangesTestOverride == NULL ? (_default) : gConfigChangesTestOverride->_field)
 #else
-#define GET_CONFIG_VALUE(_field, _default) (_default)
+#include "admg_native.h"
+// GetConfig accessors and GetConfigInternal read through here outside test builds
+// This implementation returns the defaults from sConfigChanges
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetConfig(ADMG_Word tag);
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetConfigDefault(ADMG_Word tag);
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetConfigMaximum(ADMG_Word tag);
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_IsConfigKnown(ADMG_Word tag);
+#define GET_CONFIG_VALUE(_tag, _field, _default) ADMG_GetConfig(_tag)
 #endif
 
-#define UNPACK_BATTLE_CONFIG_GETTER(_name, _field, ...) static inline u32 GetConfig_##_name(void) { return GET_CONFIG_VALUE(_field, _name); }
-#define UNPACK_POKEMON_CONFIG_GETTER(_name, _field, ...) static inline u32 GetConfig_##_name(void) { return GET_CONFIG_VALUE(_field, P_##_name); }
+#define UNPACK_BATTLE_CONFIG_GETTER(_name, _field, ...) static inline u32 GetConfig_##_name(void) { return GET_CONFIG_VALUE(CONFIG_##_name, _field, _name); }
+#define UNPACK_POKEMON_CONFIG_GETTER(_name, _field, ...) static inline u32 GetConfig_##_name(void) { return GET_CONFIG_VALUE(CONFIG_##_name, _field, P_##_name); }
 
 BATTLE_CONFIG_DEFINITIONS(UNPACK_BATTLE_CONFIG_GETTER)
 POKEMON_CONFIG_DEFINITIONS(UNPACK_POKEMON_CONFIG_GETTER)
