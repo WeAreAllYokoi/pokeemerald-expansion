@@ -202,6 +202,11 @@ void TestFreeConfigData(void)
 }
 #endif
 
+// Keep the assembler's ADMG_CONFIG_TAG_<name> values in sync with CONFIG_<name>
+#define ADMG_CHECK_EXTRA_TAG(_name, _maximum) STATIC_ASSERT(ADMG_CONFIG_TAG_##_name == CONFIG_##_name, AdmgConfigTag_##_name)
+ADMG_CONFIG_EXTRA_DEFINITIONS(ADMG_CHECK_EXTRA_TAG)
+#undef ADMG_CHECK_EXTRA_TAG
+
 #if !TESTING
 // Field-script config test: read the next word as a tag from config_changes.h or admg_config_extra.h
 // Set comparisonResult to 1 if the selected value is nonzero, or 0 otherwise

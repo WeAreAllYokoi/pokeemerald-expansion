@@ -17,6 +17,7 @@
 #include "constants/trainers.h"
 #include "constants/species.h"
 #include "constants/config_changes.h"
+#include "constants/admg_config_extra.h"
 	.include "asm/macros.inc"
 	.include "asm/macros/battle_script.inc"
 	.include "constants/constants.inc"
@@ -3105,7 +3106,7 @@ BattleScript_AskToLearnMove::
 	setbyte sLEARNMOVE_STATE, 0
 	yesnoboxlearnmove BattleScript_ForgotAndLearnedNewMove
 	@ ADMG: P_ASK_MOVE_CONFIRMATION is selected at run time
-	jumpifgenconfiglowerthan CONFIG_P_ASK_MOVE_CONFIRMATION, TRUE, BattleScript_AdmgSkipStopLearningMove
+	jumpifgenconfiglowerthan ADMG_CONFIG_TAG_P_ASK_MOVE_CONFIRMATION, TRUE, BattleScript_AdmgSkipStopLearningMove
 	printstring STRINGID_STOPLEARNINGMOVE
 	waitstate
 	setbyte sLEARNMOVE_STATE, 0

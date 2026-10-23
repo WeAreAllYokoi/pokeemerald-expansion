@@ -41,7 +41,7 @@ EventScript_PkmnCenterNurse_TakeAndHealPkmn::
 	dofieldeffect FLDEFF_POKECENTER_HEAL
 	@ ADMG: OW_UNION_DISABLE_CHECK is selected at run time; TRUE skips the Union Room check
 	callnative ADMG_ScriptTestConfig, requests_effects=1
-	.4byte CONFIG_OW_UNION_DISABLE_CHECK
+	.4byte ADMG_CONFIG_TAG_OW_UNION_DISABLE_CHECK
 	goto_if_eq EventScript_PkmnCenterNurse_NoUnionFeatureBinding
 	callnative ADMG_ScriptTestFeatureBinding, requests_effects=1
 	.2byte ADMG_BINDING_OW_FLAG_MOVE_UNION_ROOM_CHECK
