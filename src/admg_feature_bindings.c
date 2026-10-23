@@ -7,6 +7,9 @@
 #include "config/text.h"
 #include "config/name_box.h"
 #include "config/pokerus.h"
+#include "config/caps.h"
+#include "config/overworld.h"
+#include "constants/flags.h"
 
 /* Each binding ID also identifies its reserved flag or variable slot.
  * This getter returns the original configuration value unless overridden.
@@ -19,7 +22,13 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeatureBindingDefault(ADMG_Word binding)
 {
     switch (binding)
     {
+    case ADMG_BINDING_B_EV_CAP_VARIABLE: return B_EV_CAP_VARIABLE;
     case ADMG_BINDING_B_FLAG_AI_VS_AI_BATTLE: return B_FLAG_AI_VS_AI_BATTLE;
+    case ADMG_BINDING_B_FLAG_BADGE_BOOST_ATTACK: return B_FLAG_BADGE_BOOST_ATTACK;
+    case ADMG_BINDING_B_FLAG_BADGE_BOOST_DEFENSE: return B_FLAG_BADGE_BOOST_DEFENSE;
+    case ADMG_BINDING_B_FLAG_BADGE_BOOST_SPATK: return B_FLAG_BADGE_BOOST_SPATK;
+    case ADMG_BINDING_B_FLAG_BADGE_BOOST_SPDEF: return B_FLAG_BADGE_BOOST_SPDEF;
+    case ADMG_BINDING_B_FLAG_BADGE_BOOST_SPEED: return B_FLAG_BADGE_BOOST_SPEED;
     case ADMG_BINDING_B_FLAG_DYNAMAX_BATTLE: return B_FLAG_DYNAMAX_BATTLE;
     case ADMG_BINDING_B_FLAG_FOLLOWERS_DISABLED: return B_FLAG_FOLLOWERS_DISABLED;
     case ADMG_BINDING_B_FLAG_INVERSE_BATTLE: return B_FLAG_INVERSE_BATTLE;
@@ -52,6 +61,9 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeatureBindingDefault(ADMG_Word binding)
     case ADMG_BINDING_OW_FLAG_PAUSE_TIME: return OW_FLAG_PAUSE_TIME;
     case ADMG_BINDING_OW_FLAG_POKE_RIDER: return OW_FLAG_POKE_RIDER;
     case ADMG_BINDING_OW_FLAG_SUPPRESS_NAME_BOX: return OW_FLAG_SUPPRESS_NAME_BOX;
+    case ADMG_BINDING_OW_FOLLOWERS_ALLOWED_MET_LOC: return OW_FOLLOWERS_ALLOWED_MET_LOC;
+    case ADMG_BINDING_OW_FOLLOWERS_ALLOWED_MET_LVL: return OW_FOLLOWERS_ALLOWED_MET_LVL;
+    case ADMG_BINDING_OW_FOLLOWERS_ALLOWED_SPECIES: return OW_FOLLOWERS_ALLOWED_SPECIES;
     case ADMG_BINDING_P_FLAG_EGG_MOVES: return P_FLAG_EGG_MOVES;
     case ADMG_BINDING_P_FLAG_FORCE_NO_SHINY: return P_FLAG_FORCE_NO_SHINY;
     case ADMG_BINDING_P_FLAG_FORCE_SHINY: return P_FLAG_FORCE_SHINY;

@@ -6846,18 +6846,18 @@ static inline uq4_12_t GetParadoxAbilityModifier(enum BattlerId battler, enum Mo
 
 static inline uq4_12_t ApplyOffensiveBadgeBoost(uq4_12_t modifier, enum BattlerId battler, enum Move move)
 {
-    if (ShouldGetStatBadgeBoost(B_FLAG_BADGE_BOOST_ATTACK, battler) && IsBattleMovePhysical(move))
+    if (ShouldGetStatBadgeBoost(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_BADGE_BOOST_ATTACK), battler) && IsBattleMovePhysical(move))
         modifier = uq4_12_multiply_half_down(modifier, GetBadgeBoostModifier());
-    if (ShouldGetStatBadgeBoost(B_FLAG_BADGE_BOOST_SPATK, battler) && IsBattleMoveSpecial(move))
+    if (ShouldGetStatBadgeBoost(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_BADGE_BOOST_SPATK), battler) && IsBattleMoveSpecial(move))
         modifier = uq4_12_multiply_half_down(modifier, GetBadgeBoostModifier());
     return modifier;
 }
 
 static inline uq4_12_t ApplyDefensiveBadgeBoost(uq4_12_t modifier, enum BattlerId battler, enum Move move)
 {
-    if (ShouldGetStatBadgeBoost(B_FLAG_BADGE_BOOST_DEFENSE, battler) && IsBattleMovePhysical(move))
+    if (ShouldGetStatBadgeBoost(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_BADGE_BOOST_DEFENSE), battler) && IsBattleMovePhysical(move))
         modifier = uq4_12_multiply_half_down(modifier, GetBadgeBoostModifier());
-    if (ShouldGetStatBadgeBoost(B_FLAG_BADGE_BOOST_SPDEF, battler) && IsBattleMoveSpecial(move))
+    if (ShouldGetStatBadgeBoost(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_BADGE_BOOST_SPDEF), battler) && IsBattleMoveSpecial(move))
         modifier = uq4_12_multiply_half_down(modifier, GetBadgeBoostModifier());
     return modifier;
 }

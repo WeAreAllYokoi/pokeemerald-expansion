@@ -82,7 +82,7 @@ extern u32 gADMG_KantoVars[224];
 extern u8 gADMG_UnionVisibility[2];
 extern u8 gADMG_NativeSpecialScratch[1];
 extern u32 gADMG_TextColorScratch[2];
-extern u8 gADMG_FeatureBindingFlags[5];
-extern u32 gADMG_FeatureBindingVars[8];
+extern u8 gADMG_FeatureBindingFlags[(ADMG_STATE_FEATURE_BINDING_FLAGS_COUNT + 7) / 8];
+extern u32 gADMG_FeatureBindingVars[ADMG_STATE_FEATURE_BINDING_VARS_COUNT];
 
 #endif

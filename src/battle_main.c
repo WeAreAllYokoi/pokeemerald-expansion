@@ -4465,7 +4465,7 @@ u32 GetBattlerTotalSpeedStat(enum BattlerId battler, enum Ability ability, enum 
 
     // player's badge boost
     if (!(gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK | BATTLE_TYPE_FRONTIER))
-        && ShouldGetStatBadgeBoost(B_FLAG_BADGE_BOOST_SPEED, battler)
+        && ShouldGetStatBadgeBoost(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_BADGE_BOOST_SPEED), battler)
         && IsOnPlayerSide(battler))
     {
         speed = uq4_12_multiply_by_int_half_down(GetBadgeBoostModifier(), speed);

@@ -6,6 +6,36 @@
       "id": 4704,
       "route": "feature_binding"
     },
+    "B_FLAG_BADGE_BOOST_ATTACK": {
+      "canonical_target": null,
+      "generated": "ADMG_BINDING_B_FLAG_BADGE_BOOST_ATTACK",
+      "id": 4742,
+      "route": "feature_binding"
+    },
+    "B_FLAG_BADGE_BOOST_DEFENSE": {
+      "canonical_target": null,
+      "generated": "ADMG_BINDING_B_FLAG_BADGE_BOOST_DEFENSE",
+      "id": 4743,
+      "route": "feature_binding"
+    },
+    "B_FLAG_BADGE_BOOST_SPATK": {
+      "canonical_target": null,
+      "generated": "ADMG_BINDING_B_FLAG_BADGE_BOOST_SPATK",
+      "id": 4744,
+      "route": "feature_binding"
+    },
+    "B_FLAG_BADGE_BOOST_SPDEF": {
+      "canonical_target": null,
+      "generated": "ADMG_BINDING_B_FLAG_BADGE_BOOST_SPDEF",
+      "id": 4745,
+      "route": "feature_binding"
+    },
+    "B_FLAG_BADGE_BOOST_SPEED": {
+      "canonical_target": null,
+      "generated": "ADMG_BINDING_B_FLAG_BADGE_BOOST_SPEED",
+      "id": 4746,
+      "route": "feature_binding"
+    },
     "B_FLAG_DYNAMAX_BATTLE": {
       "canonical_target": null,
       "generated": "ADMG_BINDING_B_FLAG_DYNAMAX_BATTLE",
@@ -11825,7 +11855,7 @@
     "VAR_WONDER_NEWS_STEP_COUNTER": 16430,
     "VAR_WONDER_NEWS_STEP_COUNTER_FRLG": 16424
   },
-  "lock_sha256": "3e97899592e769294cba7239975dd4a339e277eb411eef5c569a606ebb63565e",
+  "lock_sha256": "3fc9e8018af64bef63b720e6bef0478795412e317415674a33f33dcf07ba103e",
   "map_fields": {
     "bg_events.hidden_item.flag": "flag",
     "coord_events.var": "var",
@@ -16722,6 +16752,12 @@
     }
   ],
   "vars": {
+    "B_EV_CAP_VARIABLE": {
+      "canonical_target": null,
+      "generated": "ADMG_BINDING_B_EV_CAP_VARIABLE",
+      "id": 16872,
+      "route": "feature_binding"
+    },
     "B_LEVEL_CAP_VARIABLE": {
       "canonical_target": null,
       "generated": "ADMG_BINDING_B_LEVEL_CAP_VARIABLE",
@@ -16762,6 +16798,24 @@
       "canonical_target": null,
       "generated": "ADMG_BINDING_DN_VAR_STEP_COUNTER",
       "id": 16870,
+      "route": "feature_binding"
+    },
+    "OW_FOLLOWERS_ALLOWED_MET_LOC": {
+      "canonical_target": null,
+      "generated": "ADMG_BINDING_OW_FOLLOWERS_ALLOWED_MET_LOC",
+      "id": 16873,
+      "route": "feature_binding"
+    },
+    "OW_FOLLOWERS_ALLOWED_MET_LVL": {
+      "canonical_target": null,
+      "generated": "ADMG_BINDING_OW_FOLLOWERS_ALLOWED_MET_LVL",
+      "id": 16874,
+      "route": "feature_binding"
+    },
+    "OW_FOLLOWERS_ALLOWED_SPECIES": {
+      "canonical_target": null,
+      "generated": "ADMG_BINDING_OW_FOLLOWERS_ALLOWED_SPECIES",
+      "id": 16875,
       "route": "feature_binding"
     },
     "VAR_0x4029": {

@@ -108,7 +108,7 @@ u32 GetCurrentEVCap(void)
     }
     else if (B_EV_CAP_TYPE == EV_CAP_VARIABLE)
     {
-        return VarGet(B_EV_CAP_VARIABLE);
+        return VarGet(ADMG_GetFeatureBinding(ADMG_BINDING_B_EV_CAP_VARIABLE));
     }
     else if (B_EV_CAP_TYPE == EV_CAP_NO_GAIN)
     {

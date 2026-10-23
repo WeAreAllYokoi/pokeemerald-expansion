@@ -2222,9 +2222,12 @@ struct Pokemon *GetFirstLiveMon(void)
         if (species == SPECIES_NONE)
             continue;
 
-        if ((OW_FOLLOWERS_ALLOWED_SPECIES && species != VarGet(OW_FOLLOWERS_ALLOWED_SPECIES))
-         || (OW_FOLLOWERS_ALLOWED_MET_LVL && GetMonData(mon, MON_DATA_MET_LEVEL) != VarGet(OW_FOLLOWERS_ALLOWED_MET_LVL))
-         || (OW_FOLLOWERS_ALLOWED_MET_LOC && GetMonData(mon, MON_DATA_MET_LOCATION) != VarGet(OW_FOLLOWERS_ALLOWED_MET_LOC)))
+        u32 allowedSpecies = ADMG_GetFeatureBinding(ADMG_BINDING_OW_FOLLOWERS_ALLOWED_SPECIES);
+        u32 allowedMetLevel = ADMG_GetFeatureBinding(ADMG_BINDING_OW_FOLLOWERS_ALLOWED_MET_LVL);
+        u32 allowedMetLocation = ADMG_GetFeatureBinding(ADMG_BINDING_OW_FOLLOWERS_ALLOWED_MET_LOC);
+        if ((allowedSpecies && species != VarGet(allowedSpecies))
+         || (allowedMetLevel && GetMonData(mon, MON_DATA_MET_LEVEL) != VarGet(allowedMetLevel))
+         || (allowedMetLocation && GetMonData(mon, MON_DATA_MET_LOCATION) != VarGet(allowedMetLocation)))
             continue;
 
         if (gParties[B_TRAINER_PLAYER][i].hp > 0 && !(gParties[B_TRAINER_PLAYER][i].box.isEgg || gParties[B_TRAINER_PLAYER][i].box.isBadEgg))

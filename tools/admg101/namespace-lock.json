@@ -1,6 +1,6 @@
 {
-  "allocation_proposal_sha256": "66a251af00184942c9c5e303cd358034d5c9b5b1f1f1c096f136d87a8a24b1b7",
-  "approval": "Human accepted reviewed ranges and three alias treatments; bounded source integration and V3-B2 only",
+  "allocation_proposal_sha256": "4d9cd04e8fdd8c78d43090e87c600ccaa38bc6de0c45496c4982bd60ba3f4130",
+  "approval": "Human accepted reviewed ranges and three alias treatments; bounded source integration and V3-B2 only; 2026-10-23 amendment, human approved: feature_binding_flags reservation 40 -> 48 and feature_binding_vars 8 -> 12 for the badge stat boost flags, B_EV_CAP_VARIABLE and the three OW_FOLLOWERS_ALLOWED_* variables; existing identities unchanged",
   "consumer_safety_verified": false,
   "coverage": {
     "audited_flags": 763,
@@ -18902,6 +18902,96 @@
       "kind": "flag",
       "name": "STORY_FLAGS_START",
       "route": "marker_alias"
+    },
+    {
+      "activation": "none",
+      "assigned_id": 4742,
+      "consumer_adaptation_gate": "source control semantics in owning S2/S3 package",
+      "kind": "flag",
+      "name": "B_FLAG_BADGE_BOOST_ATTACK",
+      "presence_default": "absent",
+      "route": "feature_binding",
+      "source_binding_remains": 0
+    },
+    {
+      "activation": "none",
+      "assigned_id": 4743,
+      "consumer_adaptation_gate": "source control semantics in owning S2/S3 package",
+      "kind": "flag",
+      "name": "B_FLAG_BADGE_BOOST_DEFENSE",
+      "presence_default": "absent",
+      "route": "feature_binding",
+      "source_binding_remains": 0
+    },
+    {
+      "activation": "none",
+      "assigned_id": 4744,
+      "consumer_adaptation_gate": "source control semantics in owning S2/S3 package",
+      "kind": "flag",
+      "name": "B_FLAG_BADGE_BOOST_SPATK",
+      "presence_default": "absent",
+      "route": "feature_binding",
+      "source_binding_remains": 0
+    },
+    {
+      "activation": "none",
+      "assigned_id": 4745,
+      "consumer_adaptation_gate": "source control semantics in owning S2/S3 package",
+      "kind": "flag",
+      "name": "B_FLAG_BADGE_BOOST_SPDEF",
+      "presence_default": "absent",
+      "route": "feature_binding",
+      "source_binding_remains": 0
+    },
+    {
+      "activation": "none",
+      "assigned_id": 4746,
+      "consumer_adaptation_gate": "source control semantics in owning S2/S3 package",
+      "kind": "flag",
+      "name": "B_FLAG_BADGE_BOOST_SPEED",
+      "presence_default": "absent",
+      "route": "feature_binding",
+      "source_binding_remains": 0
+    },
+    {
+      "activation": "none",
+      "assigned_id": 16872,
+      "consumer_adaptation_gate": "source control semantics in owning S2/S3 package",
+      "kind": "var",
+      "name": "B_EV_CAP_VARIABLE",
+      "presence_default": "absent",
+      "route": "feature_binding",
+      "source_binding_remains": 0
+    },
+    {
+      "activation": "none",
+      "assigned_id": 16873,
+      "consumer_adaptation_gate": "source control semantics in owning S2/S3 package",
+      "kind": "var",
+      "name": "OW_FOLLOWERS_ALLOWED_MET_LOC",
+      "presence_default": "absent",
+      "route": "feature_binding",
+      "source_binding_remains": 0
+    },
+    {
+      "activation": "none",
+      "assigned_id": 16874,
+      "consumer_adaptation_gate": "source control semantics in owning S2/S3 package",
+      "kind": "var",
+      "name": "OW_FOLLOWERS_ALLOWED_MET_LVL",
+      "presence_default": "absent",
+      "route": "feature_binding",
+      "source_binding_remains": 0
+    },
+    {
+      "activation": "none",
+      "assigned_id": 16875,
+      "consumer_adaptation_gate": "source control semantics in owning S2/S3 package",
+      "kind": "var",
+      "name": "OW_FOLLOWERS_ALLOWED_SPECIES",
+      "presence_default": "absent",
+      "route": "feature_binding",
+      "source_binding_remains": 0
     }
   ],
   "exact_assignment_review": {
@@ -21749,18 +21839,18 @@
     },
     {
       "alignment": 8,
-      "count": 40,
+      "count": 48,
       "first": 4704,
       "kind": "flag",
-      "last": 4743,
+      "last": 4751,
       "name": "feature_binding_flags"
     },
     {
       "alignment": 1,
-      "count": 8,
+      "count": 12,
       "first": 16864,
       "kind": "var",
-      "last": 16871,
+      "last": 16875,
       "name": "feature_binding_vars"
     }
   ],

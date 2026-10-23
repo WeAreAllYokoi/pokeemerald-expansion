@@ -14,8 +14,8 @@ EWRAM_DATA u32 gADMG_KantoVars[224] = {0};
 EWRAM_DATA u8 gADMG_UnionVisibility[2] = {0};
 EWRAM_DATA u8 gADMG_NativeSpecialScratch[1] = {0};
 EWRAM_DATA u32 gADMG_TextColorScratch[2] = {0};
-EWRAM_DATA u8 gADMG_FeatureBindingFlags[5] = {0};
-EWRAM_DATA u32 gADMG_FeatureBindingVars[8] = {0};
+EWRAM_DATA u8 gADMG_FeatureBindingFlags[(ADMG_STATE_FEATURE_BINDING_FLAGS_COUNT + 7) / 8] = {0};
+EWRAM_DATA u32 gADMG_FeatureBindingVars[ADMG_STATE_FEATURE_BINDING_VARS_COUNT] = {0};
 static EWRAM_DATA u64 sADMG_StateRejectionGeneration = 0;
 static EWRAM_DATA bool8 sADMG_StateRejectionExhausted = FALSE;
 
