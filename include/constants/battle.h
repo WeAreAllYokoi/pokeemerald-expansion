@@ -200,13 +200,19 @@ enum VolatileFlags
 /* Volatile status ailments
  * These are removed after exiting the battle or switching
  *  Enum,                                   Type                           Type, max value, flags */
+// Shared storage limit for the timer fields marked below, leaving room for runtime settings
+#define ADMG_VOLATILE_TIMER_MAX 15
+// setvolatile uses this sentinel for Laser Focus, Magnet Rise and Heal Block
+// Read their configured duration instead of using a fixed value from the script
+#define ADMG_VOLATILE_CONFIGURED_TIMER 0xFF
+
 #define VOLATILE_DEFINITIONS(F) \
     F(VOLATILE_CONFUSION,                   confusionTimer,                (u32, PERMANENT_VOLATILE), V_BATON_PASSABLE) \
     F(VOLATILE_FLINCHED,                    flinched,                      (u32, 1)) \
     F(VOLATILE_UPROAR,                      uproarTurns,                   (u32, 5)) \
     F(VOLATILE_TORMENT,                     torment,                       (u32, 1)) \
     F(VOLATILE_BIDE,                        bideTurns,                     (u32, 3)) \
-    F(VOLATILE_RAMPAGE_TURNS,               rampageTurns,                  (u32, B_RAMPAGE_TURNS + 1)) \
+    F(VOLATILE_RAMPAGE_TURNS,               rampageTurns,                  (u32, ADMG_VOLATILE_TIMER_MAX)) \
     F(VOLATILE_MULTIPLETURNS,               multipleTurns,                 (u32, 1)) \
     F(VOLATILE_SKY_DROP_TARGET,             skyDropTarget,                 (enum BattlerId, MAX_BATTLERS_COUNT)) \
     F(VOLATILE_CONFUSE_AFTER_DROP,          confuseAfterDrop,              (u32, 1)) \
@@ -270,8 +276,8 @@ enum VolatileFlags
     F(VOLATILE_STOCKPILE_BEFORE_SP_DEF,     stockpileBeforeSpDef,          (u32, MAX_STAT_STAGE)) \
     F(VOLATILE_SUBSTITUTE_HP,               substituteHP,                  (u32, UINT8_MAX)) \
     F(VOLATILE_ENCORED_MOVE_POS,            encoredMovePos,                (u32, MAX_BITS(MAX_MON_MOVES))) \
-    F(VOLATILE_DISABLE_TIMER,               disableTimer,                  (u32, B_DISABLE_TIMER)) \
-    F(VOLATILE_ENCORE_TIMER,                encoreTimer,                   (u32, B_ENCORE_TIMER)) \
+    F(VOLATILE_DISABLE_TIMER,               disableTimer,                  (u32, ADMG_VOLATILE_TIMER_MAX)) \
+    F(VOLATILE_ENCORE_TIMER,                encoreTimer,                   (u32, ADMG_VOLATILE_TIMER_MAX)) \
     F(VOLATILE_PERISH_SONG_TIMER,           perishSongTimer,               (u32, B_PERISH_SONG_TIMER)) \
     F(VOLATILE_ROLLOUT_TIMER,               rolloutTimer,                  (u32, UINT8_MAX)) \
     F(VOLATILE_FURY_CUTTER_COUNTER,         furyCutterCounter,             (u32, UINT8_MAX)) \
@@ -281,17 +287,17 @@ enum VolatileFlags
     F(VOLATILE_MIMICKED_MOVES,              mimickedMoves,                 (u32, MAX_BITS(MAX_MON_MOVES))) \
     F(VOLATILE_RECHARGE_TIMER,              rechargeTimer,                 (u32, 2)) \
     F(VOLATILE_AUTOTOMIZE_COUNT,            autotomizeCount,               (u32, UINT8_MAX)) \
-    F(VOLATILE_SLOW_START_TIMER,            slowStartTimer,                (u32, B_SLOW_START_TIMER)) \
-    F(VOLATILE_EMBARGO_TIMER,               embargoTimer,                  (u32, B_EMBARGO_TIMER), V_BATON_PASSABLE) \
-    F(VOLATILE_MAGNET_RISE_TIMER,           magnetRiseTimer,               (u32, B_MAGNET_RISE_TIMER), V_BATON_PASSABLE) \
-    F(VOLATILE_TELEKINESIS_TIMER,           telekinesisTimer,              (u32, B_TELEKINESIS_TIMER)) \
-    F(VOLATILE_HEAL_BLOCK_TIMER,            healBlockTimer,                (u32, B_HEAL_BLOCK_TIMER), V_BATON_PASSABLE) \
-    F(VOLATILE_TAUNT_TIMER,                 tauntTimer,                    (u32, B_TAUNT_TIMER)) \
-    F(VOLATILE_TORMENT_TIMER,               tormentTimer,                  (u32, B_TORMENT_TIMER)) \
-    F(VOLATILE_LASER_FOCUS_TIMER,           laserFocusTimer,               (u32, B_LASER_FOCUS_TIMER)) \
-    F(VOLATILE_THROAT_CHOP_TIMER,           throatChopTimer,               (u32, B_THROAT_CHOP_TIMER)) \
-    F(VOLATILE_WRAP_TURNS,                  wrapTurns,                     (u32, B_WRAP_TURNS)) \
-    F(VOLATILE_SYRUP_BOMB_TIMER,            syrupBombTimer,                (u32, B_SYRUP_BOMB_TIMER)) \
+    F(VOLATILE_SLOW_START_TIMER,            slowStartTimer,                (u32, ADMG_VOLATILE_TIMER_MAX)) \
+    F(VOLATILE_EMBARGO_TIMER,               embargoTimer,                  (u32, ADMG_VOLATILE_TIMER_MAX), V_BATON_PASSABLE) \
+    F(VOLATILE_MAGNET_RISE_TIMER,           magnetRiseTimer,               (u32, ADMG_VOLATILE_TIMER_MAX), V_BATON_PASSABLE) \
+    F(VOLATILE_TELEKINESIS_TIMER,           telekinesisTimer,              (u32, ADMG_VOLATILE_TIMER_MAX)) \
+    F(VOLATILE_HEAL_BLOCK_TIMER,            healBlockTimer,                (u32, ADMG_VOLATILE_TIMER_MAX), V_BATON_PASSABLE) \
+    F(VOLATILE_TAUNT_TIMER,                 tauntTimer,                    (u32, ADMG_VOLATILE_TIMER_MAX)) \
+    F(VOLATILE_TORMENT_TIMER,               tormentTimer,                  (u32, ADMG_VOLATILE_TIMER_MAX)) \
+    F(VOLATILE_LASER_FOCUS_TIMER,           laserFocusTimer,               (u32, ADMG_VOLATILE_TIMER_MAX)) \
+    F(VOLATILE_THROAT_CHOP_TIMER,           throatChopTimer,               (u32, ADMG_VOLATILE_TIMER_MAX)) \
+    F(VOLATILE_WRAP_TURNS,                  wrapTurns,                     (u32, ADMG_VOLATILE_TIMER_MAX)) \
+    F(VOLATILE_SYRUP_BOMB_TIMER,            syrupBombTimer,                (u32, ADMG_VOLATILE_TIMER_MAX)) \
     F(VOLATILE_USED_MOVES,                  usedMoves,                     (u32, MAX_BITS(MAX_MON_MOVES))) \
     F(VOLATILE_TRUANT_COUNTER,              truantCounter,                 (u32, 1)) \
     F(VOLATILE_TRUANT_SWITCH_IN_HACK,       truantSwitchInHack,            (u32, 1)) \

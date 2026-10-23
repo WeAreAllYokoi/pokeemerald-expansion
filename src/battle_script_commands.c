@@ -6683,8 +6683,19 @@ static void Cmd_trysetspikes(void)
 static void Cmd_setvolatile(void)
 {
     CMD_ARGS(u8 battler, u8 _volatile, u8 value);
+    u32 value = cmd->value;
 
-    SetMonVolatile(GetBattlerForBattleScript(cmd->battler), cmd->_volatile, cmd->value);
+    if (value == ADMG_VOLATILE_CONFIGURED_TIMER)
+    {
+        switch (cmd->_volatile)
+        {
+        case VOLATILE_LASER_FOCUS_TIMER: value = B_LASER_FOCUS_TIMER; break;
+        case VOLATILE_MAGNET_RISE_TIMER: value = B_MAGNET_RISE_TIMER; break;
+        case VOLATILE_HEAL_BLOCK_TIMER: value = B_HEAL_BLOCK_TIMER; break;
+        default: value = 0; break;
+        }
+    }
+    SetMonVolatile(GetBattlerForBattleScript(cmd->battler), cmd->_volatile, value);
     gBattlescriptCurrInstr = cmd->nextInstr;
 }
 

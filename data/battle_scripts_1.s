@@ -840,7 +840,7 @@ BattleScript_CoreEnforcerRet:
 BattleScript_EffectLaserFocus::
 	attackcanceler
 	jumpifvolatile BS_ATTACKER, VOLATILE_LASER_FOCUS_TIMER, BattleScript_ButItFailed
-	setvolatile BS_ATTACKER, VOLATILE_LASER_FOCUS_TIMER, B_LASER_FOCUS_TIMER
+	setvolatile BS_ATTACKER, VOLATILE_LASER_FOCUS_TIMER, ADMG_VOLATILE_CONFIGURED_TIMER
 	attackanimation
 	waitanimation
 	printstring STRINGID_LASERFOCUS
@@ -1297,7 +1297,7 @@ BattleScript_EffectMagnetRise::
 	jumpifvolatile BS_ATTACKER, VOLATILE_ROOT, BattleScript_ButItFailed
 	jumpifvolatile BS_ATTACKER, VOLATILE_SMACK_DOWN, BattleScript_ButItFailed
 	jumpifvolatile BS_ATTACKER, VOLATILE_MAGNET_RISE_TIMER, BattleScript_ButItFailed
-	setvolatile BS_ATTACKER, VOLATILE_MAGNET_RISE_TIMER, B_MAGNET_RISE_TIMER
+	setvolatile BS_ATTACKER, VOLATILE_MAGNET_RISE_TIMER, ADMG_VOLATILE_CONFIGURED_TIMER
 	attackanimation
 	waitanimation
 	printstring STRINGID_PKMNLEVITATEDONELECTROMAGNETISM
@@ -1426,7 +1426,7 @@ BattleScript_EffectHealBlock::
 	attackcanceler
 	jumpifvolatile BS_TARGET, VOLATILE_HEAL_BLOCK_TIMER, BattleScript_ButItFailed
 	jumpifability BS_TARGET_SIDE, ABILITY_AROMA_VEIL, BattleScript_AromaVeilProtects
-	setvolatile BS_TARGET, VOLATILE_HEAL_BLOCK_TIMER, B_HEAL_BLOCK_TIMER
+	setvolatile BS_TARGET, VOLATILE_HEAL_BLOCK_TIMER, ADMG_VOLATILE_CONFIGURED_TIMER
 	attackanimation
 	waitanimation
 	printstring STRINGID_PKMNPREVENTEDFROMHEALING

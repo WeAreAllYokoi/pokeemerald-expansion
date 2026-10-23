@@ -1335,6 +1335,8 @@ static enum Item DexNavGenerateHeldItem(enum Species species, u8 searchLevel)
     return ITEM_NONE;
 }
 
+// Read the SEARCHLEVEL*_ABILITYCHANCE percentages at runtime
+// A zero chance already fails the random check, so it needs no separate compile-time branch
 static u8 DexNavGetAbilityNum(enum Species species, u8 searchLevel)
 {
     bool8 genAbility = FALSE;
@@ -1343,45 +1345,33 @@ static u8 DexNavGetAbilityNum(enum Species species, u8 searchLevel)
 
     if (searchLevel < 5)
     {
-        #if (SEARCHLEVEL0_ABILITYCHANCE != 0)
         if (randVal < SEARCHLEVEL0_ABILITYCHANCE)
             genAbility = TRUE;
-        #endif
     }
     else if (searchLevel < 10)
     {
-        #if (SEARCHLEVEL5_ABILITYCHANCE != 0)
         if (randVal < SEARCHLEVEL5_ABILITYCHANCE)
             genAbility = TRUE;
-        #endif
     }
     else if (searchLevel < 25)
     {
-        #if (SEARCHLEVEL10_ABILITYCHANCE != 0)
         if (randVal < SEARCHLEVEL10_ABILITYCHANCE)
             genAbility = TRUE;
-        #endif
     }
     else if (searchLevel < 50)
     {
-        #if (SEARCHLEVEL25_ABILITYCHANCE != 0)
         if (randVal < SEARCHLEVEL25_ABILITYCHANCE)
             genAbility = TRUE;
-        #endif
     }
     else if (searchLevel < 100)
     {
-        #if (SEARCHLEVEL50_ABILITYCHANCE != 0)
         if (randVal < SEARCHLEVEL50_ABILITYCHANCE)
             genAbility = TRUE;
-        #endif
     }
     else
     {
-        #if (SEARCHLEVEL100_ABILITYCHANCE != 0)
         if (randVal < SEARCHLEVEL100_ABILITYCHANCE)
             genAbility = TRUE;
-        #endif
     }
 
     if (genAbility

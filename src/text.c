@@ -299,14 +299,6 @@ static const u8 sTextSpeedFrameDelays[] =
     [OPTIONS_TEXT_SPEED_INSTANT] = 1,
 };
 
-static const u8 sTextSpeedModifiers[] =
-{
-    [OPTIONS_TEXT_SPEED_SLOW]    = 0, // Unused; GetPlayerTextSpeedModifier reads the slow modifier directly
-    [OPTIONS_TEXT_SPEED_MID]     = TEXT_SPEED_MEDIUM_MODIFIER,
-    [OPTIONS_TEXT_SPEED_FAST]    = TEXT_SPEED_FAST_MODIFIER,
-    [OPTIONS_TEXT_SPEED_INSTANT] = TEXT_SPEED_INSTANT_MODIFIER,
-};
-
 static const u8 sTextScrollSpeeds[] =
 {
     [OPTIONS_TEXT_SPEED_SLOW]    = 1,
@@ -344,7 +336,14 @@ u32 GetPlayerTextSpeedDelay(void)
 u32 GetPlayerTextSpeedModifier(void)
 {
     u32 speed = GetPlayerTextSpeed();
-    return speed == OPTIONS_TEXT_SPEED_SLOW ? TEXT_SPEED_SLOW_MODIFIER : sTextSpeedModifiers[speed];
+    // Read the modifier for the player's selected text speed
+    switch (speed)
+    {
+    case OPTIONS_TEXT_SPEED_SLOW: return TEXT_SPEED_SLOW_MODIFIER;
+    case OPTIONS_TEXT_SPEED_MID: return TEXT_SPEED_MEDIUM_MODIFIER;
+    case OPTIONS_TEXT_SPEED_FAST: return TEXT_SPEED_FAST_MODIFIER;
+    default: return TEXT_SPEED_INSTANT_MODIFIER;
+    }
 }
 
 u32 GetPlayerTextScrollSpeed(void)
