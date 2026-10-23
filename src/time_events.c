@@ -14,14 +14,14 @@
 
 static u32 GetMirageRnd(void)
 {
-    #if OW_USE_DAILY_SEED_FOR_VANILLA_VARIABLES == FALSE
-    u32 hi = VarGet(VAR_MIRAGE_RND_H);
-    u32 lo = VarGet(VAR_MIRAGE_RND_L);
-    return (hi << 16) | lo;
-    #else
+    if (OW_USE_DAILY_SEED_FOR_VANILLA_VARIABLES == FALSE)
+    {
+        u32 hi = VarGet(VAR_MIRAGE_RND_H);
+        u32 lo = VarGet(VAR_MIRAGE_RND_L);
+        return (hi << 16) | lo;
+    }
     rng_value_t localRngState = LocalRandomSeed(gSaveBlock1Ptr->dailySeed ^ MIRAGE_ISLAND_SALT);
     return LocalRandom32(&localRngState);
-    #endif
 }
 
 static void SetMirageRnd(u32 rnd)

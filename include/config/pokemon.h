@@ -65,7 +65,8 @@
 #define ADMG_DEFAULT_P_TM_LITERACY                    GEN_LATEST  // Settings above GEN_6 stop filtering universal moves out of TM-illiterate Pokémon's teachable learnsets
 #define P_TM_LITERACY ADMG_CONFIG_EXTRA(P_TM_LITERACY)
 #define P_CAN_FORGET_HIDDEN_MOVE         FALSE       // If TRUE, Pokémon can forget any move, even if it is an HM.
-#define P_ASK_MOVE_CONFIRMATION          FALSE       // If FALSE, when a player decides not to learn a move, the game does not ask the player for confirmation.
+#define ADMG_DEFAULT_P_ASK_MOVE_CONFIRMATION          FALSE       // If FALSE, when a player decides not to learn a move, the game does not ask the player for confirmation.
+#define P_ASK_MOVE_CONFIRMATION ADMG_CONFIG_EXTRA(P_ASK_MOVE_CONFIRMATION)
 #define ADMG_DEFAULT_P_EGG_CYCLE_LENGTH               GEN_LATEST  // Since Gen 8, Egg cycles take half as many steps as before. Previous generations have some varied step counts around 255.
 #define P_EGG_CYCLE_LENGTH ADMG_CONFIG_EXTRA(P_EGG_CYCLE_LENGTH)
 #define ADMG_DEFAULT_P_ONLY_OBTAINABLE_SHINIES        FALSE       // If TRUE, Pokémon encountered in the Battle Pyramid or while catching is disabled won't be Shiny.

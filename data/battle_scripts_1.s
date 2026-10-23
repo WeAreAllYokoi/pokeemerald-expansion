@@ -3104,12 +3104,13 @@ BattleScript_AskToLearnMove::
 	waitstate
 	setbyte sLEARNMOVE_STATE, 0
 	yesnoboxlearnmove BattleScript_ForgotAndLearnedNewMove
-.if P_ASK_MOVE_CONFIRMATION == TRUE
+	@ ADMG: P_ASK_MOVE_CONFIRMATION is selected at run time
+	jumpifgenconfiglowerthan CONFIG_P_ASK_MOVE_CONFIRMATION, TRUE, BattleScript_AdmgSkipStopLearningMove
 	printstring STRINGID_STOPLEARNINGMOVE
 	waitstate
 	setbyte sLEARNMOVE_STATE, 0
 	yesnoboxstoplearningmove BattleScript_AskToLearnMove
-.endif
+BattleScript_AdmgSkipStopLearningMove:
 	printstring STRINGID_DIDNOTLEARNMOVE
 	goto BattleScript_TryLearnMoveLoop
 BattleScript_ForgotAndLearnedNewMove::

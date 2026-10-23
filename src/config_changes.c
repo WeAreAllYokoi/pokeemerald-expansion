@@ -1,4 +1,5 @@
 #include "global.h"
+#include "script.h"
 #include "config_changes.h"
 #include "malloc.h"
 #include "constants/config_changes.h"
@@ -199,4 +200,17 @@ void TestFreeConfigData(void)
 {
     FREE_AND_SET_NULL(gConfigChangesTestOverride);
 }
+#endif
+
+#if !TESTING
+// Field-script config test: read the next word as a tag from config_changes.h or admg_config_extra.h
+// Set comparisonResult to 1 if the selected value is nonzero, or 0 otherwise
+void ADMG_ScriptTestConfig(struct ScriptContext *ctx)
+{
+    u32 tag = ScriptReadWord(ctx);
+    Script_RequestEffects(SCREFF_V1);
+    ctx->comparisonResult = ADMG_GetConfig(tag) != 0 ? 1 : 0;
+}
+
+ADMG_RETAIN_FUNCTION(ADMG_ScriptTestConfig);
 #endif

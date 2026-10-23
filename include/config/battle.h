@@ -448,7 +448,8 @@
 #define B_SLEEP_CLAUSE ADMG_CONFIG_EXTRA(B_SLEEP_CLAUSE)
 #define ADMG_DEFAULT_B_PARTNER_MONS_MARKED_SEEN      FALSE      // If set to TRUE, if your Double Battle partner sends out a Pokémon you haven't encountered yet, it will be marked as SEEN in your Pokédex.
 #define B_PARTNER_MONS_MARKED_SEEN ADMG_CONFIG_EXTRA(B_PARTNER_MONS_MARKED_SEEN)
-#define B_MULTI_HALF_TEAMS              FALSE      // If TRUE, trainers will be capped at 3 Pokémon each when there are 2 trainers on one side in a battle. If FALSE, per-battle capping may still be set using `Multi Party: Half` in `trainers.party`
+#define ADMG_DEFAULT_B_MULTI_HALF_TEAMS              FALSE      // If TRUE, trainers will be capped at 3 Pokémon each when there are 2 trainers on one side in a battle. If FALSE, per-battle capping may still be set using `Multi Party: Half` in `trainers.party`
+#define B_MULTI_HALF_TEAMS ADMG_CONFIG_EXTRA(B_MULTI_HALF_TEAMS)
 #define ADMG_DEFAULT_B_TERA_ORB_ALWAYS_CHARGED       FALSE      // Keep the Tera Orb charged regardless of B_FLAG_TERA_ORB_CHARGED
 #define B_TERA_ORB_ALWAYS_CHARGED ADMG_CONFIG_EXTRA(B_TERA_ORB_ALWAYS_CHARGED)
 

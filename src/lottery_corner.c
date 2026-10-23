@@ -147,23 +147,24 @@ static u8 GetMatchingDigits(u16 winNumber, u32 otId)
 // lottery numbers go from 0 to 99999, not 65535 (0xFFFF). Interestingly enough, the function that calls GetLotteryNumber shifts to u16, so it can't be anything above 65535 anyway.
 void SetLotteryNumber(u32 lotteryNum)
 {
-    #if OW_USE_DAILY_SEED_FOR_VANILLA_VARIABLES == FALSE
-    u16 lowNum = lotteryNum >> 16;
-    u16 highNum = lotteryNum;
+    if (OW_USE_DAILY_SEED_FOR_VANILLA_VARIABLES == FALSE)
+    {
+        u16 lowNum = lotteryNum >> 16;
+        u16 highNum = lotteryNum;
 
-    VarSet(VAR_POKELOT_RND1, highNum);
-    VarSet(VAR_POKELOT_RND2, lowNum);
-    #endif
+        VarSet(VAR_POKELOT_RND1, highNum);
+        VarSet(VAR_POKELOT_RND2, lowNum);
+    }
 }
 
 u32 GetLotteryNumber(void)
 {
-    #if OW_USE_DAILY_SEED_FOR_VANILLA_VARIABLES == FALSE
-    u16 highNum = VarGet(VAR_POKELOT_RND1);
-    u16 lowNum = VarGet(VAR_POKELOT_RND2);
-    return (lowNum << 16) | highNum;
-    #else
+    if (OW_USE_DAILY_SEED_FOR_VANILLA_VARIABLES == FALSE)
+    {
+        u16 highNum = VarGet(VAR_POKELOT_RND1);
+        u16 lowNum = VarGet(VAR_POKELOT_RND2);
+        return (lowNum << 16) | highNum;
+    }
     rng_value_t localRngState = LocalRandomSeed(gSaveBlock1Ptr->dailySeed ^ LOTTERY_CORNER_SALT);
     return LocalRandom32(&localRngState);
-    #endif
 }

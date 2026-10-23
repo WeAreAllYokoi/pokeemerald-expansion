@@ -173,7 +173,8 @@
 // Pokémon Center
 #define ADMG_DEFAULT_OW_IGNORE_EGGS_ON_HEAL           GEN_LATEST         // In Gen 4+, the nurse in the Pokémon Center does not heal Eggs on healing machine.
 #define OW_IGNORE_EGGS_ON_HEAL ADMG_CONFIG_EXTRA(OW_IGNORE_EGGS_ON_HEAL)
-#define OW_UNION_DISABLE_CHECK           FALSE              // When TRUE, the nurse does not inform the player if there is a trainer waiting in the Union Room. This speeds up the loading of the Pokémon Center.
+#define ADMG_DEFAULT_OW_UNION_DISABLE_CHECK           FALSE              // When TRUE, the nurse does not inform the player if there is a trainer waiting in the Union Room. This speeds up the loading of the Pokémon Center.
+#define OW_UNION_DISABLE_CHECK ADMG_CONFIG_EXTRA(OW_UNION_DISABLE_CHECK)
 #define OW_FLAG_MOVE_UNION_ROOM_CHECK    0                  // If this flag is set, the game will only check if players are in the Union Room while healing Pokémon, and not when players enter the Pokémon Center. This speeds up the loading of the Pokémon Center. This is ignored if OW_UNION_DISABLE_CHECK is TRUE.
 
 // Berry Blender
@@ -198,7 +199,8 @@
 
 
 // Daily Seed
-#define OW_USE_DAILY_SEED_FOR_VANILLA_VARIABLES     FALSE // If TRUE, use daily seed to compute mirage island chance and lottery corner tickets.
+#define ADMG_DEFAULT_OW_USE_DAILY_SEED_FOR_VANILLA_VARIABLES     FALSE // If TRUE, use daily seed to compute mirage island chance and lottery corner tickets.
+#define OW_USE_DAILY_SEED_FOR_VANILLA_VARIABLES ADMG_CONFIG_EXTRA(OW_USE_DAILY_SEED_FOR_VANILLA_VARIABLES)
                                                           // This has a side effect of removing the deterministic/anti save scumming aspect of the mirage island randomisation
 
 // Script Config
