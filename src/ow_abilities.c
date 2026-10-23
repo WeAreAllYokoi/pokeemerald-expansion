@@ -14,40 +14,71 @@ static UNUSED bool32 IsFalse(enum Species species);
 static UNUSED bool32 IsTrue(enum Species species);
 static UNUSED bool32 IsTrueIfUndiscoveredEggGroup(enum Species species);
 
-static const bool32 (*const sSynchronizeModes[])(enum Species) = 
+// Keep all Synchronize rule sets; SynchronizeRules chooses one from OW_SYNCHRONIZE_NATURE
+// Each row covers wild encounters, static encounters, roamers and gifts
+enum { SYNC_RULES_GEN_3, SYNC_RULES_UP_TO_GEN_5, SYNC_RULES_GEN_6, SYNC_RULES_GEN_7, SYNC_RULES_GEN_8, SYNC_RULES_LATER, SYNC_RULES_COUNT };
+
+static const bool32 (*const sSynchronizeModes[SYNC_RULES_COUNT][GIFTMON_ORIGIN + 1])(enum Species) =
 {
-#if OW_SYNCHRONIZE_NATURE == GEN_3
-    [WILDMON_ORIGIN] = HasHalfChance,
-    [STATIC_WILDMON_ORIGIN] = IsFalse,
-    [ROAMER_ORIGIN] = IsFalse,
-    [GIFTMON_ORIGIN] = IsFalse,
-#elif OW_SYNCHRONIZE_NATURE <= GEN_5
-    [WILDMON_ORIGIN] = HasHalfChance,
-    [STATIC_WILDMON_ORIGIN] = HasHalfChance,
-    [ROAMER_ORIGIN] = IsFalse,
-    [GIFTMON_ORIGIN] = IsFalse,
-#elif OW_SYNCHRONIZE_NATURE == GEN_6
-    [WILDMON_ORIGIN] = HasHalfChance,
-    [STATIC_WILDMON_ORIGIN] = HasHalfChance,
-    [ROAMER_ORIGIN] = IsFalse,
-    [GIFTMON_ORIGIN] = IsTrueIfUndiscoveredEggGroup,
-#elif OW_SYNCHRONIZE_NATURE == GEN_7
-    [WILDMON_ORIGIN] = HasHalfChance,
-    [STATIC_WILDMON_ORIGIN] = HasHalfChance,
-    [ROAMER_ORIGIN] = IsFalse,
-    [GIFTMON_ORIGIN] = IsTrue,
-#elif OW_SYNCHRONIZE_NATURE == GEN_8
-    [WILDMON_ORIGIN] = IsTrue,
-    [STATIC_WILDMON_ORIGIN] = IsFalse,
-    [ROAMER_ORIGIN] = IsTrue,
-    [GIFTMON_ORIGIN] = IsFalse,
-#else
-    [WILDMON_ORIGIN] = IsFalse,
-    [STATIC_WILDMON_ORIGIN] = IsFalse,
-    [ROAMER_ORIGIN] = IsFalse,
-    [GIFTMON_ORIGIN] = IsFalse,
-#endif
+    [SYNC_RULES_GEN_3] =
+    {
+        [WILDMON_ORIGIN] = HasHalfChance,
+        [STATIC_WILDMON_ORIGIN] = IsFalse,
+        [ROAMER_ORIGIN] = IsFalse,
+        [GIFTMON_ORIGIN] = IsFalse,
+    },
+    [SYNC_RULES_UP_TO_GEN_5] =
+    {
+        [WILDMON_ORIGIN] = HasHalfChance,
+        [STATIC_WILDMON_ORIGIN] = HasHalfChance,
+        [ROAMER_ORIGIN] = IsFalse,
+        [GIFTMON_ORIGIN] = IsFalse,
+    },
+    [SYNC_RULES_GEN_6] =
+    {
+        [WILDMON_ORIGIN] = HasHalfChance,
+        [STATIC_WILDMON_ORIGIN] = HasHalfChance,
+        [ROAMER_ORIGIN] = IsFalse,
+        [GIFTMON_ORIGIN] = IsTrueIfUndiscoveredEggGroup,
+    },
+    [SYNC_RULES_GEN_7] =
+    {
+        [WILDMON_ORIGIN] = HasHalfChance,
+        [STATIC_WILDMON_ORIGIN] = HasHalfChance,
+        [ROAMER_ORIGIN] = IsFalse,
+        [GIFTMON_ORIGIN] = IsTrue,
+    },
+    [SYNC_RULES_GEN_8] =
+    {
+        [WILDMON_ORIGIN] = IsTrue,
+        [STATIC_WILDMON_ORIGIN] = IsFalse,
+        [ROAMER_ORIGIN] = IsTrue,
+        [GIFTMON_ORIGIN] = IsFalse,
+    },
+    [SYNC_RULES_LATER] =
+    {
+        [WILDMON_ORIGIN] = IsFalse,
+        [STATIC_WILDMON_ORIGIN] = IsFalse,
+        [ROAMER_ORIGIN] = IsFalse,
+        [GIFTMON_ORIGIN] = IsFalse,
+    },
 };
+
+static u32 SynchronizeRules(void)
+{
+    u32 generation = OW_SYNCHRONIZE_NATURE;
+    if (generation == GEN_3)
+        return SYNC_RULES_GEN_3;
+    if (generation <= GEN_5)
+        return SYNC_RULES_UP_TO_GEN_5;
+    if (generation == GEN_6)
+        return SYNC_RULES_GEN_6;
+    if (generation == GEN_7)
+        return SYNC_RULES_GEN_7;
+    if (generation == GEN_8)
+        return SYNC_RULES_GEN_8;
+    return SYNC_RULES_LATER;
+}
 
 static const bool32 (*const sCuteCharmModes[])(enum Species) = 
 {
@@ -115,7 +146,7 @@ u32 GetSynchronizedNature(enum GeneratedMonOrigin origin, enum Species species)
 {
     if (!DoesLeadingMonHaveAbilityEffect(sForceNatureAbilities))
         return NATURE_RANDOM;
-    if (!(sSynchronizeModes[origin](species)))
+    if (!(sSynchronizeModes[SynchronizeRules()][origin](species)))
         return NATURE_RANDOM;
     return GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_PERSONALITY) % NUM_NATURES;
 }

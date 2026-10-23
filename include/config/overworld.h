@@ -4,7 +4,8 @@
 // Movement config
 #define ADMG_DEFAULT_OW_RUNNING_INDOORS          GEN_LATEST  // In Gen4+, players are allowed to run indoors.
 #define OW_RUNNING_INDOORS ADMG_CONFIG_EXTRA(OW_RUNNING_INDOORS)
-#define SLOW_MOVEMENT_ON_STAIRS     FALSE       // If enabled, the player will move slower up/down stairs like in FR
+#define ADMG_DEFAULT_SLOW_MOVEMENT_ON_STAIRS     FALSE       // If enabled, the player will move slower up/down stairs like in FR
+#define SLOW_MOVEMENT_ON_STAIRS ADMG_CONFIG_EXTRA(SLOW_MOVEMENT_ON_STAIRS)
 
 // Other settings
 #define ADMG_DEFAULT_OW_POISON_DAMAGE                GEN_LATEST // In Gen4, Pokémon no longer faint from Poison in the overworld. In Gen5+, they no longer take damage at all.
@@ -89,7 +90,10 @@
 #define OW_FOLLOWERS_ALLOWED_MET_LOC (0)
 
 // Out-of-battle Ability effects
-#define OW_SYNCHRONIZE_NATURE       GEN_LATEST // In Gen8+, if a Pokémon with Synchronize leads the party, wild Pokémon will always have their same Nature as opposed to the 50% chance in previous games. Gift Pokémon excluded.
+#define ADMG_DEFAULT_OW_SYNCHRONIZE_NATURE       GEN_LATEST // With a Synchronize lead, GEN_8 always matches wild and roaming Pokémon's natures
+// Earlier settings give wild Pokémon a 50% chance; other encounter types follow sSynchronizeModes
+// Settings above GEN_8 don't apply Synchronize
+#define OW_SYNCHRONIZE_NATURE ADMG_CONFIG_EXTRA(OW_SYNCHRONIZE_NATURE)
                                                // In USUM (here GEN_7), if a Pokémon with Synchronize leads the party, gift Pokémon will always have their same Nature regardless of their Egg Group.
                                                // In ORAS (here GEN_6), if a Pokémon with Synchronize leads the party, gift Pokémon from the No Eggs Discovered Egg Group will always have their same Nature.
 #define ADMG_DEFAULT_OW_SUPER_LUCK               GEN_LATEST // In Gen8+, if a Pokémon with Super Luck is leading the party, the wild held item rate is increased to 60%/20%.

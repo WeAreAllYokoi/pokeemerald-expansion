@@ -1,4 +1,5 @@
 #include "global.h"
+#include "constants/admg_config_extra.h"
 #include "admg_battle_gimmicks.h"
 #include "battle_dynamax.h"
 #include "admg_retention.h"
@@ -10257,6 +10258,24 @@ ARM_FUNC u32 GetBattlerVolatile(enum BattlerId battler, enum Volatile _volatile)
 // Sets the value of a volatile status flag for a certain battler
 // Primarily used for the debug menu and scripts. Outside of it explicit references are preferred
 // Uses Arm for the same Thumb compiler bug as GetBattlerVolatile, which full-width fields trigger here too
+// Check that the configured maxima fit the timer fields sized by ADMG_VOLATILE_TIMER_MAX
+// Allow up to 3 extra turns for Disable and keep one spare count for rampage
+#define ADMG_VOLATILE_TIMER_CAPACITY ((1u << BIT_SIZE(ADMG_VOLATILE_TIMER_MAX)) - 1)
+STATIC_ASSERT(ADMG_CONFIG_EXTRA_MAX_B_DISABLE_TIMER + 3 <= ADMG_VOLATILE_TIMER_CAPACITY, AdmgVolatileFieldHoldsDisableTimer)
+STATIC_ASSERT(ADMG_CONFIG_EXTRA_MAX_B_EMBARGO_TIMER + 0 <= ADMG_VOLATILE_TIMER_CAPACITY, AdmgVolatileFieldHoldsEmbargoTimer)
+STATIC_ASSERT(ADMG_CONFIG_EXTRA_MAX_B_ENCORE_TIMER + 0 <= ADMG_VOLATILE_TIMER_CAPACITY, AdmgVolatileFieldHoldsEncoreTimer)
+STATIC_ASSERT(ADMG_CONFIG_EXTRA_MAX_B_HEAL_BLOCK_TIMER + 0 <= ADMG_VOLATILE_TIMER_CAPACITY, AdmgVolatileFieldHoldsHealBlockTimer)
+STATIC_ASSERT(ADMG_CONFIG_EXTRA_MAX_B_LASER_FOCUS_TIMER + 0 <= ADMG_VOLATILE_TIMER_CAPACITY, AdmgVolatileFieldHoldsLaserFocusTimer)
+STATIC_ASSERT(ADMG_CONFIG_EXTRA_MAX_B_MAGNET_RISE_TIMER + 0 <= ADMG_VOLATILE_TIMER_CAPACITY, AdmgVolatileFieldHoldsMagnetRiseTimer)
+STATIC_ASSERT(ADMG_CONFIG_EXTRA_MAX_B_RAMPAGE_TURNS + 1 <= ADMG_VOLATILE_TIMER_CAPACITY, AdmgVolatileFieldHoldsRampageTurns)
+STATIC_ASSERT(ADMG_CONFIG_EXTRA_MAX_B_SLOW_START_TIMER + 0 <= ADMG_VOLATILE_TIMER_CAPACITY, AdmgVolatileFieldHoldsSlowStartTimer)
+STATIC_ASSERT(ADMG_CONFIG_EXTRA_MAX_B_SYRUP_BOMB_TIMER + 0 <= ADMG_VOLATILE_TIMER_CAPACITY, AdmgVolatileFieldHoldsSyrupBombTimer)
+STATIC_ASSERT(ADMG_CONFIG_EXTRA_MAX_B_TAUNT_TIMER + 0 <= ADMG_VOLATILE_TIMER_CAPACITY, AdmgVolatileFieldHoldsTauntTimer)
+STATIC_ASSERT(ADMG_CONFIG_EXTRA_MAX_B_TELEKINESIS_TIMER + 0 <= ADMG_VOLATILE_TIMER_CAPACITY, AdmgVolatileFieldHoldsTelekinesisTimer)
+STATIC_ASSERT(ADMG_CONFIG_EXTRA_MAX_B_THROAT_CHOP_TIMER + 0 <= ADMG_VOLATILE_TIMER_CAPACITY, AdmgVolatileFieldHoldsThroatChopTimer)
+STATIC_ASSERT(ADMG_CONFIG_EXTRA_MAX_B_TORMENT_TIMER + 0 <= ADMG_VOLATILE_TIMER_CAPACITY, AdmgVolatileFieldHoldsTormentTimer)
+STATIC_ASSERT(ADMG_CONFIG_EXTRA_MAX_B_WRAP_TURNS + 0 <= ADMG_VOLATILE_TIMER_CAPACITY, AdmgVolatileFieldHoldsWrapTurns)
+
 ARM_FUNC void SetMonVolatile(enum BattlerId battler, enum Volatile _volatile, u32 newValue)
 {
     switch (_volatile)

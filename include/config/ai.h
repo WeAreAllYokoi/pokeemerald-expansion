@@ -119,7 +119,8 @@
 #define BOOST_INTO_HAZE_CHANCE ADMG_CONFIG_EXTRA(BOOST_INTO_HAZE_CHANCE)
 #define ADMG_DEFAULT_SHOULD_RECOVER_CHANCE                                   50 // Chance the AI will give recovery moves score increase if less than ENABLE_RECOVERY_THRESHOLD and in no immediate danger
 #define SHOULD_RECOVER_CHANCE ADMG_CONFIG_EXTRA(SHOULD_RECOVER_CHANCE)
-#define ENABLE_RECOVERY_THRESHOLD                               60 // HP percentage beneath which SHOULD_RECOVER_CHANCE is active
+#define ADMG_DEFAULT_ENABLE_RECOVERY_THRESHOLD                               60 // HP percentage beneath which SHOULD_RECOVER_CHANCE is active
+#define ENABLE_RECOVERY_THRESHOLD ADMG_CONFIG_EXTRA(ENABLE_RECOVERY_THRESHOLD)
 #define ADMG_DEFAULT_SUCKER_PUNCH_CHANCE                                     50 // Chance for the AI to not use Sucker Punch if the player has a status move
 #define SUCKER_PUNCH_CHANCE ADMG_CONFIG_EXTRA(SUCKER_PUNCH_CHANCE)
 #define ADMG_DEFAULT_SUCKER_PUNCH_PREDICTION_CHANCE                          50 // Additional chance for the AI to not use Sucker Punch if actively predicting a status move if SUCKER_PUNCH_CHANCE fails

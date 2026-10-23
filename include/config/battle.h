@@ -332,7 +332,8 @@
 #define B_SKY_BATTLE_STRICT_ELIGIBILITY   FALSE // If TRUE, Sky Battles will use the eligibility from X and Y. If FALSE, all Flying-types and Pokémon with Levitate are allowed.
 
 // Flag and Var settings
-#define B_RESET_FLAGS_VARS_AFTER_WHITEOUT TRUE // If TRUE, Overworld_ResetBattleFlagsAndVars will reset battle-related flags and vars when the player whites out.
+#define ADMG_DEFAULT_B_RESET_FLAGS_VARS_AFTER_WHITEOUT TRUE // If TRUE, Overworld_ResetBattleFlagsAndVars will reset battle-related flags and vars when the player whites out.
+#define B_RESET_FLAGS_VARS_AFTER_WHITEOUT ADMG_CONFIG_EXTRA(B_RESET_FLAGS_VARS_AFTER_WHITEOUT)
 
 // Ingame partner flag
 #define ADMG_DEFAULT_B_SHOW_PARTNER_TARGET             FALSE // Shows the battler partner will target.

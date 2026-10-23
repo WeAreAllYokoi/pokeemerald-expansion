@@ -445,7 +445,7 @@ void Overworld_ResetStateAfterDigEscRope(void)
     FlagClear(FLAG_SYS_USE_FLASH);
 }
 
-#if B_RESET_FLAGS_VARS_AFTER_WHITEOUT == TRUE
+// Keep this available; Overworld_ResetStateAfterWhiteOut calls it when B_RESET_FLAGS_VARS_AFTER_WHITEOUT is enabled
 void Overworld_ResetBattleFlagsAndVars(void)
 {
     ResetStartingStatuses();
@@ -467,7 +467,6 @@ void Overworld_ResetBattleFlagsAndVars(void)
     FlagClear(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_SKY_BATTLE));
     FlagClear(ADMG_GetFeatureBinding(ADMG_BINDING_B_FLAG_NO_WHITEOUT));
 }
-#endif
 
 static void Overworld_ResetStateAfterWhiteOut(void)
 {

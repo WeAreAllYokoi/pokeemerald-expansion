@@ -12,7 +12,7 @@
 
 #define X_ITEM_STAGES ((B_X_ITEMS_BUFF >= GEN_7) ? 2 : 1)
 
-#define TREASURE_FACTOR ((I_SELL_VALUE_FRACTION >= GEN_9) ? 2 : 1)
+#define TREASURE_FACTOR ((ADMG_DEFAULT_I_SELL_VALUE_FRACTION >= GEN_9) ? 2 : 1) // Double prices that use TREASURE_FACTOR when the configured sell-value setting is GEN_9 or later
 
 #define ITEM_NAME(str) COMPOUND_STRING_SIZE_LIMIT(str, ITEM_NAME_LENGTH)
 #define ITEM_PLURAL_NAME(str) COMPOUND_STRING_SIZE_LIMIT(str, ITEM_NAME_PLURAL_LENGTH)
