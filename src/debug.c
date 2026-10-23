@@ -1765,7 +1765,7 @@ static void DebugAction_ToggleFlag(u8 taskId, void *flagToggleFunc)
 
 static void DebugAction_OpenSubMenuCreateFollowerNPC(u8 taskId, const struct DebugMenuOption *items)
 {
-    if (FNPC_ENABLE_NPC_FOLLOWERS)
+    if (ADMG_GetFeaturePolicy(ADMG_POLICY_NPC_FOLLOWERS))
         DebugAction_OpenSubMenuWithType(taskId, items, DEBUG_BASIC_MENU);
     else
         Debug_DestroyMenu_Full_Script(taskId, Debug_Follower_NPC_Not_Enabled);
@@ -3501,7 +3501,7 @@ static const struct DebugSelectionStep sEVsSelectionStep = {
     .stepUpdate = DebugSelectionStep_UpdateEVs,
     .stepConfirm = DebugSelectionStep_GenericInputConfirm,
     .minValue = 0,
-    .maxValue = MAX_PER_STAT_EVS_SOURCE,
+    .maxValue = MAX_PER_STAT_EVS_ANY_CAP,
     .digits = 3,
     .substepCount = 6
 };
@@ -4051,7 +4051,7 @@ static void DebugAction_CreateFollowerNPC(u8 taskId)
 
 static void DebugAction_DestroyFollowerNPC(u8 taskId)
 {
-    if (FNPC_ENABLE_NPC_FOLLOWERS)
+    if (ADMG_GetFeaturePolicy(ADMG_POLICY_NPC_FOLLOWERS))
     {
         Debug_DestroyMenu_Full(taskId);
         LockPlayerFieldControls();

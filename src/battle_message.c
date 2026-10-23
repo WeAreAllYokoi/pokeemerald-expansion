@@ -1,4 +1,6 @@
 #include "global.h"
+#include "admg_native.h"
+#include "admg_retention.h"
 #include "admg_trainer_actor.h"
 #include "admg_state.h"
 #include "battle.h"
@@ -4130,6 +4132,15 @@ ADMG_reject:
     ADMG_StateAccessRejected(srcID, __func__);
 }
 
+// Choose PP-window colors from B_SHOW_EFFECTIVENESS instead of the table's compiled default
+// Pack the foreground color in the low byte and the shadow color in the next byte
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetBattlePpWindowColors(void)
+{
+    return B_SHOW_EFFECTIVENESS != SHOW_EFFECTIVENESS_NEVER ? 13 | (15 << 8) : 12 | (11 << 8);
+}
+
+ADMG_RETAIN_FUNCTION(ADMG_GetBattlePpWindowColors);
+
 void BattlePutTextOnWindow(const u8 *text, u8 windowId)
 {
     const struct BattleWindowText *textInfo = sBattleTextOnWindowsInfo[gBattleScripting.windowsType];
@@ -4159,10 +4170,11 @@ void BattlePutTextOnWindow(const u8 *text, u8 windowId)
     printerTemplate.letterSpacing = textInfo[windowId].letterSpacing;
     printerTemplate.lineSpacing = textInfo[windowId].lineSpacing;
     printerTemplate.color = textInfo[windowId].color;
-    if (windowId == B_WIN_PP) // Choose PP-window colors from the current B_SHOW_EFFECTIVENESS setting
+    if (windowId == B_WIN_PP)
     {
-        printerTemplate.color.foreground = B_SHOW_EFFECTIVENESS != SHOW_EFFECTIVENESS_NEVER ? 13 : 12;
-        printerTemplate.color.shadow = B_SHOW_EFFECTIVENESS != SHOW_EFFECTIVENESS_NEVER ? 15 : 11;
+        u32 colors = ADMG_GetBattlePpWindowColors();
+        printerTemplate.color.foreground = colors & 0xFF;
+        printerTemplate.color.shadow = colors >> 8;
     }
 
     if (B_WIN_MOVE_NAME_1 <= windowId && windowId <= B_WIN_MOVE_NAME_4)

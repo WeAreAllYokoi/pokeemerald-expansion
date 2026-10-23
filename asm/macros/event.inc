@@ -2769,55 +2769,44 @@
 	.endm
 
 @ Follower NPCs
+	@ Keep these commands assembled so NPC followers can be enabled at runtime
 
 	@ Sets an existing NPC up to follow the player.
 	@ Follower flags are defined in include/constants/follower_npc.h
 	@ If you want to specify a battle partner without specifying a custom script, you can set the script parameter to 0.
 	.macro setfollowernpc localId:req, flags:req, script=0, battlePartner=0
-	.if FNPC_ENABLE_NPC_FOLLOWERS
-		checkfollowernpc
-		compare VAR_RESULT, FALSE
-		goto_if_ne 1f
-		hidefollower
-		waitmovement OBJ_EVENT_ID_FOLLOWER
-		callnative ScriptSetFollowerNPC
-		.if \script == 0
-			.set setScript, FALSE
-		.else
-			.set setScript, TRUE
-		.endif
-		.byte \localId
-		.2byte \flags
-		.byte setScript
-		.2byte \battlePartner
-		.4byte \script
-		updatefollowingmon
-		1:
+	checkfollowernpc
+	compare VAR_RESULT, FALSE
+	goto_if_ne 1f
+	hidefollower
+	waitmovement OBJ_EVENT_ID_FOLLOWER
+	callnative ScriptSetFollowerNPC
+	.if \script == 0
+		.set setScript, FALSE
 	.else
-		.error "setfollowernpc unavailable with FNPC_ENABLE_NPC_FOLLOWERS defined as FALSE"
+		.set setScript, TRUE
 	.endif
+	.byte \localId
+	.2byte \flags
+	.byte setScript
+	.2byte \battlePartner
+	.4byte \script
+	updatefollowingmon
+	1:
 	.endm
 
 	@ Creates a new follower NPC with the specified graphics id.
 	.macro createfollowernpc gfx:req, flags:req, script=0, battlePartner=0
-	.if FNPC_ENABLE_NPC_FOLLOWERS
-		callnative ScriptCreateFollowerNPC
-		.2byte \gfx
-		.2byte \flags
-		.4byte \script
-		.2byte \battlePartner
-	.else
-		.error "createfollowernpc unavailable with FNPC_ENABLE_NPC_FOLLOWERS defined as FALSE"
-	.endif
+	callnative ScriptCreateFollowerNPC
+	.2byte \gfx
+	.2byte \flags
+	.4byte \script
+	.2byte \battlePartner
 	.endm
 
 	@ Remove the follower NPC (assumes there will only ever be one).
 	.macro destroyfollowernpc
-	.if FNPC_ENABLE_NPC_FOLLOWERS
-		callnative ScriptDestroyFollowerNPC
-	.else
-		.error "destroyfollowernpc unavailable with FNPC_ENABLE_NPC_FOLLOWERS defined as FALSE"
-	.endif
+	callnative ScriptDestroyFollowerNPC
 	.endm
 
 	@ Makes the player and follower NPC face one another.

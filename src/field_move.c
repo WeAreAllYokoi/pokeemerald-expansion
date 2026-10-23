@@ -1,4 +1,6 @@
 #include "global.h"
+#include "admg_native.h"
+#include "admg_retention.h"
 #include "event_data.h"
 #include "admg_state.h"
 #include "field_move.h"
@@ -209,3 +211,12 @@ const struct FieldMoveInfo gFieldMoveInfo[FIELD_MOVES_COUNT] =
         .hideIfLocked = TRUE,
     },
 };
+
+// Expose the inline IsFieldMoveUnlocked check to native callers, rejecting out-of-range IDs
+// Rock Climb and Defog follow OW_ROCK_CLIMB_FIELD_MOVE and OW_DEFOG_FIELD_MOVE at runtime
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_IsFieldMoveUnlocked(ADMG_Word fieldMove)
+{
+    return fieldMove < FIELD_MOVES_COUNT && IsFieldMoveUnlocked(fieldMove);
+}
+
+ADMG_RETAIN_FUNCTION(ADMG_IsFieldMoveUnlocked);

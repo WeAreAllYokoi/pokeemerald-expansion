@@ -1706,7 +1706,7 @@ static void Task_OWEApproachForBattle(u8 taskId)
                 gSprites[followerMon->spriteId].animCmdIndex = 0;
                 ObjectEventSetHeldMovement(followerMon, MOVEMENT_ACTION_ENTER_POKEBALL);
             }
-            else if (collidingObject == idFollowerNPC && FNPC_ENABLE_NPC_FOLLOWERS && PlayerHasFollowerNPC() && !followerNPC->invisible)
+            else if (collidingObject == idFollowerNPC && ADMG_GetFeaturePolicy(ADMG_POLICY_NPC_FOLLOWERS) && PlayerHasFollowerNPC() && !followerNPC->invisible)
             {
                 enum Direction direction = DetermineFollowerNPCDirection(&gObjectEvents[gPlayerAvatar.objectEventId], followerNPC);
                 ClearObjectEventMovement(followerNPC, &gSprites[followerNPC->spriteId]);

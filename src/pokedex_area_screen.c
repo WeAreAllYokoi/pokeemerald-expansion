@@ -774,11 +774,11 @@ static void Task_ShowPokedexAreaScreen(u8 taskId)
         CreateAreaMarkerSprites();
         break;
     case 7:
-        if (!OW_TIME_OF_DAY_ENCOUNTERS)
+        if (!ADMG_GetFeaturePolicy(ADMG_POLICY_TIME_ENCOUNTERS))
             LoadAreaUnknownGraphics();
         break;
     case 8:
-        if (!OW_TIME_OF_DAY_ENCOUNTERS)
+        if (!ADMG_GetFeaturePolicy(ADMG_POLICY_TIME_ENCOUNTERS))
             CreateAreaUnknownSprites();
         break;
     case 9:
@@ -787,7 +787,7 @@ static void Task_ShowPokedexAreaScreen(u8 taskId)
     case 10:
         SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG0 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_BG0 | BLDCNT_TGT2_ALL);
         StartAreaGlow();
-        if (OW_TIME_OF_DAY_ENCOUNTERS)
+        if (ADMG_GetFeaturePolicy(ADMG_POLICY_TIME_ENCOUNTERS))
         {
             AddTimeOfDayLabels();
             ShowEncounterInfoLabel();
@@ -895,14 +895,14 @@ static void Task_HandlePokedexAreaScreenInput(u8 taskId)
             gTasks[taskId].data[1] = 2;
             PlaySE(SE_DEX_PAGE);
         }
-        else if (JOY_NEW(DPAD_UP) && OW_TIME_OF_DAY_ENCOUNTERS == TRUE)
+        else if (JOY_NEW(DPAD_UP) && ADMG_GetFeaturePolicy(ADMG_POLICY_TIME_ENCOUNTERS))
         {
             gTasks[taskId].data[1] = 3;
             gAreaTimeOfDay = TryDecrementTimeOfDay(gAreaTimeOfDay);
             sPokedexAreaScreen->areaState = DEX_UPDATE_AREA_SCREEN;
             PlaySE(SE_DEX_PAGE);
         }
-        else if (JOY_NEW(DPAD_DOWN) && OW_TIME_OF_DAY_ENCOUNTERS == TRUE)
+        else if (JOY_NEW(DPAD_DOWN) && ADMG_GetFeaturePolicy(ADMG_POLICY_TIME_ENCOUNTERS))
         {
             gTasks[taskId].data[1] = 3;
             gAreaTimeOfDay = TryIncrementTimeOfDay(gAreaTimeOfDay);
@@ -924,7 +924,7 @@ static void Task_HandlePokedexAreaScreenInput(u8 taskId)
         if (gPaletteFade.active)
             return;
         DestroyAreaScreenSprites();
-        if (OW_TIME_OF_DAY_ENCOUNTERS)
+        if (ADMG_GetFeaturePolicy(ADMG_POLICY_TIME_ENCOUNTERS))
         {
             ClearAreaWindowLabel(DEX_AREA_LABEL_TIME_OF_DAY);
             ClearAreaWindowLabel(DEX_AREA_LABEL_AREA_UNKNOWN);
@@ -988,7 +988,7 @@ static void DestroyAreaScreenSprites(void)
     for (i = 0; i < sPokedexAreaScreen->numAreaMarkerSprites; i++)
         DestroySprite(sPokedexAreaScreen->areaMarkerSprites[i]);
 
-    if (!OW_TIME_OF_DAY_ENCOUNTERS)
+    if (!ADMG_GetFeaturePolicy(ADMG_POLICY_TIME_ENCOUNTERS))
     {
         // Destroy "Area Unknown" sprites
         FreeSpriteTilesByTag(TAG_AREA_UNKNOWN);

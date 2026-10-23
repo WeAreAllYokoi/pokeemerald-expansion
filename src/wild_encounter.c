@@ -463,7 +463,7 @@ ADMG_NATIVE_ENTRY u32 GetCurrentMapWildMonHeaderId(void)
 ADMG_NATIVE_ENTRY u32 ADMG_GetTimeEncounterFallback(void)
 {
     u32 selected = ADMG_GetFeatureSetting(ADMG_SETTING_TIME_ENCOUNTER_FALLBACK);
-    return selected < TIMES_OF_DAY_COUNT ? selected : OW_TIME_OF_DAY_FALLBACK;
+    return selected < TIMES_OF_DAY_COUNT ? selected : ADMG_GetFeatureSettingDefault(ADMG_SETTING_TIME_ENCOUNTER_FALLBACK);
 }
 
 static const struct WildPokemonInfo *ADMG_EncounterInfoAt(u32 headerId, u32 timeOfDay, u32 area)
