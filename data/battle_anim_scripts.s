@@ -24255,11 +24255,13 @@ gBattleAnimMove_LeechLife::
 	waitforvisualfinish
 	simple_palette_blend selector=F_PAL_BG, delay=1, initial_blend_y=0, target_blend_y=7, color=RGB_BLACK
 	waitforvisualfinish
-.if B_UPDATED_MOVE_DATA >= GEN_7
-	call GigaDrainAbsorbEffect
-.else
+	createvisualtask AnimTask_UpdatedMoveDataAtLeast, 2, GEN_7 @ ADMG: B_UPDATED_MOVE_DATA chosen at run time
+	jumprettrue LeechLifeUpdatedAbsorb
 	call AbsorbEffect
-.endif
+	goto LeechLifeAbsorbDone
+LeechLifeUpdatedAbsorb:
+	call GigaDrainAbsorbEffect
+LeechLifeAbsorbDone:
 	waitforvisualfinish
 	delay 15
 	call HealingEffect
@@ -25382,11 +25384,13 @@ gBattleAnimMove_PoisonGas::
 	createsprite gPoisonGasCloudSpriteTemplate, ANIM_TARGET, 0, 64, 0, 0, -32, -6, 4192, 1072, 0
 	delay 40
 	loopsewithpan SE_M_MIST, SOUND_PAN_TARGET, 28, 6
-.if B_UPDATED_MOVE_DATA >= GEN_5
-	blend_color_cycle selector=F_PAL_DEF_SIDE, delay=6, num_blends=2, initial_blend_y=0, target_blend_y=12, color=RGB(26, 0, 26)
-.else
+	createvisualtask AnimTask_UpdatedMoveDataAtLeast, 2, GEN_5 @ ADMG: B_UPDATED_MOVE_DATA chosen at run time
+	jumprettrue PoisonGasUpdatedBlend
 	blend_color_cycle selector=F_PAL_TARGET, delay=6, num_blends=2, initial_blend_y=0, target_blend_y=12, color=RGB(26, 0, 26)
-.endif
+	goto PoisonGasBlendDone
+PoisonGasUpdatedBlend:
+	blend_color_cycle selector=F_PAL_DEF_SIDE, delay=6, num_blends=2, initial_blend_y=0, target_blend_y=12, color=RGB(26, 0, 26)
+PoisonGasBlendDone:
 	waitforvisualfinish
 	blendoff
 	clearmonbg ANIM_DEF_PARTNER

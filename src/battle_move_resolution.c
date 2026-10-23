@@ -75,7 +75,7 @@ static bool32 TryFormChangeBeforeMove(void)
 
 static enum CancelerResult CancelerStanceChangeOne(struct BattleCalcValues *cv)
 {
-    if (B_STANCE_CHANGE_FAIL < GEN_7 && gChosenMove == cv->move && TryFormChangeBeforeMove())
+    if (GetConfig(B_STANCE_CHANGE_FAIL) < GEN_7 && gChosenMove == cv->move && TryFormChangeBeforeMove())
         return CANCELER_RESULT_RUN_SCRIPT_AND_INCREMENT;
     return CANCELER_RESULT_SUCCESS;
 }
@@ -461,7 +461,7 @@ static enum CancelerResult CancelerGhost(struct BattleCalcValues *cv) // GHOST i
 static enum CancelerResult CancelerParalyzed(struct BattleCalcValues *cv)
 {
     if (gBattleMons[cv->battlerAtk].status1 & STATUS1_PARALYSIS
-        && !(B_MAGIC_GUARD == GEN_4 && IsAbilityAndRecord(cv->battlerAtk, cv->abilities[cv->battlerAtk], ABILITY_MAGIC_GUARD))
+        && !(GetConfig(B_MAGIC_GUARD) == GEN_4 && IsAbilityAndRecord(cv->battlerAtk, cv->abilities[cv->battlerAtk], ABILITY_MAGIC_GUARD))
         && (RandomWeighted(RNG_PARALYSIS, (GetConfig(B_PARALYSIS_CHANCE) >= GEN_CHAMPIONS ? 7 : 3), 1)))
     {
         CancelMultiTurnMoves(gBattlerAttacker);
@@ -637,7 +637,7 @@ static enum CancelerResult CancelerThaw(struct BattleCalcValues *cv)
 
 static enum CancelerResult CancelerStanceChangeTwo(struct BattleCalcValues *cv)
 {
-    if (B_STANCE_CHANGE_FAIL >= GEN_7 && gChosenMove == cv->move && TryFormChangeBeforeMove())
+    if (GetConfig(B_STANCE_CHANGE_FAIL) >= GEN_7 && gChosenMove == cv->move && TryFormChangeBeforeMove())
         return CANCELER_RESULT_RUN_SCRIPT_AND_INCREMENT;
     return CANCELER_RESULT_SUCCESS;
 }
@@ -878,7 +878,7 @@ static bool32 HandleMoveTargetRedirection(struct BattleCalcValues *cv, enum Move
         for (battler = 0; battler < gBattlersCount; battler++)
         {
             ability = cv->abilities[battler];
-            if ((B_REDIRECT_ABILITY_ALLIES >= GEN_4 || !IsBattlerAlly(cv->battlerAtk, battler))
+            if ((GetConfig(B_REDIRECT_ABILITY_ALLIES) >= GEN_4 || !IsBattlerAlly(cv->battlerAtk, battler))
                 && battler != cv->battlerAtk
                 && battler != cv->battlerDef
                 && ((ability == ABILITY_LIGHTNING_ROD && moveType == TYPE_ELECTRIC)
@@ -1253,7 +1253,7 @@ static enum CancelerResult CancelerMoveFailure(struct BattleCalcValues *cv)
             battleScript = BattleScript_ButItFailed;
         break;
     case EFFECT_FOLLOW_ME:
-        if (B_UPDATED_MOVE_DATA >= GEN_8 && !(gBattleTypeFlags & BATTLE_TYPE_DOUBLE))
+        if (GetConfig(B_UPDATED_MOVE_DATA) >= GEN_8 && !(gBattleTypeFlags & BATTLE_TYPE_DOUBLE))
             battleScript = BattleScript_ButItFailed;
         break;
     case EFFECT_LAST_RESORT:
@@ -3277,7 +3277,7 @@ static enum MoveEndResult MoveEndProtectLikeEffect(struct BattleCalcValues *cv)
         break;
     case PROTECT_KINGS_SHIELD:
     {
-        s32 stage = (B_KINGS_SHIELD_LOWER_ATK >= GEN_8) ? -1 : -2;
+        s32 stage = (GetConfig(B_KINGS_SHIELD_LOWER_ATK) >= GEN_8) ? -1 : -2;
         gEffectBattler = gBattlerAttacker;
         SetStatChange(gEffectBattler, STAT_ATK, stage);
         BattleScriptCall(BattleScript_KingsShieldEffect);
@@ -4123,22 +4123,22 @@ static enum MoveEndResult MoveEndMoveBlockRecoil(struct BattleCalcValues *cv)
          && !gBattleStruct->unableToUseMove)
         {
             s32 recoil = 0;
-            if (B_CRASH_IF_TARGET_IMMUNE == GEN_4 && gBattleStruct->moveResultFlags[cv->battlerDef] & MOVE_RESULT_DOESNT_AFFECT_FOE)
+            if (GetConfig(B_CRASH_IF_TARGET_IMMUNE) == GEN_4 && gBattleStruct->moveResultFlags[cv->battlerDef] & MOVE_RESULT_DOESNT_AFFECT_FOE)
             {
                 recoil = GetNonDynamaxMaxHP(cv->battlerDef) / 2;
             }
-            if (B_RECOIL_IF_MISS_DMG >= GEN_5)
+            if (GetConfig(B_RECOIL_IF_MISS_DMG) >= GEN_5)
             {
                 recoil = GetNonDynamaxMaxHP(cv->battlerAtk) / 2;
             }
-            else if (B_RECOIL_IF_MISS_DMG >= GEN_3)
+            else if (GetConfig(B_RECOIL_IF_MISS_DMG) >= GEN_3)
             {
                 if ((GetNonDynamaxMaxHP(cv->battlerDef) / 2) < gBattleStruct->moveDamage[cv->battlerDef])
                     recoil = gBattleStruct->moveDamage[cv->battlerDef];
                 else
                     recoil = GetNonDynamaxMaxHP(cv->battlerDef) / 2;
             }
-            else if (B_RECOIL_IF_MISS_DMG == GEN_2)
+            else if (GetConfig(B_RECOIL_IF_MISS_DMG) == GEN_2)
             {
                 recoil = gBattleStruct->moveDamage[cv->battlerDef] / 8;
             }
@@ -4245,7 +4245,7 @@ static enum MoveEndResult MoveEndMoveBlock(struct BattleCalcValues *cv)
         case EFFECT_KNOCK_OFF:
             if (gBattleMons[battlerDef].item != ITEM_NONE
              && IsBattlerTurnDamaged(battlerDef, EXCLUDING_SUBSTITUTES)
-             && !(B_KNOCK_OFF_REMOVAL >= GEN_5 && side == B_SIDE_PLAYER && !(gBattleTypeFlags & BATTLE_TYPE_TRAINER))
+             && !(GetConfig(B_KNOCK_OFF_REMOVAL) >= GEN_5 && side == B_SIDE_PLAYER && !(gBattleTypeFlags & BATTLE_TYPE_TRAINER))
              && CanBattlerGetOrLoseItem(battlerDef, cv->battlerAtk, gBattleMons[battlerDef].item)
              && !NoAliveMonsForEitherParty())
             {
@@ -4267,7 +4267,7 @@ static enum MoveEndResult MoveEndMoveBlock(struct BattleCalcValues *cv)
                 CheckSetUnburden(battlerDef);
 
                 // In Gen 5+, Knock Off removes the target's item rather than rendering it unusable
-                if (B_KNOCK_OFF_REMOVAL >= GEN_5)
+                if (GetConfig(B_KNOCK_OFF_REMOVAL) >= GEN_5)
                 {
                     BtlController_EmitSetMonData(battlerDef, B_COMM_TO_CONTROLLER, REQUEST_HELDITEM_BATTLE, 0, sizeof(gBattleMons[battlerDef].item), &gBattleMons[battlerDef].item);
                     MarkBattlerForControllerExec(battlerDef);
@@ -4885,7 +4885,7 @@ static enum MoveEndResult MoveEndPickpocket(struct BattleCalcValues *cv)
 
                         PREPARE_MON_NICK_WITH_PREFIX_LOWER_BUFFER(gBattleTextBuff2, cv->battlerAtk, originalAttackerPartyId);
 
-                        if (B_TRAINERS_KNOCK_OFF_ITEMS == TRUE
+                        if (GetConfig(B_TRAINERS_KNOCK_OFF_ITEMS) == TRUE
                          && gBattleTypeFlags & BATTLE_TYPE_TRAINER
                          && !(gBattleTypeFlags & BATTLE_TYPE_FRONTIER)
                          && IsOnPlayerSide(cv->battlerAtk)
@@ -5886,7 +5886,7 @@ static void SetSameMoveTurnValues(enum BattleMoveEffects moveEffect)
 
 static void TryClearChargeVolatile(enum Type moveType)
 {
-    if (B_CHARGE < GEN_9) // Prior to gen9, charge is cleared during the end turn
+    if (GetConfig(B_CHARGE) < GEN_9) // Prior to gen9, charge is cleared during the end turn
         return;
 
     if (moveType == TYPE_ELECTRIC && gBattleMons[gBattlerAttacker].volatiles.chargeTimer == 1)

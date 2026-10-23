@@ -992,6 +992,14 @@ void AnimTask_IsContest(u8 taskId)
     DestroyAnimVisualTask(taskId);
 }
 
+// Test whether B_UPDATED_MOVE_DATA is at least the generation in gBattleAnimArgs[0]
+// Animation scripts use jumprettrue to choose their visuals at runtime
+void AnimTask_UpdatedMoveDataAtLeast(u8 taskId)
+{
+    gBattleAnimArgs[ARG_RET_ID] = GetConfig(B_UPDATED_MOVE_DATA) >= (u16)gBattleAnimArgs[0];
+    DestroyAnimVisualTask(taskId);
+}
+
 void AnimTask_SetAnimAttackerAndTargetForEffectTgt(u8 taskId)
 {
     gBattleAnimAttacker = gBattlerTarget;

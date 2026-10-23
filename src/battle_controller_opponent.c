@@ -516,7 +516,7 @@ static void OpponentHandleChooseMove(enum BattlerId battler)
             } while (!CanTargetBattler(battler, targetBattler, move));
 
             // Don't bother to check if they're enemies if the move can't attack ally
-            if (WE_WILD_NATURAL_ENEMIES && moveTarget != TARGET_BOTH)
+            if (GetConfig(WE_WILD_NATURAL_ENEMIES) && moveTarget != TARGET_BOTH)
             {
                 enum Species speciesAttacker, speciesTarget;
                 speciesAttacker = gBattleMons[battler].species;

@@ -11,6 +11,9 @@
                                 max(MOVE_NAME_LENGTH + 2, /* +2 to hold the "!" and EOS. */ \
                                 max(POKEMON_NAME_LENGTH + 1, \
                                     ABILITY_NAME_LENGTH + 1)))
+// Extra gWeatherStartsStringIds entry for overworld snow when B_OVERWORLD_SNOW is below GEN_9
+#define WEATHER_START_HAIL      WEATHER_COUNT
+
 #define BATTLE_MSG_MAX_WIDTH    208
 #define BATTLE_MSG_MAX_LINES    2
 

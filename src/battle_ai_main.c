@@ -357,7 +357,7 @@ void BattleAI_SetupFlags(void)
         admitted[B_BATTLER_3] = GetAiFlags(0xFFFF, B_BATTLER_3);
 
         // The check is here because wild natural enemies are not symmetrical.
-        if (WE_WILD_NATURAL_ENEMIES && IsDoubleBattle())
+        if (GetConfig(WE_WILD_NATURAL_ENEMIES) && IsDoubleBattle())
         {
             enum Species speciesLeft = GetMonData(&gParties[B_TRAINER_OPPONENT_A][0], MON_DATA_SPECIES);
             enum Species speciesRight = GetMonData(&gParties[B_TRAINER_OPPONENT_A][1], MON_DATA_SPECIES);
@@ -1926,7 +1926,7 @@ static s32 AI_CheckBadMove(enum BattlerId battlerAtk, enum BattlerId battlerDef,
         if (GetActiveGimmick(battlerDef) == GIMMICK_DYNAMAX)
             ADJUST_SCORE(-10);
         else if (gBattleMons[battlerDef].volatiles.disableTimer == 0
-            && (B_MENTAL_HERB < GEN_5 || aiData->holdEffects[battlerDef] != HOLD_EFFECT_MENTAL_HERB)
+            && (GetConfig(B_MENTAL_HERB) < GEN_5 || aiData->holdEffects[battlerDef] != HOLD_EFFECT_MENTAL_HERB)
             && !DoesPartnerHaveSameMoveEffect(GetPartnerBattler(battlerAtk), battlerDef, move, aiData->partnerMove))
         {
             if (AI_IsFaster(battlerAtk, battlerDef, move, predictedMove, CONSIDER_PRIORITY)) // Attacker should go first
@@ -1948,7 +1948,7 @@ static s32 AI_CheckBadMove(enum BattlerId battlerAtk, enum BattlerId battlerDef,
         if (GetActiveGimmick(battlerDef) == GIMMICK_DYNAMAX)
             ADJUST_SCORE(-10);
         else if (gBattleMons[battlerDef].volatiles.encoreTimer == 0
-            && (B_MENTAL_HERB < GEN_5 || aiData->holdEffects[battlerDef] != HOLD_EFFECT_MENTAL_HERB)
+            && (GetConfig(B_MENTAL_HERB) < GEN_5 || aiData->holdEffects[battlerDef] != HOLD_EFFECT_MENTAL_HERB)
             && !DoesPartnerHaveSameMoveEffect(GetPartnerBattler(battlerAtk), battlerDef, move, aiData->partnerMove))
         {
             if (AI_IsFaster(battlerAtk, battlerDef, move, predictedMove, CONSIDER_PRIORITY)) // Attacker should go first
@@ -2148,7 +2148,7 @@ static s32 AI_CheckBadMove(enum BattlerId battlerAtk, enum BattlerId battlerDef,
             ADJUST_SCORE(-10);
             break;
         }
-        if (B_MENTAL_HERB >= GEN_5 && aiData->holdEffects[battlerDef] == HOLD_EFFECT_MENTAL_HERB)
+        if (GetConfig(B_MENTAL_HERB) >= GEN_5 && aiData->holdEffects[battlerDef] == HOLD_EFFECT_MENTAL_HERB)
             ADJUST_SCORE(-6);
         break;
     case EFFECT_MEMENTO:
@@ -4367,7 +4367,7 @@ static s32 AI_CalcMoveEffectScore(enum BattlerId battlerAtk, enum BattlerId batt
     // don't get baited into encore
     if (GetBattleMoveEffectInfo(moveEffect)->encourageEncore
      && HasBattlerSideMoveWithEffect(battlerDef, EFFECT_ENCORE)
-     && (B_MENTAL_HERB < GEN_5 || aiData->holdEffects[battlerAtk] != HOLD_EFFECT_MENTAL_HERB))
+     && (GetConfig(B_MENTAL_HERB) < GEN_5 || aiData->holdEffects[battlerAtk] != HOLD_EFFECT_MENTAL_HERB))
      {
         enum BattlerId partnerDef = GetPartnerBattler(battlerDef);
         if (!AI_IsAbilityOnSide(battlerAtk, ABILITY_AROMA_VEIL)
@@ -4752,7 +4752,7 @@ static s32 AI_CalcMoveEffectScore(enum BattlerId battlerAtk, enum BattlerId batt
             break;
         else if (gBattleMons[battlerDef].volatiles.disableTimer == 0
         && (aiData->lastUsedMove[battlerDef] != MOVE_NONE)
-        && (B_MENTAL_HERB < GEN_5 || aiData->holdEffects[battlerDef] != HOLD_EFFECT_MENTAL_HERB)
+        && (GetConfig(B_MENTAL_HERB) < GEN_5 || aiData->holdEffects[battlerDef] != HOLD_EFFECT_MENTAL_HERB)
         && (AI_IsFaster(battlerAtk, battlerDef, move, predictedMove, CONSIDER_PRIORITY)))
         {
             if (CanTargetMoveFaintAi(aiData->lastUsedMove[battlerDef], battlerDef, battlerAtk, 1))
@@ -4776,7 +4776,7 @@ static s32 AI_CalcMoveEffectScore(enum BattlerId battlerAtk, enum BattlerId batt
             break;
         }
         if (gBattleMons[battlerDef].volatiles.encoreTimer == 0
-         && (B_MENTAL_HERB < GEN_5 || aiData->holdEffects[battlerDef] != HOLD_EFFECT_MENTAL_HERB)
+         && (GetConfig(B_MENTAL_HERB) < GEN_5 || aiData->holdEffects[battlerDef] != HOLD_EFFECT_MENTAL_HERB)
          && (encourage))
             ADJUST_SCORE(BEST_EFFECT);
         break;
@@ -5671,7 +5671,7 @@ static s32 AI_CalcMoveEffectScore(enum BattlerId battlerAtk, enum BattlerId batt
         {
             bool32 canSteal = FALSE;
 
-            if (B_TRAINERS_KNOCK_OFF_ITEMS == TRUE)
+            if (GetConfig(B_TRAINERS_KNOCK_OFF_ITEMS) == TRUE)
                 canSteal = TRUE;
 
             if (gBattleTypeFlags & BATTLE_TYPE_FRONTIER || IsOnPlayerSide(battlerAtk))

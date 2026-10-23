@@ -866,7 +866,7 @@ static void BuildEggMoveset(struct Pokemon *egg, struct BoxPokemon *father, stru
         motherMoves[i] = GetBoxMonData(mother, MON_DATA_MOVE1 + i);
     }
 
-    if (P_MOVE_INHERITANCE < GEN_6)
+    if (GetConfig(MOVE_INHERITANCE) < GEN_6)
     {
         GiveMonInitialMoveset(egg);
         GiveParentEggMoves(egg, fatherMoves, eggSpecies);

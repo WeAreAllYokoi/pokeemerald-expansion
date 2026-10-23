@@ -269,7 +269,7 @@ static void HandleSetEffectRemoveArgType(struct BattleCalcValues *cv, struct Set
 
 static void HandleSetEffectRecharge(struct BattleCalcValues *cv, struct SetEffect *se)
 {
-    if (B_SKIP_RECHARGE == GEN_1 && !IsBattlerAlive(cv->battlerDef))  // Skip recharge if gen 1 and foe is KO'd
+    if (GetConfig(B_SKIP_RECHARGE) == GEN_1 && !IsBattlerAlive(cv->battlerDef))  // Skip recharge if gen 1 and foe is KO'd
         return;
 
     gBattleMons[se->effectBattler].volatiles.rechargeTimer = 2;
@@ -453,7 +453,7 @@ static void HandleSetEffectIncinerate(struct BattleCalcValues *cv, struct SetEff
         return;
 
     if (gItemsInfo[gBattleMons[se->effectBattler].item].pocket == POCKET_BERRIES
-     || (B_INCINERATE_GEMS >= GEN_6 && GetItemHoldEffect(gBattleMons[se->effectBattler].item) == HOLD_EFFECT_GEMS))
+     || (GetConfig(B_INCINERATE_GEMS) >= GEN_6 && GetItemHoldEffect(gBattleMons[se->effectBattler].item) == HOLD_EFFECT_GEMS))
     {
         gLastUsedItem = gBattleMons[se->effectBattler].item;
         gBattleMons[se->effectBattler].item = ITEM_NONE;
@@ -1220,7 +1220,7 @@ static void HandleSetEffectBreakScreen(struct BattleCalcValues *cv, struct SetEf
 {
     enum BattleSide side;
 
-    if (B_BRICK_BREAK >= GEN_4)
+    if (GetConfig(B_BRICK_BREAK) >= GEN_4)
         side = GetBattlerSide(cv->battlerDef); // From Gen 4 onwards, Brick Break can remove screens on the user's side if used on an ally
     else
         side = GetBattlerSide(cv->battlerAtk) ^ BIT_SIDE;
@@ -1229,7 +1229,7 @@ static void HandleSetEffectBreakScreen(struct BattleCalcValues *cv, struct SetEf
     {
         bool32 failed;
 
-        if (B_BRICK_BREAK >= GEN_5)
+        if (GetConfig(B_BRICK_BREAK) >= GEN_5)
             failed = gBattleStruct->moveResultFlags[cv->battlerDef] & MOVE_RESULT_NO_EFFECT;
         else
             failed = FALSE;

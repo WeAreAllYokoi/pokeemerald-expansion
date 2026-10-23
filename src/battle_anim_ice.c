@@ -1268,7 +1268,7 @@ static void InitPoisonGasCloudAnim(struct Sprite *sprite)
     sprite->x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);
     sprite->y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y_PIC_OFFSET);
 
-    if (B_UPDATED_MOVE_DATA >= GEN_5)
+    if (GetConfig(B_UPDATED_MOVE_DATA) >= GEN_5)
     {
         s16 x, y;
         SetAverageBattlerPositions(gBattleAnimTarget, gBattleAnimArgs[7], &x, &y);
@@ -1322,13 +1322,16 @@ static void MovePoisonGasCloud(struct Sprite *sprite)
 
         if (sprite->data[0] <= 0)
         {
-            #if B_UPDATED_MOVE_DATA >= GEN_5
+            if (GetConfig(B_UPDATED_MOVE_DATA) >= GEN_5)
+            {
                 s16 x, y;
                 SetAverageBattlerPositions(gBattleAnimTarget, 0, &x, &y);
                 sprite->x = x;
-            #else
+            }
+            else
+            {
                 sprite->x = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X);
-            #endif
+            }
             sprite->data[0] = 80;
             sprite->data[1] = sprite->x;
             sprite->data[2] = sprite->x;

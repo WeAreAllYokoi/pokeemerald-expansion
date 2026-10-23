@@ -110,7 +110,7 @@ static u32 GetWishHealAmountForBattler(enum BattlerId battler)
     if (gBattleStruct->wish[battler].counter == 0)
         return wishHeal;
 
-    if (B_WISH_HP_SOURCE >= GEN_5)
+    if (GetConfig(B_WISH_HP_SOURCE) >= GEN_5)
     {
         wishHeal = GetMonData(&GetBattlerParty(battler)[gBattleStruct->wish[battler].partyId], MON_DATA_MAX_HP) / 2;
     }
@@ -2138,7 +2138,7 @@ static bool32 AI_CanSwitchinAbilityTrapOpponent(enum Ability ability, enum Battl
         return FALSE;
     else if (ability == ABILITY_SHADOW_TAG)
     {
-        if (B_SHADOW_TAG_ESCAPE >= GEN_4 && gAiLogicData->abilities[opposingBattler] == ABILITY_SHADOW_TAG)
+        if (GetConfig(B_SHADOW_TAG_ESCAPE) >= GEN_4 && gAiLogicData->abilities[opposingBattler] == ABILITY_SHADOW_TAG)
             return FALSE;
         else
             return TRUE;

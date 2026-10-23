@@ -1420,7 +1420,7 @@ static void Task_GiveExpToMon(u8 taskId)
 
         if (expAfterGain >= nextLvlExp)
         {
-            SetMonData(mon, MON_DATA_EXP, (B_LEVEL_UP_NOTIFICATION >= GEN_9) ? &expAfterGain : &nextLvlExp);
+            SetMonData(mon, MON_DATA_EXP, (GetConfig(B_LEVEL_UP_NOTIFICATION) >= GEN_9) ? &expAfterGain : &nextLvlExp);
 
             CalculateMonStats(mon);
 
@@ -1429,7 +1429,7 @@ static void Task_GiveExpToMon(u8 taskId)
                 DynamaxModifyHPLevelUp(mon, battler, oldMaxHP);
 
             gainedExp -= nextLvlExp - currExp;
-            BtlController_EmitTwoReturnValues(battler, B_COMM_TO_ENGINE, RET_VALUE_LEVELED_UP, (B_LEVEL_UP_NOTIFICATION >= GEN_9) ? 0 : gainedExp);
+            BtlController_EmitTwoReturnValues(battler, B_COMM_TO_ENGINE, RET_VALUE_LEVELED_UP, (GetConfig(B_LEVEL_UP_NOTIFICATION) >= GEN_9) ? 0 : gainedExp);
 
             if (IsDoubleBattle() == TRUE
              && (monId == gBattlerPartyIndexes[battler] || monId == gBattlerPartyIndexes[GetPartnerBattler(battler)]))
@@ -1503,7 +1503,7 @@ static void Task_GiveExpWithExpBar(u8 taskId)
             expAfterGain = currExp + gainedExp;
             if (expAfterGain >= expOnNextLvl)
             {
-                if (B_LEVEL_UP_NOTIFICATION >= GEN_9)
+                if (GetConfig(B_LEVEL_UP_NOTIFICATION) >= GEN_9)
                     SetMonData(mon, MON_DATA_EXP, &expAfterGain);
                 else
                     SetMonData(mon, MON_DATA_EXP, &expOnNextLvl);
@@ -1515,7 +1515,7 @@ static void Task_GiveExpWithExpBar(u8 taskId)
                     DynamaxModifyHPLevelUp(mon, battler, oldMaxHP);
 
                 gainedExp -= expOnNextLvl - currExp;
-                BtlController_EmitTwoReturnValues(battler, B_COMM_TO_ENGINE, RET_VALUE_LEVELED_UP, (B_LEVEL_UP_NOTIFICATION >= GEN_9) ? 0 : gainedExp);
+                BtlController_EmitTwoReturnValues(battler, B_COMM_TO_ENGINE, RET_VALUE_LEVELED_UP, (GetConfig(B_LEVEL_UP_NOTIFICATION) >= GEN_9) ? 0 : gainedExp);
                 gTasks[taskId].func = Task_LaunchLvlUpAnim;
             }
             else

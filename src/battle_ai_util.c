@@ -464,7 +464,7 @@ bool32 IsBattlerTrapped(enum BattlerId battlerAtk, enum BattlerId battlerDef)
     if (gFieldStatuses & STATUS_FIELD_FAIRY_LOCK)
         return TRUE;
     if (AI_IsAbilityOnSide(battlerAtk, ABILITY_SHADOW_TAG)
-        && (B_SHADOW_TAG_ESCAPE >= GEN_4 && gAiLogicData->abilities[battlerDef] != ABILITY_SHADOW_TAG))
+        && (GetConfig(B_SHADOW_TAG_ESCAPE) >= GEN_4 && gAiLogicData->abilities[battlerDef] != ABILITY_SHADOW_TAG))
         return TRUE;
     if (AI_IsAbilityOnSide(battlerAtk, ABILITY_ARENA_TRAP)
         && AI_IsBattlerGrounded(battlerDef))
@@ -785,10 +785,10 @@ static inline void CalcDynamicMoveDamage(struct DamageContext *ctx, struct Simul
           && strikeCount == 0
           && !AI_IsDoubleSpreadMove(ctx->battlerAtk, ctx->move))
     {
-        median  += median  / (B_PARENTAL_BOND_DMG >= GEN_7 ? 4 : 2);
-        minimum += minimum / (B_PARENTAL_BOND_DMG >= GEN_7 ? 4 : 2);
-        maximum += maximum / (B_PARENTAL_BOND_DMG >= GEN_7 ? 4 : 2);
-        random  += random  / (B_PARENTAL_BOND_DMG >= GEN_7 ? 4 : 2);
+        median  += median  / (GetConfig(B_PARENTAL_BOND_DMG) >= GEN_7 ? 4 : 2);
+        minimum += minimum / (GetConfig(B_PARENTAL_BOND_DMG) >= GEN_7 ? 4 : 2);
+        maximum += maximum / (GetConfig(B_PARENTAL_BOND_DMG) >= GEN_7 ? 4 : 2);
+        random  += random  / (GetConfig(B_PARENTAL_BOND_DMG) >= GEN_7 ? 4 : 2);
     }
 
     if (median == 0)
@@ -3316,9 +3316,9 @@ static u32 GetTrapDamage(enum BattlerId battler)
     if (gBattleMons[battler].volatiles.wrapped)
     {
         if (gBattleMons[battler].volatiles.wrappedBindingBand)
-            damage = GetNonDynamaxMaxHP(battler) / (B_BINDING_DAMAGE >= GEN_6 ? 6 : 8);
+            damage = GetNonDynamaxMaxHP(battler) / (GetConfig(B_BINDING_DAMAGE) >= GEN_6 ? 6 : 8);
         else
-            damage = GetNonDynamaxMaxHP(battler) / (B_BINDING_DAMAGE >= GEN_6 ? 8 : 16);
+            damage = GetNonDynamaxMaxHP(battler) / (GetConfig(B_BINDING_DAMAGE) >= GEN_6 ? 8 : 16);
 
         if (damage == 0)
             damage = 1;
@@ -3531,7 +3531,7 @@ enum AIPivot ShouldPivot(enum BattlerId battlerAtk, enum BattlerId battlerDef, e
 
 #define BATTLE_TYPE_CANT_KNOCK_OFF (BATTLE_TYPE_EREADER_TRAINER | BATTLE_TYPE_FRONTIER | BATTLE_TYPE_LINK \
                                   | BATTLE_TYPE_RECORDED_LINK | BATTLE_TYPE_SECRET_BASE \
-                                  | (B_TRAINERS_KNOCK_OFF_ITEMS == TRUE ? BATTLE_TYPE_TRAINER : 0))
+                                  | (GetConfig(B_TRAINERS_KNOCK_OFF_ITEMS) == TRUE ? BATTLE_TYPE_TRAINER : 0))
 bool32 CanKnockOffItem(enum BattlerId fromBattler, enum BattlerId battler, enum Item item)
 {
     if (item == ITEM_NONE)
@@ -5974,7 +5974,7 @@ void AbilityChangeScore(enum BattlerId battlerAtk, enum BattlerId battlerDef, en
         }
 
         // Trigger Plus or Minus in modern gens. This is not in the overarching function because Skill Swap is rarely beneficial here.
-        if (B_PLUS_MINUS_INTERACTION >= GEN_5)
+        if (GetConfig(B_PLUS_MINUS_INTERACTION) >= GEN_5)
         {
             if (((effect == EFFECT_ENTRAINMENT) && (abilityAtk == ABILITY_PLUS || abilityAtk == ABILITY_MINUS)) || ((effect == EFFECT_ROLE_PLAY) && (abilityDef == ABILITY_PLUS || abilityDef == ABILITY_MINUS)))
                 ADJUST_SCORE_PTR(DECENT_EFFECT);

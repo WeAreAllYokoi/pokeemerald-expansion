@@ -68,7 +68,7 @@ static bool32 HandleEndTurnVarious(enum BattlerId battler)
         if (gBattleMons[i].volatiles.lockOn > 0 && --gBattleMons[i].volatiles.lockOn == 0)
             gBattleMons[i].volatiles.battlerWithSureHit = 0;
 
-        if (B_CHARGE < GEN_9 && gBattleMons[i].volatiles.chargeTimer > 0)
+        if (GetConfig(B_CHARGE) < GEN_9 && gBattleMons[i].volatiles.chargeTimer > 0)
             gBattleMons[i].volatiles.chargeTimer--;
 
         if (gBattleMons[i].volatiles.laserFocusTimer > 0)
@@ -375,7 +375,7 @@ static bool32 HandleEndTurnFirstEventBlock(enum BattlerId battler)
         gBattleStruct->eventState.endTurnBlock++;
         break;
     case FIRST_EVENT_BLOCK_THRASH:
-        if (B_RAMPAGE_CONFUSION < GEN_5
+        if (GetConfig(B_RAMPAGE_CONFUSION) < GEN_5
          && gBattleMons[battler].volatiles.rampageTurns
          && gBattleMons[battler].volatiles.semiInvulnerable != STATE_SKY_DROP_TARGET)
         {

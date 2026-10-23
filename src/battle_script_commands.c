@@ -1479,7 +1479,7 @@ static void Cmd_resultmessage(void)
             {
                 stringId = STRINGID_BUTITFAILED;
             }
-            else if (B_AFFECTION_MECHANICS == TRUE && (*moveResultFlags & MOVE_RESULT_FOE_ENDURED_AFFECTION))
+            else if (GetConfig(B_AFFECTION_MECHANICS) == TRUE && (*moveResultFlags & MOVE_RESULT_FOE_ENDURED_AFFECTION))
             {
                 *moveResultFlags &= ~MOVE_RESULT_FOE_ENDURED_AFFECTION;
                 BattleScriptCall(BattleScript_AffectionBasedEndurance);
@@ -2311,7 +2311,7 @@ static void Cmd_getexp(void)
             {
                 gBattleScripting.getexpState = 5;
                 gBattleStruct->battlerExpReward = 0;
-                if (B_MAX_LEVEL_EV_GAINS >= GEN_5)
+                if (GetConfig(B_MAX_LEVEL_EV_GAINS) >= GEN_5)
                     MonGainEVs(&gParties[B_TRAINER_PLAYER][*expMonId], faintedSpecies);
             }
             else
@@ -2336,7 +2336,7 @@ static void Cmd_getexp(void)
                         gBattleStruct->battlerExpReward = 0;
 
                     if ((holdEffect == HOLD_EFFECT_EXP_SHARE || IsGen6ExpShareEnabled())
-                        && (B_SPLIT_EXP < GEN_6 || gBattleStruct->battlerExpReward == 0)) // only give exp share bonus in later gens if the mon wasn't sent out
+                        && (GetConfig(B_SPLIT_EXP) < GEN_6 || gBattleStruct->battlerExpReward == 0)) // only give exp share bonus in later gens if the mon wasn't sent out
                     {
                         gBattleStruct->battlerExpReward += GetSoftLevelCapExpValue(gParties[B_TRAINER_PLAYER][*expMonId].level, gBattleStruct->expShareExpValue);
                     }
@@ -3827,7 +3827,7 @@ static void Cmd_handlelearnnewmove(void)
     if (!gBattleResources->beforeLvlUp->learnMultipleMoves && gBattleResources->beforeLvlUp->level != (currLvl - 1))
         gBattleResources->beforeLvlUp->learnMultipleMoves = TRUE;
 
-    if (B_LEVEL_UP_NOTIFICATION >= GEN_9 && gBattleResources->beforeLvlUp->learnMultipleMoves)
+    if (GetConfig(B_LEVEL_UP_NOTIFICATION) >= GEN_9 && gBattleResources->beforeLvlUp->learnMultipleMoves)
     {
         while (gBattleResources->beforeLvlUp->level < currLvl)
         {
@@ -4168,7 +4168,7 @@ static void Cmd_getmoneyreward(void)
     }
     else
     {
-        if (B_WHITEOUT_MONEY <= GEN_3)
+        if (GetConfig(B_WHITEOUT_MONEY) <= GEN_3)
         {
             money = GetMoney(&gSaveBlock1Ptr->money) / 2;
         }
@@ -5761,7 +5761,7 @@ static void Cmd_tryconversiontypechange(void)
         return;
     }
 
-    if (B_UPDATED_CONVERSION >= GEN_6)
+    if (GetConfig(B_UPDATED_CONVERSION) >= GEN_6)
     {
         // Changes user's type to its first move's type
         for (moveChecked = 0; moveChecked < MAX_MON_MOVES; moveChecked++)
@@ -6067,7 +6067,7 @@ static void Cmd_transformdataexecution(void)
         gBattleMons[gBattlerAttacker].volatiles.transformedMonSpecies = gBattleMons[gBattlerAttacker].species;
         gBattleMons[gBattlerAttacker].volatiles.transformedMonPID = gBattleMons[gBattlerTarget].personality;
 
-        if (B_TRANSFORM_SHINY >= GEN_4)
+        if (GetConfig(B_TRANSFORM_SHINY) >= GEN_4)
             gBattleMons[gBattlerAttacker].volatiles.isTransformedMonShiny = gBattleMons[gBattlerTarget].isShiny;
         else
             gBattleMons[gBattlerAttacker].volatiles.isTransformedMonShiny = gBattleMons[gBattlerAttacker].isShiny;
@@ -6209,9 +6209,9 @@ static void Cmd_disablelastusedattack(void)
         PREPARE_MOVE_BUFFER(gBattleTextBuff1, gBattleMons[gBattlerTarget].moves[i])
 
         gBattleMons[gBattlerTarget].volatiles.disabledMove = gBattleMons[gBattlerTarget].moves[i];
-        if (B_DISABLE_TURNS >= GEN_5)
+        if (GetConfig(B_DISABLE_TURNS) >= GEN_5)
             gBattleMons[gBattlerTarget].volatiles.disableTimer = B_DISABLE_TIMER;
-        else if (B_DISABLE_TURNS >= GEN_4)
+        else if (GetConfig(B_DISABLE_TURNS) >= GEN_4)
             gBattleMons[gBattlerTarget].volatiles.disableTimer = (Random() & 3) + B_DISABLE_TIMER; // 4-7 turns
         else
             gBattleMons[gBattlerTarget].volatiles.disableTimer = (Random() & 3) + 2; // 2-5 turns
@@ -6500,7 +6500,7 @@ static void Cmd_tryspiteppreduce(void)
             }
         }
 
-        if (i != MAX_MON_MOVES && gBattleMons[gBattlerTarget].pp[i] > (B_CAN_SPITE_FAIL >= GEN_4 ? 0 : 1))
+        if (i != MAX_MON_MOVES && gBattleMons[gBattlerTarget].pp[i] > (GetConfig(B_CAN_SPITE_FAIL) >= GEN_4 ? 0 : 1))
         {
             s32 ppToDeduct = GetConfig(B_PP_REDUCED_BY_SPITE) >= GEN_4 ? 4 : (Random() & 3) + 2;
             // G-Max Depletion only deducts 2 PP.
@@ -7155,7 +7155,7 @@ static void Cmd_tryswapitems(void)
                                   | BATTLE_TYPE_FRONTIER
                                   | BATTLE_TYPE_SECRET_BASE
                                   | BATTLE_TYPE_RECORDED_LINK
-                                  | (B_TRAINERS_KNOCK_OFF_ITEMS == TRUE ? BATTLE_TYPE_TRAINER : 0)
+                                  | (GetConfig(B_TRAINERS_KNOCK_OFF_ITEMS) == TRUE ? BATTLE_TYPE_TRAINER : 0)
                                   ))))
     {
         gBattlescriptCurrInstr = cmd->failInstr;
@@ -7477,7 +7477,7 @@ static void Cmd_tryimprison(void)
     {
         gBattlescriptCurrInstr = cmd->failInstr;
     }
-    else if (B_IMPRISON >= GEN_5)
+    else if (GetConfig(B_IMPRISON) >= GEN_5)
     {
         gBattleMons[gBattlerAttacker].volatiles.imprison = TRUE;
         gBattlescriptCurrInstr = cmd->nextInstr;
@@ -7736,7 +7736,7 @@ static void Cmd_settypebasedhalvers(void)
     {
         if (GetMoveEffect(gCurrentMove) == EFFECT_MUD_SPORT)
         {
-            if (B_SPORT_TURNS >= GEN_6)
+            if (GetConfig(B_SPORT_TURNS) >= GEN_6)
             {
                 if (!(gFieldStatuses & STATUS_FIELD_MUDSPORT))
                 {
@@ -7758,7 +7758,7 @@ static void Cmd_settypebasedhalvers(void)
         }
         else // Water Sport
         {
-            if (B_SPORT_TURNS >= GEN_6)
+            if (GetConfig(B_SPORT_TURNS) >= GEN_6)
             {
                 if (!(gFieldStatuses & STATUS_FIELD_WATERSPORT))
                 {
@@ -7938,7 +7938,7 @@ static void FinalizeCapture(void)
     }
     else if (ballId == BALL_FRIEND)
     {
-        u32 friendship = (B_FRIEND_BALL_MODIFIER >= GEN_8 ? 150 : 200);
+        u32 friendship = (GetConfig(B_FRIEND_BALL_MODIFIER) >= GEN_8 ? 150 : 200);
         SetMonData(caughtMon, MON_DATA_FRIENDSHIP, &friendship);
     }
 }
@@ -7992,8 +7992,8 @@ static void ComputeBallData(u32 wildMonBattler, u32 playerBattler, struct BallDa
         break;
     case BALL_NEST:
         ball->multiplier = 100;
-        if ((B_NEST_BALL_MODIFIER == GEN_5 && battleMon->level < 31)
-            || (B_NEST_BALL_MODIFIER >= GEN_6 && battleMon->level < 30))
+        if ((GetConfig(B_NEST_BALL_MODIFIER) == GEN_5 && battleMon->level < 31)
+            || (GetConfig(B_NEST_BALL_MODIFIER) >= GEN_6 && battleMon->level < 30))
         {
             ball->multiplier = (41 - battleMon->level) * 4096 / 10;
             ball->divider = 4096;
@@ -8005,7 +8005,7 @@ static void ComputeBallData(u32 wildMonBattler, u32 playerBattler, struct BallDa
         break;
     case BALL_DIVE:
         if (GetCurrentMapType() == MAP_TYPE_UNDERWATER
-            || (B_DIVE_BALL_MODIFIER >= GEN_4 && (gIsFishingEncounter || gIsSurfingEncounter)))
+            || (GetConfig(B_DIVE_BALL_MODIFIER) >= GEN_4 && (gIsFishingEncounter || gIsSurfingEncounter)))
         {
             ball->multiplier = 350;
         }
@@ -8013,10 +8013,10 @@ static void ComputeBallData(u32 wildMonBattler, u32 playerBattler, struct BallDa
     case BALL_DUSK:
         i = GetTimeOfDay();
         if (i == TIME_EVENING || i == TIME_NIGHT || gMapHeader.cave || gMapHeader.mapType == MAP_TYPE_UNDERGROUND)
-            ball->multiplier = (B_DUSK_BALL_MODIFIER >= GEN_7 ? 300 : 350);
+            ball->multiplier = (GetConfig(B_DUSK_BALL_MODIFIER) >= GEN_7 ? 300 : 350);
         break;
     case BALL_TIMER:
-        if (B_TIMER_BALL_MODIFIER >= GEN_5)
+        if (GetConfig(B_TIMER_BALL_MODIFIER) >= GEN_5)
         {
             ball->multiplier = 4096 + gBattleResults.battleTurnCounter * 1229;
             ball->divider = 4096;
@@ -8030,11 +8030,11 @@ static void ComputeBallData(u32 wildMonBattler, u32 playerBattler, struct BallDa
         break;
     case BALL_QUICK:
         if (gBattleResults.battleTurnCounter == 0)
-            ball->multiplier = (B_QUICK_BALL_MODIFIER >= GEN_5 ? 500 : 400);
+            ball->multiplier = (GetConfig(B_QUICK_BALL_MODIFIER) >= GEN_5 ? 500 : 400);
         break;
     case BALL_REPEAT:
         if (GetSetPokedexFlag(SpeciesToNationalPokedexNum(battleMon->species), FLAG_GET_CAUGHT))
-            ball->multiplier = (B_REPEAT_BALL_MODIFIER >= GEN_7 ? 350 : 300);
+            ball->multiplier = (GetConfig(B_REPEAT_BALL_MODIFIER) >= GEN_7 ? 350 : 300);
         break;
     case BALL_LEVEL:
         if (gBattleMons[playerBattler].level >= 4 * battleMon->level)
@@ -8047,9 +8047,9 @@ static void ComputeBallData(u32 wildMonBattler, u32 playerBattler, struct BallDa
     case BALL_LURE:
         if (gIsFishingEncounter)
         {
-            if (B_LURE_BALL_MODIFIER >= GEN_8)
+            if (GetConfig(B_LURE_BALL_MODIFIER) >= GEN_8)
                 ball->multiplier = 400;
-            else if (B_LURE_BALL_MODIFIER >= GEN_7)
+            else if (GetConfig(B_LURE_BALL_MODIFIER) >= GEN_7)
                 ball->multiplier = 500;
             else
                 ball->multiplier = 300;
@@ -8084,7 +8084,7 @@ static void ComputeBallData(u32 wildMonBattler, u32 playerBattler, struct BallDa
         break;
     case BALL_HEAVY:
         i = GetSpeciesWeight(battleMon->species);
-        if (B_HEAVY_BALL_MODIFIER >= GEN_7)
+        if (GetConfig(B_HEAVY_BALL_MODIFIER) >= GEN_7)
         {
             if (i < 1000)
                 ball->flatBonus = -20;
@@ -8095,7 +8095,7 @@ static void ComputeBallData(u32 wildMonBattler, u32 playerBattler, struct BallDa
             else
                 ball->flatBonus = 30;
         }
-        else if (B_HEAVY_BALL_MODIFIER >= GEN_4)
+        else if (GetConfig(B_HEAVY_BALL_MODIFIER) >= GEN_4)
         {
             if (i < 2048)
                 ball->flatBonus = -20;
@@ -8121,17 +8121,17 @@ static void ComputeBallData(u32 wildMonBattler, u32 playerBattler, struct BallDa
         }
         break;
     case BALL_DREAM:
-        if (B_DREAM_BALL_MODIFIER >= GEN_8 && (battleMon->status1 & STATUS1_SLEEP || (GetBattlerAbilityIgnoreMoldBreaker(wildMonBattler) == ABILITY_COMATOSE)))
+        if (GetConfig(B_DREAM_BALL_MODIFIER) >= GEN_8 && (battleMon->status1 & STATUS1_SLEEP || (GetBattlerAbilityIgnoreMoldBreaker(wildMonBattler) == ABILITY_COMATOSE)))
             ball->multiplier = 400;
         break;
     case BALL_SAFARI:
-        if (B_SAFARI_BALL_MODIFIER == GEN_1)
+        if (GetConfig(B_SAFARI_BALL_MODIFIER) == GEN_1)
             ball->multiplier = 200;
-        else if (B_SAFARI_BALL_MODIFIER <= GEN_7)
+        else if (GetConfig(B_SAFARI_BALL_MODIFIER) <= GEN_7)
             ball->multiplier = 150;
         break;
     case BALL_SPORT:
-        if (B_SPORT_BALL_MODIFIER <= GEN_7)
+        if (GetConfig(B_SPORT_BALL_MODIFIER) <= GEN_7)
             ball->multiplier = 150;
         break;
     case BALL_BEAST:
@@ -8500,7 +8500,7 @@ static void Cmd_givecaughtmon(void)
     case GIVECAUGHTMON_GIVE_AND_SHOW_MSG:
     {
         struct Pokemon *caughtMon = GetBattlerMon(GetCatchingBattler());
-        if (B_RESTORE_HELD_BATTLE_ITEMS >= GEN_9)
+        if (GetConfig(B_RESTORE_HELD_BATTLE_ITEMS) >= GEN_9)
         {
             enum Item lostItem = gBattleStruct->itemLost[B_TRAINER_OPPONENT_A][gBattlerPartyIndexes[GetCatchingBattler()]].originalItem;
             if (lostItem != ITEM_NONE && GetItemPocket(lostItem) != POCKET_BERRIES)
@@ -9895,7 +9895,7 @@ void BS_TryQuash(void)
 
         // Gen 7- config makes target go last so that the order of quash targets is kept for the correct turn order
         // Gen 8+ config alters Turn Order of the target according to speed, dynamic speed should handle the rest
-        if (B_QUASH_TURN_ORDER < GEN_8 || GetWhichBattlerFaster(&calcValues, FALSE) == -1)
+        if (GetConfig(B_QUASH_TURN_ORDER) < GEN_8 || GetWhichBattlerFaster(&calcValues, FALSE) == -1)
             SwapTurnOrder(i, j);
         else
             break;

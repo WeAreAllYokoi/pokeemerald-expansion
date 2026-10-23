@@ -1193,7 +1193,7 @@ void CancelMultiTurnMoves(enum BattlerId battler)
     gBattleMons[battler].volatiles.rolloutTimer = 0;
     gBattleMons[battler].volatiles.furyCutterCounter = 0;
 
-    if (B_RAMPAGE_CONFUSION < GEN_5
+    if (GetConfig(B_RAMPAGE_CONFUSION) < GEN_5
      || gBattleMons[battler].volatiles.rampageTurns != 1) // Will be confused at the end of the turn
     {
         gLockedMoves[battler] = MOVE_NONE;
@@ -1875,7 +1875,7 @@ bool32 HandleFaintedMonActions(void)
             else
                 gBattleStruct->eventState.faintedAction = FAINTED_ACTIONS_GIVE_EXP;
             // Don't switch mons until all Pokémon performed their actions or the battle's over.
-            if (B_FAINT_SWITCH_IN >= GEN_4
+            if (GetConfig(B_FAINT_SWITCH_IN) >= GEN_4
                 && gBattleOutcome == 0
                 && !NoAliveMonsForEitherParty()
                 && gCurrentTurnActionNumber != gBattlersCount)
@@ -1887,7 +1887,7 @@ bool32 HandleFaintedMonActions(void)
             break;
         case FAINTED_ACTIONS_WAIT_STATE:
             // Don't switch mons until all Pokémon performed their actions or the battle's over.
-            if (B_FAINT_SWITCH_IN >= GEN_4
+            if (GetConfig(B_FAINT_SWITCH_IN) >= GEN_4
                 && gBattleOutcome == 0
                 && !NoAliveMonsForEitherParty()
                 && gCurrentTurnActionNumber != gBattlersCount)
@@ -2381,7 +2381,7 @@ bool32 CanAbilityAbsorbMove(struct DamageContext *ctx)
             battleScript = AbsorbedByStatIncreaseAbility(ctx, STAT_ATK, 1);
         break;
     case ABILITY_FLASH_FIRE:
-        if (ctx->moveType == TYPE_FIRE && (B_FLASH_FIRE_FROZEN >= GEN_5 || !(gBattleMons[ctx->battlerDef].status1 & STATUS1_FREEZE)))
+        if (ctx->moveType == TYPE_FIRE && (GetConfig(B_FLASH_FIRE_FROZEN) >= GEN_5 || !(gBattleMons[ctx->battlerDef].status1 & STATUS1_FREEZE)))
             battleScript = AbsorbedByFlashFire(ctx);
         break;
     case ABILITY_SOUNDPROOF:
@@ -2683,7 +2683,7 @@ bool32 TryFieldEffects(enum FieldEffectCases caseId)
                         B_SIDE_PLAYER,
                         B_MSG_SET_TAILWIND,
                         B_ANIM_TAILWIND,
-                        &gSideTimers[B_SIDE_PLAYER].tailwindTimer, gStartingStatuses.tailwindPlayer ? 0 : (B_TAILWIND_TURNS >= GEN_5 ? 4 : 3));
+                        &gSideTimers[B_SIDE_PLAYER].tailwindTimer, gStartingStatuses.tailwindPlayer ? 0 : (GetConfig(B_TAILWIND_TURNS) >= GEN_5 ? 4 : 3));
             gStartingStatuses.tailwindPlayerTemporary = gStartingStatuses.tailwindPlayer = FALSE;
             return effect;
         }
@@ -2695,7 +2695,7 @@ bool32 TryFieldEffects(enum FieldEffectCases caseId)
                         B_SIDE_OPPONENT,
                         B_MSG_SET_TAILWIND,
                         B_ANIM_TAILWIND,
-                        &gSideTimers[B_SIDE_OPPONENT].tailwindTimer, gStartingStatuses.tailwindOpponent ? 0 : (B_TAILWIND_TURNS >= GEN_5 ? 4 : 3));
+                        &gSideTimers[B_SIDE_OPPONENT].tailwindTimer, gStartingStatuses.tailwindOpponent ? 0 : (GetConfig(B_TAILWIND_TURNS) >= GEN_5 ? 4 : 3));
             gStartingStatuses.tailwindOpponentTemporary = gStartingStatuses.tailwindOpponent = FALSE;
             return effect;
         }
@@ -2915,7 +2915,7 @@ bool32 TryFieldEffects(enum FieldEffectCases caseId)
             BattleScriptPushCursorAndCallback(BattleScript_OverworldTerrain);
             effect = TRUE;
         }
-        else if (B_OVERWORLD_FOG >= GEN_8
+        else if (GetConfig(B_OVERWORLD_FOG) >= GEN_8
               && (GetCurrentWeather() == WEATHER_FOG_HORIZONTAL || GetCurrentWeather() == WEATHER_FOG_DIAGONAL)
               && gFieldTimers.terrain != B_TERRAIN_MISTY)
         {
@@ -2960,7 +2960,7 @@ bool32 TryFieldEffects(enum FieldEffectCases caseId)
             case WEATHER_SNOW:
                 if (!(gBattleWeather & B_WEATHER_ICY_ANY))
                 {
-                    if (B_OVERWORLD_SNOW >= GEN_9)
+                    if (GetConfig(B_OVERWORLD_SNOW) >= GEN_9)
                     {
                         gBattleWeather = B_WEATHER_SNOW;
                         gBattleScripting.animArg1 = B_ANIM_SNOW_CONTINUES;
@@ -2975,7 +2975,7 @@ bool32 TryFieldEffects(enum FieldEffectCases caseId)
                 break;
             case WEATHER_FOG_DIAGONAL:
             case WEATHER_FOG_HORIZONTAL:
-                if (B_OVERWORLD_FOG == GEN_4 && !(gBattleWeather & B_WEATHER_FOG))
+                if (GetConfig(B_OVERWORLD_FOG) == GEN_4 && !(gBattleWeather & B_WEATHER_FOG))
                 {
                     gBattleWeather = B_WEATHER_FOG;
                     gBattleScripting.animArg1 = B_ANIM_FOG_CONTINUES;
@@ -2989,6 +2989,9 @@ bool32 TryFieldEffects(enum FieldEffectCases caseId)
             if (GetConfig(B_OVERWORLD_WEATHER_OVERRIDE) >= GEN_9)
                 gBattleStruct->overworldWeatherPresent = TRUE;
             gBattleCommunication[MULTISTRING_CHOOSER] = GetCurrentWeather();
+            // Use the hail message for overworld snow when B_OVERWORLD_SNOW is below GEN_9
+            if (gBattleCommunication[MULTISTRING_CHOOSER] == WEATHER_SNOW && GetConfig(B_OVERWORLD_SNOW) < GEN_9)
+                gBattleCommunication[MULTISTRING_CHOOSER] = WEATHER_START_HAIL;
             BattleScriptPushCursorAndCallback(BattleScript_OverworldWeatherStarts);
         }
         break;
@@ -4081,7 +4084,7 @@ u32 AbilityBattleEffects(enum AbilityEffect caseID, enum BattlerId battler, enum
                 if (!IsAbilityAndRecord(gBattlerAttacker, GetBattlerAbility(gBattlerAttacker), ABILITY_MAGIC_GUARD))
                 {
                     PREPARE_ABILITY_BUFFER(gBattleTextBuff1, gLastUsedAbility);
-                    SetPassiveDamageAmount(gBattlerAttacker, GetNonDynamaxMaxHP(gBattlerAttacker) / (B_ROUGH_SKIN_DMG >= GEN_4 ? 8 : 16));
+                    SetPassiveDamageAmount(gBattlerAttacker, GetNonDynamaxMaxHP(gBattlerAttacker) / (GetConfig(B_ROUGH_SKIN_DMG) >= GEN_4 ? 8 : 16));
                     gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_HURT;
                     BattleScriptCall(BattleScript_RoughSkinActivates);
                 }
@@ -5012,7 +5015,7 @@ u32 IsAbilityPreventingEscape(enum BattlerId battler)
 
         enum Ability ability = GetBattlerAbility(battlerDef);
 
-        if (ability == ABILITY_SHADOW_TAG && (B_SHADOW_TAG_ESCAPE <= GEN_3 || GetBattlerAbility(battler) != ABILITY_SHADOW_TAG))
+        if (ability == ABILITY_SHADOW_TAG && (GetConfig(B_SHADOW_TAG_ESCAPE) <= GEN_3 || GetBattlerAbility(battler) != ABILITY_SHADOW_TAG))
             return battlerDef + 1;
 
         if (ability == ABILITY_ARENA_TRAP && isBattlerGrounded)
@@ -5657,7 +5660,7 @@ enum Obedience GetAttackerObedienceForAction(void)
         return OBEYS;
     if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
         return OBEYS;
-    if (B_OBEDIENCE_MECHANICS < GEN_8 && !IsOtherTrainer(gBattleMons[gBattlerAttacker].otId, gBattleMons[gBattlerAttacker].otName))
+    if (GetConfig(B_OBEDIENCE_MECHANICS) < GEN_8 && !IsOtherTrainer(gBattleMons[gBattlerAttacker].otId, gBattleMons[gBattlerAttacker].otName))
         return OBEYS;
     if (FlagGet(FLAG_BADGE08_GET)) // Rain Badge, ignore obedience altogether
         return OBEYS;
@@ -5679,7 +5682,7 @@ enum Obedience GetAttackerObedienceForAction(void)
     if (FlagGet(FLAG_BADGE07_GET)) // Mind Badge
         obedienceLevel = 80;
 
-    if (B_OBEDIENCE_MECHANICS >= GEN_8
+    if (GetConfig(B_OBEDIENCE_MECHANICS) >= GEN_8
      && !IsOtherTrainer(gBattleMons[gBattlerAttacker].otId, gBattleMons[gBattlerAttacker].otName))
         levelReferenced = gBattleMons[gBattlerAttacker].metLevel;
     else
@@ -5981,7 +5984,7 @@ static bool32 IsBattlerGroundedInverseCheck(enum BattlerId battler, enum Ability
         return TRUE;
     if (gFieldStatuses & STATUS_FIELD_GRAVITY && isAnticipation == FALSE)
         return TRUE;
-    if (B_ROOTED_GROUNDING >= GEN_4 && gBattleMons[battler].volatiles.root)
+    if (GetConfig(B_ROOTED_GROUNDING) >= GEN_4 && gBattleMons[battler].volatiles.root)
         return TRUE;
     if (gBattleMons[battler].volatiles.smackDown)
         return TRUE;
@@ -6172,7 +6175,7 @@ static inline u32 IsFieldMudSportAffected(enum Type moveType)
     if (gFieldStatuses & STATUS_FIELD_MUDSPORT)
         return TRUE;
 
-    if (B_SPORT_TURNS < GEN_6)
+    if (GetConfig(B_SPORT_TURNS) < GEN_6)
     {
         for (enum BattlerId battler = 0; battler < gBattlersCount; battler++)
         {
@@ -6192,7 +6195,7 @@ static inline u32 IsFieldWaterSportAffected(enum Type moveType)
     if (gFieldStatuses & STATUS_FIELD_WATERSPORT)
         return TRUE;
 
-    if (B_SPORT_TURNS < GEN_6)
+    if (GetConfig(B_SPORT_TURNS) < GEN_6)
     {
         for (enum BattlerId battler = 0; battler < gBattlersCount; battler++)
         {
@@ -6378,7 +6381,7 @@ static inline u32 CalcMoveBasePower(struct DamageContext *ctx)
                 basePower *= 2;
         }
         else if (HasBattlerActedThisTurn(battlerDef)
-            && (B_PAYBACK_SWITCH_BOOST < GEN_5 || !BattlerJustSwitchedIn(battlerDef)))
+            && (GetConfig(B_PAYBACK_SWITCH_BOOST) < GEN_5 || !BattlerJustSwitchedIn(battlerDef)))
         {
             basePower *= 2;
         }
@@ -6539,7 +6542,7 @@ static inline u32 CalcMoveBasePowerAfterModifiers(struct DamageContext *ctx)
             modifier = uq4_12_multiply(modifier, UQ_4_12(0.5));
         break;
     case EFFECT_KNOCK_OFF:
-        if (B_KNOCK_OFF_DMG >= GEN_6
+        if (GetConfig(B_KNOCK_OFF_DMG) >= GEN_6
             && gBattleMons[battlerDef].item != ITEM_NONE
             && CanBattlerGetOrLoseItem(battlerDef, battlerAtk, gBattleMons[battlerDef].item))
             modifier = uq4_12_multiply(modifier, UQ_4_12(1.5));
@@ -6559,13 +6562,13 @@ static inline u32 CalcMoveBasePowerAfterModifiers(struct DamageContext *ctx)
     if (GetMoveEffect(ctx->chosenMove) == EFFECT_ME_FIRST)
         modifier = uq4_12_multiply(modifier, UQ_4_12(1.5));
     if (IsGrassyTerrainAffected(battlerAtk, ctx->abilities[battlerAtk], ctx->holdEffects[battlerAtk], ctx->terrain) && moveType == TYPE_GRASS)
-        modifier = uq4_12_multiply(modifier, (B_TERRAIN_TYPE_BOOST >= GEN_8 ? UQ_4_12(1.3) : UQ_4_12(1.5)));
+        modifier = uq4_12_multiply(modifier, (GetConfig(B_TERRAIN_TYPE_BOOST) >= GEN_8 ? UQ_4_12(1.3) : UQ_4_12(1.5)));
     if (IsMistyTerrainAffected(battlerDef, ctx->abilities[battlerDef], ctx->holdEffects[battlerDef], ctx->terrain) && moveType == TYPE_DRAGON)
         modifier = uq4_12_multiply(modifier, UQ_4_12(0.5));
     if (IsElectricTerrainAffected(battlerAtk, ctx->abilities[battlerAtk], ctx->holdEffects[battlerAtk], ctx->terrain) && moveType == TYPE_ELECTRIC)
-        modifier = uq4_12_multiply(modifier, (B_TERRAIN_TYPE_BOOST >= GEN_8 ? UQ_4_12(1.3) : UQ_4_12(1.5)));
+        modifier = uq4_12_multiply(modifier, (GetConfig(B_TERRAIN_TYPE_BOOST) >= GEN_8 ? UQ_4_12(1.3) : UQ_4_12(1.5)));
     if (IsPsychicTerrainAffected(battlerAtk, ctx->abilities[battlerAtk], ctx->holdEffects[battlerAtk], ctx->terrain) && moveType == TYPE_PSYCHIC)
-        modifier = uq4_12_multiply(modifier, (B_TERRAIN_TYPE_BOOST >= GEN_8 ? UQ_4_12(1.3) : UQ_4_12(1.5)));
+        modifier = uq4_12_multiply(modifier, (GetConfig(B_TERRAIN_TYPE_BOOST) >= GEN_8 ? UQ_4_12(1.3) : UQ_4_12(1.5)));
     if (IsFieldMudSportAffected(ctx->moveType))
         modifier = uq4_12_multiply(modifier, UQ_4_12(GetConfig(B_SPORT_DMG_REDUCTION) >= GEN_5 ? 0.33 : 0.5));
     if (IsFieldWaterSportAffected(ctx->moveType))
@@ -6776,8 +6779,8 @@ static inline u32 CalcMoveBasePowerAfterModifiers(struct DamageContext *ctx)
         break;
     case HOLD_EFFECT_SOUL_DEW:
         if ((gBattleMons[battlerAtk].species == SPECIES_LATIAS || gBattleMons[battlerAtk].species == SPECIES_LATIOS)
-            && ((B_SOUL_DEW_BOOST >= GEN_7 && (moveType == TYPE_PSYCHIC || moveType == TYPE_DRAGON))
-             || (B_SOUL_DEW_BOOST < GEN_7 && !(gBattleTypeFlags & BATTLE_TYPE_FRONTIER) && IsBattleMoveSpecial(move))))
+            && ((GetConfig(B_SOUL_DEW_BOOST) >= GEN_7 && (moveType == TYPE_PSYCHIC || moveType == TYPE_DRAGON))
+             || (GetConfig(B_SOUL_DEW_BOOST) < GEN_7 && !(gBattleTypeFlags & BATTLE_TYPE_FRONTIER) && IsBattleMoveSpecial(move))))
             modifier = uq4_12_multiply(modifier, holdEffectModifier);
         break;
     case HOLD_EFFECT_TYPE_POWER:
@@ -6978,7 +6981,7 @@ static inline u32 CalcAttackStat(struct DamageContext *ctx)
         {
             enum Ability partnerAbility = ctx->abilities[GetPartnerBattler(battlerAtk)];
             if (partnerAbility == ABILITY_MINUS
-            || (B_PLUS_MINUS_INTERACTION >= GEN_5 && partnerAbility == ABILITY_PLUS))
+            || (GetConfig(B_PLUS_MINUS_INTERACTION) >= GEN_5 && partnerAbility == ABILITY_PLUS))
                 modifier = uq4_12_multiply_half_down(modifier, UQ_4_12(1.5));
         }
         break;
@@ -6987,7 +6990,7 @@ static inline u32 CalcAttackStat(struct DamageContext *ctx)
         {
             enum Ability partnerAbility = ctx->abilities[GetPartnerBattler(battlerAtk)];
             if (partnerAbility == ABILITY_PLUS
-            || (B_PLUS_MINUS_INTERACTION >= GEN_5 && partnerAbility == ABILITY_MINUS))
+            || (GetConfig(B_PLUS_MINUS_INTERACTION) >= GEN_5 && partnerAbility == ABILITY_MINUS))
                 modifier = uq4_12_multiply_half_down(modifier, UQ_4_12(1.5));
         }
         break;
@@ -7297,7 +7300,7 @@ static inline u32 CalcDefenseStat(struct DamageContext *ctx)
             modifier = uq4_12_multiply_half_down(modifier, UQ_4_12(1.5));
         break;
     case HOLD_EFFECT_SOUL_DEW:
-        if (B_SOUL_DEW_BOOST < GEN_7
+        if (GetConfig(B_SOUL_DEW_BOOST) < GEN_7
          && (gBattleMons[battlerDef].species == SPECIES_LATIAS || gBattleMons[battlerDef].species == SPECIES_LATIOS)
          && !(gBattleTypeFlags & BATTLE_TYPE_FRONTIER)
          && !usesDefStat)
@@ -7770,12 +7773,12 @@ s32 DoFixedDamageMoveCalc(struct DamageContext *ctx)
         dmg = gBattleMons[ctx->battlerAtk].level;
         break;
     case EFFECT_PSYWAVE:
-        if (B_PSYWAVE_DMG >= GEN_5)
+        if (GetConfig(B_PSYWAVE_DMG) >= GEN_5)
         {
             randDamage = Random() % 101;
             dmg = gBattleMons[ctx->battlerAtk].level * (randDamage + 50) / 100;
         }
-        else if (B_PSYWAVE_DMG >= GEN_3)
+        else if (GetConfig(B_PSYWAVE_DMG) >= GEN_3)
         {
             randDamage = Random() % 11;
             dmg = gBattleMons[ctx->battlerAtk].level * ((randDamage * 10) + 50) / 100;
@@ -7973,7 +7976,7 @@ s32 CalcCritChanceStage(struct DamageContext *ctx)
                     + (gBattleMons[ctx->battlerAtk].volatiles.dragonCheer != 0 ? 1 : 0)
                     + GetMoveCriticalHitStage(ctx->move)
                     + GetHoldEffectCritChanceIncrease(ctx->battlerAtk, ctx->holdEffects[ctx->battlerAtk])
-                    + ((B_AFFECTION_MECHANICS == TRUE && GetBattlerAffectionHearts(ctx->battlerAtk) == AFFECTION_FIVE_HEARTS) ? 2 : 0)
+                    + ((GetConfig(B_AFFECTION_MECHANICS) == TRUE && GetBattlerAffectionHearts(ctx->battlerAtk) == AFFECTION_FIVE_HEARTS) ? 2 : 0)
                     + (ctx->abilities[ctx->battlerAtk] == ABILITY_SUPER_LUCK ? 1 : 0)
                     + gBattleMons[ctx->battlerAtk].volatiles.bonusCritStages;
 
@@ -8132,7 +8135,7 @@ s32 GetAdjustedDamage(struct DamageContext *ctx, s32 damage)
         gLastUsedItem = gBattleMons[ctx->battlerDef].item;
         gBattleStruct->moveResultFlags[ctx->battlerDef] |= MOVE_RESULT_FOE_HUNG_ON;
     }
-    else if (B_AFFECTION_MECHANICS == TRUE && IsOnPlayerSide(ctx->battlerDef) && affectionScore >= AFFECTION_THREE_HEARTS)
+    else if (GetConfig(B_AFFECTION_MECHANICS) == TRUE && IsOnPlayerSide(ctx->battlerDef) && affectionScore >= AFFECTION_THREE_HEARTS)
     {
         if ((affectionScore == AFFECTION_FIVE_HEARTS && rand < 20)
          || (affectionScore == AFFECTION_FOUR_HEARTS && rand < 15)
@@ -8296,7 +8299,7 @@ static inline uq4_12_t CalcTypeEffectivenessMultiplierInternal(struct DamageCont
     if (ignoreTypeCalc && ctx->move != MOVE_THUNDER_WAVE)
     {
         modifier = UQ_4_12(1.0);
-        if (B_GLARE_GHOST < GEN_4 && ctx->move == MOVE_GLARE && IS_BATTLER_OF_TYPE(ctx->battlerDef, TYPE_GHOST))
+        if (GetConfig(B_GLARE_GHOST) < GEN_4 && ctx->move == MOVE_GLARE && IS_BATTLER_OF_TYPE(ctx->battlerDef, TYPE_GHOST))
             modifier = UQ_4_12(0.0);
     }
     else if (ctx->moveType == TYPE_GROUND
@@ -9108,7 +9111,7 @@ enum DamageCategory GetBattleMoveCategory(enum Move move)
     if (GetMoveCategory(move) == DAMAGE_CATEGORY_STATUS)
         return DAMAGE_CATEGORY_STATUS;
 
-    if (B_PHYSICAL_SPECIAL_SPLIT < GEN_4)
+    if (GetConfig(B_PHYSICAL_SPECIAL_SPLIT) < GEN_4)
     {
         if (inBattle)
             return gTypesInfo[GetBattleMoveType(move)].damageCategory;
@@ -9351,7 +9354,7 @@ bool32 CanStealItem(enum BattlerId battlerStealing, enum BattlerId battlerItem, 
               | BATTLE_TYPE_LINK
               | BATTLE_TYPE_RECORDED_LINK
               | BATTLE_TYPE_SECRET_BASE
-              | (B_TRAINERS_KNOCK_OFF_ITEMS == TRUE ? BATTLE_TYPE_TRAINER : 0)
+              | (GetConfig(B_TRAINERS_KNOCK_OFF_ITEMS) == TRUE ? BATTLE_TYPE_TRAINER : 0)
               )))
     {
         return FALSE;
@@ -9378,7 +9381,7 @@ void TrySaveExchangedItem(enum BattlerId battler, enum Item stolenItem)
 {
     // Because BtlController_EmitSetMonData does SetMonData, we need to save the stolen item only if it matches the battler's original
     // So, if the player steals an item during battle and has it stolen from it, it will not end the battle with it (naturally)
-    if (B_TRAINERS_KNOCK_OFF_ITEMS == FALSE)
+    if (GetConfig(B_TRAINERS_KNOCK_OFF_ITEMS) == FALSE)
         return;
 
     if (!(gBattleTypeFlags & BATTLE_TYPE_TRAINER) || gBattleTypeFlags & BATTLE_TYPE_FRONTIER)
@@ -10054,7 +10057,7 @@ bool32 SetTargetToNextPursuiter(enum BattlerId battlerDef)
         && IsBattlerAlive(battlerDef)
         && IsBattlerAlive(battler)
         && !IsBattlerAlly(battler, battlerDef)
-        && (B_PURSUIT_TARGET >= GEN_4 || gBattleStruct->moveTarget[battler] == battlerDef)
+        && (GetConfig(B_PURSUIT_TARGET) >= GEN_4 || gBattleStruct->moveTarget[battler] == battlerDef)
         && !IsGimmickSelected(battler, GIMMICK_Z_MOVE)
         && !IsGimmickSelected(battler, GIMMICK_DYNAMAX)
         && GetActiveGimmick(battler) != GIMMICK_DYNAMAX)
@@ -10413,7 +10416,7 @@ bool32 CanMoveSkipAccuracyCalc(struct BattleCalcValues *cv, u32 weather, enum Re
     {
         effect = TRUE;
     }
-    else if (B_MINIMIZE_DMG_ACC >= GEN_6
+    else if (GetConfig(B_MINIMIZE_DMG_ACC) >= GEN_6
      && gBattleMons[battlerDef].volatiles.minimize
      && MoveIncreasesPowerToMinimizedTargets(cv->move))
     {
@@ -10571,7 +10574,7 @@ u32 GetTotalAccuracy(struct BattleCalcValues *cv, u32 weather)
     if (gFieldStatuses & STATUS_FIELD_GRAVITY)
         calc = (calc * 5) / 3; // 1.66 Gravity acc boost
 
-    if (B_AFFECTION_MECHANICS == TRUE && GetBattlerAffectionHearts(battlerDef) == AFFECTION_FIVE_HEARTS)
+    if (GetConfig(B_AFFECTION_MECHANICS) == TRUE && GetBattlerAffectionHearts(battlerDef) == AFFECTION_FIVE_HEARTS)
         calc = (calc * 90) / 100;
 
     if (weather & B_WEATHER_FOG)
@@ -11136,7 +11139,7 @@ enum BattlerId GetTargetFromSlotId(enum BattlerId battlerAtk, enum BattlerId bat
 
 bool32 IsNaturalEnemy(enum Species speciesAttacker, enum Species speciesTarget)
 {
-    if (WE_WILD_NATURAL_ENEMIES != TRUE)
+    if (GetConfig(WE_WILD_NATURAL_ENEMIES) != TRUE)
         return FALSE;
 
     switch (speciesAttacker)
