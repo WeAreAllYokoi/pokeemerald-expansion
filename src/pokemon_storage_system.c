@@ -55,21 +55,11 @@
           types of functions are likely located.
 */
 
-// PC main menu options
+// Keep option IDs fixed; ADMG_GetPcMenuOptionAt maps the selected menu order to these IDs
 enum {
-#if OW_PC_MOVE_ORDER <= GEN_3
     OPTION_WITHDRAW,
     OPTION_DEPOSIT,
     OPTION_MOVE_MONS,
-#elif OW_PC_MOVE_ORDER >= GEN_4 && OW_PC_MOVE_ORDER <= GEN_6_XY
-    OPTION_DEPOSIT,
-    OPTION_WITHDRAW,
-    OPTION_MOVE_MONS,
-#elif OW_PC_MOVE_ORDER >= GEN_7
-    OPTION_MOVE_MONS,
-    OPTION_DEPOSIT,
-    OPTION_WITHDRAW,
-#endif
     OPTION_MOVE_ITEMS,
     OPTION_EXIT,
     OPTIONS_COUNT,
@@ -1501,6 +1491,42 @@ enum {
     STATE_ENTER_PC,
 };
 
+// OW_PC_MOVE_ORDER puts Withdraw first through Gen 3 and Deposit first from Gen 4
+// through GEN_6_XY; Gen 7 and later (and GEN_6_ORAS) put Move Pokémon first
+static const u8 sPcMenuOrders[][OPTIONS_COUNT] =
+{
+    {OPTION_WITHDRAW, OPTION_DEPOSIT, OPTION_MOVE_MONS, OPTION_MOVE_ITEMS, OPTION_EXIT},
+    {OPTION_DEPOSIT, OPTION_WITHDRAW, OPTION_MOVE_MONS, OPTION_MOVE_ITEMS, OPTION_EXIT},
+    {OPTION_MOVE_MONS, OPTION_DEPOSIT, OPTION_WITHDRAW, OPTION_MOVE_ITEMS, OPTION_EXIT},
+};
+
+static const u8 *PcMenuOrder(void)
+{
+    if (OW_PC_MOVE_ORDER <= GEN_3)
+        return sPcMenuOrders[0];
+    if (OW_PC_MOVE_ORDER <= GEN_6_XY)
+        return sPcMenuOrders[1];
+    return sPcMenuOrders[2];
+}
+
+s16 ADMG_GetPcMenuOptionAt(s16 position)
+{
+    return (position >= 0 && position < OPTIONS_COUNT) ? PcMenuOrder()[position] : position;
+}
+
+static s16 PcMenuPositionOf(s16 option)
+{
+    u32 i;
+
+    for (i = 0; i < OPTIONS_COUNT; i++)
+    {
+        if (PcMenuOrder()[i] == option)
+            return i;
+    }
+    return 0;
+}
+
+// tSelectedOption and tNextOption hold menu positions; tInput holds an option or input result
 #define tState          data[0]
 #define tSelectedOption data[1]
 #define tInput          data[2]
@@ -1518,7 +1544,7 @@ static void Task_PCMainMenu(u8 taskId)
         LoadMessageBoxAndBorderGfx();
         DrawDialogueFrame(0, FALSE);
         FillWindowPixelBuffer(0, PIXEL_FILL(1));
-        AddTextPrinterParameterized2(0, FONT_NORMAL, sMainMenuTexts[task->tSelectedOption].desc, TEXT_SKIP_DRAW, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+        AddTextPrinterParameterized2(0, FONT_NORMAL, sMainMenuTexts[ADMG_GetPcMenuOptionAt(task->tSelectedOption)].desc, TEXT_SKIP_DRAW, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
         CopyWindowToVram(0, COPYWIN_FULL);
         CopyWindowToVram(task->tWindowId, COPYWIN_FULL);
         task->tState++;
@@ -1528,7 +1554,7 @@ static void Task_PCMainMenu(u8 taskId)
             task->tState++;
         break;
     case STATE_HANDLE_INPUT:
-        task->tInput = Menu_ProcessInput();
+        task->tInput = ADMG_GetPcMenuOptionAt(Menu_ProcessInput());
         switch (task->tInput)
         {
         case MENU_NOTHING_CHOSEN:
@@ -1542,7 +1568,7 @@ static void Task_PCMainMenu(u8 taskId)
             {
                 task->tSelectedOption = task->tNextOption;
                 FillWindowPixelBuffer(0, PIXEL_FILL(1));
-                AddTextPrinterParameterized2(0, FONT_NORMAL, sMainMenuTexts[task->tSelectedOption].desc, 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+                AddTextPrinterParameterized2(0, FONT_NORMAL, sMainMenuTexts[ADMG_GetPcMenuOptionAt(task->tSelectedOption)].desc, 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
             }
             break;
         case MENU_B_PRESSED:
@@ -1583,7 +1609,7 @@ static void Task_PCMainMenu(u8 taskId)
         if (JOY_NEW(A_BUTTON | B_BUTTON))
         {
             FillWindowPixelBuffer(0, PIXEL_FILL(1));
-            AddTextPrinterParameterized2(0, FONT_NORMAL, sMainMenuTexts[task->tSelectedOption].desc, 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+            AddTextPrinterParameterized2(0, FONT_NORMAL, sMainMenuTexts[ADMG_GetPcMenuOptionAt(task->tSelectedOption)].desc, 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
             task->tState = STATE_HANDLE_INPUT;
         }
         else if (JOY_NEW(DPAD_UP))
@@ -1593,7 +1619,7 @@ static void Task_PCMainMenu(u8 taskId)
             Menu_MoveCursor(-1);
             task->tSelectedOption = Menu_GetCursorPos();
             FillWindowPixelBuffer(0, PIXEL_FILL(1));
-            AddTextPrinterParameterized2(0, FONT_NORMAL, sMainMenuTexts[task->tSelectedOption].desc, 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+            AddTextPrinterParameterized2(0, FONT_NORMAL, sMainMenuTexts[ADMG_GetPcMenuOptionAt(task->tSelectedOption)].desc, 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
             task->tState = STATE_HANDLE_INPUT;
         }
         else if (JOY_NEW(DPAD_DOWN))
@@ -1603,7 +1629,7 @@ static void Task_PCMainMenu(u8 taskId)
             Menu_MoveCursor(1);
             task->tSelectedOption = Menu_GetCursorPos();
             FillWindowPixelBuffer(0, PIXEL_FILL(1));
-            AddTextPrinterParameterized2(0, FONT_NORMAL, sMainMenuTexts[task->tSelectedOption].desc, 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+            AddTextPrinterParameterized2(0, FONT_NORMAL, sMainMenuTexts[ADMG_GetPcMenuOptionAt(task->tSelectedOption)].desc, 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
             task->tState = STATE_HANDLE_INPUT;
         }
         break;
@@ -1635,7 +1661,7 @@ static void FieldTask_ReturnToPcMenu(void)
     SetVBlankCallback(NULL);
     taskId = CreateTask(Task_PCMainMenu, 80);
     gTasks[taskId].tState = 0;
-    gTasks[taskId].tSelectedOption = sPreviousBoxOption;
+    gTasks[taskId].tSelectedOption = PcMenuPositionOf(sPreviousBoxOption);
     Task_PCMainMenu(taskId);
     SetVBlankCallback(vblankCb);
     FadeInFromBlack();
@@ -1651,11 +1677,16 @@ static void CreateMainMenu(u8 whichMenu, s16 *windowIdPtr)
 {
     s16 windowId;
     struct WindowTemplate template = sWindowTemplate_MainMenu;
-    template.width = GetMaxWidthInMenuTable((void *)sMainMenuTexts, OPTIONS_COUNT);
+    struct MenuAction items[OPTIONS_COUNT];
+    u32 i;
+
+    for (i = 0; i < OPTIONS_COUNT; i++)
+        items[i] = (struct MenuAction){.text = sMainMenuTexts[ADMG_GetPcMenuOptionAt(i)].text};
+    template.width = GetMaxWidthInMenuTable(items, OPTIONS_COUNT);
     windowId = AddWindow(&template);
 
     DrawStdWindowFrame(windowId, FALSE);
-    PrintMenuTable(windowId, OPTIONS_COUNT, (void *)sMainMenuTexts);
+    PrintMenuTable(windowId, OPTIONS_COUNT, items);
     InitMenuInUpperLeftCornerNormal(windowId, OPTIONS_COUNT, whichMenu);
     *windowIdPtr = windowId;
 }
@@ -5478,7 +5509,7 @@ static void LoadWallpaperGfx(u8 boxId, s8 direction)
             CpuCopy16(sStorage->wallpaperTilemap, &gPlttBufferUnfaded[BG_PLTT_ID(4) + BG_PLTT_ID(sStorage->wallpaperOffset * 2)], 2 * PLTT_SIZE_4BPP);
 
         sStorage->wallpaperTiles = malloc_and_decompress(wallpaper->tiles, &tilesSize);
-        iconGfx = malloc_and_decompress(sWaldaWallpaperIcons[GetWaldaWallpaperIconId()], &iconSize);
+        iconGfx = malloc_and_decompress(ADMG_GetWaldaWallpaperIconGfx(GetWaldaWallpaperIconId()), &iconSize);
         CpuCopy32(iconGfx, sStorage->wallpaperTiles + 0x800, iconSize);
         Free(iconGfx);
         LoadBgTiles(2, sStorage->wallpaperTiles, tilesSize, sStorage->wallpaperOffset << 8);

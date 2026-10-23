@@ -63,6 +63,11 @@ void SetWaldaWallpaperPatternId(u8 id);
 u32 GetWaldaWallpaperIconId(void);
 void SetWaldaWallpaperIconId(u8 id);
 u16 *GetWaldaWallpaperColorsPtr(void);
+// Get a Walda wallpaper icon using the current OW_PC_JAPAN_WALDA_ICONS setting
+const u32 *ADMG_GetWaldaWallpaperIconGfx(u8 id);
+// Map a menu position to an option using OW_PC_MOVE_ORDER; out-of-range positions pass through
+// Option IDs: 0 withdraw, 1 deposit, 2 move Pokémon, 3 move items, 4 exit
+s16 ADMG_GetPcMenuOptionAt(s16 position);
 void SetWaldaWallpaperColors(u16 color1, u16 color2);
 u8 *GetWaldaPhrasePtr(void);
 void SetWaldaPhrase(const u8 *src);

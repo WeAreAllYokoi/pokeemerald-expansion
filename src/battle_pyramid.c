@@ -107,12 +107,10 @@ static bool8 TrySetPyramidObjectEventPositionAtCoords(bool8, u8, u8, u8 *, u8, u
 // Const rom data.
 #define ABILITY_RANDOM 2 // For wild mons data.
 
-#if BATTLE_PYRAMID_RANDOM_ENCOUNTERS == TRUE
-    #include "data/battle_frontier/battle_pyramid_wild_requirements.h"
-#else
-    #include "data/battle_frontier/battle_pyramid_level_50_wild_mons.h"
-    #include "data/battle_frontier/battle_pyramid_open_level_wild_mons.h"
-#endif
+// Build both encounter sources so BATTLE_PYRAMID_RANDOM_ENCOUNTERS can choose at runtime
+#include "data/battle_frontier/battle_pyramid_wild_requirements.h"
+#include "data/battle_frontier/battle_pyramid_level_50_wild_mons.h"
+#include "data/battle_frontier/battle_pyramid_open_level_wild_mons.h"
 
 
 static const struct PyramidFloorTemplate sPyramidFloorTemplates[] =
@@ -1517,10 +1515,9 @@ static void MarkPyramidTrainerAsBattled(enum TrainerId trainerId)
     gObjectEvents[gSelectedObjectEvent].initialCoords.y = gObjectEvents[gSelectedObjectEvent].currentCoords.y;
 }
 
-#if BATTLE_PYRAMID_RANDOM_ENCOUNTERS == TRUE
 // check if given species evolved from a specific evolutionary stone
 // if nItems is passed as 0, it will check for any EVO_ITEM case
-static bool32 CheckBattlePyramidEvoRequirement(enum Species species, const u16 *evoItems, u8 nItems)
+static bool32 CheckBattlePyramidEvoRequirement(enum Species species, const enum Item *evoItems, u8 nItems)
 {
     u32 i, j, k;
     for (i = 0; i < RUNTIME_SPECIES_COUNT; i = NEXT_SPECIES_ID(i))
@@ -1557,7 +1554,8 @@ static bool32 CheckBattlePyramidEvoRequirement(enum Species species, const u16 *
 }
 
 extern u32 GetTotalBaseStat(enum Species species);
-void GenerateBattlePyramidWildMon(enum Species forceSpecies)
+// Generate an encounter using the round's requirements when BATTLE_PYRAMID_RANDOM_ENCOUNTERS is TRUE
+static void GenerateBattlePyramidWildMon_Random(enum Species forceSpecies)
 {
     u8 name[POKEMON_NAME_LENGTH + 1];
     int i, j;
@@ -1729,8 +1727,9 @@ void GenerateBattlePyramidWildMon(enum Species forceSpecies)
 
     CalculateMonStats(&gParties[B_TRAINER_OPPONENT_A][0]);
 }
-#else
-void GenerateBattlePyramidWildMon(enum Species forceSpecies)
+
+// Generate an encounter from the round's fixed list when BATTLE_PYRAMID_RANDOM_ENCOUNTERS is FALSE
+static void GenerateBattlePyramidWildMon_Fixed(void)
 {
     u8 name[POKEMON_NAME_LENGTH + 1];
     int i;
@@ -1802,7 +1801,14 @@ void GenerateBattlePyramidWildMon(enum Species forceSpecies)
     }
     CalculateMonStats(&gParties[B_TRAINER_OPPONENT_A][0]);
 }
-#endif
+
+void GenerateBattlePyramidWildMon(enum Species forceSpecies)
+{
+    if (BATTLE_PYRAMID_RANDOM_ENCOUNTERS)
+        GenerateBattlePyramidWildMon_Random(forceSpecies);
+    else
+        GenerateBattlePyramidWildMon_Fixed();
+}
 
 u8 GetPyramidRunMultiplier(void)
 {

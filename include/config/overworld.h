@@ -36,10 +36,12 @@
 // PC settings
 #define ADMG_DEFAULT_OW_PC_PRESS_B               GEN_LATEST // In Gen4, pressing B when holding a Pokémon is equivalent to placing it. In Gen3, it gives the "You're holding a Pokémon!" error.
 #define OW_PC_PRESS_B ADMG_CONFIG_EXTRA(OW_PC_PRESS_B)
-#define OW_PC_JAPAN_WALDA_ICONS     TRUE       // In the US release of Emerald, the Cross, Bolt, and Plusle icons for Walda's wallpapers were left blank from the Japan release. Setting this to TRUE will restore them.
+#define ADMG_DEFAULT_OW_PC_JAPAN_WALDA_ICONS     TRUE       // In the US release of Emerald, the Cross, Bolt, and Plusle icons for Walda's wallpapers were left blank from the Japan release. Setting this to TRUE will restore them.
+#define OW_PC_JAPAN_WALDA_ICONS ADMG_CONFIG_EXTRA(OW_PC_JAPAN_WALDA_ICONS)
 #define ADMG_DEFAULT_OW_PC_HEAL                  GEN_LATEST // In Gen8+, Pokémon are not healed when deposited in the PC.
 #define OW_PC_HEAL ADMG_CONFIG_EXTRA(OW_PC_HEAL)
-#define OW_PC_MOVE_ORDER            GEN_LATEST // Starting in Gen4, the order of options in the PC menu change.
+#define ADMG_DEFAULT_OW_PC_MOVE_ORDER            GEN_LATEST // Starting in Gen4, the order of options in the PC menu change.
+#define OW_PC_MOVE_ORDER ADMG_CONFIG_EXTRA(OW_PC_MOVE_ORDER)
 #define ADMG_DEFAULT_OW_PC_RELEASE_ITEM          GEN_LATEST // In Gen8+, Pokémon that get released with a held item return it to the bag.
 #define OW_PC_RELEASE_ITEM ADMG_CONFIG_EXTRA(OW_PC_RELEASE_ITEM)
 
@@ -114,7 +116,8 @@
 #define TIME_DEBUG                      GEN_COUNT + 3
 
 // Time
-#define OW_TIMES_OF_DAY                 GEN_LATEST   // Different generations have the times of day change at different times.
+#define ADMG_DEFAULT_OW_TIMES_OF_DAY                 GEN_LATEST   // Different generations have the times of day change at different times.
+#define OW_TIMES_OF_DAY ADMG_CONFIG_EXTRA(OW_TIMES_OF_DAY)
 #define OW_USE_FAKE_RTC                 FALSE        // When TRUE, seconds on the in-game clock will only advance once every 60 playTimeVBlanks (every 60 frames).
 #define ADMG_DEFAULT_OW_ALTERED_TIME_RATIO           GEN_LATEST   // In GEN_8_PLA, the time in game moves forward 60 seconds for every second in the RTC. In GEN_9, it is 20 seconds. TIME_DEBUG is 1:1, and meant for debugging purposes. This has no effect if OW_USE_FAKE_RTC is FALSE.
 #define OW_ALTERED_TIME_RATIO ADMG_CONFIG_EXTRA(OW_ALTERED_TIME_RATIO)
@@ -142,7 +145,8 @@
 #define OW_FLAG_NO_COLLISION        0  // If this flag is set, the player will be able to walk over tiles with collision. Mainly intended for debugging purposes.
 #define OW_FLAG_POKE_RIDER          0  // If this flag is set, the player will be able to use fly from the Pokenav Region Map and the Town Map key item by pressing 'R' on a city/location they are able to fly to.
 
-#define BATTLE_PYRAMID_RANDOM_ENCOUNTERS    FALSE    // If set to TRUE, battle pyramid Pokemon will be generated randomly based on the round's challenge instead of hardcoded in src/data/battle_frontier/battle_pyramid_level_50_wild_mons.h (or open_level_wild_mons.h)
+#define ADMG_DEFAULT_BATTLE_PYRAMID_RANDOM_ENCOUNTERS    FALSE    // If set to TRUE, battle pyramid Pokémon will be generated randomly based on the round's challenge instead of hardcoded in src/data/battle_frontier/battle_pyramid_level_50_wild_mons.h (or open_level_wild_mons.h)
+#define BATTLE_PYRAMID_RANDOM_ENCOUNTERS ADMG_CONFIG_EXTRA(BATTLE_PYRAMID_RANDOM_ENCOUNTERS)
 
 // Map pop-up config
 #define ADMG_DEFAULT_OW_POPUP_GENERATION        GEN_3    // Different generations display location names in overworld pop-ups differently.

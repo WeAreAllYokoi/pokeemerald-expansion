@@ -26,6 +26,7 @@ void RtcReset(void);
 void RtcCalcTimeDifference(struct SiiRtcInfo *rtc, struct Time *result, struct Time *t);
 void RtcCalcLocalTime(void);
 bool8 IsBetweenHours(s32 hours, s32 begin, s32 end);
+u32 ADMG_GetTimeOfDayHour(u32 which);
 enum TimeOfDay GetTimeOfDay(void);
 enum TimeOfDay GetTimeOfDayForDex(void);
 void RtcInitLocalTimeOffset(s32 hour, s32 minute);

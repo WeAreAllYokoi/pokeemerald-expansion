@@ -370,11 +370,7 @@ static const u32 *const sWaldaWallpaperIcons[] =
     sWallpaperIcon_FourStar,
     sWallpaperIcon_Asterisk,
     sWallpaperIcon_Dot,
-#if OW_PC_JAPAN_WALDA_ICONS == TRUE
     sWallpaperIcon_CrossJapan,
-#else
-    gWallpaperIcon_Cross,
-#endif
     sWallpaperIcon_LineCircle,
     sWallpaperIcon_PokeBall,
     sWallpaperIcon_Maze,
@@ -383,11 +379,7 @@ static const u32 *const sWaldaWallpaperIcons[] =
     sWallpaperIcon_Circle,
     sWallpaperIcon_Koffing,
     sWallpaperIcon_Ribbon,
-#if OW_PC_JAPAN_WALDA_ICONS == TRUE
     sWallpaperIcon_BoltJapan,
-#else
-    gWallpaperIcon_Bolt,
-#endif
     sWallpaperIcon_FourCircles,
     sWallpaperIcon_Lotad,
     sWallpaperIcon_Crystal,
@@ -397,12 +389,26 @@ static const u32 *const sWaldaWallpaperIcons[] =
     sWallpaperIcon_StarInCircle,
     sWallpaperIcon_Spinda,
     sWallpaperIcon_Latis,
-#if OW_PC_JAPAN_WALDA_ICONS == TRUE
     sWallpaperIcon_PlusleJapan,
-#else
-    gWallpaperIcon_Plusle,
-#endif
     sWallpaperIcon_Minun,
     sWallpaperIcon_Togepi,
     sWallpaperIcon_Magma,
 };
+
+// The table holds the Japanese Cross, Bolt and Plusle icons
+// When OW_PC_JAPAN_WALDA_ICONS is FALSE, return their blank US versions instead
+const u32 *ADMG_GetWaldaWallpaperIconGfx(u8 id)
+{
+    const u32 *gfx = sWaldaWallpaperIcons[id];
+
+    if (!OW_PC_JAPAN_WALDA_ICONS)
+    {
+        if (gfx == sWallpaperIcon_CrossJapan)
+            return gWallpaperIcon_Cross;
+        if (gfx == sWallpaperIcon_BoltJapan)
+            return gWallpaperIcon_Bolt;
+        if (gfx == sWallpaperIcon_PlusleJapan)
+            return gWallpaperIcon_Plusle;
+    }
+    return gfx;
+}

@@ -455,6 +455,43 @@ enum Weekday GetDayOfWeek(void)
     return dateTime.dayOfWeek;
 }
 
+// Begin/end hour pairs for morning, day, evening and night, selected by OW_TIMES_OF_DAY
+// A time of day absent from that generation uses 0 for both hours
+static const u8 sTimeOfDayHours[][8] =
+{
+    {4, 10, 10, 18, 0, 0, 18, 4},                // GEN_2: no evening
+    {0, 0, 12, HOURS_PER_DAY, 0, 0, 0, 12},      // GEN_3: no morning or evening
+    {4, 10, 10, 20, 0, 0, 20, 4},                // GEN_4: no evening
+    {4, 11, 11, 18, 18, 21, 21, 4},              // GEN_1, GEN_5 and GEN_6 (Gen 5's seasons are not modelled)
+    {6, 10, 10, 17, 17, 18, 18, 6},              // GEN_7 (Sun and Ultra Sun)
+    {6, 10, 10, 19, 19, 20, 20, 6},              // GEN_8 and later
+};
+
+u32 ADMG_GetTimeOfDayHour(u32 which)
+{
+    u32 row;
+
+    switch (OW_TIMES_OF_DAY)
+    {
+    case GEN_2:
+        row = 0;
+        break;
+    case GEN_3:
+        row = 1;
+        break;
+    case GEN_4:
+        row = 2;
+        break;
+    case GEN_7:
+        row = 4;
+        break;
+    default:
+        row = OW_TIMES_OF_DAY <= GEN_6 ? 3 : 5;
+        break;
+    }
+    return sTimeOfDayHours[row][which];
+}
+
 enum TimeOfDay GenConfigTimeOfDay(enum TimeOfDay timeOfDay)
 {
     if (timeOfDay >= TIME_LAST)

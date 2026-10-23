@@ -1,10 +1,10 @@
-#if BATTLE_PYRAMID_RANDOM_ENCOUNTERS == TRUE
-
+// Keep these requirements available when BATTLE_PYRAMID_RANDOM_ENCOUNTERS is enabled at runtime
+// Move and evolution-item lists use enum Move and enum Item to match their readers
 #include "constants/abilities.h"
 #include "constants/battle_move_effects.h"
 
 struct BattlePyramidRequirement {
-    const u16 *moves; /* use moves instead of effects so we don't need to find moves with said effect in our loop */
+    const enum Move *moves; /* use moves instead of effects so we don't need to find moves with said effect in our loop */
     enum Ability abilities[10];
     u8 nAbilities;
     enum Type type;
@@ -36,7 +36,7 @@ static const enum Move sParalyzingMoves[] = {
 };
 
 // MOVE_EFFECT_POISON (30% or more), MOVE_EFFECT_TOXIC, EFFECT_TOXIC_THREAD
-static const u16 sPoisoningMoves[] = {
+static const enum Move sPoisoningMoves[] = {
     MOVE_POISON_STING,
     //MOVE_TWINEEDLE,
     MOVE_SMOG,
@@ -233,5 +233,3 @@ static const struct BattlePyramidRequirement sBattlePyramidRequirementsByRound[]
         .nMoves = NELEMS(sPowerfulNormalMoves),
     },
 };
-
-#endif
