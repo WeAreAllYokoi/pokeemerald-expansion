@@ -261,8 +261,9 @@ static void RandomizePoolIndices(const struct Trainer *trainer, u8 *poolIndexArr
     for (u32 i = 0; i < poolSize; i++)
         poolIndexArray[i] = i;
     u32 rnd;
-    rng_value_t localRngState;
-    if (B_POOL_SETTING_CONSISTENT_RNG)
+    rng_value_t localRngState = {0}; // ADMG: set and used only when consistent (GCC cannot prove it across the loop)
+    bool32 consistent = B_POOL_SETTING_CONSISTENT_RNG; // Read once so the whole shuffle uses the same setting
+    if (consistent)
     {
         u32 seed = GetPoolSeed(trainer);
         localRngState = LocalRandomSeed(seed);
@@ -293,7 +294,7 @@ static void RandomizePoolIndices(const struct Trainer *trainer, u8 *poolIndexArr
             numBits = 2;
         if (usedBits + numBits > 32)
         {
-            if (B_POOL_SETTING_CONSISTENT_RNG)
+            if (consistent)
                 rnd = LocalRandom32(&localRngState);
             else
                 rnd = Random32();

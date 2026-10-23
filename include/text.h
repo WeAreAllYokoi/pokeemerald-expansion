@@ -5,7 +5,8 @@
 #include "constants/characters.h"
 
 // This is to prevent the user from having a higher text speed modifier than the printing system can handle.
-STATIC_ASSERT(   TEXT_SPEED_SLOW_MODIFIER    <= 31
+// Check the default against the limit of 31; TEXT_SPEED_SLOW_MODIFIER is selected at runtime
+STATIC_ASSERT(   ADMG_DEFAULT_TEXT_SPEED_SLOW_MODIFIER <= 31
               && TEXT_SPEED_MEDIUM_MODIFIER  <= 31
               && TEXT_SPEED_FAST_MODIFIER    <= 31
               && TEXT_SPEED_INSTANT_MODIFIER <= 31, TextSpeedModifiersCantGoPast31)

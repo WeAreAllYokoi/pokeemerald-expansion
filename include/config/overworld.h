@@ -9,7 +9,8 @@
 // Other settings
 #define ADMG_DEFAULT_OW_POISON_DAMAGE                GEN_LATEST // In Gen4, Pokémon no longer faint from Poison in the overworld. In Gen5+, they no longer take damage at all.
 #define OW_POISON_DAMAGE ADMG_CONFIG_EXTRA(OW_POISON_DAMAGE)
-#define OW_DOUBLE_APPROACH_WITH_ONE_MON FALSE      // If enabled, you can be spotted by two trainers at the same time even if you only have one eligible Pokémon in your party.
+#define ADMG_DEFAULT_OW_DOUBLE_APPROACH_WITH_ONE_MON FALSE      // If enabled, you can be spotted by two trainers at the same time even if you only have one eligible Pokémon in your party.
+#define OW_DOUBLE_APPROACH_WITH_ONE_MON ADMG_CONFIG_EXTRA(OW_DOUBLE_APPROACH_WITH_ONE_MON)
 #define ADMG_DEFAULT_OW_HIDE_REPEAT_MAP_POPUP        FALSE      // If enabled, map popups will not appear if entering a map with the same Map Section Id as the last.
 #define OW_HIDE_REPEAT_MAP_POPUP ADMG_CONFIG_EXTRA(OW_HIDE_REPEAT_MAP_POPUP)
 #define ADMG_DEFAULT_OW_WHITEOUT_CUTSCENE            GEN_LATEST // In Gen4+, whiting out shows an additional message and post whiteout event script cutscene with a healing NPC. (While this change was also in FRLG, for the sake of simplicity, setting this to GEN_3 will result in RSE behavior.)
@@ -18,7 +19,8 @@
 #define OW_DEFOG_FIELD_MOVE ADMG_CONFIG_EXTRA(OW_DEFOG_FIELD_MOVE)
 #define ADMG_DEFAULT_OW_ROCK_CLIMB_FIELD_MOVE        FALSE      // If enabled, Rock Climb can be used as a Field Move as seen in DPPt.
 #define OW_ROCK_CLIMB_FIELD_MOVE ADMG_CONFIG_EXTRA(OW_ROCK_CLIMB_FIELD_MOVE)
-#define OW_CHOOSE_FROM_PC_AND_PARTY     TRUE       // If enabled, NPCs like move tutors or trainers asking for trade will let you pick a Pokémon from your PC or party instead of just your party
+#define ADMG_DEFAULT_OW_CHOOSE_FROM_PC_AND_PARTY     TRUE       // If enabled, NPCs like move tutors or trainers asking for trade will let you pick a Pokémon from your PC or party instead of just your party
+#define OW_CHOOSE_FROM_PC_AND_PARTY ADMG_CONFIG_EXTRA(OW_CHOOSE_FROM_PC_AND_PARTY)
 
 // Item Obtain Description Box
 #define OW_ITEM_DESCRIPTIONS_OFF        0   // never show descriptions
@@ -31,11 +33,14 @@
 #define GEN_6_ORAS GEN_COUNT + 1
 
 // PC settings
-#define OW_PC_PRESS_B               GEN_LATEST // In Gen4, pressing B when holding a Pokémon is equivalent to placing it. In Gen3, it gives the "You're holding a Pokémon!" error.
+#define ADMG_DEFAULT_OW_PC_PRESS_B               GEN_LATEST // In Gen4, pressing B when holding a Pokémon is equivalent to placing it. In Gen3, it gives the "You're holding a Pokémon!" error.
+#define OW_PC_PRESS_B ADMG_CONFIG_EXTRA(OW_PC_PRESS_B)
 #define OW_PC_JAPAN_WALDA_ICONS     TRUE       // In the US release of Emerald, the Cross, Bolt, and Plusle icons for Walda's wallpapers were left blank from the Japan release. Setting this to TRUE will restore them.
-#define OW_PC_HEAL                  GEN_LATEST // In Gen8+, Pokémon are not healed when deposited in the PC.
+#define ADMG_DEFAULT_OW_PC_HEAL                  GEN_LATEST // In Gen8+, Pokémon are not healed when deposited in the PC.
+#define OW_PC_HEAL ADMG_CONFIG_EXTRA(OW_PC_HEAL)
 #define OW_PC_MOVE_ORDER            GEN_LATEST // Starting in Gen4, the order of options in the PC menu change.
-#define OW_PC_RELEASE_ITEM          GEN_LATEST // In Gen8+, Pokémon that get released with a held item return it to the bag.
+#define ADMG_DEFAULT_OW_PC_RELEASE_ITEM          GEN_LATEST // In Gen8+, Pokémon that get released with a held item return it to the bag.
+#define OW_PC_RELEASE_ITEM ADMG_CONFIG_EXTRA(OW_PC_RELEASE_ITEM)
 
 #define OW_BERRY_MUTATIONS             FALSE      // If enabled, Berry plants can mutate based on berries planted next to them.
 #define OW_BERRY_MUTATION_CHANCE       25         // Determines the % chance of a mutation.
@@ -62,16 +67,20 @@
                                                   // Compressed gfx are incompatible with non-power-of-two sprite sizes:
                                                   // (You should not use 48x48 sprites/tables for compressed gfx)
                                                   // 16x32, 32x32, 64x64 etc are fine
-#define OW_MON_WANDER_WALK             TRUE       // If true, OW Pokémon with MOVEMENT_TYPE_WANDER will walk-in-place in between steps.
+#define ADMG_DEFAULT_OW_MON_WANDER_WALK             TRUE       // If true, OW Pokémon with MOVEMENT_TYPE_WANDER will walk-in-place in between steps.
+#define OW_MON_WANDER_WALK ADMG_CONFIG_EXTRA(OW_MON_WANDER_WALK)
 // Follower Pokémon
 #define OW_FOLLOWERS_ENABLED           FALSE      // Enables follower Pokémon, HGSS style. Requires OW_POKEMON_OBJECT_EVENTS. Note that additional scripting may be required for them to be fully supported!
-#define OW_FOLLOWERS_BOBBING           TRUE       // If TRUE, follower Pokémon will bob up and down during their idle & walking animations
+#define ADMG_DEFAULT_OW_FOLLOWERS_BOBBING           TRUE       // If TRUE, follower Pokémon will bob up and down during their idle & walking animations
+#define OW_FOLLOWERS_BOBBING ADMG_CONFIG_EXTRA(OW_FOLLOWERS_BOBBING)
 #define OW_FOLLOWERS_POKEBALLS         TRUE       // If TRUE, follower Pokémon will emerge from the Poké Ball they are stored in, instead of a normal Poké Ball
 #define OW_FOLLOWERS_WEATHER_FORMS     FALSE      // If TRUE, Castform and Cherrim gain FORM_CHANGE_OVERWORLD_WEATHER, which will make them transform in the overworld based on the weather.
-#define OW_FOLLOWERS_COPY_WILD_PKMN    FALSE      // If TRUE, follower Pokémon that know Transform or have Illusion/Imposter will copy wild Pokémon at random.
+#define ADMG_DEFAULT_OW_FOLLOWERS_COPY_WILD_PKMN    FALSE      // If TRUE, follower Pokémon that know Transform or have Illusion/Imposter will copy wild Pokémon at random.
+#define OW_FOLLOWERS_COPY_WILD_PKMN ADMG_CONFIG_EXTRA(OW_FOLLOWERS_COPY_WILD_PKMN)
 #define OW_BATTLE_ONLY_FORMS           TRUE       // If TRUE, loads overworld sprites for battle-only forms like Mega Evos. Requires OW_POKEMON_OBJECT_EVENTS.
 #define B_FLAG_FOLLOWERS_DISABLED      0          // Enables / Disables followers by using a flag. Helpful to disable followers for a period of time.
-#define OW_FOLLOWERS_SCRIPT_MOVEMENT   TRUE       // If TRUE, follower Pokémon only go back to their Poké Ball if a non-player collides with them by setting the FLAG_SAFE_FOLLOWER_MOVEMENT flag by default.
+#define ADMG_DEFAULT_OW_FOLLOWERS_SCRIPT_MOVEMENT   TRUE       // If TRUE, follower Pokémon only go back to their Poké Ball if a non-player collides with them by setting the FLAG_SAFE_FOLLOWER_MOVEMENT flag by default.
+#define OW_FOLLOWERS_SCRIPT_MOVEMENT ADMG_CONFIG_EXTRA(OW_FOLLOWERS_SCRIPT_MOVEMENT)
 // Follower Pokémon Restrictions
 // If set, the only Pokémon allowed to follow you will be those matching species, met location, and/or met level; These accept vars, too: VAR_TEMP_1, etc
 // For examples, see "docs/tutorials/how_to_new_pokemon.md"
@@ -83,12 +92,18 @@
 #define OW_SYNCHRONIZE_NATURE       GEN_LATEST // In Gen8+, if a Pokémon with Synchronize leads the party, wild Pokémon will always have their same Nature as opposed to the 50% chance in previous games. Gift Pokémon excluded.
                                                // In USUM (here GEN_7), if a Pokémon with Synchronize leads the party, gift Pokémon will always have their same Nature regardless of their Egg Group.
                                                // In ORAS (here GEN_6), if a Pokémon with Synchronize leads the party, gift Pokémon from the No Eggs Discovered Egg Group will always have their same Nature.
-#define OW_SUPER_LUCK               GEN_LATEST // In Gen8+, if a Pokémon with Super Luck is leading the party, the wild held item rate is increased to 60%/20%.
-#define OW_INFILTRATOR              GEN_LATEST // In Gen8+, if a Pokémon with Infiltrator is leading the party, the wild encounter rate is halved.
-#define OW_HARVEST                  GEN_LATEST // In Gen8+, if a Pokémon with Harvest is leading the party, there is a 50% chance to encounter a Grass-type Pokémon.
-#define OW_LIGHTNING_ROD            GEN_LATEST // In Gen8+, if a Pokémon with Lightning Rod is leading the party, there is a 50% chance to encounter an Electric-type Pokémon.
-#define OW_STORM_DRAIN              GEN_LATEST // In Gen8+, if a Pokémon with Storm Drain is leading the party, there is a 50% chance to encounter a Water-type Pokémon.
-#define OW_FLASH_FIRE               GEN_LATEST // In Gen8+, if a Pokémon with Flash Fire is leading the party, there is a 50% chance to encounter a Fire-type Pokémon.
+#define ADMG_DEFAULT_OW_SUPER_LUCK               GEN_LATEST // In Gen8+, if a Pokémon with Super Luck is leading the party, the wild held item rate is increased to 60%/20%.
+#define OW_SUPER_LUCK ADMG_CONFIG_EXTRA(OW_SUPER_LUCK)
+#define ADMG_DEFAULT_OW_INFILTRATOR              GEN_LATEST // In Gen8+, if a Pokémon with Infiltrator is leading the party, the wild encounter rate is halved.
+#define OW_INFILTRATOR ADMG_CONFIG_EXTRA(OW_INFILTRATOR)
+#define ADMG_DEFAULT_OW_HARVEST                  GEN_LATEST // In Gen8+, if a Pokémon with Harvest is leading the party, there is a 50% chance to encounter a Grass-type Pokémon.
+#define OW_HARVEST ADMG_CONFIG_EXTRA(OW_HARVEST)
+#define ADMG_DEFAULT_OW_LIGHTNING_ROD            GEN_LATEST // In Gen8+, if a Pokémon with Lightning Rod is leading the party, there is a 50% chance to encounter an Electric-type Pokémon.
+#define OW_LIGHTNING_ROD ADMG_CONFIG_EXTRA(OW_LIGHTNING_ROD)
+#define ADMG_DEFAULT_OW_STORM_DRAIN              GEN_LATEST // In Gen8+, if a Pokémon with Storm Drain is leading the party, there is a 50% chance to encounter a Water-type Pokémon.
+#define OW_STORM_DRAIN ADMG_CONFIG_EXTRA(OW_STORM_DRAIN)
+#define ADMG_DEFAULT_OW_FLASH_FIRE               GEN_LATEST // In Gen8+, if a Pokémon with Flash Fire is leading the party, there is a 50% chance to encounter a Fire-type Pokémon.
+#define OW_FLASH_FIRE ADMG_CONFIG_EXTRA(OW_FLASH_FIRE)
 
 // These defines only make a distinction for OW_ALTERED_TIME_RATIO
 #define GEN_8_PLA                       GEN_COUNT + 2
@@ -97,7 +112,8 @@
 // Time
 #define OW_TIMES_OF_DAY                 GEN_LATEST   // Different generations have the times of day change at different times.
 #define OW_USE_FAKE_RTC                 FALSE        // When TRUE, seconds on the in-game clock will only advance once every 60 playTimeVBlanks (every 60 frames).
-#define OW_ALTERED_TIME_RATIO           GEN_LATEST   // In GEN_8_PLA, the time in game moves forward 60 seconds for every second in the RTC. In GEN_9, it is 20 seconds. TIME_DEBUG is 1:1, and meant for debugging purposes. This has no effect if OW_USE_FAKE_RTC is FALSE.
+#define ADMG_DEFAULT_OW_ALTERED_TIME_RATIO           GEN_LATEST   // In GEN_8_PLA, the time in game moves forward 60 seconds for every second in the RTC. In GEN_9, it is 20 seconds. TIME_DEBUG is 1:1, and meant for debugging purposes. This has no effect if OW_USE_FAKE_RTC is FALSE.
+#define OW_ALTERED_TIME_RATIO ADMG_CONFIG_EXTRA(OW_ALTERED_TIME_RATIO)
 #define OW_TIME_OF_DAY_ENCOUNTERS       FALSE        // If TRUE, will allow the user to define and use different encounter tables based on the time of day.
 #define OW_TIME_OF_DAY_DISABLE_FALLBACK FALSE        // If TRUE, if the encounter table for a specific map and time is empty, the area will have no encounters instead of falling back to the vanilla map and time.
 #define OW_TIME_OF_DAY_FALLBACK         TIME_MORNING // The time of day that encounter tables fall back to. If you set OW_TIMES_OF_DAY to GEN_3, change this to TIME_DAY or you won't have any encounters!
@@ -151,15 +167,18 @@
                                                             // It will also cause minor visual glitches of shadow and reflection sprites adjusting their transparency when the pop-up disappear
 
 // Pokémon Center
-#define OW_IGNORE_EGGS_ON_HEAL           GEN_LATEST         // In Gen 4+, the nurse in the Pokémon Center does not heal Eggs on healing machine.
+#define ADMG_DEFAULT_OW_IGNORE_EGGS_ON_HEAL           GEN_LATEST         // In Gen 4+, the nurse in the Pokémon Center does not heal Eggs on healing machine.
+#define OW_IGNORE_EGGS_ON_HEAL ADMG_CONFIG_EXTRA(OW_IGNORE_EGGS_ON_HEAL)
 #define OW_UNION_DISABLE_CHECK           FALSE              // When TRUE, the nurse does not inform the player if there is a trainer waiting in the Union Room. This speeds up the loading of the Pokémon Center.
 #define OW_FLAG_MOVE_UNION_ROOM_CHECK    0                  // If this flag is set, the game will only check if players are in the Union Room while healing Pokémon, and not when players enter the Pokémon Center. This speeds up the loading of the Pokémon Center. This is ignored if OW_UNION_DISABLE_CHECK is TRUE.
 
 // Berry Blender
-#define BERRY_BLENDER_THROW_ALL_BERRIES_AT_ONCE TRUE        // This is a small little addition, that basically speeds up the animation where all players' berries are thrown into the blender. Self-explanatory I hope!
+#define ADMG_DEFAULT_BERRY_BLENDER_THROW_ALL_BERRIES_AT_ONCE TRUE        // Throw all players' berries into the blender together to shorten the animation
+#define BERRY_BLENDER_THROW_ALL_BERRIES_AT_ONCE ADMG_CONFIG_EXTRA(BERRY_BLENDER_THROW_ALL_BERRIES_AT_ONCE)
 
 // Trainer Rematches
-#define OW_REMATCH_BADGE_COUNT      5 // Number of badges necessary before the match call or vs seeker features allow rematches
+#define ADMG_DEFAULT_OW_REMATCH_BADGE_COUNT      5 // Number of badges necessary before the match call or vs seeker features allow rematches
+#define OW_REMATCH_BADGE_COUNT ADMG_CONFIG_EXTRA(OW_REMATCH_BADGE_COUNT)
 
 // Ambient Cries
 // Constants
@@ -170,7 +189,8 @@
                                             // Overworld Wild Encounters will play ambient cries based on their location relative to the player.
 
 // Configuration
-#define OW_AMBIENT_CRIES                OW_AMBIENT_CRIES_VANILLA // Selects how ambient cries are played, if at all. As in vanilla, no matter what is chosen, cries will not play if the player is not on a map with Land or Water encounter tables.
+#define ADMG_DEFAULT_OW_AMBIENT_CRIES                OW_AMBIENT_CRIES_VANILLA // Selects how ambient cries are played, if at all. As in vanilla, no matter what is chosen, cries will not play if the player is not on a map with Land or Water encounter tables.
+#define OW_AMBIENT_CRIES ADMG_CONFIG_EXTRA(OW_AMBIENT_CRIES)
 
 
 // Daily Seed
@@ -178,6 +198,7 @@
                                                           // This has a side effect of removing the deterministic/anti save scumming aspect of the mirage island randomisation
 
 // Script Config
-#define OW_CHECK_FOR_TOTAL_EVS TRUE        // If FALSE, givemon and createmon will not check for total EVs when generating a new Pokemon
+#define ADMG_DEFAULT_OW_CHECK_FOR_TOTAL_EVS TRUE        // If FALSE, givemon and createmon will not check for total EVs when generating a new Pokemon
+#define OW_CHECK_FOR_TOTAL_EVS ADMG_CONFIG_EXTRA(OW_CHECK_FOR_TOTAL_EVS)
 
 #endif // GUARD_CONFIG_OVERWORLD_H

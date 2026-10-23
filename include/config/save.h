@@ -2,7 +2,8 @@
 #define GUARD_CONFIG_SAVE_H
 
 // Menu configs
-#define SKIP_SAVE_CONFIRMATION              FALSE   // If TRUE, skips the "There is already a saved file" confirmation when overwriting a save.
+#define ADMG_DEFAULT_SKIP_SAVE_CONFIRMATION              FALSE   // If TRUE, skips the "There is already a saved file" confirmation when overwriting a save.
+#define SKIP_SAVE_CONFIRMATION ADMG_CONFIG_EXTRA(SKIP_SAVE_CONFIRMATION)
 
 // SaveBlock1 configs
 #define FREE_EXTRA_SEEN_FLAGS_SAVEBLOCK1    FALSE   // Free up unused Pokédex seen flags (52 bytes).

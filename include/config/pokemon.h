@@ -17,13 +17,15 @@
                                                 // GEN_1/2/3/4/5/6/7: Yellow, Crystal, RSE, HGSS, B2W2, ORAS, USUM learnsets respectively.
                                                 // GEN_8: Use the following priority: BDSP for Gen1-4 Pokémon, then LA for species introduced in that game, then SwSh for species present in those games. Otherwise, use GEN_7.
                                                 // GEN_9: SV For species present in those games. Otherwise use GEN_8.
-#define P_EVOLUTION_LEVEL_1_LEARN   GEN_LATEST  // Since Gen 8, Pokémon evolving while at level 1 do not get the chance to learn their level 1 moves, while before they did.
+#define ADMG_DEFAULT_P_EVOLUTION_LEVEL_1_LEARN   GEN_LATEST  // Since Gen 8, Pokémon evolving while at level 1 do not get the chance to learn their level 1 moves, while before they did.
+#define P_EVOLUTION_LEVEL_1_LEARN ADMG_CONFIG_EXTRA(P_EVOLUTION_LEVEL_1_LEARN)
 
 // Evolution settings
 #define P_FRIENDSHIP_EVO_THRESHOLD   GEN_LATEST  // Since Gen 8, Pokémon that evolve by friendship evolve at or above 160 friendship instead of 220.
 
 // Breeding settings
-#define P_NIDORAN_M_DITTO_BREED        GEN_LATEST                // Since Gen 5, when Nidoran♂ breeds with Ditto it can produce Nidoran♀ offspring. Before, it would only yield male offspring. This change also applies to Volbeat.
+#define ADMG_DEFAULT_P_NIDORAN_M_DITTO_BREED        GEN_LATEST                // Since Gen 5, when Nidoran♂ breeds with Ditto it can produce Nidoran♀ offspring. Before, it would only yield male offspring. This change also applies to Volbeat.
+#define P_NIDORAN_M_DITTO_BREED ADMG_CONFIG_EXTRA(P_NIDORAN_M_DITTO_BREED)
 #define ADMG_DEFAULT_P_INCENSE_BREEDING             GEN_LATEST                // Since Gen 9, cross-generation Baby Pokémon don't require Incense being held by the parents to be obtained via breeding.
 #define P_INCENSE_BREEDING ADMG_CONFIG_EXTRA(P_INCENSE_BREEDING)
 #define ADMG_DEFAULT_P_EGG_HATCH_LEVEL              GEN_LATEST                // Since Gen 4, Pokémon will hatch from Eggs at level 1 instead of 5.
@@ -33,12 +35,15 @@
 #define P_NATURE_INHERITANCE           GEN_LATEST                // In Gen 3, Everstone grants Ditto and mothers a 50% chance to pass on Nature. Since Gen 4, anyone can pass on a Nature. Since Gen 5, the chance is 100%.
 #define P_ABILITY_INHERITANCE          GEN_LATEST                // In B2W2, a female Pokémon has an 80% chance of passing down their Ability if bred with a male. Since Gen 6, the chance is 80% for regular Ability and 60% for Hidden Ability, and anyone can pass down their Abilities if bred with Ditto. NOTE: BW's effect: 60% chance to pass down HA and random for regular Ability has been omitted.
 #define P_EGG_MOVE_TRANSFER            GEN_LATEST                // Starting in Gen 8, if two Pokémon of the same species are together in the Day Care, one knows an Egg Move, and the other has an empty slot, the other Pokémon will receive the Egg Move in the empty slot. In Gen 9, if a Pokémon holds a Mirror Herb, it will receive Egg Moves from the other regardless of species.
-#define P_SCATTERBUG_LINE_FORM_BREED   SPECIES_SCATTERBUG_FANCY  // Choose the Scatterbug form all Vivillon/Spewpa/Scatterbug will breed into, basically aligning with the "location" of the player's game.
+#define ADMG_DEFAULT_P_SCATTERBUG_LINE_FORM_BREED   SPECIES_SCATTERBUG_FANCY  // Choose the Scatterbug form all Vivillon/Spewpa/Scatterbug will breed into, basically aligning with the "location" of the player's game.
+#define P_SCATTERBUG_LINE_FORM_BREED ADMG_CONFIG_EXTRA(P_SCATTERBUG_LINE_FORM_BREED)
 
 // Species-specific settings
 #define P_SHEDINJA_BALL             GEN_LATEST  // Since Gen 4, Shedinja requires a Poké Ball for its evolution. In Gen 3, Shedinja inherits Nincada's Ball.
-#define P_KADABRA_EVERSTONE         GEN_LATEST  // Since Gen 4, Kadabra can evolve even when holding an Everstone.
-#define P_SHUCKLE_BERRY_JUICE       GEN_LATEST  // In Gen 2, Shuckle had a 1/16 chance of converting Berry that it's holding into Berry Juice. Enabling this will allow Shuckle to do this with an Oran Berry, which is the spiritual succesor of the Berry item.
+#define ADMG_DEFAULT_P_KADABRA_EVERSTONE         GEN_LATEST  // Since Gen 4, Kadabra can evolve even when holding an Everstone.
+#define P_KADABRA_EVERSTONE ADMG_CONFIG_EXTRA(P_KADABRA_EVERSTONE)
+#define ADMG_DEFAULT_P_SHUCKLE_BERRY_JUICE       GEN_LATEST  // With GEN_2, Shuckle has a 1/16 chance to turn its held Oran Berry into Berry Juice
+#define P_SHUCKLE_BERRY_JUICE ADMG_CONFIG_EXTRA(P_SHUCKLE_BERRY_JUICE)
 
 // Species graphic settings
 #define P_GENDER_DIFFERENCES            TRUE        // If TRUE, Pokémon will have graphical-only differences when they're female. Female *forms* such as Meowstic are not affected by this.
@@ -55,16 +60,21 @@
 #define P_LEGENDARY_PERFECT_IVS          GEN_LATEST  // Since Gen 6, Legendaries, Mythicals and Ultra Beasts found in the wild or given through gifts have at least 3 perfect IVs.
 #define ADMG_DEFAULT_P_EV_CAP                         GEN_LATEST  // Since Gen 6, the max EVs per stat is 252 instead of 255.
 #define P_EV_CAP ADMG_CONFIG_EXTRA(P_EV_CAP)
-#define P_SHOW_TERA_TYPE                 GEN_8       // Since Gen 9, the Tera Type is shown on the summary screen.
+#define ADMG_DEFAULT_P_SHOW_TERA_TYPE                 GEN_8       // Since Gen 9, the Tera Type is shown on the summary screen.
+#define P_SHOW_TERA_TYPE ADMG_CONFIG_EXTRA(P_SHOW_TERA_TYPE)
 #define ADMG_DEFAULT_P_TM_LITERACY                    GEN_LATEST  // Settings above GEN_6 stop filtering universal moves out of TM-illiterate Pokémon's teachable learnsets
 #define P_TM_LITERACY ADMG_CONFIG_EXTRA(P_TM_LITERACY)
 #define P_CAN_FORGET_HIDDEN_MOVE         FALSE       // If TRUE, Pokémon can forget any move, even if it is an HM.
 #define P_ASK_MOVE_CONFIRMATION          FALSE       // If FALSE, when a player decides not to learn a move, the game does not ask the player for confirmation.
-#define P_EGG_CYCLE_LENGTH               GEN_LATEST  // Since Gen 8, Egg cycles take half as many steps as before. Previous generations have some varied step counts around 255.
-#define P_ONLY_OBTAINABLE_SHINIES        FALSE       // If TRUE, Pokémon encountered in the Battle Pyramid or while catching is disabled won't be Shiny.
-#define P_NO_SHINIES_WITHOUT_POKEBALLS   FALSE       // If TRUE, Pokémon encountered when the player is out of Poké Balls won't be Shiny.
+#define ADMG_DEFAULT_P_EGG_CYCLE_LENGTH               GEN_LATEST  // Since Gen 8, Egg cycles take half as many steps as before. Previous generations have some varied step counts around 255.
+#define P_EGG_CYCLE_LENGTH ADMG_CONFIG_EXTRA(P_EGG_CYCLE_LENGTH)
+#define ADMG_DEFAULT_P_ONLY_OBTAINABLE_SHINIES        FALSE       // If TRUE, Pokémon encountered in the Battle Pyramid or while catching is disabled won't be Shiny.
+#define P_ONLY_OBTAINABLE_SHINIES ADMG_CONFIG_EXTRA(P_ONLY_OBTAINABLE_SHINIES)
+#define ADMG_DEFAULT_P_NO_SHINIES_WITHOUT_POKEBALLS   FALSE       // If TRUE, Pokémon encountered when the player is out of Poké Balls won't be Shiny.
+#define P_NO_SHINIES_WITHOUT_POKEBALLS ADMG_CONFIG_EXTRA(P_NO_SHINIES_WITHOUT_POKEBALLS)
 #define P_SHOW_DYNAMIC_TYPES             FALSE       // If TRUE, all moves with dynamic type changes will be reflected as their current type in battle/summary screens instead of just select ones like in vanilla.
-#define P_BASE_HP_1_SHEDINJA_HANDLING    FALSE       // If TRUE, all species with 1 Base HP will have their handling match Shedinja's.
+#define ADMG_DEFAULT_P_BASE_HP_1_SHEDINJA_HANDLING    FALSE       // If TRUE, all species with 1 Base HP will have their handling match Shedinja's.
+#define P_BASE_HP_1_SHEDINJA_HANDLING ADMG_CONFIG_EXTRA(P_BASE_HP_1_SHEDINJA_HANDLING)
 
 // Learnset helper toggles
 #define P_LEARNSET_HELPER_TEACHABLE      TRUE   // If FALSE, make sure to remove teachable_learnset.h from your .gitignore file. If TRUE, teachable_learnsets.h will be populated by tools/learnset_helpers/make_teachables.py using the included JSON files based on available TMs and tutors.
@@ -82,13 +92,15 @@
 
 // Sound related settings
 #define P_MODIFIED_MEGA_CRIES            P_MEGA_EVOLUTIONS  // If TRUE, will use the extra separate Mega Cries (approx. 3% space of ROM). if FALSE, will use the same cry for all Mega Evolutions except modified with P_MODIFIED_MEGA_CRY_MODE. By default, this is set based on if mega evolutions are enabled.
-#define P_MODIFIED_MEGA_CRY_MODE         CRY_MODE_HIGH_PITCH
+#define ADMG_DEFAULT_P_MODIFIED_MEGA_CRY_MODE         CRY_MODE_HIGH_PITCH
+#define P_MODIFIED_MEGA_CRY_MODE ADMG_CONFIG_EXTRA(P_MODIFIED_MEGA_CRY_MODE)
 
 // Pokédex
 #define DONT_SKIP_GAPS                   0              // Does not skip any gaps in the Pokédex.
 #define SKIP_GAPS_EXCEPT_ONE             1              // Skips all gaps in the Pokédex other than one blank entry in between seen entries.
 #define SKIP_GAPS_EXCEPT_BEFORE_AFTER    2              // Skips all gaps in the Pokédex other than one before and after seen entries. Most similar to whats seen in Pokémon SV.
 #define SKIP_ALL_GAPS                    3              // Skips all gaps in the Pokédex.
-#define P_SKIP_POKEDEX_GAPS              DONT_SKIP_GAPS // Pokémon SV skip large gaps in the Pokédex.
+#define ADMG_DEFAULT_P_SKIP_POKEDEX_GAPS              DONT_SKIP_GAPS // Pokémon SV skip large gaps in the Pokédex.
+#define P_SKIP_POKEDEX_GAPS ADMG_CONFIG_EXTRA(P_SKIP_POKEDEX_GAPS)
 
 #endif // GUARD_CONFIG_POKEMON_H

@@ -912,7 +912,8 @@ static void AlterEggSpeciesWithIncenseItem(enum Species *species, struct DayCare
     }
 }
 
-STATIC_ASSERT(P_SCATTERBUG_LINE_FORM_BREED == SPECIES_SCATTERBUG_ICY_SNOW || (P_SCATTERBUG_LINE_FORM_BREED >= SPECIES_SCATTERBUG_POLAR && P_SCATTERBUG_LINE_FORM_BREED <= SPECIES_SCATTERBUG_POKEBALL), ScatterbugLineFormBreedMustBeAValidScatterbugForm);
+// Check the default Scatterbug form at build time; breeding reads P_SCATTERBUG_LINE_FORM_BREED at runtime
+STATIC_ASSERT(ADMG_DEFAULT_P_SCATTERBUG_LINE_FORM_BREED == SPECIES_SCATTERBUG_ICY_SNOW || (ADMG_DEFAULT_P_SCATTERBUG_LINE_FORM_BREED >= SPECIES_SCATTERBUG_POLAR && ADMG_DEFAULT_P_SCATTERBUG_LINE_FORM_BREED <= SPECIES_SCATTERBUG_POKEBALL), ScatterbugLineFormBreedMustBeAValidScatterbugForm);
 
 static enum Species DetermineEggSpeciesAndParentSlots(struct DayCare *daycare, u8 *parentSlots)
 {

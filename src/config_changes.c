@@ -15,6 +15,14 @@
 #include "config/item.h"
 #include "config/summary_screen.h"
 #include "config/wild_encounter.h"
+#include "config/dexnav.h"
+#include "config/follower_npc.h"
+#include "config/map_preview_screen.h"
+#include "config/save.h"
+#include "config/text.h"
+#include "constants/characters.h"
+#include "constants/rgb.h"
+#include "constants/species.h"
 #include "admg_retention.h"
 
 #define UNPACK_BATTLE_CONFIG_GEN_CHANGES(_name, _field, ...) ._field = _name,

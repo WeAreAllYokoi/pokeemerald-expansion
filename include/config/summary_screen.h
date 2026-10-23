@@ -35,16 +35,22 @@ Info taken from https://bulbapedia.bulbagarden.net/wiki/Stats_judge.
 #define P_FLAG_SUMMARY_SCREEN_IV_EV_INFO 0      // If this flag is set, will allow player to cycle through the Stats, IVs, and EVs in the summary screen skills page. Note: if P_SUMMARY_SCREEN_IV_EV_INFO is TRUE, this flag does nothing.
 
 // Move Relearner settings
-#define P_ENABLE_MOVE_RELEARNERS         FALSE   // If TRUE, it enables move relearners for egg, TM and tutor. (see below for specific configs /flags)
-#define P_SORT_MOVES                     FALSE   // If TRUE, sorts all moves alphabetically in the relearner's list.
+#define ADMG_DEFAULT_P_ENABLE_MOVE_RELEARNERS         FALSE   // If TRUE, it enables move relearners for egg, TM and tutor. (see below for specific configs /flags)
+#define P_ENABLE_MOVE_RELEARNERS ADMG_CONFIG_EXTRA(P_ENABLE_MOVE_RELEARNERS)
+#define ADMG_DEFAULT_P_SORT_MOVES                     FALSE   // If TRUE, sorts all moves alphabetically in the relearner's list.
+#define P_SORT_MOVES ADMG_CONFIG_EXTRA(P_SORT_MOVES)
 
 // Level up Relearner
-#define P_PRE_EVO_MOVES                  FALSE   // If TRUE, it enables the Pokémon to learn moves from it's pre evolution.
-#define P_ENABLE_ALL_LEVEL_UP_MOVES      FALSE   // If TRUE, it enables the Pokémon to learn all level up moves, regardless of its level.
+#define ADMG_DEFAULT_P_PRE_EVO_MOVES                  FALSE   // If TRUE, it enables the Pokémon to learn moves from it's pre evolution.
+#define P_PRE_EVO_MOVES ADMG_CONFIG_EXTRA(P_PRE_EVO_MOVES)
+#define ADMG_DEFAULT_P_ENABLE_ALL_LEVEL_UP_MOVES      FALSE   // If TRUE, it enables the Pokémon to learn all level up moves, regardless of its level.
+#define P_ENABLE_ALL_LEVEL_UP_MOVES ADMG_CONFIG_EXTRA(P_ENABLE_ALL_LEVEL_UP_MOVES)
 
 // TM Relearner
-#define P_TM_MOVES_RELEARNER             FALSE   // If TRUE, enables machine move relearner.
-#define P_ENABLE_ALL_TM_MOVES            FALSE   // If TRUE, it enables the Pokémon to learn all TMs its compatible with, regardless of it being in the bag.
+#define ADMG_DEFAULT_P_TM_MOVES_RELEARNER             FALSE   // If TRUE, enables machine move relearner.
+#define P_TM_MOVES_RELEARNER ADMG_CONFIG_EXTRA(P_TM_MOVES_RELEARNER)
+#define ADMG_DEFAULT_P_ENABLE_ALL_TM_MOVES            FALSE   // If TRUE, it enables the Pokémon to learn all TMs its compatible with, regardless of it being in the bag.
+#define P_ENABLE_ALL_TM_MOVES ADMG_CONFIG_EXTRA(P_ENABLE_ALL_TM_MOVES)
 
 // Relearner flags - Redundant if P_ENABLE_MOVE_RELEARNERS is TRUE, but still added here incase you don't want all relearners unlocked at the same time.
 // To use the following features in scripting, replace the 0s with the flag ID you're assigning it to.
@@ -54,6 +60,7 @@ Info taken from https://bulbapedia.bulbagarden.net/wiki/Stats_judge.
 
 // Move Relearner summary screen
 #define P_SUMMARY_SCREEN_MOVE_RELEARNER  TRUE   // If TRUE, shows an option for Pokémon to relearn moves on the summary screen moves page.
-#define P_SUMMARY_MOVE_RELEARNER_FULL_PP TRUE   // If TRUE, the move relearner in the summary screen restores relearned moves' PP to full.
+#define ADMG_DEFAULT_P_SUMMARY_MOVE_RELEARNER_FULL_PP TRUE   // If TRUE, the move relearner in the summary screen restores relearned moves' PP to full.
+#define P_SUMMARY_MOVE_RELEARNER_FULL_PP ADMG_CONFIG_EXTRA(P_SUMMARY_MOVE_RELEARNER_FULL_PP)
 
 #endif // GUARD_CONFIG_SUMMARY_SCREEN_H

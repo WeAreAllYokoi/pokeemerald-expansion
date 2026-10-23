@@ -109,24 +109,38 @@
 #define AI_REVERSE_BATTLER_LOGIC_ORDER_CHANCE                   50 // Chance to reverse the order of mons when running AI logic in double battles. For example if both mons want to switch and there's only one mon to switch in, the first mon processed will get to switch; setting this above zero controls the chance of switching which slot is processed first
 
 // AI held item-based move scoring
-#define LOW_ACCURACY_THRESHOLD                                  75 // Moves with accuracy equal OR below this value are considered low accuracy
+#define ADMG_DEFAULT_LOW_ACCURACY_THRESHOLD                                  75 // Moves with accuracy equal OR below this value are considered low accuracy
+#define LOW_ACCURACY_THRESHOLD ADMG_CONFIG_EXTRA(LOW_ACCURACY_THRESHOLD)
 
 // AI move scoring
-#define STATUS_MOVE_FOCUS_PUNCH_CHANCE                          50 // Chance the AI will use a status move if the player's best move is Focus Punch
-#define BOOST_INTO_HAZE_CHANCE                                  0 // Chance the AI will use a stat boosting move if the player has used Haze
-#define SHOULD_RECOVER_CHANCE                                   50 // Chance the AI will give recovery moves score increase if less than ENABLE_RECOVERY_THRESHOLD and in no immediate danger
+#define ADMG_DEFAULT_STATUS_MOVE_FOCUS_PUNCH_CHANCE                          50 // Chance the AI will use a status move if the player's best move is Focus Punch
+#define STATUS_MOVE_FOCUS_PUNCH_CHANCE ADMG_CONFIG_EXTRA(STATUS_MOVE_FOCUS_PUNCH_CHANCE)
+#define ADMG_DEFAULT_BOOST_INTO_HAZE_CHANCE                                  0 // Chance the AI will use a stat boosting move if the player has used Haze
+#define BOOST_INTO_HAZE_CHANCE ADMG_CONFIG_EXTRA(BOOST_INTO_HAZE_CHANCE)
+#define ADMG_DEFAULT_SHOULD_RECOVER_CHANCE                                   50 // Chance the AI will give recovery moves score increase if less than ENABLE_RECOVERY_THRESHOLD and in no immediate danger
+#define SHOULD_RECOVER_CHANCE ADMG_CONFIG_EXTRA(SHOULD_RECOVER_CHANCE)
 #define ENABLE_RECOVERY_THRESHOLD                               60 // HP percentage beneath which SHOULD_RECOVER_CHANCE is active
-#define SUCKER_PUNCH_CHANCE                                     50 // Chance for the AI to not use Sucker Punch if the player has a status move
-#define SUCKER_PUNCH_PREDICTION_CHANCE                          50 // Additional chance for the AI to not use Sucker Punch if actively predicting a status move if SUCKER_PUNCH_CHANCE fails
-#define PRIORITIZE_LAST_CHANCE_CHANCE                           50 // Chance the AI will prioritize Last Chance (priority move in the face of being outsped and KO'd) over Slow KO
+#define ADMG_DEFAULT_SUCKER_PUNCH_CHANCE                                     50 // Chance for the AI to not use Sucker Punch if the player has a status move
+#define SUCKER_PUNCH_CHANCE ADMG_CONFIG_EXTRA(SUCKER_PUNCH_CHANCE)
+#define ADMG_DEFAULT_SUCKER_PUNCH_PREDICTION_CHANCE                          50 // Additional chance for the AI to not use Sucker Punch if actively predicting a status move if SUCKER_PUNCH_CHANCE fails
+#define SUCKER_PUNCH_PREDICTION_CHANCE ADMG_CONFIG_EXTRA(SUCKER_PUNCH_PREDICTION_CHANCE)
+#define ADMG_DEFAULT_PRIORITIZE_LAST_CHANCE_CHANCE                           50 // Chance the AI will prioritize Last Chance (priority move in the face of being outsped and KO'd) over Slow KO
+#define PRIORITIZE_LAST_CHANCE_CHANCE ADMG_CONFIG_EXTRA(PRIORITIZE_LAST_CHANCE_CHANCE)
 #define ADMG_DEFAULT_LAST_MON_PREFERS_NOT_SACRIFICE                          FALSE // Whether the AI will be hesitant to use self-sacrificing moves (Explosion, Final Gambit) with their last mon
 #define LAST_MON_PREFERS_NOT_SACRIFICE ADMG_CONFIG_EXTRA(LAST_MON_PREFERS_NOT_SACRIFICE)
-#define EXPLOSION_LOWER_HP_THRESHOLD                            10 // HP percentage at or beneath which the AI has a 90% chance to explode; otherwise scales between this and higher threshold
-#define EXPLOSION_HIGHER_HP_THRESHOLD                           90 // HP percentage at or above which the AI has a 0% chance to explode; otherwise scales between this and lower threshold
-#define EXPLOSION_MINIMUM_CHANCE                                0 // Lowest possible percent chance of the AI using explosion based on its current HP
-#define EXPLOSION_MAXIMUM_CHANCE                                90 // Highest possible percent chance of the AI using explosion based on its current HP
-#define FINAL_GAMBIT_CHANCE                                     50 // Chance for AI to consider using Final Gambit if it outspeeds the player and thinks it has more HP
-#define SHOULD_PIVOT_BREAK_SASH_CHANCE                          50 // Chance for ShouldPivot to return true when trying to break Multiscale and Focus Sash type effects while having a good switchin
+#define ADMG_DEFAULT_EXPLOSION_LOWER_HP_THRESHOLD                            10 // At or below this HP percentage, use EXPLOSION_MAXIMUM_CHANCE
+#define EXPLOSION_LOWER_HP_THRESHOLD ADMG_CONFIG_EXTRA(EXPLOSION_LOWER_HP_THRESHOLD)
+#define ADMG_DEFAULT_EXPLOSION_HIGHER_HP_THRESHOLD                           90 // At or above this HP percentage, use EXPLOSION_MINIMUM_CHANCE
+// Between the thresholds, the chance is this value minus the current HP percentage
+#define EXPLOSION_HIGHER_HP_THRESHOLD ADMG_CONFIG_EXTRA(EXPLOSION_HIGHER_HP_THRESHOLD)
+#define ADMG_DEFAULT_EXPLOSION_MINIMUM_CHANCE                                0 // Explosion chance at or above EXPLOSION_HIGHER_HP_THRESHOLD
+#define EXPLOSION_MINIMUM_CHANCE ADMG_CONFIG_EXTRA(EXPLOSION_MINIMUM_CHANCE)
+#define ADMG_DEFAULT_EXPLOSION_MAXIMUM_CHANCE                                90 // Explosion chance at or below EXPLOSION_LOWER_HP_THRESHOLD
+#define EXPLOSION_MAXIMUM_CHANCE ADMG_CONFIG_EXTRA(EXPLOSION_MAXIMUM_CHANCE)
+#define ADMG_DEFAULT_FINAL_GAMBIT_CHANCE                                     50 // Chance for AI to consider using Final Gambit if it outspeeds the player and thinks it has more HP
+#define FINAL_GAMBIT_CHANCE ADMG_CONFIG_EXTRA(FINAL_GAMBIT_CHANCE)
+#define ADMG_DEFAULT_SHOULD_PIVOT_BREAK_SASH_CHANCE                          50 // Chance for ShouldPivot to return true when trying to break Multiscale and Focus Sash type effects while having a good switchin
+#define SHOULD_PIVOT_BREAK_SASH_CHANCE ADMG_CONFIG_EXTRA(SHOULD_PIVOT_BREAK_SASH_CHANCE)
 #define ADMG_DEFAULT_FAKE_OUT_SAVE_ALLY_CHANCE                               50 // Chance for AI to Fake Out to save its ally when ally is fast KO'd by both opponents
 #define FAKE_OUT_SAVE_ALLY_CHANCE ADMG_CONFIG_EXTRA(FAKE_OUT_SAVE_ALLY_CHANCE)
 
@@ -169,12 +183,16 @@
 #define PREDICT_MOVE_CHANCE ADMG_CONFIG_EXTRA(PREDICT_MOVE_CHANCE)
 
 // AI Terastalization chances
-#define AI_CONSERVE_TERA_CHANCE_PER_MON                         10 // Chance for AI with smart tera flag to decide not to tera before considering defensive benefit is this*(X-1), where X is the number of alive Pokémon that could tera
-#define AI_TERA_PREDICT_CHANCE                                  40 // Chance for AI with smart tera flag to tera in the situation where tera would save it from a KO, but could be punished by a KO from a different move.
+#define ADMG_DEFAULT_AI_CONSERVE_TERA_CHANCE_PER_MON                         10 // Chance for AI with smart tera flag to decide not to tera before considering defensive benefit is this*(X-1), where X is the number of alive Pokémon that could tera
+#define AI_CONSERVE_TERA_CHANCE_PER_MON ADMG_CONFIG_EXTRA(AI_CONSERVE_TERA_CHANCE_PER_MON)
+#define ADMG_DEFAULT_AI_TERA_PREDICT_CHANCE                                  40 // Chance for AI with smart tera flag to tera in the situation where tera would save it from a KO, but could be punished by a KO from a different move.
+#define AI_TERA_PREDICT_CHANCE ADMG_CONFIG_EXTRA(AI_TERA_PREDICT_CHANCE)
 
 // AI_FLAG_PP_STALL_PREVENTION settings
-#define PP_STALL_DISREGARD_MOVE_PERCENTAGE                      50 // Detection chance per roll
-#define PP_STALL_SCORE_REDUCTION                                20 // Score reduction if any roll for PP stall detection passes
+#define ADMG_DEFAULT_PP_STALL_DISREGARD_MOVE_PERCENTAGE                      50 // Detection chance per roll
+#define PP_STALL_DISREGARD_MOVE_PERCENTAGE ADMG_CONFIG_EXTRA(PP_STALL_DISREGARD_MOVE_PERCENTAGE)
+#define ADMG_DEFAULT_PP_STALL_SCORE_REDUCTION                                20 // Score reduction if any roll for PP stall detection passes
+#define PP_STALL_SCORE_REDUCTION ADMG_CONFIG_EXTRA(PP_STALL_SCORE_REDUCTION)
 
 // AI_FLAG_ASSUME_STAB settings
 #define ADMG_DEFAULT_ASSUME_STAB_SEES_ABILITY                                FALSE // Flag also gives omniscience for player's ability. Can use AI_FLAG_WEIGH_ABILITY_PREDICTION instead for smarter prediction without omniscience.
@@ -221,12 +239,17 @@
 // AI's desired stat changes for Guard Split and Power Split, treated as %
 #define GUARD_SPLIT_ALLY_PERCENTAGE     200
 #define GUARD_SPLIT_ENEMY_PERCENTAGE    50
-#define POWER_SPLIT_ALLY_PERCENTAGE     150
-#define POWER_SPLIT_ENEMY_PERCENTAGE    50
+#define ADMG_DEFAULT_POWER_SPLIT_ALLY_PERCENTAGE     150
+#define POWER_SPLIT_ALLY_PERCENTAGE ADMG_CONFIG_EXTRA(POWER_SPLIT_ALLY_PERCENTAGE)
+#define ADMG_DEFAULT_POWER_SPLIT_ENEMY_PERCENTAGE    50
+#define POWER_SPLIT_ENEMY_PERCENTAGE ADMG_CONFIG_EXTRA(POWER_SPLIT_ENEMY_PERCENTAGE)
 
 // HP thresholds to use a status z-move.
-#define Z_EFFECT_FOLLOW_ME_THRESHOLD    30
-#define Z_EFFECT_RESTORE_HP_LOWER_THRESHOLD   ENABLE_RECOVERY_THRESHOLD // threshold used for moves you could conceivably use more than once
-#define Z_EFFECT_RESTORE_HP_HIGHER_THRESHOLD  90                        // these moves are one-time use or drop your HP
+#define ADMG_DEFAULT_Z_EFFECT_FOLLOW_ME_THRESHOLD    30
+#define Z_EFFECT_FOLLOW_ME_THRESHOLD ADMG_CONFIG_EXTRA(Z_EFFECT_FOLLOW_ME_THRESHOLD)
+#define ADMG_DEFAULT_Z_EFFECT_RESTORE_HP_LOWER_THRESHOLD   ENABLE_RECOVERY_THRESHOLD // threshold used for moves you could conceivably use more than once
+#define Z_EFFECT_RESTORE_HP_LOWER_THRESHOLD ADMG_CONFIG_EXTRA(Z_EFFECT_RESTORE_HP_LOWER_THRESHOLD)
+#define ADMG_DEFAULT_Z_EFFECT_RESTORE_HP_HIGHER_THRESHOLD  90                        // these moves are one-time use or drop your HP
+#define Z_EFFECT_RESTORE_HP_HIGHER_THRESHOLD ADMG_CONFIG_EXTRA(Z_EFFECT_RESTORE_HP_HIGHER_THRESHOLD)
 
 #endif // GUARD_CONFIG_AI_H

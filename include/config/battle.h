@@ -230,8 +230,10 @@
                                                    // In Champions, Unseen Fist/Piercing Drill nerfs damage dealt against protected targets to 25%. It also no longer bypasses the contact effects of protect moves.
 
 // Various volatile timers
-#define B_CONFUSION_TURNS    5
-#define B_UPROAR_TURN_COUNT  5
+#define ADMG_DEFAULT_B_CONFUSION_TURNS    5
+#define B_CONFUSION_TURNS ADMG_CONFIG_EXTRA(B_CONFUSION_TURNS)
+#define ADMG_DEFAULT_B_UPROAR_TURN_COUNT  5
+#define B_UPROAR_TURN_COUNT ADMG_CONFIG_EXTRA(B_UPROAR_TURN_COUNT)
 #define B_RAMPAGE_TURNS      3
 #define B_DISABLE_TIMER      4
 #define B_ENCORE_TIMER       4
@@ -319,7 +321,8 @@
 #define B_RESET_FLAGS_VARS_AFTER_WHITEOUT TRUE // If TRUE, Overworld_ResetBattleFlagsAndVars will reset battle-related flags and vars when the player whites out.
 
 // Ingame partner flag
-#define B_SHOW_PARTNER_TARGET             FALSE // Shows the battler partner will target.
+#define ADMG_DEFAULT_B_SHOW_PARTNER_TARGET             FALSE // Shows the battler partner will target.
+#define B_SHOW_PARTNER_TARGET ADMG_CONFIG_EXTRA(B_SHOW_PARTNER_TARGET)
 
 // Move description menu
 #define ADMG_DEFAULT_B_SHOW_MOVE_DESCRIPTION     TRUE       // Shows move information in battler
@@ -341,8 +344,10 @@
 #define B_OVERWORLD_WEATHER_OVERRIDE    GEN_LATEST // In Gen9+, overworld weather cannot be overridden.
 
 // Terrain settings
-#define B_TERRAIN_BG_CHANGE         TRUE       // If set to TRUE, terrain moves permanently change the default battle background until the effect fades.
-#define B_THUNDERSTORM_TERRAIN      TRUE       // If set to TRUE, overworld Thunderstorm summons rain and Electric Terrain as in Gen8.
+#define ADMG_DEFAULT_B_TERRAIN_BG_CHANGE         TRUE       // If set to TRUE, terrain moves permanently change the default battle background until the effect fades.
+#define B_TERRAIN_BG_CHANGE ADMG_CONFIG_EXTRA(B_TERRAIN_BG_CHANGE)
+#define ADMG_DEFAULT_B_THUNDERSTORM_TERRAIN      TRUE       // If set to TRUE, overworld Thunderstorm summons rain and Electric Terrain as in Gen8.
+#define B_THUNDERSTORM_TERRAIN ADMG_CONFIG_EXTRA(B_THUNDERSTORM_TERRAIN)
 #define B_TERRAIN_TYPE_BOOST        GEN_LATEST // In Gen8+, terrain increases the power of same-type moves by 30% instead of 50%.
 #define B_SECRET_POWER_EFFECT       GEN_LATEST // Secret Power's effects change depending on the terrain and generation. See MOVE_EFFECT_SECRET_POWER's case in `SetMoveEffect`.
 #define B_SECRET_POWER_ANIMATION    GEN_LATEST // Secret Power's animations change depending on the terrain and generation.
@@ -359,9 +364,12 @@
 #define B_FAST_HP_DRAIN ADMG_CONFIG_EXTRA(B_FAST_HP_DRAIN)
 #define ADMG_DEFAULT_B_FAST_EXP_GROW                     TRUE       // If set to TRUE, EXP bars will move faster.
 #define B_FAST_EXP_GROW ADMG_CONFIG_EXTRA(B_FAST_EXP_GROW)
-#define B_SHOW_TARGETS                      TRUE       // If set to TRUE, all available targets will be shown before selecting a move in Double Battles.
-#define B_SHOW_CATEGORY_ICON                TRUE       // If set to TRUE, an icon in the summary and move relearner will show a move's category.
-#define B_HIDE_HEALTHBOX_IN_ANIMS           TRUE       // If set to TRUE, healthboxes will be hidden during move animations.
+#define ADMG_DEFAULT_B_SHOW_TARGETS                      TRUE       // If set to TRUE, all available targets will be shown before selecting a move in Double Battles.
+#define B_SHOW_TARGETS ADMG_CONFIG_EXTRA(B_SHOW_TARGETS)
+#define ADMG_DEFAULT_B_SHOW_CATEGORY_ICON                TRUE       // If set to TRUE, an icon in the summary and move relearner will show a move's category.
+#define B_SHOW_CATEGORY_ICON ADMG_CONFIG_EXTRA(B_SHOW_CATEGORY_ICON)
+#define ADMG_DEFAULT_B_HIDE_HEALTHBOX_IN_ANIMS           TRUE       // If set to TRUE, healthboxes will be hidden during move animations.
+#define B_HIDE_HEALTHBOX_IN_ANIMS ADMG_CONFIG_EXTRA(B_HIDE_HEALTHBOX_IN_ANIMS)
 #define B_WAIT_TIME_MULTIPLIER              16         // This determines how long text pauses for in battle. Vanilla is 16. Lower values result in faster battles.
 #define ADMG_DEFAULT_B_QUICK_MOVE_CURSOR_TO_RUN          FALSE      // If set to TRUE, pushing B in the battle menu in a wild encounter will move the cursor to the Run option.
 #define B_QUICK_MOVE_CURSOR_TO_RUN ADMG_CONFIG_EXTRA(B_QUICK_MOVE_CURSOR_TO_RUN)
@@ -369,9 +377,12 @@
 #define B_RUN_TRAINER_BATTLE ADMG_CONFIG_EXTRA(B_RUN_TRAINER_BATTLE)
 #define ADMG_DEFAULT_B_MOVE_DESCRIPTION_BUTTON           L_BUTTON   // If set to a button other than B_LAST_USED_BALL_BUTTON, pressing this button will open the move description menu.
 #define B_MOVE_DESCRIPTION_BUTTON ADMG_CONFIG_EXTRA(B_MOVE_DESCRIPTION_BUTTON)
-#define B_SHOW_USELESS_Z_MOVE_INFO          FALSE      // If set to TRUE, Z-Moves without additional effects, like newer generation status moves, will say "No additional effect."
-#define B_ANIMATE_MON_AFTER_KO              TRUE       // If set to TRUE, if a Pokémon on the opposing side faints, the non-fainted Pokémon will play their animations.
-#define B_ANIMATE_MON_AFTER_FAILED_POKEBALL TRUE       // If set to TRUE, a wild Pokémon that breaks of a thrown Poké Ball will play its animation.
+#define ADMG_DEFAULT_B_SHOW_USELESS_Z_MOVE_INFO          FALSE      // If set to TRUE, Z-Moves without additional effects, like newer generation status moves, will say "No additional effect."
+#define B_SHOW_USELESS_Z_MOVE_INFO ADMG_CONFIG_EXTRA(B_SHOW_USELESS_Z_MOVE_INFO)
+#define ADMG_DEFAULT_B_ANIMATE_MON_AFTER_KO              TRUE       // If set to TRUE, if a Pokémon on the opposing side faints, the non-fainted Pokémon will play their animations.
+#define B_ANIMATE_MON_AFTER_KO ADMG_CONFIG_EXTRA(B_ANIMATE_MON_AFTER_KO)
+#define ADMG_DEFAULT_B_ANIMATE_MON_AFTER_FAILED_POKEBALL TRUE       // If set to TRUE, a wild Pokémon that breaks of a thrown Poké Ball will play its animation.
+#define B_ANIMATE_MON_AFTER_FAILED_POKEBALL ADMG_CONFIG_EXTRA(B_ANIMATE_MON_AFTER_FAILED_POKEBALL)
 #define B_SHOW_DYNAMAX_MESSAGE              FALSE      // If set to TRUE, an additional battle message is shown after Dynamaxing or Gigantamaxing.
 #define ADMG_DEFAULT_B_HPBAR_COLOR_THRESHOLD             GEN_LATEST // In Gen5+, HP bar color thresholds were changed to be based on the actual HP values instead of the pixel length of the HP bar, leading to more accurate HP bar colors.
 #define B_HPBAR_COLOR_THRESHOLD ADMG_CONFIG_EXTRA(B_HPBAR_COLOR_THRESHOLD)
@@ -410,7 +421,8 @@
 #define B_AFFECTION_MECHANICS           TRUE       // In Gen6+, there's a stat called affection that can trigger different effects in battle. From LGPE onwards, these effects use friendship instead.
 #define ADMG_DEFAULT_B_TRAINER_CLASS_POKE_BALLS      GEN_LATEST // In Gen7+, Trainers will use certain kinds of Poké Balls depending on their Trainer class.
 #define B_TRAINER_CLASS_POKE_BALLS ADMG_CONFIG_EXTRA(B_TRAINER_CLASS_POKE_BALLS)
-#define B_TRAINER_MON_RANDOM_ABILITY    0          // If this is set to 0, trainers mons with no set ability only use the first ability of a mon. If set to 1 it will roll a random non-hidden ability. If set to 2, it will roll any ability (including hidden ability) with equal chance
+#define ADMG_DEFAULT_B_TRAINER_MON_RANDOM_ABILITY    0          // If this is set to 0, trainers mons with no set ability only use the first ability of a mon. If set to 1 it will roll a random non-hidden ability. If set to 2, it will roll any ability (including hidden ability) with equal chance
+#define B_TRAINER_MON_RANDOM_ABILITY ADMG_CONFIG_EXTRA(B_TRAINER_MON_RANDOM_ABILITY)
 #define B_OBEDIENCE_MECHANICS           GEN_LATEST // In PLA onwards (GEN_8 here), obedience restrictions also apply to non-outsider Pokémon, albeit based on their met level rather than their current level.
 #define B_USE_FROSTBITE                 FALSE      // In PLA, Frostbite replaces Freeze. Enabling this flag does the same here. Moves can still be cherry-picked to either Freeze or Frostbite. Freeze-Dry, Secret Power & Tri Attack depend on this config.
 #define ADMG_DEFAULT_B_TOXIC_REVERSAL                GEN_LATEST // In Gen5+, bad poison will change to regular poison at the end of battles.
@@ -419,9 +431,11 @@
 #define B_TRY_CATCH_TRAINER_BALL ADMG_CONFIG_EXTRA(B_TRY_CATCH_TRAINER_BALL)
 #define ADMG_DEFAULT_B_SLEEP_CLAUSE                  FALSE      // Keep Sleep Clause enabled regardless of B_FLAG_SLEEP_CLAUSE
 #define B_SLEEP_CLAUSE ADMG_CONFIG_EXTRA(B_SLEEP_CLAUSE)
-#define B_PARTNER_MONS_MARKED_SEEN      FALSE      // If set to TRUE, if your Double Battle partner sends out a Pokémon you haven't encountered yet, it will be marked as SEEN in your Pokédex.
+#define ADMG_DEFAULT_B_PARTNER_MONS_MARKED_SEEN      FALSE      // If set to TRUE, if your Double Battle partner sends out a Pokémon you haven't encountered yet, it will be marked as SEEN in your Pokédex.
+#define B_PARTNER_MONS_MARKED_SEEN ADMG_CONFIG_EXTRA(B_PARTNER_MONS_MARKED_SEEN)
 #define B_MULTI_HALF_TEAMS              FALSE      // If TRUE, trainers will be capped at 3 Pokémon each when there are 2 trainers on one side in a battle. If FALSE, per-battle capping may still be set using `Multi Party: Half` in `trainers.party`
-#define B_TERA_ORB_ALWAYS_CHARGED       FALSE      // If TRUE, causes the Tera Orb to always be charged all the time in every case, overriding B_FLAG_TERA_ORB_CHARGED. Use that for modularity.
+#define ADMG_DEFAULT_B_TERA_ORB_ALWAYS_CHARGED       FALSE      // Keep the Tera Orb charged regardless of B_FLAG_TERA_ORB_CHARGED
+#define B_TERA_ORB_ALWAYS_CHARGED ADMG_CONFIG_EXTRA(B_TERA_ORB_ALWAYS_CHARGED)
 
 #define NUM_BEEPS_GEN_LATEST            4                    // Loops 4 times
 #define NUM_BEEPS_GEN_3                 -1                   // Loops infinitely
@@ -476,9 +490,12 @@
 #define ADMG_DEFAULT_B_MOVE_REARRANGEMENT_IN_BATTLE  GEN_LATEST  //  In Gen4+, move slots can no longer be rearranged in battle.
 #define B_MOVE_REARRANGEMENT_IN_BATTLE ADMG_CONFIG_EXTRA(B_MOVE_REARRANGEMENT_IN_BATTLE)
 
-#define B_POOL_SETTING_CONSISTENT_RNG       FALSE    // If set to TRUE, the same Trainer will always generate the same pool on the same save file.
-#define B_POOL_SETTING_USE_FIXED_SEED       FALSE    // If set to TRUE, RNG will use the fixed seed defined in B_POOL_SETTING_FIXED_SEED.
-#define B_POOL_SETTING_FIXED_SEED           0x1D4127 // "Random" number. Unless a mistake was made, it's へだら in the Emerald charmap, which should spell he-da-ra.
+#define ADMG_DEFAULT_B_POOL_SETTING_CONSISTENT_RNG       FALSE    // If set to TRUE, the same Trainer will always generate the same pool on the same save file.
+#define B_POOL_SETTING_CONSISTENT_RNG ADMG_CONFIG_EXTRA(B_POOL_SETTING_CONSISTENT_RNG)
+#define ADMG_DEFAULT_B_POOL_SETTING_USE_FIXED_SEED       FALSE    // If set to TRUE, RNG will use the fixed seed defined in B_POOL_SETTING_FIXED_SEED.
+#define B_POOL_SETTING_USE_FIXED_SEED ADMG_CONFIG_EXTRA(B_POOL_SETTING_USE_FIXED_SEED)
+#define ADMG_DEFAULT_B_POOL_SETTING_FIXED_SEED           0x1D4127 // Base seed for consistent trainer pools when B_POOL_SETTING_USE_FIXED_SEED is enabled
+#define B_POOL_SETTING_FIXED_SEED ADMG_CONFIG_EXTRA(B_POOL_SETTING_FIXED_SEED)
 #define B_POOL_RULE_SPECIES_CLAUSE          FALSE    // Only pick a single Pokémon of a unique National Pokédex number.
 #define B_POOL_RULE_EXCLUDE_FORMS           FALSE    // Exclude different forms from Species Clause.
 #define B_POOL_RULE_ITEM_CLAUSE             FALSE    // Only allow each item to be picked once.
