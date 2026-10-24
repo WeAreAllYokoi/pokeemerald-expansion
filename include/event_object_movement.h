@@ -3,7 +3,7 @@
 
 #include "constants/event_object_movement.h"
 
-#if OW_BATTLE_ONLY_FORMS && !OW_POKEMON_OBJECT_EVENTS
+#if ADMG_DEFAULT_OW_BATTLE_ONLY_FORMS && !OW_POKEMON_OBJECT_EVENTS
 #error "OW_POKEMON_OBJECT_EVENTS needs to be TRUE in order for OW_BATTLE_ONLY_FORMS to work."
 #endif
 
@@ -273,6 +273,7 @@ const struct ObjectEventTemplate *GetObjectEventTemplateByLocalIdAndMap(u8 local
 u16 LoadSheetGraphicsInfo(const struct ObjectEventGraphicsInfo *info, u16 uuid, struct Sprite *sprite);
 u8 TrySpawnObjectEventTemplate(const struct ObjectEventTemplate *objectEventTemplate, MapId mapId, s16 cameraX, s16 cameraY);
 bool8 GetFollowerInfo(enum Species *species, bool32 *shiny, bool32 *female);
+bool32 ADMG_IsSpeciesOverworldDataHidden(enum Species species);
 const struct ObjectEventGraphicsInfo *SpeciesToGraphicsInfo(enum Species species, bool32 shiny, bool32 female);
 u16 GetObjectEventFlagIdByLocalIdAndMap(u8 localId, MapId mapId);
 void CopyObjectGraphicsInfoToSpriteTemplate(u16 graphicsId, void (*callback)(struct Sprite *), struct SpriteTemplate *spriteTemplate, const struct SubspriteTable **subspriteTables);

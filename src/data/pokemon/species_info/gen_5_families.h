@@ -3027,7 +3027,7 @@ const struct SpeciesInfo gSpeciesInfoGen5[] =
         .pokemonJumpType = PKMN_JUMP_TYPE_NONE,
         SHADOW(-1, 7, SHADOW_SIZE_M)
         FOOTPRINT(Audino)
-    #if OW_BATTLE_ONLY_FORMS
+        .overworldBattleOnly = TRUE, // Hide this form's overworld data when OW_BATTLE_ONLY_FORMS is FALSE
         OVERWORLD(
             sPicTable_AudinoMega,
             SIZE_32x32,
@@ -3037,7 +3037,6 @@ const struct SpeciesInfo gSpeciesInfoGen5[] =
             gOverworldPalette_AudinoMega,
             gShinyOverworldPalette_AudinoMega
         )
-    #endif //OW_BATTLE_ONLY_FORMS
         .isMegaEvolution = TRUE,
         .levelUpLearnset = sAudinoLevelUpLearnset,
         .teachableLearnset = sAudinoTeachableLearnset,

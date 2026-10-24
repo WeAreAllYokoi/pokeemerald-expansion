@@ -2248,6 +2248,12 @@ struct ObjectEvent *GetFollowerObject(void)
     return NULL;
 }
 
+// Treat forms marked overworldBattleOnly as having no overworld data when OW_BATTLE_ONLY_FORMS is FALSE
+bool32 ADMG_IsSpeciesOverworldDataHidden(enum Species species)
+{
+    return !OW_BATTLE_ONLY_FORMS && gSpeciesInfo[species].overworldBattleOnly;
+}
+
 // Return graphicsInfo for a Pokémon species & form
 const struct ObjectEventGraphicsInfo *SpeciesToGraphicsInfo(enum Species species, bool32 shiny, bool32 female)
 {
@@ -2279,7 +2285,8 @@ const struct ObjectEventGraphicsInfo *SpeciesToGraphicsInfo(enum Species species
     }
 
     // Try to avoid OOB or undefined access
-    if ((graphicsInfo->tileTag == 0 && species < NUM_SPECIES) || (graphicsInfo->tileTag != TAG_NONE && species >= NUM_SPECIES))
+    if ((graphicsInfo->tileTag == 0 && species < NUM_SPECIES) || (graphicsInfo->tileTag != TAG_NONE && species >= NUM_SPECIES)
+     || ADMG_IsSpeciesOverworldDataHidden(species))
     {
         if (OW_SUBSTITUTE_PLACEHOLDER)
             return &gSpeciesInfo[SPECIES_NONE].overworldData;
@@ -2295,8 +2302,9 @@ static u32 LoadDynamicFollowerPalette(enum Species species, bool32 shiny, bool32
     u32 paletteNum;
     // Use standalone palette, unless entry is OOB or NULL (fallback to front-sprite-based)
 #if OW_POKEMON_OBJECT_EVENTS == TRUE && OW_PKMN_OBJECTS_SHARE_PALETTES == FALSE
-    if ((shiny && gSpeciesInfo[species].overworldPalette)
+    if (((shiny && gSpeciesInfo[species].overworldPalette)
     || (!shiny && gSpeciesInfo[species].overworldShinyPalette))
+     && !ADMG_IsSpeciesOverworldDataHidden(species))
     {
         struct SpritePalette spritePalette;
         u16 palTag = species + OBJ_EVENT_MON + (shiny ? OBJ_EVENT_MON_SHINY : 0);

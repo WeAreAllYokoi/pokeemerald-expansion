@@ -7230,7 +7230,7 @@ const struct SpeciesInfo gSpeciesInfoGen7[] =
         .pokemonJumpType = PKMN_JUMP_TYPE_NONE,
         SHADOW(-1, 16, SHADOW_SIZE_L)
         FOOTPRINT(Necrozma)
-    #if OW_BATTLE_ONLY_FORMS
+        .overworldBattleOnly = TRUE, // Hide this form's overworld data when OW_BATTLE_ONLY_FORMS is FALSE
         OVERWORLD(
             sPicTable_NecrozmaUltra,
             SIZE_32x32, //TODO: 64x64 overworld sprite!
@@ -7240,7 +7240,6 @@ const struct SpeciesInfo gSpeciesInfoGen7[] =
             gOverworldPalette_NecrozmaUltra,
             gShinyOverworldPalette_NecrozmaUltra
         )
-    #endif //OW_BATTLE_ONLY_FORMS
         .isRestrictedLegendary = TRUE,
         .isUltraBurst = TRUE,
         .cannotBeTraded = TRUE,

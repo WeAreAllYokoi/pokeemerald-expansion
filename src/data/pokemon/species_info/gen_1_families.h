@@ -293,7 +293,7 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
         .pokemonJumpType = PKMN_JUMP_TYPE_NONE,
         SHADOW(2, 6, SHADOW_SIZE_XL_BATTLE_ONLY)
         FOOTPRINT(Venusaur)
-    #if OW_BATTLE_ONLY_FORMS
+        .overworldBattleOnly = TRUE, // Hide this form's overworld data when OW_BATTLE_ONLY_FORMS is FALSE
         OVERWORLD(
             sPicTable_VenusaurMega,
             SIZE_32x32,
@@ -303,7 +303,6 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
             gOverworldPalette_VenusaurMega,
             gShinyOverworldPalette_VenusaurMega
         )
-    #endif //OW_BATTLE_ONLY_FORMS
         .isMegaEvolution = TRUE,
         .levelUpLearnset = sVenusaurLevelUpLearnset,
         .teachableLearnset = sVenusaurTeachableLearnset,
@@ -647,7 +646,7 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
         .pokemonJumpType = PKMN_JUMP_TYPE_NONE,
         SHADOW(2, 13, SHADOW_SIZE_L)
         FOOTPRINT(Charizard)
-    #if OW_BATTLE_ONLY_FORMS
+        .overworldBattleOnly = TRUE, // Hide this form's overworld data when OW_BATTLE_ONLY_FORMS is FALSE
         OVERWORLD(
             sPicTable_CharizardMegaX,
             SIZE_32x32,
@@ -657,7 +656,6 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
             gOverworldPalette_CharizardMegaX,
             gShinyOverworldPalette_CharizardMegaX
         )
-    #endif //OW_BATTLE_ONLY_FORMS
         .isMegaEvolution = TRUE,
         .levelUpLearnset = sCharizardLevelUpLearnset,
         .teachableLearnset = sCharizardTeachableLearnset,
@@ -722,7 +720,7 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
         .pokemonJumpType = PKMN_JUMP_TYPE_NONE,
         SHADOW(-1, 14, SHADOW_SIZE_L)
         FOOTPRINT(Charizard)
-    #if OW_BATTLE_ONLY_FORMS
+        .overworldBattleOnly = TRUE, // Hide this form's overworld data when OW_BATTLE_ONLY_FORMS is FALSE
         OVERWORLD(
             sPicTable_CharizardMegaY,
             SIZE_32x32,
@@ -732,7 +730,6 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
             gOverworldPalette_CharizardMegaY,
             gShinyOverworldPalette_CharizardMegaY
         )
-    #endif //OW_BATTLE_ONLY_FORMS
         .isMegaEvolution = TRUE,
         .levelUpLearnset = sCharizardLevelUpLearnset,
         .teachableLearnset = sCharizardTeachableLearnset,
@@ -1080,7 +1077,7 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
         .pokemonJumpType = PKMN_JUMP_TYPE_NONE,
         SHADOW(4, 11, SHADOW_SIZE_L)
         FOOTPRINT(Blastoise)
-    #if OW_BATTLE_ONLY_FORMS
+        .overworldBattleOnly = TRUE, // Hide this form's overworld data when OW_BATTLE_ONLY_FORMS is FALSE
         OVERWORLD(
             sPicTable_BlastoiseMega,
             SIZE_32x32,
@@ -1090,7 +1087,6 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
             gOverworldPalette_BlastoiseMega,
             gShinyOverworldPalette_BlastoiseMega
         )
-    #endif //OW_BATTLE_ONLY_FORMS
         .isMegaEvolution = TRUE,
         .levelUpLearnset = sBlastoiseLevelUpLearnset,
         .teachableLearnset = sBlastoiseTeachableLearnset,
@@ -1773,7 +1769,7 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
         .pokemonJumpType = PKMN_JUMP_TYPE_NONE,
         SHADOW(1, 14, SHADOW_SIZE_S)
         FOOTPRINT(Beedrill)
-    #if OW_BATTLE_ONLY_FORMS
+        .overworldBattleOnly = TRUE, // Hide this form's overworld data when OW_BATTLE_ONLY_FORMS is FALSE
         OVERWORLD(
             sPicTable_BeedrillMega,
             SIZE_32x32,
@@ -1783,7 +1779,6 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
             gOverworldPalette_BeedrillMega,
             gShinyOverworldPalette_BeedrillMega
         )
-    #endif //OW_BATTLE_ONLY_FORMS
         .isMegaEvolution = TRUE,
         .levelUpLearnset = sBeedrillLevelUpLearnset,
         .teachableLearnset = sBeedrillTeachableLearnset,
@@ -2086,7 +2081,7 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
         .pokemonJumpType = PKMN_JUMP_TYPE_NONE,
         SHADOW(-7, 19, SHADOW_SIZE_M)
         FOOTPRINT(Pidgeot)
-    #if OW_BATTLE_ONLY_FORMS
+        .overworldBattleOnly = TRUE, // Hide this form's overworld data when OW_BATTLE_ONLY_FORMS is FALSE
         OVERWORLD(
             sPicTable_PidgeotMega,
             SIZE_32x32,
@@ -2096,7 +2091,6 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
             gOverworldPalette_PidgeotMega,
             gShinyOverworldPalette_PidgeotMega
         )
-    #endif //OW_BATTLE_ONLY_FORMS
         .isMegaEvolution = TRUE,
         .levelUpLearnset = sPidgeotLevelUpLearnset,
         .teachableLearnset = sPidgeotTeachableLearnset,
@@ -8893,7 +8887,7 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
         .pokemonJumpType = PKMN_JUMP_TYPE_NONE,
         SHADOW(0, 18, SHADOW_SIZE_L)
         FOOTPRINT(Alakazam)
-    #if OW_BATTLE_ONLY_FORMS
+        .overworldBattleOnly = TRUE, // Hide this form's overworld data when OW_BATTLE_ONLY_FORMS is FALSE
         OVERWORLD(
             sPicTable_AlakazamMega,
             SIZE_32x32,
@@ -8903,7 +8897,6 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
             gOverworldPalette_AlakazamMega,
             gShinyOverworldPalette_AlakazamMega
         )
-    #endif //OW_BATTLE_ONLY_FORMS
         .isMegaEvolution = TRUE,
         .levelUpLearnset = sAlakazamLevelUpLearnset,
         .teachableLearnset = sAlakazamTeachableLearnset,
@@ -10659,7 +10652,7 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
         .pokemonJumpType = PKMN_JUMP_TYPE_NONE,
         SHADOW(0, 13, SHADOW_SIZE_L)
         FOOTPRINT(Slowbro)
-    #if OW_BATTLE_ONLY_FORMS
+        .overworldBattleOnly = TRUE, // Hide this form's overworld data when OW_BATTLE_ONLY_FORMS is FALSE
         OVERWORLD(
             sPicTable_SlowbroMega,
             SIZE_32x32,
@@ -10669,7 +10662,6 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
             gOverworldPalette_SlowbroMega,
             gShinyOverworldPalette_SlowbroMega
         )
-    #endif //OW_BATTLE_ONLY_FORMS
         .isMegaEvolution = TRUE,
         .levelUpLearnset = sSlowbroLevelUpLearnset,
         .teachableLearnset = sSlowbroTeachableLearnset,
@@ -12409,7 +12401,7 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
         .pokemonJumpType = PKMN_JUMP_TYPE_NONE,
         SHADOW(6, 1, SHADOW_SIZE_XL_BATTLE_ONLY)
         FOOTPRINT(Gengar)
-    #if OW_BATTLE_ONLY_FORMS
+        .overworldBattleOnly = TRUE, // Hide this form's overworld data when OW_BATTLE_ONLY_FORMS is FALSE
         OVERWORLD(
             sPicTable_GengarMega,
             SIZE_32x32,
@@ -12419,7 +12411,6 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
             gOverworldPalette_GengarMega,
             gShinyOverworldPalette_GengarMega
         )
-    #endif //OW_BATTLE_ONLY_FORMS
         .isMegaEvolution = TRUE,
         .isTelekinesisBanned = TRUE,
         .levelUpLearnset = sGengarLevelUpLearnset,
@@ -12704,7 +12695,7 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
         .pokemonJumpType = PKMN_JUMP_TYPE_NONE,
         SHADOW(1, 13, SHADOW_SIZE_XL_BATTLE_ONLY)
         FOOTPRINT(Steelix)
-    #if OW_BATTLE_ONLY_FORMS
+        .overworldBattleOnly = TRUE, // Hide this form's overworld data when OW_BATTLE_ONLY_FORMS is FALSE
         OVERWORLD(
             sPicTable_SteelixMega,
             SIZE_64x64,
@@ -12714,7 +12705,6 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
             gOverworldPalette_SteelixMega,
             gShinyOverworldPalette_SteelixMega
         )
-    #endif //OW_BATTLE_ONLY_FORMS
         .isMegaEvolution = TRUE,
         .levelUpLearnset = sSteelixLevelUpLearnset,
         .teachableLearnset = sSteelixTeachableLearnset,
@@ -15354,7 +15344,7 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
         .pokemonJumpType = PKMN_JUMP_TYPE_NONE,
         SHADOW(0, 11, SHADOW_SIZE_XL_BATTLE_ONLY)
         FOOTPRINT(Kangaskhan)
-    #if OW_BATTLE_ONLY_FORMS
+        .overworldBattleOnly = TRUE, // Hide this form's overworld data when OW_BATTLE_ONLY_FORMS is FALSE
         OVERWORLD(
             sPicTable_KangaskhanMega,
             SIZE_32x32,
@@ -15364,7 +15354,6 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
             gOverworldPalette_KangaskhanMega,
             gShinyOverworldPalette_KangaskhanMega
         )
-    #endif //OW_BATTLE_ONLY_FORMS
         .isMegaEvolution = TRUE,
         .levelUpLearnset = sKangaskhanLevelUpLearnset,
         .teachableLearnset = sKangaskhanTeachableLearnset,
@@ -16539,7 +16528,7 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
         .pokemonJumpType = PKMN_JUMP_TYPE_NONE,
         SHADOW(5, 15, SHADOW_SIZE_XL_BATTLE_ONLY)
         FOOTPRINT(Scizor)
-    #if OW_BATTLE_ONLY_FORMS
+        .overworldBattleOnly = TRUE, // Hide this form's overworld data when OW_BATTLE_ONLY_FORMS is FALSE
         OVERWORLD(
             sPicTable_ScizorMega,
             SIZE_32x32,
@@ -16549,7 +16538,6 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
             gOverworldPalette_ScizorMega,
             gShinyOverworldPalette_ScizorMega
         )
-    #endif //OW_BATTLE_ONLY_FORMS
         .isMegaEvolution = TRUE,
         .levelUpLearnset = sScizorLevelUpLearnset,
         .teachableLearnset = sScizorTeachableLearnset,
@@ -17365,7 +17353,7 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
         .pokemonJumpType = PKMN_JUMP_TYPE_NONE,
         SHADOW(3, 12, SHADOW_SIZE_L)
         FOOTPRINT(Pinsir)
-    #if OW_BATTLE_ONLY_FORMS
+        .overworldBattleOnly = TRUE, // Hide this form's overworld data when OW_BATTLE_ONLY_FORMS is FALSE
         OVERWORLD(
             sPicTable_PinsirMega,
             SIZE_32x32,
@@ -17375,7 +17363,6 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
             gOverworldPalette_PinsirMega,
             gShinyOverworldPalette_PinsirMega
         )
-    #endif //OW_BATTLE_ONLY_FORMS
         .isMegaEvolution = TRUE,
         .levelUpLearnset = sPinsirLevelUpLearnset,
         .teachableLearnset = sPinsirTeachableLearnset,
@@ -17894,7 +17881,7 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
         .pokemonJumpType = PKMN_JUMP_TYPE_NONE,
         SHADOW(3, 17, SHADOW_SIZE_XL_BATTLE_ONLY)
         FOOTPRINT(Gyarados)
-    #if OW_BATTLE_ONLY_FORMS
+        .overworldBattleOnly = TRUE, // Hide this form's overworld data when OW_BATTLE_ONLY_FORMS is FALSE
         OVERWORLD(
             sPicTable_GyaradosMega,
             SIZE_32x32,
@@ -17904,7 +17891,6 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
             gOverworldPalette_GyaradosMega,
             gShinyOverworldPalette_GyaradosMega
         )
-    #endif //OW_BATTLE_ONLY_FORMS
         .isMegaEvolution = TRUE,
         .levelUpLearnset = sGyaradosLevelUpLearnset,
         .teachableLearnset = sGyaradosTeachableLearnset,
@@ -19574,7 +19560,7 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
         .pokemonJumpType = PKMN_JUMP_TYPE_NONE,
         SHADOW(5, 18, SHADOW_SIZE_M)
         FOOTPRINT(Aerodactyl)
-    #if OW_BATTLE_ONLY_FORMS
+        .overworldBattleOnly = TRUE, // Hide this form's overworld data when OW_BATTLE_ONLY_FORMS is FALSE
         OVERWORLD(
             sPicTable_AerodactylMega,
             SIZE_32x32,
@@ -19584,7 +19570,6 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
             gOverworldPalette_AerodactylMega,
             gShinyOverworldPalette_AerodactylMega
         )
-    #endif //OW_BATTLE_ONLY_FORMS
         .isMegaEvolution = TRUE,
         .levelUpLearnset = sAerodactylLevelUpLearnset,
         .teachableLearnset = sAerodactylTeachableLearnset,
@@ -20700,7 +20685,7 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
         .pokemonJumpType = PKMN_JUMP_TYPE_NONE,
         SHADOW(1, 12, SHADOW_SIZE_M)
         FOOTPRINT(Mewtwo)
-    #if OW_BATTLE_ONLY_FORMS
+        .overworldBattleOnly = TRUE, // Hide this form's overworld data when OW_BATTLE_ONLY_FORMS is FALSE
         OVERWORLD(
             sPicTable_MewtwoMegaX,
             SIZE_32x32,
@@ -20710,7 +20695,6 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
             gOverworldPalette_MewtwoMegaX,
             gShinyOverworldPalette_MewtwoMegaX
         )
-    #endif //OW_BATTLE_ONLY_FORMS
         .isRestrictedLegendary = TRUE,
         .isMegaEvolution = TRUE,
         .isFrontierBanned = TRUE,
@@ -20780,7 +20764,7 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
         .pokemonJumpType = PKMN_JUMP_TYPE_NONE,
         SHADOW(0, 14, SHADOW_SIZE_S)
         FOOTPRINT(Mewtwo)
-    #if OW_BATTLE_ONLY_FORMS
+        .overworldBattleOnly = TRUE, // Hide this form's overworld data when OW_BATTLE_ONLY_FORMS is FALSE
         OVERWORLD(
             sPicTable_MewtwoMegaY,
             SIZE_32x32,
@@ -20790,7 +20774,6 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
             gOverworldPalette_MewtwoMegaY,
             gShinyOverworldPalette_MewtwoMegaY
         )
-    #endif //OW_BATTLE_ONLY_FORMS
         .isRestrictedLegendary = TRUE,
         .isMegaEvolution = TRUE,
         .isFrontierBanned = TRUE,

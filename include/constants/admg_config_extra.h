@@ -341,6 +341,7 @@
     F(OW_PC_JAPAN_WALDA_ICONS, 1) \
     F(OW_PC_MOVE_ORDER, GEN_COUNT - 1) \
     F(OW_TIMES_OF_DAY, GEN_COUNT - 1) \
+    F(OW_BATTLE_ONLY_FORMS, 1) \
 
 #define ADMG_CONFIG_EXTRA_TAG(_name, _maximum) CONFIG_##_name,
 
@@ -691,6 +692,7 @@ enum ADMG_ConfigExtraTag
 #define ADMG_CONFIG_EXTRA_MAX_OW_PC_JAPAN_WALDA_ICONS (1)
 #define ADMG_CONFIG_EXTRA_MAX_OW_PC_MOVE_ORDER (GEN_COUNT - 1)
 #define ADMG_CONFIG_EXTRA_MAX_OW_TIMES_OF_DAY (GEN_COUNT - 1)
+#define ADMG_CONFIG_EXTRA_MAX_OW_BATTLE_ONLY_FORMS (1)
 
 // Battle and event scripts need numeric tags because the assembler can't read the enum
 // config_changes.c checks each value against its CONFIG_<name> tag
@@ -1030,5 +1032,6 @@ enum ADMG_ConfigExtraTag
 #define ADMG_CONFIG_TAG_OW_PC_JAPAN_WALDA_ICONS 0x114D
 #define ADMG_CONFIG_TAG_OW_PC_MOVE_ORDER 0x114E
 #define ADMG_CONFIG_TAG_OW_TIMES_OF_DAY 0x114F
+#define ADMG_CONFIG_TAG_OW_BATTLE_ONLY_FORMS 0x1150
 
 #endif
