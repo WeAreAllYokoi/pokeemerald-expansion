@@ -39,15 +39,18 @@
 #define P_SCATTERBUG_LINE_FORM_BREED ADMG_CONFIG_EXTRA(P_SCATTERBUG_LINE_FORM_BREED)
 
 // Species-specific settings
-#define P_SHEDINJA_BALL             GEN_LATEST  // Since Gen 4, Shedinja requires a Poké Ball for its evolution. In Gen 3, Shedinja inherits Nincada's Ball.
+#define ADMG_DEFAULT_P_SHEDINJA_BALL             GEN_LATEST  // Since Gen 4, Shedinja requires a Poké Ball for its evolution. In Gen 3, Shedinja inherits Nincada's Ball.
+#define P_SHEDINJA_BALL ADMG_CONFIG_EXTRA(P_SHEDINJA_BALL)
 #define ADMG_DEFAULT_P_KADABRA_EVERSTONE         GEN_LATEST  // Since Gen 4, Kadabra can evolve even when holding an Everstone.
 #define P_KADABRA_EVERSTONE ADMG_CONFIG_EXTRA(P_KADABRA_EVERSTONE)
 #define ADMG_DEFAULT_P_SHUCKLE_BERRY_JUICE       GEN_LATEST  // With GEN_2, Shuckle has a 1/16 chance to turn its held Oran Berry into Berry Juice
 #define P_SHUCKLE_BERRY_JUICE ADMG_CONFIG_EXTRA(P_SHUCKLE_BERRY_JUICE)
 
 // Species graphic settings
-#define P_GENDER_DIFFERENCES            TRUE        // If TRUE, Pokémon will have graphical-only differences when they're female. Female *forms* such as Meowstic are not affected by this.
-#define P_CUSTOM_GENDER_DIFF_ICONS      TRUE        // If TRUE, more Pokémon will have custom icons for their female differences, such as Hippopotas and Hippowdon.
+#define ADMG_DEFAULT_P_GENDER_DIFFERENCES            TRUE        // If TRUE, Pokémon will have graphical-only differences when they're female. Female *forms* such as Meowstic are not affected by this.
+#define P_GENDER_DIFFERENCES ADMG_CONFIG_EXTRA(P_GENDER_DIFFERENCES)
+#define ADMG_DEFAULT_P_CUSTOM_GENDER_DIFF_ICONS      TRUE        // If TRUE, more Pokémon will have custom icons for their female differences, such as Hippopotas and Hippowdon.
+#define P_CUSTOM_GENDER_DIFF_ICONS ADMG_CONFIG_EXTRA(P_CUSTOM_GENDER_DIFF_ICONS)
 #define P_ARCEUS_UNIQUE_FORM_ICONS      GEN_LATEST  // Since Gen 9, Arceus changes its icon to reflect its current form.
 #define P_FOOTPRINTS                    TRUE        // If TRUE, Pokémon will have footprints (as was the case up to Gen 5 and in BDSP). Disabling this saves some ROM space.
 #define P_TWO_FRAME_FRONT_SPRITES       TRUE        // In Pokémon Emerald, Pokémon front sprites always consist of two frames. This config can revert it to only use the first frame, as is the case in the other Gen 3 games.

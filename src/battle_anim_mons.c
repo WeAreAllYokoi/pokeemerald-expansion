@@ -2125,22 +2125,18 @@ s16 GetBattlerSpriteCoordAttr(enum BattlerId battler, u8 attr)
 
         if (IsOnPlayerSide(battler))
         {
-        #if P_GENDER_DIFFERENCES
-            if (gSpeciesInfo[species].backPicFemale != NULL && IsPersonalityFemale(species, personality))
+            if (P_GENDER_DIFFERENCES && gSpeciesInfo[species].backPicFemale != NULL && IsPersonalityFemale(species, personality))
                 size = gSpeciesInfo[species].backPicSizeFemale;
             else
-        #endif
                 size = gSpeciesInfo[species].backPicSize;
 
             y_offset = gSpeciesInfo[species].backPicYOffset;
         }
         else
         {
-        #if P_GENDER_DIFFERENCES
-            if (gSpeciesInfo[species].frontPicFemale != NULL && IsPersonalityFemale(species, personality))
+            if (P_GENDER_DIFFERENCES && gSpeciesInfo[species].frontPicFemale != NULL && IsPersonalityFemale(species, personality))
                 size = gSpeciesInfo[species].frontPicSizeFemale;
             else
-        #endif
                 size = gSpeciesInfo[species].frontPicSize;
 
             y_offset = gSpeciesInfo[species].frontPicYOffset;

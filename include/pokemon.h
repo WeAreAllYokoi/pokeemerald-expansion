@@ -441,13 +441,12 @@ struct SpeciesInfo /*0xC4*/
     const u16 *palette;
     const u16 *shinyPalette;
     const u8 *iconSprite;
-#if P_GENDER_DIFFERENCES
+    // Keep the female graphics fields in the struct so P_GENDER_DIFFERENCES can change at runtime
     const u32 *frontPicFemale;
     const u32 *backPicFemale;
     const u16 *paletteFemale;
     const u16 *shinyPaletteFemale;
     const u8 *iconSpriteFemale;
-#endif //P_GENDER_DIFFERENCES
 #if P_FOOTPRINTS
     const u8 *footprint;
 #endif
@@ -456,16 +455,10 @@ struct SpeciesInfo /*0xC4*/
     u8 frontPicYOffset; // The number of pixels between the drawn pixel area and the bottom edge.
     u8 backPicSize; // The dimensions of this drawn pixel area.
     u8 backPicYOffset; // The number of pixels between the drawn pixel area and the bottom edge.
-#if P_GENDER_DIFFERENCES
     u8 frontPicSizeFemale; // The dimensions of this drawn pixel area.
     u8 backPicSizeFemale; // The dimensions of this drawn pixel area.
-#endif //P_GENDER_DIFFERENCES
     u8 iconPalIndex:3;
-#if P_GENDER_DIFFERENCES
     u8 iconPalIndexFemale:3;
-#else
-    u8 paddingF:3;
-#endif //P_GENDER_DIFFERENCES
     u8 pokemonJumpType:2; // According to the clerk, the Pokémon allowed in Pokémon Jump are all <= 28 inches/71 cm, and do not only swim, burrow, or fly.
     u8 enemyMonElevation; // This determines how much higher above the usual position the enemy Pokémon is during battle. Species that float or fly have nonzero values.
     // Flags
@@ -492,7 +485,8 @@ struct SpeciesInfo /*0xC4*/
     u32 isSkyBattleBanned:1;
     u32 isTelekinesisBanned:1;
     u32 overworldBattleOnly:1; // Hide this form's overworld data when OW_BATTLE_ONLY_FORMS is FALSE
-    u32 padding4:7;
+    u32 iconFemaleCustom:1; // This icon requires P_CUSTOM_GENDER_DIFF_ICONS as well as P_GENDER_DIFFERENCES
+    u32 padding4:6;
     // Shadow settings
     s8 enemyShadowXOffset; // This determines the X-offset for an enemy Pokémon's shadow during battle; negative values point left, positive values point right.
     s8 enemyShadowYOffset; // This determines the Y-offset for an enemy Pokémon's shadow during battle; negative values point up, positive values point down.
@@ -508,16 +502,12 @@ struct SpeciesInfo /*0xC4*/
     const struct FormChange *formChangeTable;
 #if OW_POKEMON_OBJECT_EVENTS
     struct ObjectEventGraphicsInfo overworldData;
-#if P_GENDER_DIFFERENCES
     struct ObjectEventGraphicsInfo overworldDataFemale;
-#endif //P_GENDER_DIFFERENCES
 #if OW_PKMN_OBJECTS_SHARE_PALETTES == FALSE
     const void *overworldPalette;
     const void *overworldShinyPalette;
-#if P_GENDER_DIFFERENCES
     const void *overworldPaletteFemale;
     const void *overworldShinyPaletteFemale;
-#endif //P_GENDER_DIFFERENCES
 #endif //OW_PKMN_OBJECTS_SHARE_PALETTES
 #endif //OW_POKEMON_OBJECT_EVENTS
     enum OverworldWildEncounterBehaviors overworldEncounterBehavior;
@@ -971,6 +961,7 @@ enum Move MonTryLearningNewMoveEvolution(struct Pokemon *mon, bool8 firstMove);
 void RemoveIVIndexFromList(u8 *ivs, u8 selectedIv);
 void TrySpecialOverworldEvo(void);
 bool32 SpeciesHasGenderDifferences(enum Species species);
+const u8 *ADMG_GetFemaleIconSprite(enum Species species);
 bool32 TryFormChange(struct Pokemon *mon, enum FormChanges method, enum BattleTrainer trainer);
 bool32 TryBoxMonFormChange(struct BoxPokemon *boxMon, enum FormChanges method);
 void TryToSetBattleFormChangeMoves(struct Pokemon *mon, enum FormChanges method);

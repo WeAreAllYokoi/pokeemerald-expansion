@@ -935,10 +935,8 @@ static bool32 CheckCanLoadOWE_Palette(enum Species speciesId, bool32 isFemale, b
     u32 numFreePalSlots = CountFreePaletteSlots();
     u32 tag = speciesId + OBJ_EVENT_MON + (isShiny ? OBJ_EVENT_MON_SHINY : 0);
 
-#if P_GENDER_DIFFERENCES
-    if (isFemale && gSpeciesInfo[speciesId].overworldShinyPaletteFemale != NULL)
+    if (P_GENDER_DIFFERENCES && isFemale && gSpeciesInfo[speciesId].overworldShinyPaletteFemale != NULL)
         tag += OBJ_EVENT_MON_FEMALE;
-#endif
 
     // We need at least 2 pal slots open. One for the object and one for the spawn field effect.
     // Add this and tiles to seperate graphics check function

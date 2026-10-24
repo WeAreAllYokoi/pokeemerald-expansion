@@ -2271,13 +2271,11 @@ const struct ObjectEventGraphicsInfo *SpeciesToGraphicsInfo(enum Species species
         graphicsInfo = &gSpeciesInfo[species].overworldData;
         break;
     default:
-    #if P_GENDER_DIFFERENCES
-        if (female && gSpeciesInfo[species].overworldDataFemale.paletteTag == OBJ_EVENT_PAL_TAG_DYNAMIC)
+        if (P_GENDER_DIFFERENCES && female && gSpeciesInfo[species].overworldDataFemale.paletteTag == OBJ_EVENT_PAL_TAG_DYNAMIC)
         {
             graphicsInfo = &gSpeciesInfo[species].overworldDataFemale;
         }
         else
-    #endif
         {
             graphicsInfo = &gSpeciesInfo[species].overworldData;
         }
@@ -2308,16 +2306,13 @@ static u32 LoadDynamicFollowerPalette(enum Species species, bool32 shiny, bool32
     {
         struct SpritePalette spritePalette;
         u16 palTag = species + OBJ_EVENT_MON + (shiny ? OBJ_EVENT_MON_SHINY : 0);
-    #if P_GENDER_DIFFERENCES
-        if (female && gSpeciesInfo[species].overworldShinyPaletteFemale != NULL)
+        if (P_GENDER_DIFFERENCES && female && gSpeciesInfo[species].overworldShinyPaletteFemale != NULL)
             palTag += OBJ_EVENT_MON_FEMALE;
-    #endif
         // palette already loaded
         if ((paletteNum = IndexOfSpritePaletteTag(palTag)) < 16)
             return paletteNum;
         spritePalette.tag = palTag;
-    #if P_GENDER_DIFFERENCES
-        if (female && gSpeciesInfo[species].overworldPaletteFemale != NULL)
+        if (P_GENDER_DIFFERENCES && female && gSpeciesInfo[species].overworldPaletteFemale != NULL)
         {
             if (shiny)
                 spritePalette.data = gSpeciesInfo[species].overworldShinyPaletteFemale;
@@ -2325,7 +2320,6 @@ static u32 LoadDynamicFollowerPalette(enum Species species, bool32 shiny, bool32
                 spritePalette.data = gSpeciesInfo[species].overworldPaletteFemale;
         }
         else
-    #endif
         {
             if (shiny)
                 spritePalette.data = gSpeciesInfo[species].overworldShinyPalette;

@@ -35,13 +35,9 @@
 #define OVERWORLD_PAL(...)                                  \
     .overworldPalette = DEFAULT(NULL, __VA_ARGS__),         \
     .overworldShinyPalette = DEFAULT_2(NULL, __VA_ARGS__),
-#if P_GENDER_DIFFERENCES
 #define OVERWORLD_PAL_FEMALE(...)                                 \
     .overworldPaletteFemale = DEFAULT(NULL, __VA_ARGS__),         \
     .overworldShinyPaletteFemale = DEFAULT_2(NULL, __VA_ARGS__),
-#else
-#define OVERWORLD_PAL_FEMALE(...)
-#endif //P_GENDER_DIFFERENCES
 #else
 #define OVERWORLD_PAL(...)
 #define OVERWORLD_PAL_FEMALE(...)
@@ -70,13 +66,9 @@
     .overworldData = OVERWORLD_DATA(objEventPic, _size, shadow, _tracks, _anims),                   \
     OVERWORLD_PAL(__VA_ARGS__)
 
-#if P_GENDER_DIFFERENCES
 #define OVERWORLD_FEMALE(objEventPic, _size, shadow, _tracks, _anims, ...)                          \
     .overworldDataFemale = OVERWORLD_DATA(objEventPic, _size, shadow, _tracks, _anims),             \
     OVERWORLD_PAL_FEMALE(__VA_ARGS__)
-#else
-#define OVERWORLD_FEMALE(...)
-#endif //P_GENDER_DIFFERENCES
 
 #else
 #define OVERWORLD(...)
@@ -221,7 +213,6 @@ const struct SpeciesInfo gSpeciesInfo[] =
         .backPic = gMonBackPic_CircledQuestionMark,
         .backPicSize = MON_COORDS_SIZE(64, 64),
         .backPicYOffset = 7,
-#if P_GENDER_DIFFERENCES
         .frontPicFemale = gMonFrontPic_CircledQuestionMark,
         .frontPicSizeFemale = MON_COORDS_SIZE(64, 64),
         .backPicFemale = gMonBackPic_CircledQuestionMarkF,
@@ -230,7 +221,6 @@ const struct SpeciesInfo gSpeciesInfo[] =
         .shinyPaletteFemale = gMonShinyPalette_CircledQuestionMarkF,
         .iconSpriteFemale = gMonIcon_QuestionMarkF,
         .iconPalIndexFemale = 1,
-#endif //P_GENDER_DIFFERENCES
         .backAnimId = BACK_ANIM_NONE,
         .palette = gMonPalette_CircledQuestionMark,
         .shinyPalette = gMonShinyPalette_CircledQuestionMark,

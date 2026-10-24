@@ -1846,14 +1846,12 @@ const struct SpeciesInfo gSpeciesInfoGen6[] =
         .shinyPalette = gMonShinyPalette_Pyroar,
         .iconSprite = gMonIcon_Pyroar,
         .iconPalIndex = 2,
-#if P_GENDER_DIFFERENCES
         .frontPicFemale = gMonFrontPic_PyroarF,
         .frontPicSizeFemale = MON_COORDS_SIZE(64, 64),
         .backPicFemale = gMonBackPic_PyroarF,
         .backPicSizeFemale = MON_COORDS_SIZE(64, 64),
         .iconSpriteFemale = gMonIcon_PyroarF,
         .iconPalIndexFemale = 2,
-#endif //P_GENDER_DIFFERENCES
         .pokemonJumpType = PKMN_JUMP_TYPE_NONE,
         SHADOW(-2, 11, SHADOW_SIZE_XL_BATTLE_ONLY)
         FOOTPRINT(Pyroar)

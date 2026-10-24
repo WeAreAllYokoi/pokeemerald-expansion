@@ -5220,11 +5220,9 @@ const u16 *GetMonSpritePalFromSpeciesIsEgg(enum Species species, bool32 isShiny,
     }
     else if (isShiny)
     {
-    #if P_GENDER_DIFFERENCES
-        if (gSpeciesInfo[species].shinyPaletteFemale != NULL && isFemale)
+        if (P_GENDER_DIFFERENCES && gSpeciesInfo[species].shinyPaletteFemale != NULL && isFemale)
             return gSpeciesInfo[species].shinyPaletteFemale;
         else
-    #endif
         if (gSpeciesInfo[species].shinyPalette != NULL)
             return gSpeciesInfo[species].shinyPalette;
         else
@@ -5232,11 +5230,9 @@ const u16 *GetMonSpritePalFromSpeciesIsEgg(enum Species species, bool32 isShiny,
     }
     else
     {
-    #if P_GENDER_DIFFERENCES
-        if (gSpeciesInfo[species].paletteFemale != NULL && isFemale)
+        if (P_GENDER_DIFFERENCES && gSpeciesInfo[species].paletteFemale != NULL && isFemale)
             return gSpeciesInfo[species].paletteFemale;
         else
-    #endif
         if (gSpeciesInfo[species].palette != NULL)
             return gSpeciesInfo[species].palette;
         else
@@ -6243,16 +6239,24 @@ void TrySpecialOverworldEvo(void)
 
 bool32 SpeciesHasGenderDifferences(enum Species species)
 {
-#if P_GENDER_DIFFERENCES
-    if (gSpeciesInfo[species].frontPicFemale != NULL
-     || gSpeciesInfo[species].backPicFemale != NULL
-     || gSpeciesInfo[species].paletteFemale != NULL
-     || gSpeciesInfo[species].shinyPaletteFemale != NULL
-     || gSpeciesInfo[species].iconSpriteFemale != NULL)
+    if (P_GENDER_DIFFERENCES
+     && (gSpeciesInfo[species].frontPicFemale != NULL
+      || gSpeciesInfo[species].backPicFemale != NULL
+      || gSpeciesInfo[species].paletteFemale != NULL
+      || gSpeciesInfo[species].shinyPaletteFemale != NULL
+      || ADMG_GetFemaleIconSprite(species) != NULL))
         return TRUE;
-#endif
 
     return FALSE;
+}
+
+// Get the species' female icon, or NULL if it has none or P_GENDER_DIFFERENCES is off
+// Icons marked iconFemaleCustom also require P_CUSTOM_GENDER_DIFF_ICONS
+const u8 *ADMG_GetFemaleIconSprite(enum Species species)
+{
+    if (!P_GENDER_DIFFERENCES || (gSpeciesInfo[species].iconFemaleCustom && !P_CUSTOM_GENDER_DIFF_ICONS))
+        return NULL;
+    return gSpeciesInfo[species].iconSpriteFemale;
 }
 
 static struct PartyState *GetBattlerPartyStateByPokemon(struct Pokemon *partyMon, enum BattleTrainer trainer)

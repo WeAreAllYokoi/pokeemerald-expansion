@@ -2121,7 +2121,6 @@ const struct SpeciesInfo gSpeciesInfoGen5[] =
         .shinyPalette = gMonShinyPalette_Unfezant,
         .iconSprite = gMonIcon_Unfezant,
         .iconPalIndex = 1,
-#if P_GENDER_DIFFERENCES
         .frontPicFemale = gMonFrontPic_UnfezantF,
         .frontPicSizeFemale = MON_COORDS_SIZE(56, 64),
         .backPicFemale = gMonBackPic_UnfezantF,
@@ -2130,7 +2129,6 @@ const struct SpeciesInfo gSpeciesInfoGen5[] =
         .shinyPaletteFemale = gMonShinyPalette_UnfezantF,
         .iconSpriteFemale = gMonIcon_UnfezantF,
         .iconPalIndexFemale = 1,
-#endif //P_GENDER_DIFFERENCES
         .pokemonJumpType = PKMN_JUMP_TYPE_NONE,
         SHADOW(-2, 12, SHADOW_SIZE_M)
         FOOTPRINT(Unfezant)
@@ -8873,7 +8871,6 @@ const struct SpeciesInfo gSpeciesInfoGen5[] =
         .shinyPalette = gMonShinyPalette_Frillish,
         .iconSprite = gMonIcon_Frillish,
         .iconPalIndex = 0,
-#if P_GENDER_DIFFERENCES
         .frontPicFemale = gMonFrontPic_FrillishF,
         .frontPicSizeFemale = MON_COORDS_SIZE(56, 56),
         .backPicFemale = gMonBackPic_FrillishF,
@@ -8882,7 +8879,6 @@ const struct SpeciesInfo gSpeciesInfoGen5[] =
         .shinyPaletteFemale = gMonShinyPalette_FrillishF,
         .iconSpriteFemale = gMonIcon_FrillishF,
         .iconPalIndexFemale = 1,
-#endif //P_GENDER_DIFFERENCES
         .pokemonJumpType = PKMN_JUMP_TYPE_NONE,
         SHADOW(-1, 9, SHADOW_SIZE_S)
         FOOTPRINT(Frillish)
@@ -8963,7 +8959,6 @@ const struct SpeciesInfo gSpeciesInfoGen5[] =
         .shinyPalette = gMonShinyPalette_Jellicent,
         .iconSprite = gMonIcon_Jellicent,
         .iconPalIndex = 0,
-#if P_GENDER_DIFFERENCES
         .frontPicFemale = gMonFrontPic_JellicentF,
         .frontPicSizeFemale = MON_COORDS_SIZE(64, 64),
         .backPicFemale = gMonBackPic_JellicentF,
@@ -8972,7 +8967,6 @@ const struct SpeciesInfo gSpeciesInfoGen5[] =
         .shinyPaletteFemale = gMonShinyPalette_JellicentF,
         .iconSpriteFemale = gMonIcon_JellicentF,
         .iconPalIndexFemale = 1,
-#endif //P_GENDER_DIFFERENCES
         .pokemonJumpType = PKMN_JUMP_TYPE_NONE,
         SHADOW(-1, 11, SHADOW_SIZE_M)
         FOOTPRINT(Jellicent)
