@@ -129,7 +129,7 @@ EWRAM_DATA static bool8 sAnimHideHpBoxes = FALSE;
 // Keep original and updated particle graphics together so the B_NEW_* settings can choose at runtime
 // Unlisted particle tags use gBattleAnimTable
 // Terrain lookups use the updated backgrounds when B_NEW_TERRAIN_BACKGROUNDS is TRUE
-// Otherwise they use gBattleAnimBackgroundTable, which holds the compiled defaults
+// Otherwise use the original backgrounds in gBattleAnimBackgroundTable
 struct ADMG_BattleAnimationChoice
 {
     u16 tag;

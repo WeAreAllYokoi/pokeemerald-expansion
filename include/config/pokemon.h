@@ -61,7 +61,7 @@
 #define P_GBA_STYLE_SPECIES_FOOTPRINTS  FALSE       // By default, Pokémon have their updated footprints. This config can revert them back to GBA-style.
 
 // Other settings
-#define ADMG_DEFAULT_P_CRIES_ENABLED                  TRUE        // If TRUE, enable Pokémon cries; the compiled default also controls whether cry data is built
+#define ADMG_DEFAULT_P_CRIES_ENABLED                  TRUE        // If TRUE, enable Pokémon cries; turning this off does not remove cry data
 #define P_CRIES_ENABLED ADMG_CONFIG_EXTRA(P_CRIES_ENABLED)
 #define P_LEGENDARY_PERFECT_IVS          GEN_LATEST  // Since Gen 6, Legendaries, Mythicals and Ultra Beasts found in the wild or given through gifts have at least 3 perfect IVs.
 #define ADMG_DEFAULT_P_EV_CAP                         GEN_LATEST  // Since Gen 6, the max EVs per stat is 252 instead of 255.

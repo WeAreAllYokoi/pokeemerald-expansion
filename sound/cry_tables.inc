@@ -1,6 +1,6 @@
 	.align 2
 gCryTable::
-.if ADMG_DEFAULT_P_CRIES_ENABLED == TRUE @ Build cry data from the configured default; playback checks P_CRIES_ENABLED at runtime
+@ Keep cry data even when P_CRIES_ENABLED is off; GetCryIdBySpecies checks it at runtime
 .if P_FAMILY_BULBASAUR == TRUE
 	cry Cry_Bulbasaur
 	cry Cry_Ivysaur
@@ -2552,11 +2552,10 @@ gCryTable::
 .if P_FAMILY_PECHARUNT == TRUE
 	cry Cry_Pecharunt
 .endif @ P_FAMILY_PECHARUNT
-.endif @ P_CRIES_ENABLED
 
 	.align 2
 gCryTable_Reverse::
-.if ADMG_DEFAULT_P_CRIES_ENABLED == TRUE @ Build cry data from the configured default; playback checks P_CRIES_ENABLED at runtime
+@ Keep cry data even when P_CRIES_ENABLED is off; GetCryIdBySpecies checks it at runtime
 .if P_FAMILY_BULBASAUR == TRUE
 	cry_reverse Cry_Bulbasaur
 	cry_reverse Cry_Ivysaur
@@ -5108,4 +5107,3 @@ gCryTable_Reverse::
 .if P_FAMILY_PECHARUNT == TRUE
 	cry_reverse Cry_Pecharunt
 .endif @ P_FAMILY_PECHARUNT
-.endif @ P_CRIES_ENABLED
