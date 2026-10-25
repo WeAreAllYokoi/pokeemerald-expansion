@@ -1462,6 +1462,14 @@ enum Move GiveMoveToMon(struct Pokemon *mon, enum Move move)
     return GiveMoveToBoxMon(&mon->box, move);
 }
 
+// Recheck move-based forms after move edits outside battle
+// TryRevertPartyMonFormChange handles the battle-end check
+void ADMG_UpdateMoveForm(struct BoxPokemon *boxMon)
+{
+    if (!gMain.inBattle)
+        TryBoxMonFormChange(boxMon, FORM_CHANGE_MOVE);
+}
+
 enum Move GiveMoveToBoxMon(struct BoxPokemon *boxMon, enum Move move)
 {
     s32 i;
@@ -1473,6 +1481,7 @@ enum Move GiveMoveToBoxMon(struct BoxPokemon *boxMon, enum Move move)
             u32 pp = GetMovePP(move);
             SetBoxMonData(boxMon, MON_DATA_MOVE1 + i, &move);
             SetBoxMonData(boxMon, MON_DATA_PP1 + i, &pp);
+            ADMG_UpdateMoveForm(boxMon);
             return move;
         }
         if (existingMove == move)
@@ -1508,6 +1517,7 @@ void SetBoxMonMoveSlot(struct BoxPokemon *mon, enum Move move, u8 slot)
     SetBoxMonData(mon, MON_DATA_MOVE1 + slot, &move);
     u32 pp = GetMovePP(move);
     SetBoxMonData(mon, MON_DATA_PP1 + slot, &pp);
+    ADMG_UpdateMoveForm(mon);
 }
 
 static void SetMonMoveSlot_KeepPP(struct Pokemon *mon, enum Move move, u8 slot)
@@ -1703,6 +1713,7 @@ void DeleteFirstMoveAndGiveMoveToMon(struct Pokemon *mon, enum Move move)
         SetMonData(mon, MON_DATA_MOVE1 + i, &moves[i]);
         SetMonData(mon, MON_DATA_PP1 + i, &pp[i]);
     }
+    ADMG_UpdateMoveForm(&mon->box);
 
     SetMonData(mon, MON_DATA_PP_BONUSES, &ppBonuses);
 }
@@ -5859,6 +5870,8 @@ enum Species GetFormChangeTargetSpeciesBoxMon(struct BoxPokemon *boxMon, enum Fo
         .multichoiceSelection = gSpecialVar_Result,
         .status = GetBoxMonData(boxMon, MON_DATA_STATUS),
     };
+    for (u32 i = 0; i < MAX_MON_MOVES; i++)
+        ctx.moves[i] = GetBoxMonData(boxMon, MON_DATA_MOVE1 + i);
 
     return GetFormChangeTargetSpecies_Internal(ctx);
 }
@@ -5937,9 +5950,17 @@ enum Species GetFormChangeTargetSpecies_Internal(struct FormChangeContext ctx)
             }
             break;
         case FORM_CHANGE_MOVE:
-            if (ctx.learnedMove != formChanges[i].param2)
+        {
+            // Match the Pokémon's current moves: WHEN_LEARNED requires param1,
+            // while WHEN_FORGOTTEN requires it to be absent
+            // This lets Keldeo's form follow whether it knows Secret Sword
+            bool32 knows = FALSE;
+            for (u32 j = 0; j < MAX_MON_MOVES; j++)
+                knows |= ctx.moves[j] == formChanges[i].param1;
+            if (knows == (formChanges[i].param2 == WHEN_LEARNED))
                 targetSpecies = formChanges[i].targetSpecies;
             break;
+        }
         case FORM_CHANGE_BEGIN_BATTLE:
         case FORM_CHANGE_END_BATTLE:
             if (ctx.heldItem == formChanges[i].param1 || formChanges[i].param1 == ITEM_NONE)

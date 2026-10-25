@@ -8780,6 +8780,10 @@ bool32 TryRevertPartyMonFormChange(u32 partyIndex)
     if (!changedForm)
         changedForm = TryFormChange(&gParties[B_TRAINER_PLAYER][partyIndex], FORM_CHANGE_END_BATTLE, B_TRAINER_PLAYER);
 
+    // Check move-based forms after battle if neither earlier check changed the form
+    if (!changedForm)
+        changedForm = TryFormChange(&gParties[B_TRAINER_PLAYER][partyIndex], FORM_CHANGE_MOVE, B_TRAINER_PLAYER);
+
     // Clear original species field
     gBattleStruct->partyState[B_SIDE_PLAYER][partyIndex].changedSpecies = SPECIES_NONE;
 

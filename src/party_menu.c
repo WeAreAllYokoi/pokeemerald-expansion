@@ -8230,6 +8230,7 @@ void MoveDeleterForgetMove(void)
     SetBoxMonData(boxmon, MON_DATA_PP_BONUSES, &ppBonuses);
     for (u32 i = gSpecialVar_0x8005; i < MAX_MON_MOVES - 1; i++)
         ShiftMoveSlot(boxmon, i, i + 1);
+    ADMG_UpdateMoveForm(boxmon);
 }
 
 static void ShiftMoveSlot(struct BoxPokemon *mon, u8 slotTo, u8 slotFrom)
