@@ -2000,6 +2000,11 @@ static void CB2_PokeStorage(void)
     BuildOamBuffer();
 }
 
+// A fallback palette until a Pokémon's palette has been chosen
+// Opening Move or Withdraw on an empty slot can create the display sprite first,
+// so its palette pointer must already point to valid data
+static const u16 sADMG_NoDisplayMonPalette[16] = {0};
+
 static void EnterPokeStorage(u8 boxOption)
 {
     ResetTasks();
@@ -2014,6 +2019,7 @@ static void EnterPokeStorage(u8 boxOption)
     }
     else
     {
+        sStorage->displayMonPalette = sADMG_NoDisplayMonPalette;
         sStorage->boxOption = boxOption;
         sStorage->isReopening = FALSE;
         sMovingItemId = ITEM_NONE;
@@ -2030,13 +2036,15 @@ static void CB2_ReturnToPokeStorage(void)
     sStorage = Alloc(sizeof(*sStorage));
     if (sStorage == NULL)
     {
-        if (sStorage->boxOption == OPTION_SELECT_MON)
+        // Use the saved option here; sStorage is NULL because allocation failed
+        if (sCurrentBoxOption == OPTION_SELECT_MON)
             SetMainCallback2(CB2_ReturnToFieldContinueScript);
         else
             SetMainCallback2(CB2_ExitPokeStorage);
     }
     else
     {
+        sStorage->displayMonPalette = sADMG_NoDisplayMonPalette;
         sStorage->boxOption = sCurrentBoxOption;
         sStorage->isReopening = TRUE;
         sStorage->state = 0;
