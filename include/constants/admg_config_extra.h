@@ -347,6 +347,7 @@
     F(P_SHEDINJA_BALL, GEN_COUNT - 1) \
     F(B_SHOW_DYNAMAX_MESSAGE, 1) \
     F(B_PERISH_SONG_TIMER, 15) \
+    F(I_KEY_ESCAPE_ROPE, GEN_COUNT - 1) \
 
 #define ADMG_CONFIG_EXTRA_TAG(_name, _maximum) CONFIG_##_name,
 
@@ -703,6 +704,7 @@ enum ADMG_ConfigExtraTag
 #define ADMG_CONFIG_EXTRA_MAX_P_SHEDINJA_BALL (GEN_COUNT - 1)
 #define ADMG_CONFIG_EXTRA_MAX_B_SHOW_DYNAMAX_MESSAGE (1)
 #define ADMG_CONFIG_EXTRA_MAX_B_PERISH_SONG_TIMER (15)
+#define ADMG_CONFIG_EXTRA_MAX_I_KEY_ESCAPE_ROPE (GEN_COUNT - 1)
 
 // Battle and event scripts need numeric tags because the assembler can't read the enum
 // config_changes.c checks each value against its CONFIG_<name> tag
@@ -1048,5 +1050,6 @@ enum ADMG_ConfigExtraTag
 #define ADMG_CONFIG_TAG_P_SHEDINJA_BALL 0x1153
 #define ADMG_CONFIG_TAG_B_SHOW_DYNAMAX_MESSAGE 0x1154
 #define ADMG_CONFIG_TAG_B_PERISH_SONG_TIMER 0x1155
+#define ADMG_CONFIG_TAG_I_KEY_ESCAPE_ROPE 0x1156
 
 #endif

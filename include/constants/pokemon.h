@@ -220,9 +220,6 @@ enum OtIdMethod
 #define AFFECTION_FOUR_HEARTS   4 // 220-254 friendship
 #define AFFECTION_FIVE_HEARTS   5 // Max friendship
 
-// Friendship value that the majority of species use.
-#define STANDARD_FRIENDSHIP ((P_UPDATED_FRIENDSHIP >= GEN_8) ? 50 : 70)
-
 #define MAX_FRIENDSHIP  255
 #define MAX_SHEEN       255
 #define MAX_CONDITION   255
@@ -418,11 +415,5 @@ enum GeneratedMonOrigin
 
 // Used as a signal for givemon to generate a default ability by personality.
 #define NUM_ABILITY_PERSONALITY 0xFF
-
-#if P_LEGENDARY_PERFECT_IVS >= GEN_6
-#define LEGENDARY_PERFECT_IV_COUNT 3
-#else
-#define LEGENDARY_PERFECT_IV_COUNT 0
-#endif
 
 #endif // GUARD_CONSTANTS_POKEMON_H

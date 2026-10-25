@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_retention.h"
 #include "admg_feature_bindings.h"
 #include "admg_feature_policies.h"
 #include "item.h"

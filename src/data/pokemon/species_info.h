@@ -3,6 +3,11 @@
 #include "species_info/shared_dex_text.h"
 #include "species_info/shared_front_pic_anims.h"
 
+// Standard starting friendship: 50 from Gen 8 onward, 70 before that
+#define STANDARD_FRIENDSHIP ((P_UPDATED_FRIENDSHIP >= GEN_8) ? 50 : 70)
+// Perfect IV count used by legendary species entries: 3 from Gen 6 onward, 0 before that
+#define LEGENDARY_PERFECT_IV_COUNT ((P_LEGENDARY_PERFECT_IVS >= GEN_6) ? 3 : 0)
+
 // Macros for ease of use.
 
 #define EVOLUTION(...) (const struct Evolution[]) { __VA_ARGS__, { EVOLUTIONS_END }, }

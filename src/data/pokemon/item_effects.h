@@ -36,12 +36,22 @@ const u8 gItemEffect_MaxPotion[7] = {
 
 const u8 gItemEffect_HyperPotion[7] = {
     [4] = ITEM4_HEAL_HP,
-    [6] = I_HEALTH_RECOVERY >= GEN_7 ? 120 : 200, // Amount of HP to recover
+    [6] = 120, // Amount of HP to recover (Gen 7+)
+};
+
+const u8 gItemEffect_HyperPotion_Gen1To6[7] = {
+    [4] = ITEM4_HEAL_HP,
+    [6] = 200, // Amount of HP to recover (Gen 1-6)
 };
 
 const u8 gItemEffect_SuperPotion[7] = {
     [4] = ITEM4_HEAL_HP,
-    [6] = I_HEALTH_RECOVERY >= GEN_7 ? 60 : 50, // Amount of HP to recover
+    [6] = 60, // Amount of HP to recover (Gen 7+)
+};
+
+const u8 gItemEffect_SuperPotion_Gen1To6[7] = {
+    [4] = ITEM4_HEAL_HP,
+    [6] = 50, // Amount of HP to recover (Gen 1-6)
 };
 
 const u8 gItemEffect_FullHeal[6] = {
@@ -60,17 +70,32 @@ const u8 gItemEffect_MaxRevive[7] = {
 
 const u8 gItemEffect_FreshWater[7] = {
     [4] = ITEM4_HEAL_HP,
-    [6] = I_HEALTH_RECOVERY >= GEN_7 ? 30 : 50, // Amount of HP to recover
+    [6] = 30, // Amount of HP to recover (Gen 7+)
+};
+
+const u8 gItemEffect_FreshWater_Gen1To6[7] = {
+    [4] = ITEM4_HEAL_HP,
+    [6] = 50, // Amount of HP to recover (Gen 1-6)
 };
 
 const u8 gItemEffect_SodaPop[7] = {
     [4] = ITEM4_HEAL_HP,
-    [6] = I_HEALTH_RECOVERY >= GEN_7 ? 50 : 60, // Amount of HP to recover
+    [6] = 50, // Amount of HP to recover (Gen 7+)
+};
+
+const u8 gItemEffect_SodaPop_Gen1To6[7] = {
+    [4] = ITEM4_HEAL_HP,
+    [6] = 60, // Amount of HP to recover (Gen 1-6)
 };
 
 const u8 gItemEffect_Lemonade[7] = {
     [4] = ITEM4_HEAL_HP,
-    [6] = I_HEALTH_RECOVERY >= GEN_7 ? 70 : 80, // Amount of HP to recover
+    [6] = 70, // Amount of HP to recover (Gen 7+)
+};
+
+const u8 gItemEffect_Lemonade_Gen1To6[7] = {
+    [4] = ITEM4_HEAL_HP,
+    [6] = 80, // Amount of HP to recover (Gen 1-6)
 };
 
 const u8 gItemEffect_MoomooMilk[7] = {
@@ -81,7 +106,16 @@ const u8 gItemEffect_MoomooMilk[7] = {
 const u8 gItemEffect_EnergyPowder[10] = {
     [4] = ITEM4_HEAL_HP,
     [5] = ITEM5_FRIENDSHIP_ALL,
-    [6] = I_HEALTH_RECOVERY >= GEN_7 ? 60 : 50, // Amount of HP to recover
+    [6] = 60, // Amount of HP to recover (Gen 7+)
+    [7] = -5, // Friendship change, low
+    [8] = -5, // Friendship change, mid
+    [9] = -10, // Friendship change, high
+};
+
+const u8 gItemEffect_EnergyPowder_Gen1To6[10] = {
+    [4] = ITEM4_HEAL_HP,
+    [5] = ITEM5_FRIENDSHIP_ALL,
+    [6] = 50, // Amount of HP to recover (Gen 1-6)
     [7] = -5, // Friendship change, low
     [8] = -5, // Friendship change, mid
     [9] = -10, // Friendship change, high
@@ -90,7 +124,16 @@ const u8 gItemEffect_EnergyPowder[10] = {
 const u8 gItemEffect_EnergyRoot[10] = {
     [4] = ITEM4_HEAL_HP,
     [5] = ITEM5_FRIENDSHIP_ALL,
-    [6] = I_HEALTH_RECOVERY >= GEN_7 ? 120 : 200, // Amount of HP to recover
+    [6] = 120, // Amount of HP to recover (Gen 7+)
+    [7] = -10, // Friendship change, low
+    [8] = -10, // Friendship change, mid
+    [9] = -15, // Friendship change, high
+};
+
+const u8 gItemEffect_EnergyRoot_Gen1To6[10] = {
+    [4] = ITEM4_HEAL_HP,
+    [5] = ITEM5_FRIENDSHIP_ALL,
+    [6] = 200, // Amount of HP to recover (Gen 1-6)
     [7] = -10, // Friendship change, low
     [8] = -10, // Friendship change, mid
     [9] = -15, // Friendship change, high
@@ -125,7 +168,16 @@ const u8 gItemEffect_Remedy[10] = {
 const u8 gItemEffect_FineRemedy[10] = {
     [4] = ITEM4_HEAL_HP,
     [5] = ITEM5_FRIENDSHIP_ALL,
-    [6] = I_HEALTH_RECOVERY >= GEN_7 ? 60 : 50, // Amount of HP to recover
+    [6] = 60, // Amount of HP to recover (Gen 7+)
+    [7] = -10, // Friendship change, low
+    [8] = -10, // Friendship change, mid
+    [9] = -15, // Friendship change, high
+};
+
+const u8 gItemEffect_FineRemedy_Gen1To6[10] = {
+    [4] = ITEM4_HEAL_HP,
+    [5] = ITEM5_FRIENDSHIP_ALL,
+    [6] = 50, // Amount of HP to recover (Gen 1-6)
     [7] = -10, // Friendship change, low
     [8] = -10, // Friendship change, mid
     [9] = -15, // Friendship change, high
@@ -134,7 +186,16 @@ const u8 gItemEffect_FineRemedy[10] = {
 const u8 gItemEffect_SuperbRemedy[10] = {
     [4] = ITEM4_HEAL_HP,
     [5] = ITEM5_FRIENDSHIP_ALL,
-    [6] = I_HEALTH_RECOVERY >= GEN_7 ? 120 : 200, // Amount of HP to recover
+    [6] = 120, // Amount of HP to recover (Gen 7+)
+    [7] = -15, // Friendship change, low
+    [8] = -15, // Friendship change, mid
+    [9] = -20, // Friendship change, high
+};
+
+const u8 gItemEffect_SuperbRemedy_Gen1To6[10] = {
+    [4] = ITEM4_HEAL_HP,
+    [5] = ITEM5_FRIENDSHIP_ALL,
+    [6] = 200, // Amount of HP to recover (Gen 1-6)
     [7] = -15, // Friendship change, low
     [8] = -15, // Friendship change, mid
     [9] = -20, // Friendship change, high
@@ -390,11 +451,12 @@ const u8 gItemEffect_PersimBerry[6] = {
 
 const u8 gItemEffect_SitrusBerry[7] = {
     [4] = ITEM4_HEAL_HP,
-#if I_SITRUS_BERRY_HEAL >= GEN_4
-    [6] = ITEM6_HEAL_HP_QUARTER,
-#else
-    [6] = 30, // Amount of HP to recover
-#endif
+    [6] = ITEM6_HEAL_HP_QUARTER, // Gen 4+
+};
+
+const u8 gItemEffect_SitrusBerry_Gen1To3[7] = {
+    [4] = ITEM4_HEAL_HP,
+    [6] = 30, // Amount of HP to recover (Gen 3)
 };
 
 #define EV_BERRY_FRIENDSHIP_CHANGE          \
@@ -439,3 +501,26 @@ const u8 gItemEffect_TamatoBerry[10] = {
     [6] = ITEM6_SUBTRACT_EV,
     EV_BERRY_FRIENDSHIP_CHANGE,
 };
+
+// Keep both healing variants available, whichever one the compiled item table uses
+// I_HEALTH_RECOVERY and I_SITRUS_BERRY_HEAL select the .effect pointers in src/data/items.h
+ADMG_RETAIN_DATA(gItemEffect_HyperPotion);
+ADMG_RETAIN_DATA(gItemEffect_HyperPotion_Gen1To6);
+ADMG_RETAIN_DATA(gItemEffect_SuperPotion);
+ADMG_RETAIN_DATA(gItemEffect_SuperPotion_Gen1To6);
+ADMG_RETAIN_DATA(gItemEffect_FreshWater);
+ADMG_RETAIN_DATA(gItemEffect_FreshWater_Gen1To6);
+ADMG_RETAIN_DATA(gItemEffect_SodaPop);
+ADMG_RETAIN_DATA(gItemEffect_SodaPop_Gen1To6);
+ADMG_RETAIN_DATA(gItemEffect_Lemonade);
+ADMG_RETAIN_DATA(gItemEffect_Lemonade_Gen1To6);
+ADMG_RETAIN_DATA(gItemEffect_EnergyPowder);
+ADMG_RETAIN_DATA(gItemEffect_EnergyPowder_Gen1To6);
+ADMG_RETAIN_DATA(gItemEffect_EnergyRoot);
+ADMG_RETAIN_DATA(gItemEffect_EnergyRoot_Gen1To6);
+ADMG_RETAIN_DATA(gItemEffect_FineRemedy);
+ADMG_RETAIN_DATA(gItemEffect_FineRemedy_Gen1To6);
+ADMG_RETAIN_DATA(gItemEffect_SuperbRemedy);
+ADMG_RETAIN_DATA(gItemEffect_SuperbRemedy_Gen1To6);
+ADMG_RETAIN_DATA(gItemEffect_SitrusBerry);
+ADMG_RETAIN_DATA(gItemEffect_SitrusBerry_Gen1To3);
