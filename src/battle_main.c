@@ -5452,6 +5452,8 @@ static void FreeResetData_ReturnToOvOrDoEvolutions(void)
     }
 
     FreeAllWindowBuffers();
+    // Clear both AI callbacks here for link battles too, so they don't carry into the next battle
+    ResetDynamicAiFunctions();
     if (!(gBattleTypeFlags & BATTLE_TYPE_LINK))
     {
         // To account for Battle Factory and Slateport Battle Tent, enemy parties are zeroed out in the facilitites respective src/xxx.c files
@@ -5460,7 +5462,6 @@ static void FreeResetData_ReturnToOvOrDoEvolutions(void)
         {
             ZeroEnemyPartyMons();
         }
-        ResetDynamicAiFunctions();
         FreeMonSpritesGfx();
         FreeBattleResources();
         FreeBattleSpritesData();

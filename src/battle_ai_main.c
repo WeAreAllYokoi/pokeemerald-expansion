@@ -2,6 +2,8 @@
 #include "admg_feature_bindings.h"
 #include "admg_trainer_actor.h"
 #include "admg_state.h"
+#include "admg_battle_ai.h"
+#include "admg_retention.h"
 #include "main.h"
 #include "malloc.h"
 #include "battle.h"
@@ -6823,3 +6825,35 @@ void ResetDynamicAiFunctions(void)
     sDynamicAiFunc = NULL;
     gDynamicAiSwitchFunc = NULL;
 }
+
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_SetDynamicAiScoreFunc(ADMG_Word func)
+{
+    if (gMain.inBattle || (func != 0 && (func & 1) == 0))
+        return FALSE;
+    sDynamicAiFunc = (AiScoreFunc)func;
+    return TRUE;
+}
+
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_SetDynamicAiSwitchFunc(ADMG_Word func)
+{
+    if (gMain.inBattle || (func != 0 && (func & 1) == 0))
+        return FALSE;
+    gDynamicAiSwitchFunc = (AiSwitchFunc)func;
+    return TRUE;
+}
+
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetDynamicAiScoreFunc(void)
+{
+    return (ADMG_Word)sDynamicAiFunc;
+}
+
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetDynamicAiSwitchFunc(void)
+{
+    return (ADMG_Word)gDynamicAiSwitchFunc;
+}
+
+ADMG_RETAIN_FUNCTION(ADMG_SetDynamicAiScoreFunc);
+ADMG_RETAIN_FUNCTION(ADMG_SetDynamicAiSwitchFunc);
+ADMG_RETAIN_FUNCTION(ADMG_GetDynamicAiScoreFunc);
+ADMG_RETAIN_FUNCTION(ADMG_GetDynamicAiSwitchFunc);
+ADMG_RETAIN_FUNCTION(ResetDynamicAiFunctions);
