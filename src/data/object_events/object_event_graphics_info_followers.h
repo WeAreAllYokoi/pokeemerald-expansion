@@ -1,4 +1,4 @@
-#if OW_FOLLOWERS_POKEBALLS
+#if ADMG_DEFAULT_OW_FOLLOWERS_POKEBALLS
 
 #define POKEBALL_GFX_INFO(NAME)                                     \
     [BALL_##NAME] = {                                               \
@@ -51,4 +51,4 @@ const struct ObjectEventGraphicsInfo gPokeballGraphics[POKEBALL_COUNT] = {
     // Gen VIII
     POKEBALL_GFX_INFO(STRANGE),
 };
-#endif //OW_FOLLOWERS_POKEBALLS
+#endif //ADMG_DEFAULT_OW_FOLLOWERS_POKEBALLS

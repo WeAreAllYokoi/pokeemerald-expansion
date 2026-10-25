@@ -61,10 +61,12 @@
 #define OW_BERRY_COLORS                GEN_6_ORAS // If set to GEN_6_XY or GEN_6_ORAS, the Chesto, Wiki, Bluk, Cornn, Pamtre, Belue, Ganlon, Watmel, Qualot, Spelon, Kasib, Colbur, Lansat, Kee, Payapa, Roseli, Liechi, Enigma, and Maranga will use their colors from the stated game. Other values are illegal.
 
 // Overworld Pokémon
-#define OW_POKEMON_OBJECT_EVENTS       TRUE       // Adds Object Event fields for every species. Can be used for NPCs using the OBJ_EVENT_GFX_SPECIES macro (eg. OBJ_EVENT_GFX_SPECIES(BULBASAUR))
+#define ADMG_DEFAULT_OW_POKEMON_OBJECT_EVENTS       TRUE       // Adds Object Event fields for every species. Can be used for NPCs using the OBJ_EVENT_GFX_SPECIES macro (eg. OBJ_EVENT_GFX_SPECIES(BULBASAUR))
+#define OW_POKEMON_OBJECT_EVENTS ADMG_CONFIG_EXTRA(OW_POKEMON_OBJECT_EVENTS)
 #define ADMG_DEFAULT_OW_SUBSTITUTE_PLACEHOLDER      TRUE       // Use a substitute OW for Pokémon that are missing overworld sprites
 #define OW_SUBSTITUTE_PLACEHOLDER ADMG_CONFIG_EXTRA(OW_SUBSTITUTE_PLACEHOLDER)
-#define OW_LARGE_OW_SUPPORT            TRUE       // If TRUE, adds a small amount of overhead to OW code so that large (48x48, 64x64) OWs will display correctly under bridges, etc.
+#define ADMG_DEFAULT_OW_LARGE_OW_SUPPORT            TRUE       // If TRUE, adds a small amount of overhead to OW code so that large (48x48, 64x64) OWs will display correctly under bridges, etc.
+#define OW_LARGE_OW_SUPPORT ADMG_CONFIG_EXTRA(OW_LARGE_OW_SUPPORT)
 #define OW_PKMN_OBJECTS_SHARE_PALETTES FALSE      // [WIP!! NOT ALL PALETTES HAVE BEEN ADJUSTED FOR THIS!!] If TRUE, follower palettes are taken from battle sprites.
 #define OW_GFX_COMPRESS                TRUE       // Adds support for compressed OW graphics, (Also compresses Pokémon follower graphics).
                                                   // IMPORTANT: Gfx are loaded into VRAM to avoid continous decompression. If you require more VRAM or want to use a lot of overworld Pokémon at once, you should disable this config.
@@ -78,7 +80,8 @@
 #define OW_FOLLOWERS_ENABLED ADMG_CONFIG_EXTRA(OW_FOLLOWERS_ENABLED)
 #define ADMG_DEFAULT_OW_FOLLOWERS_BOBBING           TRUE       // If TRUE, follower Pokémon will bob up and down during their idle & walking animations
 #define OW_FOLLOWERS_BOBBING ADMG_CONFIG_EXTRA(OW_FOLLOWERS_BOBBING)
-#define OW_FOLLOWERS_POKEBALLS         TRUE       // If TRUE, follower Pokémon will emerge from the Poké Ball they are stored in, instead of a normal Poké Ball
+#define ADMG_DEFAULT_OW_FOLLOWERS_POKEBALLS         TRUE       // If TRUE, follower Pokémon will emerge from the Poké Ball they are stored in, instead of a normal Poké Ball
+#define OW_FOLLOWERS_POKEBALLS ADMG_CONFIG_EXTRA(OW_FOLLOWERS_POKEBALLS)
 #define OW_FOLLOWERS_WEATHER_FORMS     FALSE      // If TRUE, Castform and Cherrim gain FORM_CHANGE_OVERWORLD_WEATHER, which will make them transform in the overworld based on the weather.
 #define ADMG_DEFAULT_OW_FOLLOWERS_COPY_WILD_PKMN    FALSE      // If TRUE, follower Pokémon that know Transform or have Illusion/Imposter will copy wild Pokémon at random.
 #define OW_FOLLOWERS_COPY_WILD_PKMN ADMG_CONFIG_EXTRA(OW_FOLLOWERS_COPY_WILD_PKMN)

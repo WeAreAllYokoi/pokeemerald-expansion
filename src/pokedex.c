@@ -4806,7 +4806,9 @@ void DrawFootprint(u8 windowId, enum Species species)
     const u8 *footprintGfx = NULL;
     u32 i, j, tileIdx = 0;
 
-#if P_FOOTPRINTS
+#if ADMG_DEFAULT_P_FOOTPRINTS
+    if (!P_FOOTPRINTS)
+        return;
     footprintGfx = gSpeciesInfo[SanitizeSpeciesId(species)].footprint;
 #else
     return;

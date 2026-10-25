@@ -94,7 +94,7 @@ struct InfoOWE
 #error "ROAMER_COUNT needs to be less than OWE_MAX_ROAMERS due to it being stored in the u8 field warpArrowSpriteId"
 #endif
 
-#if OW_POKEMON_OBJECT_EVENTS == FALSE && WE_OW_ENCOUNTERS == TRUE
+#if ADMG_DEFAULT_OW_POKEMON_OBJECT_EVENTS == FALSE && WE_OW_ENCOUNTERS == TRUE // Check the compiled OW_POKEMON_OBJECT_EVENTS default against WE_OW_ENCOUNTERS
 #error "OW_POKEMON_OBJECT_EVENTS needs to be TRUE in order for WE_OW_ENCOUNTERS to work."
 #endif
 

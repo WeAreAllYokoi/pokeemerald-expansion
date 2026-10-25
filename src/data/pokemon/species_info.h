@@ -37,7 +37,7 @@
 
 #define ANIM_FRAMES(...) (const union AnimCmd *const[]) { sAnim_GeneralFrame0, (const union AnimCmd[]) { __VA_ARGS__ ANIMCMD_END, }, }
 
-#if P_FOOTPRINTS
+#if ADMG_DEFAULT_P_FOOTPRINTS
 #define FOOTPRINT(sprite) .footprint = gMonFootprint_## sprite,
 #else
 #define FOOTPRINT(sprite)
@@ -57,7 +57,7 @@
 // Set .compressed = OW_GFX_COMPRESS
 #define COMP OW_GFX_COMPRESS
 
-#if OW_POKEMON_OBJECT_EVENTS
+#if ADMG_DEFAULT_OW_POKEMON_OBJECT_EVENTS
 #if OW_PKMN_OBJECTS_SHARE_PALETTES == FALSE
 #define OVERWORLD_PAL(...)                                  \
     .overworldPalette = DEFAULT(NULL, __VA_ARGS__),         \
@@ -102,7 +102,7 @@
 #define OVERWORLD_FEMALE(...)
 #define OVERWORLD_PAL(...)
 #define OVERWORLD_PAL_FEMALE(...)
-#endif //OW_POKEMON_OBJECT_EVENTS
+#endif //ADMG_DEFAULT_OW_POKEMON_OBJECT_EVENTS
 
 // Maximum value for a female Pokémon is 254 (MON_FEMALE) which is 100% female.
 // 255 (MON_GENDERLESS) is reserved for genderless Pokémon.
@@ -145,7 +145,7 @@ const struct SpeciesInfo gSpeciesInfo[] =
         .pokemonJumpType = PKMN_JUMP_TYPE_NONE,
         FOOTPRINT(QuestionMark)
         SHADOW(-1, 0, SHADOW_SIZE_M)
-    #if OW_POKEMON_OBJECT_EVENTS
+    #if ADMG_DEFAULT_OW_POKEMON_OBJECT_EVENTS
         .overworldData = {
             .tileTag = TAG_NONE,
             .paletteTag = OBJ_EVENT_PAL_TAG_SUBSTITUTE,

@@ -569,7 +569,7 @@ enum
 #define OBJ_EVENT_PAL_TAG_SEAGALLOP               0x1132
 #define OBJ_EVENT_PAL_TAG_SS_ANNE                 0x1133
 
-#if OW_FOLLOWERS_POKEBALLS
+#if ADMG_DEFAULT_OW_FOLLOWERS_POKEBALLS
 // Vanilla
 #define OBJ_EVENT_PAL_TAG_BALL_MASTER             0x1150
 #define OBJ_EVENT_PAL_TAG_BALL_ULTRA              0x1151
@@ -603,7 +603,7 @@ enum
 #define OBJ_EVENT_PAL_TAG_BALL_BEAST              0x1169
 // Gen VIII
 #define OBJ_EVENT_PAL_TAG_BALL_STRANGE            0x116A
-#endif //OW_FOLLOWERS_POKEBALLS
+#endif //ADMG_DEFAULT_OW_FOLLOWERS_POKEBALLS
 // Used as a placeholder follower graphic
 #define OBJ_EVENT_PAL_TAG_SUBSTITUTE              0x7611
 #define OBJ_EVENT_PAL_TAG_LIGHT                   0x8001

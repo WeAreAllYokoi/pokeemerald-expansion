@@ -363,11 +363,10 @@ u32 FldEff_Shadow(void)
         gSprites[spriteId].sLocalId = gFieldEffectArguments[0];
         gSprites[spriteId].sMapIdLo = MAP_ID_LO(gFieldEffectArguments[1]);
         gSprites[spriteId].sMapIdHi = MAP_ID_HI(gFieldEffectArguments[1]);
-        #if OW_LARGE_OW_SUPPORT
-        gSprites[spriteId].sYOffset = gShadowVerticalOffsets[graphicsInfo->shadowSize];
-        #else
-        gSprites[spriteId].sYOffset = (graphicsInfo->height >> 1) - gShadowVerticalOffsets[graphicsInfo->shadowSize];
-        #endif
+        if (OW_LARGE_OW_SUPPORT)
+            gSprites[spriteId].sYOffset = gShadowVerticalOffsets[graphicsInfo->shadowSize];
+        else
+            gSprites[spriteId].sYOffset = (graphicsInfo->height >> 1) - gShadowVerticalOffsets[graphicsInfo->shadowSize];
     }
     return 0;
 }
@@ -386,12 +385,10 @@ void UpdateShadowFieldEffect(struct Sprite *sprite)
         struct Sprite *linkedSprite = &gSprites[objectEvent->spriteId];
         sprite->oam.priority = linkedSprite->oam.priority;
         sprite->x = linkedSprite->x;
-        #if OW_LARGE_OW_SUPPORT
-        // Read 'live' size from linked sprite
-        sprite->y = linkedSprite->y - linkedSprite->centerToCornerVecY - sprite->sYOffset;
-        #else
-        sprite->y = linkedSprite->y + sprite->sYOffset;
-        #endif
+        if (OW_LARGE_OW_SUPPORT) // Use the linked sprite's current size to position the shadow
+            sprite->y = linkedSprite->y - linkedSprite->centerToCornerVecY - sprite->sYOffset;
+        else
+            sprite->y = linkedSprite->y + sprite->sYOffset;
         sprite->invisible = linkedSprite->invisible;
         if (objectEvent->jumpDone)
         {

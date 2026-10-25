@@ -570,7 +570,7 @@ static const struct SpritePalette sObjectEventSpritePalettes[] = {
     {gObjectEventPal_SSAnne,                OBJ_EVENT_PAL_TAG_SS_ANNE},
     {gObjectEventPal_Seagallop,             OBJ_EVENT_PAL_TAG_SEAGALLOP},
 #endif // IS_FRLG
-#if OW_FOLLOWERS_POKEBALLS
+#if ADMG_DEFAULT_OW_FOLLOWERS_POKEBALLS // Build these palette entries when enabled by default; ObjectEventSetPokeballGfx checks the runtime setting
     {gObjectEventPal_MasterBall,            OBJ_EVENT_PAL_TAG_BALL_MASTER},
     {gObjectEventPal_UltraBall,             OBJ_EVENT_PAL_TAG_BALL_ULTRA},
     {gObjectEventPal_GreatBall,             OBJ_EVENT_PAL_TAG_BALL_GREAT},
@@ -599,7 +599,7 @@ static const struct SpritePalette sObjectEventSpritePalettes[] = {
     {gObjectEventPal_BeastBall,             OBJ_EVENT_PAL_TAG_BALL_BEAST},
     // Gen VIII
     {gObjectEventPal_StrangeBall,           OBJ_EVENT_PAL_TAG_BALL_STRANGE},
-#endif //OW_FOLLOWERS_POKEBALLS
+#endif //ADMG_DEFAULT_OW_FOLLOWERS_POKEBALLS
     {gObjectEventPal_Substitute,            OBJ_EVENT_PAL_TAG_SUBSTITUTE},
     {gObjectEventPaletteLight,              OBJ_EVENT_PAL_TAG_LIGHT},
     {gObjectEventPaletteLight2,             OBJ_EVENT_PAL_TAG_LIGHT_2},
@@ -2258,7 +2258,9 @@ bool32 ADMG_IsSpeciesOverworldDataHidden(enum Species species)
 const struct ObjectEventGraphicsInfo *SpeciesToGraphicsInfo(enum Species species, bool32 shiny, bool32 female)
 {
     const struct ObjectEventGraphicsInfo *graphicsInfo = NULL;
-#if OW_POKEMON_OBJECT_EVENTS
+#if ADMG_DEFAULT_OW_POKEMON_OBJECT_EVENTS
+    if (!OW_POKEMON_OBJECT_EVENTS) // Return no species graphics when OW_POKEMON_OBJECT_EVENTS is off
+        return NULL;
     /* Bound the common species lookup before any table access. */
     if (!IsSpeciesIdValid(species) || species == SPECIES_EGG)
     {
@@ -2290,7 +2292,7 @@ const struct ObjectEventGraphicsInfo *SpeciesToGraphicsInfo(enum Species species
             return &gSpeciesInfo[SPECIES_NONE].overworldData;
         return NULL;
     }
-#endif // OW_POKEMON_OBJECT_EVENTS
+#endif // ADMG_DEFAULT_OW_POKEMON_OBJECT_EVENTS
     return graphicsInfo;
 }
 
@@ -2299,8 +2301,8 @@ static u32 LoadDynamicFollowerPalette(enum Species species, bool32 shiny, bool32
 {
     u32 paletteNum;
     // Use standalone palette, unless entry is OOB or NULL (fallback to front-sprite-based)
-#if OW_POKEMON_OBJECT_EVENTS == TRUE && OW_PKMN_OBJECTS_SHARE_PALETTES == FALSE
-    if (((shiny && gSpeciesInfo[species].overworldPalette)
+#if ADMG_DEFAULT_OW_POKEMON_OBJECT_EVENTS == TRUE && OW_PKMN_OBJECTS_SHARE_PALETTES == FALSE
+    if (OW_POKEMON_OBJECT_EVENTS && ((shiny && gSpeciesInfo[species].overworldPalette)
     || (!shiny && gSpeciesInfo[species].overworldShinyPalette))
      && !ADMG_IsSpeciesOverworldDataHidden(species))
     {
@@ -2330,7 +2332,7 @@ static u32 LoadDynamicFollowerPalette(enum Species species, bool32 shiny, bool32
         paletteNum = LoadSpritePalette(&spritePalette);
     }
     else
-#endif //OW_POKEMON_OBJECT_EVENTS == TRUE && OW_PKMN_OBJECTS_SHARE_PALETTES == FALSE
+#endif //ADMG_DEFAULT_OW_POKEMON_OBJECT_EVENTS == TRUE && OW_PKMN_OBJECTS_SHARE_PALETTES == FALSE
     {
         const u16 *palette = GetMonSpritePalFromSpecies(species, shiny, female); //ETODO
         // palette already loaded
@@ -7833,7 +7835,7 @@ static u8 LoadFillColorPalette(u16 color, u16 paletteTag, struct Sprite *sprite)
 
 static void ObjectEventSetPokeballGfx(struct ObjectEvent *objEvent)
 {
-    #if OW_FOLLOWERS_POKEBALLS
+    #if ADMG_DEFAULT_OW_FOLLOWERS_POKEBALLS
     enum PokeBall ball = BALL_STRANGE;
     if (objEvent->localId == OBJ_EVENT_ID_FOLLOWER)
     {
@@ -7842,7 +7844,7 @@ static void ObjectEventSetPokeballGfx(struct ObjectEvent *objEvent)
             ball = GetMonData(mon, MON_DATA_POKEBALL);
     }
 
-    if (ball != BALL_POKE && ball < POKEBALL_COUNT)
+    if (OW_FOLLOWERS_POKEBALLS && ball != BALL_POKE && ball < POKEBALL_COUNT)
     {
         const struct ObjectEventGraphicsInfo *info = &gPokeballGraphics[ball];
         if (info->tileTag == TAG_NONE)
@@ -7851,7 +7853,7 @@ static void ObjectEventSetPokeballGfx(struct ObjectEvent *objEvent)
             return;
         }
     }
-    #endif //OW_FOLLOWERS_POKEBALLS
+    #endif //ADMG_DEFAULT_OW_FOLLOWERS_POKEBALLS
     ObjectEventSetGraphicsId(objEvent, OBJ_EVENT_GFX_POKE_BALL);
 }
 

@@ -392,7 +392,7 @@ const u16 gObjectEventPal_Substitute[] = INCGFX_U16("graphics/object_events/pics
 const u16 gObjectEventPaletteEmotes[] = INCGFX_U16("graphics/misc/emotes.pal", ".gbapal");
 const u16 gObjectEventPaletteNeonLight[] = INCGFX_U16("graphics/object_events/palettes/neon_light.pal", ".gbapal");
 
-#if OW_FOLLOWERS_POKEBALLS
+#if ADMG_DEFAULT_OW_FOLLOWERS_POKEBALLS
 const u32 gObjectEventPic_MasterBall[] = INCGFX_U32("graphics/object_events/pics/misc/ball_master.png", ".4bpp", "-mwidth 2 -mheight 4");
 const u32 gObjectEventPic_UltraBall[] = INCGFX_U32("graphics/object_events/pics/misc/ball_ultra.png", ".4bpp", "-mwidth 2 -mheight 4");
 const u32 gObjectEventPic_GreatBall[] = INCGFX_U32("graphics/object_events/pics/misc/ball_great.png", ".4bpp", "-mwidth 2 -mheight 4");
@@ -420,9 +420,9 @@ const u32 gObjectEventPic_SportBall[] = INCGFX_U32("graphics/object_events/pics/
 const u32 gObjectEventPic_DreamBall[] = INCGFX_U32("graphics/object_events/pics/misc/ball_dream.png", ".4bpp", "-mwidth 2 -mheight 4");
 const u32 gObjectEventPic_BeastBall[] = INCGFX_U32("graphics/object_events/pics/misc/ball_beast.png", ".4bpp", "-mwidth 2 -mheight 4");
 const u32 gObjectEventPic_StrangeBall[] = INCGFX_U32("graphics/object_events/pics/misc/ball_strange.png", ".4bpp", "-mwidth 2 -mheight 4");
-#endif //OW_FOLLOWERS_POKEBALLS
+#endif //ADMG_DEFAULT_OW_FOLLOWERS_POKEBALLS
 
-#if OW_FOLLOWERS_POKEBALLS
+#if ADMG_DEFAULT_OW_FOLLOWERS_POKEBALLS
 // Palettes are small, so always include all of the palettes (no #ifdef)
 // Vanilla
 const u16 gObjectEventPal_MasterBall[] = INCGFX_U16("graphics/object_events/pics/misc/ball_master.png", ".gbapal");
@@ -457,7 +457,7 @@ const u16 gObjectEventPal_DreamBall[] = INCGFX_U16("graphics/object_events/pics/
 const u16 gObjectEventPal_BeastBall[] = INCGFX_U16("graphics/object_events/pics/misc/ball_beast.png", ".gbapal");
 // Gen VIII
 const u16 gObjectEventPal_StrangeBall[] = INCGFX_U16("graphics/object_events/pics/misc/ball_strange.png", ".gbapal");
-#endif //OW_FOLLOWERS_POKEBALLS
+#endif //ADMG_DEFAULT_OW_FOLLOWERS_POKEBALLS
 
 const u32 gFieldEffectObjectPic_CaveDust[] = INCGFX_U32("graphics/field_effects/pics/cave_dust.png", ".4bpp");
 const u16 gFieldEffectObjectPalette_CaveDust[] = INCGFX_U16("graphics/field_effects/palettes/cave_dust.pal", ".gbapal");

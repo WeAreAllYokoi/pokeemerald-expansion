@@ -53,7 +53,8 @@
 #define ADMG_DEFAULT_P_CUSTOM_GENDER_DIFF_ICONS      TRUE        // If TRUE, more Pokémon will have custom icons for their female differences, such as Hippopotas and Hippowdon.
 #define P_CUSTOM_GENDER_DIFF_ICONS ADMG_CONFIG_EXTRA(P_CUSTOM_GENDER_DIFF_ICONS)
 #define P_ARCEUS_UNIQUE_FORM_ICONS      GEN_LATEST  // Since Gen 9, Arceus changes its icon to reflect its current form.
-#define P_FOOTPRINTS                    TRUE        // If TRUE, Pokémon will have footprints (as was the case up to Gen 5 and in BDSP). Disabling this saves some ROM space.
+#define ADMG_DEFAULT_P_FOOTPRINTS                    TRUE        // If TRUE, Pokémon will have footprints (as was the case up to Gen 5 and in BDSP). Disabling this saves some ROM space.
+#define P_FOOTPRINTS ADMG_CONFIG_EXTRA(P_FOOTPRINTS)
 #define ADMG_DEFAULT_P_TWO_FRAME_FRONT_SPRITES       TRUE        // In Pokémon Emerald, Pokémon front sprites always consist of two frames. This config can revert it to only use the first frame, as is the case in the other Gen 3 games.
 #define P_TWO_FRAME_FRONT_SPRITES ADMG_CONFIG_EXTRA(P_TWO_FRAME_FRONT_SPRITES)
 #define P_GBA_STYLE_SPECIES_GFX         FALSE       // By default, Pokémon sprites use Gen 4/5's style. This config can revert them back to GBA-style. NOTE: B_ENEMY_MON_SHADOW_STYLE is disabled when using these sprites for now.

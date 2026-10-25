@@ -447,7 +447,7 @@ struct SpeciesInfo /*0xC4*/
     const u16 *paletteFemale;
     const u16 *shinyPaletteFemale;
     const u8 *iconSpriteFemale;
-#if P_FOOTPRINTS
+#if ADMG_DEFAULT_P_FOOTPRINTS
     const u8 *footprint;
 #endif
     // All Pokémon pics are 64x64, but this data table defines where in this 64x64 frame the sprite's non-transparent pixels actually are.
@@ -500,7 +500,7 @@ struct SpeciesInfo /*0xC4*/
     const struct Evolution *evolutions;
     const enum Species *formSpeciesIdTable;
     const struct FormChange *formChangeTable;
-#if OW_POKEMON_OBJECT_EVENTS
+#if ADMG_DEFAULT_OW_POKEMON_OBJECT_EVENTS
     struct ObjectEventGraphicsInfo overworldData;
     struct ObjectEventGraphicsInfo overworldDataFemale;
 #if OW_PKMN_OBJECTS_SHARE_PALETTES == FALSE
@@ -509,7 +509,7 @@ struct SpeciesInfo /*0xC4*/
     const void *overworldPaletteFemale;
     const void *overworldShinyPaletteFemale;
 #endif //OW_PKMN_OBJECTS_SHARE_PALETTES
-#endif //OW_POKEMON_OBJECT_EVENTS
+#endif //ADMG_DEFAULT_OW_POKEMON_OBJECT_EVENTS
     enum OverworldWildEncounterBehaviors overworldEncounterBehavior;
 };
 
