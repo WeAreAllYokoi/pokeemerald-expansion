@@ -2,6 +2,9 @@
 #include "admg_feature_records.h"
 #include "event_data.h"
 #include "admg_script.h"
+#include "admg_registry.h"
+#include "admg_retention.h"
+#include "admg_state.h"
 #include "main.h"
 #include "mass_outbreak.h"
 #include "overworld.h"
@@ -151,6 +154,100 @@ bool32 IsMassOutbreakActive(void)
     return (gSaveBlock1Ptr->outbreakDaysLeft > 0);
 }
 
+// Check the species, level, moves, probability, duration and map before starting an outbreak
+// The duration must fit outbreakDaysLeft's 16 bits; this check leaves outbreak data unchanged
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_ValidateOutbreak(const struct ADMG_OutbreakRequest *request)
+{
+    if (request == NULL)
+        return ADMG_OUTBREAK_UNAVAILABLE;
+    if (request->species == SPECIES_NONE || request->species == SPECIES_EGG || request->species >= RUNTIME_SPECIES_COUNT
+     || !IsSpeciesEnabled(request->species))
+        return ADMG_OUTBREAK_INVALID_SPECIES;
+    if (request->level < 1 || request->level > MAX_LEVEL)
+        return ADMG_OUTBREAK_INVALID_LEVEL;
+    for (u32 i = 0; i < MAX_MON_MOVES; i++)
+    {
+        if (!IsRegularMoveId(request->moves[i]))
+            return ADMG_OUTBREAK_INVALID_MOVE;
+    }
+    if (request->probability > 100)
+        return ADMG_OUTBREAK_INVALID_PROBABILITY;
+    if (request->daysLeft < 1 || request->daysLeft > 0xFFFF)
+        return ADMG_OUTBREAK_INVALID_DURATION;
+    if (!ADMG_IsMapLoadable(request->location))
+        return ADMG_OUTBREAK_INVALID_MAP;
+    return ADMG_OUTBREAK_STARTED;
+}
+
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_StartOutbreak(const struct ADMG_OutbreakRequest *request, ADMG_Word replace)
+{
+    if (gSaveBlock1Ptr == NULL)
+        return ADMG_OUTBREAK_UNAVAILABLE;
+    ADMG_Word status = ADMG_ValidateOutbreak(request);
+    if (status != ADMG_OUTBREAK_STARTED)
+        return status;
+    if (IsMassOutbreakActive() && !replace)
+        return ADMG_OUTBREAK_ALREADY_ACTIVE;
+    ZeroMassOutbreak();
+    gSaveBlock1Ptr->outbreakPokemonSpecies = request->species;
+    gSaveBlock1Ptr->outbreakPokemonLevel = request->level;
+    for (u32 i = 0; i < MAX_MON_MOVES; i++)
+        gSaveBlock1Ptr->outbreakPokemonMoves[i] = request->moves[i];
+    gSaveBlock1Ptr->outbreakPokemonProbability = request->probability;
+    gSaveBlock1Ptr->outbreakDaysLeft = request->daysLeft;
+    gSaveBlock1Ptr->outbreakLocation = request->location;
+    return ADMG_OUTBREAK_STARTED;
+}
+
+// Start an outbreak from the static table using the same validation and replacement checks
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_StartStaticOutbreak(ADMG_Word index, ADMG_Word replace)
+{
+    const struct MassOutbreak *outbreak = ADMG_GetStaticOutbreakEntry(index);
+    struct ADMG_OutbreakRequest request;
+    if (outbreak == NULL)
+        return ADMG_OUTBREAK_INVALID_INDEX;
+    request.species = outbreak->species;
+    for (u32 i = 0; i < MAX_MON_MOVES; i++)
+        request.moves[i] = outbreak->moves[i];
+    request.level = outbreak->level;
+    request.probability = outbreak->probability;
+    request.daysLeft = outbreak->duration;
+    request.location = outbreak->location;
+    return ADMG_StartOutbreak(&request, replace);
+}
+
+// Copy the active outbreak, including its full 32-bit map ID
+// Leave out untouched and return FALSE if out or save data is NULL, or no outbreak is active
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_ReadActiveOutbreak(struct ADMG_OutbreakRequest *out)
+{
+    if (out == NULL || gSaveBlock1Ptr == NULL || !IsMassOutbreakActive())
+        return FALSE;
+    out->species = gSaveBlock1Ptr->outbreakPokemonSpecies;
+    for (u32 i = 0; i < MAX_MON_MOVES; i++)
+        out->moves[i] = gSaveBlock1Ptr->outbreakPokemonMoves[i];
+    out->level = gSaveBlock1Ptr->outbreakPokemonLevel;
+    out->probability = gSaveBlock1Ptr->outbreakPokemonProbability;
+    out->daysLeft = gSaveBlock1Ptr->outbreakDaysLeft;
+    out->location = gSaveBlock1Ptr->outbreakLocation;
+    return TRUE;
+}
+
+// Clear all outbreak fields, just as expiry does
+// Return FALSE if save data is unavailable
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_EndOutbreak(void)
+{
+    if (gSaveBlock1Ptr == NULL)
+        return FALSE;
+    ZeroMassOutbreak();
+    return TRUE;
+}
+ADMG_RETAIN_FUNCTION(ADMG_ValidateOutbreak);
+ADMG_RETAIN_FUNCTION(ADMG_StartOutbreak);
+ADMG_RETAIN_FUNCTION(ADMG_StartStaticOutbreak);
+ADMG_RETAIN_FUNCTION(ADMG_ReadActiveOutbreak);
+ADMG_RETAIN_FUNCTION(ADMG_EndOutbreak);
+ADMG_RETAIN_FUNCTION(ZeroMassOutbreak);
+
 bool8 SetUpMassOutbreakEncounter(u8 flags)
 {
     if (flags & WILD_CHECK_REPEL && !IsWildLevelAllowedByRepel(gSaveBlock1Ptr->outbreakPokemonLevel))
@@ -243,15 +340,13 @@ void ScrCmd_setdynamicoutbreak(struct ScriptContext *ctx)
         return;
     }
 
-    gSaveBlock1Ptr->outbreakPokemonSpecies = species;
-    gSaveBlock1Ptr->outbreakPokemonLevel = level;
+    // Use the shared start path to check the duration and map before writing outbreak data
+    struct ADMG_OutbreakRequest request = { .species = species, .level = level, .probability = probability, .daysLeft = daysLeft, .location = map };
     for (u32 i = 0; i < MAX_MON_MOVES; i++)
-    {
-        gSaveBlock1Ptr->outbreakPokemonMoves[i] = moves[i];
-    }
-    gSaveBlock1Ptr->outbreakPokemonProbability = probability;
-    gSaveBlock1Ptr->outbreakDaysLeft = daysLeft;
-    gSaveBlock1Ptr->outbreakLocation = map;
+        request.moves[i] = moves[i];
+    u32 status = ADMG_StartOutbreak(&request, TRUE);
+    if (status != ADMG_OUTBREAK_STARTED)
+        errorf("setdynamicoutbreak refused: status %d (days left %d, map %d)", status, daysLeft, map);
 }
 
 void ScrCmd_editoutbreak(struct ScriptContext *ctx)
