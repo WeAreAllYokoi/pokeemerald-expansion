@@ -1095,6 +1095,11 @@ bool32 DespawnOWEDueToNPCCollision(struct ObjectEvent *obstacle, struct ObjectEv
     if (!IsOverworldWildEncounter(obstacle, OWE_GENERATED))
         return FALSE;
 
+    // An encounter with the no-despawn flag stays in place and blocks the NPC
+    // while it is inside the player's map
+    if (IsOWEDespawnExempt(obstacle))
+        return FALSE;
+
     RemoveObjectEvent(obstacle);
     return TRUE;
 }
