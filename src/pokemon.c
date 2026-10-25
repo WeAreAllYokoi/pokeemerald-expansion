@@ -6201,6 +6201,51 @@ void RemoveIVIndexFromList(u8 *ivs, u8 selectedIv)
     }
 }
 
+// Find an evolution target for this Pokémon, EvolutionMode and item using CHECK_EVO
+// This checks the conditions without consuming their items
+// Return the target species, or SPECIES_NONE if no evolution matches
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetEvolutionTarget(struct Pokemon *mon, ADMG_Word mode, ADMG_Word item, ADMG_Word *canStop)
+{
+    bool32 stop = TRUE;
+    enum Species target;
+
+    if (GetMonData(mon, MON_DATA_SPECIES_OR_EGG) == SPECIES_NONE || GetMonData(mon, MON_DATA_IS_EGG))
+        return SPECIES_NONE;
+    target = GetEvolutionTargetSpecies(mon, mode, item, NULL, &stop, CHECK_EVO);
+    if (canStop != NULL)
+        *canStop = stop;
+    return target;
+}
+
+// Start a party Pokémon's evolution outside battle; set gCB2_AfterEvolution first
+// Run DO_EVO to consume any items required by the conditions, then open the evolution scene
+// EVO_MODE_ITEM_USE also needs the evolution item in the bag and consumes it unless it is a key item
+// Return the selected target, or SPECIES_NONE if the request cannot start
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_StartEvolution(ADMG_Word slot, ADMG_Word mode, ADMG_Word item, ADMG_Word allowCancel)
+{
+    struct Pokemon *mon;
+    ADMG_Word canStop = TRUE;
+    bool32 stop;
+    enum Species target;
+
+    if (slot >= CalculatePlayerPartyCount() || gMain.inBattle || gCB2_AfterEvolution == NULL)
+        return SPECIES_NONE;
+    if (mode == EVO_MODE_ITEM_USE && !CheckBagHasItem(item, 1))
+        return SPECIES_NONE;
+    mon = &gParties[B_TRAINER_PLAYER][slot];
+    target = ADMG_GetEvolutionTarget(mon, mode, item, &canStop);
+    if (target == SPECIES_NONE)
+        return SPECIES_NONE;
+    stop = canStop;
+    GetEvolutionTargetSpecies(mon, mode, item, NULL, &stop, DO_EVO);
+    if (mode == EVO_MODE_ITEM_USE && GetItemPocket(item) != POCKET_KEY_ITEMS)
+        RemoveBagItem(item, 1);
+    LockPlayerFieldControls();
+    // Allow cancellation only if the caller and both evolution checks allow it
+    BeginEvolutionScene(mon, target, allowCancel && canStop && stop, slot);
+    return target;
+}
+
 void TrySpecialOverworldEvo(void)
 {
     u8 i;

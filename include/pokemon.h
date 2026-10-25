@@ -795,6 +795,8 @@ u8 GetLevelFromBoxMonExp(struct BoxPokemon *boxMon);
 enum Move GiveMoveToMon(struct Pokemon *mon, enum Move move);
 enum Move GiveMoveToBoxMon(struct BoxPokemon *boxMon, enum Move move);
 void ADMG_UpdateMoveForm(struct BoxPokemon *boxMon);
+u32 ADMG_GetEvolutionTarget(struct Pokemon *mon, u32 mode, u32 item, u32 *canStop);
+u32 ADMG_StartEvolution(u32 slot, u32 mode, u32 item, u32 allowCancel);
 enum Move GiveMoveToBattleMon(struct BattlePokemon *mon, enum Move move);
 void SetMonMoveSlot(struct Pokemon *mon, enum Move move, u8 slot);
 void SetBoxMonMoveSlot(struct BoxPokemon *mon, enum Move move, u8 slot);
