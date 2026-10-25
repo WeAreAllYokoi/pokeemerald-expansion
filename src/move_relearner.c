@@ -917,6 +917,8 @@ static bool32 IsTmAvailable(enum Item item)
     return CheckBagHasItem(item, 1);
 }
 
+// Cap each level-up, egg, TM and tutor list at MAX_RELEARNER_MOVES
+// Longer lists would overwrite the menu items after movesToLearn
 static u32 GetRelearnerLevelUpMoves(struct BoxPokemon *mon, enum Move *moves)
 {
     enum Species species = GetBoxMonData(mon, MON_DATA_SPECIES);
@@ -940,7 +942,7 @@ static u32 GetRelearnerLevelUpMoves(struct BoxPokemon *mon, enum Move *moves)
                 if (learnset[i].move == moves[j])
                     alreadyInList = TRUE;
             }
-            if (!alreadyInList)
+            if (!alreadyInList && numMoves < MAX_RELEARNER_MOVES)
                 moves[numMoves++] = learnset[i].move;
         }
 
@@ -964,7 +966,7 @@ static u32 GetRelearnerEggMoves(struct BoxPokemon *mon, enum Move *moves)
 
     for (u32 i = 0; eggMoves[i] != MOVE_UNAVAILABLE; i++)
     {
-        if (!BoxMonKnowsMove(mon, eggMoves[i]))
+        if (!BoxMonKnowsMove(mon, eggMoves[i]) && numMoves < MAX_RELEARNER_MOVES)
             moves[numMoves++] = eggMoves[i];
     }
 
@@ -990,7 +992,7 @@ static u32 GetRelearnerTMMoves(struct BoxPokemon *mon, enum Move *moves)
         if (!CanLearnTeachableMove(species, move))
             continue;
 
-        if (!BoxMonKnowsMove(mon, move))
+        if (!BoxMonKnowsMove(mon, move) && numMoves < MAX_RELEARNER_MOVES)
             moves[numMoves++] = move;
     }
 
@@ -1009,7 +1011,7 @@ static u32 GetRelearnerTutorMoves(struct BoxPokemon *mon, enum Move *moves)
         if (!CanLearnTeachableMove(species, move))
             continue;
 
-        if (!BoxMonKnowsMove(mon, move))
+        if (!BoxMonKnowsMove(mon, move) && numMoves < MAX_RELEARNER_MOVES)
             moves[numMoves++] = move;
     }
 
