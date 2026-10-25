@@ -1529,23 +1529,23 @@ const u32 gBattleAnimBgImage_NeverendingNightmare[] = INCGFX_U32("graphics/battl
 const u16 gBattleAnimBgPalette_NeverendingNightmare[] = INCGFX_U16("graphics/battle_anims/backgrounds/neverending_nightmare.pal", ".gbapal");
 const u32 gBattleAnimBgTilemap_NeverendingNightmare[] = INCGFX_U32("graphics/battle_anims/backgrounds/neverending_nightmare.bin", ".smolTM");
 
-#if B_NEW_TERRAIN_BACKGROUNDS
-const u32 gBattleAnimBgImage_ElectricTerrain[] = INCGFX_U32("graphics/battle_anims/backgrounds/new_electric_terrain.png", ".4bpp.smol");
-const u16 gBattleAnimBgPalette_ElectricTerrain[] = INCGFX_U16("graphics/battle_anims/backgrounds/new_electric_terrain.pal", ".gbapal");
-const u32 gBattleAnimBgTilemap_ElectricTerrain[] = INCGFX_U32("graphics/battle_anims/backgrounds/new_electric_terrain.bin", ".smolTM");
+// Build both terrain background sets; updated assets have the New suffix
+// ADMG_GetBattleAnimBackground uses B_NEW_TERRAIN_BACKGROUNDS to select the updated set
+const u32 gBattleAnimBgImage_ElectricTerrainNew[] = INCGFX_U32("graphics/battle_anims/backgrounds/new_electric_terrain.png", ".4bpp.smol");
+const u16 gBattleAnimBgPalette_ElectricTerrainNew[] = INCGFX_U16("graphics/battle_anims/backgrounds/new_electric_terrain.pal", ".gbapal");
+const u32 gBattleAnimBgTilemap_ElectricTerrainNew[] = INCGFX_U32("graphics/battle_anims/backgrounds/new_electric_terrain.bin", ".smolTM");
 
-const u32 gBattleAnimBgImage_GrassyTerrain[] = INCGFX_U32("graphics/battle_anims/backgrounds/new_grassy_terrain.png", ".4bpp.smol");
-const u16 gBattleAnimBgPalette_GrassyTerrain[] = INCGFX_U16("graphics/battle_anims/backgrounds/new_grassy_terrain.pal", ".gbapal");
-const u32 gBattleAnimBgTilemap_GrassyTerrain[] = INCGFX_U32("graphics/battle_anims/backgrounds/new_grassy_terrain.bin", ".smolTM");
+const u32 gBattleAnimBgImage_GrassyTerrainNew[] = INCGFX_U32("graphics/battle_anims/backgrounds/new_grassy_terrain.png", ".4bpp.smol");
+const u16 gBattleAnimBgPalette_GrassyTerrainNew[] = INCGFX_U16("graphics/battle_anims/backgrounds/new_grassy_terrain.pal", ".gbapal");
+const u32 gBattleAnimBgTilemap_GrassyTerrainNew[] = INCGFX_U32("graphics/battle_anims/backgrounds/new_grassy_terrain.bin", ".smolTM");
 
-const u32 gBattleAnimBgImage_MistyTerrain[] = INCGFX_U32("graphics/battle_anims/backgrounds/new_misty_terrain.png", ".4bpp.smol");
-const u16 gBattleAnimBgPalette_MistyTerrain[] = INCGFX_U16("graphics/battle_anims/backgrounds/new_misty_terrain.pal", ".gbapal");
-const u32 gBattleAnimBgTilemap_MistyTerrain[] = INCGFX_U32("graphics/battle_anims/backgrounds/new_misty_terrain.bin", ".smolTM");
+const u32 gBattleAnimBgImage_MistyTerrainNew[] = INCGFX_U32("graphics/battle_anims/backgrounds/new_misty_terrain.png", ".4bpp.smol");
+const u16 gBattleAnimBgPalette_MistyTerrainNew[] = INCGFX_U16("graphics/battle_anims/backgrounds/new_misty_terrain.pal", ".gbapal");
+const u32 gBattleAnimBgTilemap_MistyTerrainNew[] = INCGFX_U32("graphics/battle_anims/backgrounds/new_misty_terrain.bin", ".smolTM");
 
-const u32 gBattleAnimBgImage_PsychicTerrain[] = INCGFX_U32("graphics/battle_anims/backgrounds/new_psychic_terrain.png", ".4bpp.smol");
-const u16 gBattleAnimBgPalette_PsychicTerrain[] = INCGFX_U16("graphics/battle_anims/backgrounds/new_psychic_terrain.pal", ".gbapal");
-const u32 gBattleAnimBgTilemap_PsychicTerrain[] = INCGFX_U32("graphics/battle_anims/backgrounds/new_psychic_terrain.bin", ".smolTM");
-#else
+const u32 gBattleAnimBgImage_PsychicTerrainNew[] = INCGFX_U32("graphics/battle_anims/backgrounds/new_psychic_terrain.png", ".4bpp.smol");
+const u16 gBattleAnimBgPalette_PsychicTerrainNew[] = INCGFX_U16("graphics/battle_anims/backgrounds/new_psychic_terrain.pal", ".gbapal");
+const u32 gBattleAnimBgTilemap_PsychicTerrainNew[] = INCGFX_U32("graphics/battle_anims/backgrounds/new_psychic_terrain.bin", ".smolTM");
 const u32 gBattleAnimBgImage_PsychicTerrain[] = INCGFX_U32("graphics/battle_anims/backgrounds/psychic_terrain.png", ".4bpp.smol");
 const u16 gBattleAnimBgPalette_PsychicTerrain[] = INCGFX_U16("graphics/battle_anims/backgrounds/psychic_terrain.pal", ".gbapal");
 const u32 gBattleAnimBgTilemap_PsychicTerrain[] = INCGFX_U32("graphics/battle_anims/backgrounds/psychic_terrain.bin", ".smolTM");
@@ -1561,7 +1561,6 @@ const u32 gBattleAnimBgTilemap_GrassyTerrain[] = INCGFX_U32("graphics/battle_ani
 const u32 gBattleAnimBgImage_MistyTerrain[] = INCGFX_U32("graphics/battle_anims/backgrounds/misty_terrain.png", ".4bpp.smol");
 const u16 gBattleAnimBgPalette_MistyTerrain[] = INCGFX_U16("graphics/battle_anims/backgrounds/misty_terrain.pal", ".gbapal");
 const u32 gBattleAnimBgTilemap_MistyTerrain[] = INCGFX_U32("graphics/battle_anims/backgrounds/misty_terrain.bin", ".smolTM");
-#endif
 
 const u32 gBattleAnimBgImage_Nightmare[] = INCGFX_U32("graphics/battle_anims/backgrounds/nightmare.png", ".4bpp.smol");
 const u16 gBattleAnimBgPalette_Nightmare[] = INCGFX_U16("graphics/battle_anims/backgrounds/nightmare.pal", ".gbapal");

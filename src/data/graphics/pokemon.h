@@ -15914,7 +15914,8 @@ const u32 gObjectEventPic_Substitute[] = INCGFX_COMP("graphics/pokemon/question_
     const u16 gMonPalette_ArceusFairy[] = INCGFX_U16("graphics/pokemon/arceus/fairy/normal.pal", ".gbapal");
     const u16 gMonShinyPalette_ArceusFairy[] = INCGFX_U16("graphics/pokemon/arceus/fairy/shiny.pal", ".gbapal");
 
-#if P_ARCEUS_UNIQUE_FORM_ICONS >= GEN_9
+    // Build Arceus's form icons regardless of P_ARCEUS_UNIQUE_FORM_ICONS
+    // The species data chooses whether each form uses its own icon
     const u8 gMonIcon_ArceusFighting[] = INCGFX_U8("graphics/pokemon/arceus/fighting/icon.png", ".4bpp");
     const u8 gMonIcon_ArceusFlying[] = INCGFX_U8("graphics/pokemon/arceus/flying/icon.png", ".4bpp");
     const u8 gMonIcon_ArceusPoison[] = INCGFX_U8("graphics/pokemon/arceus/poison/icon.png", ".4bpp");
@@ -15932,7 +15933,6 @@ const u32 gObjectEventPic_Substitute[] = INCGFX_COMP("graphics/pokemon/question_
     const u8 gMonIcon_ArceusDragon[] = INCGFX_U8("graphics/pokemon/arceus/dragon/icon.png", ".4bpp");
     const u8 gMonIcon_ArceusDark[] = INCGFX_U8("graphics/pokemon/arceus/dark/icon.png", ".4bpp");
     const u8 gMonIcon_ArceusFairy[] = INCGFX_U8("graphics/pokemon/arceus/fairy/icon.png", ".4bpp");
-#endif //P_ARCEUS_UNIQUE_FORM_ICONS
 #if OW_POKEMON_OBJECT_EVENTS
     const u32 gObjectEventPic_ArceusNormal[] = INCGFX_COMP("graphics/pokemon/arceus/overworld.png", ".4bpp", "-mwidth 8 -mheight 8");
     const u32 gObjectEventPic_ArceusFighting[] = INCGFX_COMP("graphics/pokemon/arceus/overworld.png", ".4bpp", "-mwidth 8 -mheight 8");

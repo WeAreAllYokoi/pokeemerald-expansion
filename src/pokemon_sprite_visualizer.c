@@ -1001,9 +1001,9 @@ static void UpdateBattleBg(u8 taskId, bool8 increment)
 //Move background functions
 static void LoadMoveBackground(u8 moveBackground)
 {
-    DecompressDataWithHeaderVram(gBattleAnimBackgroundTable[moveBackground].tilemap, (void *)BG_SCREEN_ADDR(BACKGROUND_3_MAP_BASE));
-    DecompressDataWithHeaderVram(gBattleAnimBackgroundTable[moveBackground].image, (void *)BG_CHAR_ADDR(BACKGROUND_3_CHAR_BASE));
-    LoadPalette(gBattleAnimBackgroundTable[moveBackground].palette, BG_PLTT_ID(2), PLTT_SIZE_4BPP);
+    DecompressDataWithHeaderVram(ADMG_GetBattleAnimBackground(moveBackground)->tilemap, (void *)BG_SCREEN_ADDR(BACKGROUND_3_MAP_BASE));
+    DecompressDataWithHeaderVram(ADMG_GetBattleAnimBackground(moveBackground)->image, (void *)BG_CHAR_ADDR(BACKGROUND_3_CHAR_BASE));
+    LoadPalette(ADMG_GetBattleAnimBackground(moveBackground)->palette, BG_PLTT_ID(2), PLTT_SIZE_4BPP);
     //Fill text area with white to avoid overlap with backgrounds
     CpuFill32(0x11111111, (void *)(BG_CHAR_ADDR(BACKGROUND_1_CHAR_BASE) + TILE_OFFSET_4BPP(1)), TILE_SIZE_4BPP);
     CpuFill32(0xF001F001, (void *)(BG_SCREEN_ADDR(BACKGROUND_1_MAP_BASE) + sizeof(u16) * 32 * TEXT_AREA_Y), sizeof(u16) * 32 * TEXT_AREA_HEIGHT);

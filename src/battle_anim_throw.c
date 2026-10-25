@@ -2169,8 +2169,8 @@ void TryShinyAnimation(enum BattlerId battler, struct Pokemon *mon)
         {
             if (GetSpriteTileStartByTag(ANIM_TAG_GOLD_STARS) == 0xFFFF)
             {
-                LoadCompressedSpriteSheetUsingHeap(&gBattleAnimTable[GET_TRUE_SPRITE_INDEX(ANIM_TAG_GOLD_STARS)].pic);
-                LoadSpritePalette(&gBattleAnimTable[GET_TRUE_SPRITE_INDEX(ANIM_TAG_GOLD_STARS)].palette);
+                LoadCompressedSpriteSheetUsingHeap(&ADMG_GetBattleAnimation(ANIM_TAG_GOLD_STARS)->pic);
+                LoadSpritePalette(&ADMG_GetBattleAnimation(ANIM_TAG_GOLD_STARS)->palette);
             }
 
             taskCirc = CreateTask(Task_ShinyStars, 10);
@@ -2322,8 +2322,8 @@ static void SpriteCB_ShinyStars_Diagonal(struct Sprite *sprite)
 
 void AnimTask_LoadPokeblockGfx(u8 taskId)
 {
-    LoadCompressedSpriteSheetUsingHeap(&gBattleAnimTable[GET_TRUE_SPRITE_INDEX(ANIM_TAG_POKEBLOCK)].pic);
-    LoadSpritePalette(&gBattleAnimTable[GET_TRUE_SPRITE_INDEX(ANIM_TAG_POKEBLOCK)].palette);
+    LoadCompressedSpriteSheetUsingHeap(&ADMG_GetBattleAnimation(ANIM_TAG_POKEBLOCK)->pic);
+    LoadSpritePalette(&ADMG_GetBattleAnimation(ANIM_TAG_POKEBLOCK)->palette);
     DestroyAnimVisualTask(taskId);
 }
 

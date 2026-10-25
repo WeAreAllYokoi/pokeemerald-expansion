@@ -1772,8 +1772,8 @@ static void Task_Scene3_LoadGroudon(u8 taskId)
         DecompressDataWithHeaderVram(gIntroGroudon_Tilemap, (void *)(BG_CHAR_ADDR(3)));
         DecompressDataWithHeaderVram(gIntroLegendBg_Gfx, (void *)(BG_CHAR_ADDR(1)));
         DecompressDataWithHeaderVram(gIntroGroudonBg_Tilemap, (void *)(BG_SCREEN_ADDR(28)));
-        LoadCompressedSpriteSheetUsingHeap(&gBattleAnimTable[GET_TRUE_SPRITE_INDEX(ANIM_TAG_ROCKS)].pic);
-        LoadSpritePalette(&gBattleAnimTable[GET_TRUE_SPRITE_INDEX(ANIM_TAG_ROCKS)].palette);
+        LoadCompressedSpriteSheetUsingHeap(&ADMG_GetBattleAnimation(ANIM_TAG_ROCKS)->pic);
+        LoadSpritePalette(&ADMG_GetBattleAnimation(ANIM_TAG_ROCKS)->palette);
         CpuCopy16(gIntro3Bg_Pal, gPlttBufferUnfaded, sizeof(gIntro3Bg_Pal));
         gTasks[taskId].func = Task_Scene3_InitGroudonBg;
     }

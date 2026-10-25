@@ -1,6 +1,6 @@
 	.align 2
 gCryTable::
-.if P_CRIES_ENABLED == TRUE
+.if ADMG_DEFAULT_P_CRIES_ENABLED == TRUE @ Build cry data from the configured default; playback checks P_CRIES_ENABLED at runtime
 .if P_FAMILY_BULBASAUR == TRUE
 	cry Cry_Bulbasaur
 	cry Cry_Ivysaur
@@ -2556,7 +2556,7 @@ gCryTable::
 
 	.align 2
 gCryTable_Reverse::
-.if P_CRIES_ENABLED == TRUE
+.if ADMG_DEFAULT_P_CRIES_ENABLED == TRUE @ Build cry data from the configured default; playback checks P_CRIES_ENABLED at runtime
 .if P_FAMILY_BULBASAUR == TRUE
 	cry_reverse Cry_Bulbasaur
 	cry_reverse Cry_Ivysaur

@@ -1025,7 +1025,10 @@ void AnimTask_CreateSurfWave(u8 taskId)
         [ANIM_SURF_PAL_SURF_NEW]      = gBattleAnimSpritePal_NewSurf,
     };
 
-    LoadPalette(wavePalettes[cmd->palette], BG_PLTT_ID(animBg.paletteId), PLTT_SIZE_4BPP);
+    u32 palette = cmd->palette;
+    if (palette == ANIM_SURF_PAL_SURF_CONFIGURED)
+        palette = B_NEW_SURF_PARTICLE_PALETTE ? ANIM_SURF_PAL_SURF_NEW : ANIM_SURF_PAL_SURF_ORIGINAL;
+    LoadPalette(wavePalettes[palette], BG_PLTT_ID(animBg.paletteId), PLTT_SIZE_4BPP);
 
     taskId2 = CreateTask(AnimTask_SurfWaveScanlineEffect, gTasks[taskId].priority + 1);
     gTasks[taskId].data[15] = taskId2;

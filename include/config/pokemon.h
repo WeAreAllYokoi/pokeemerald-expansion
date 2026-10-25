@@ -54,13 +54,15 @@
 #define P_CUSTOM_GENDER_DIFF_ICONS ADMG_CONFIG_EXTRA(P_CUSTOM_GENDER_DIFF_ICONS)
 #define P_ARCEUS_UNIQUE_FORM_ICONS      GEN_LATEST  // Since Gen 9, Arceus changes its icon to reflect its current form.
 #define P_FOOTPRINTS                    TRUE        // If TRUE, Pokémon will have footprints (as was the case up to Gen 5 and in BDSP). Disabling this saves some ROM space.
-#define P_TWO_FRAME_FRONT_SPRITES       TRUE        // In Pokémon Emerald, Pokémon front sprites always consist of two frames. This config can revert it to only use the first frame, as is the case in the other Gen 3 games.
+#define ADMG_DEFAULT_P_TWO_FRAME_FRONT_SPRITES       TRUE        // In Pokémon Emerald, Pokémon front sprites always consist of two frames. This config can revert it to only use the first frame, as is the case in the other Gen 3 games.
+#define P_TWO_FRAME_FRONT_SPRITES ADMG_CONFIG_EXTRA(P_TWO_FRAME_FRONT_SPRITES)
 #define P_GBA_STYLE_SPECIES_GFX         FALSE       // By default, Pokémon sprites use Gen 4/5's style. This config can revert them back to GBA-style. NOTE: B_ENEMY_MON_SHADOW_STYLE is disabled when using these sprites for now.
 #define P_GBA_STYLE_SPECIES_ICONS       FALSE       // By default, Pokémon have their updated icons. This config can revert them back to GBA-style.
 #define P_GBA_STYLE_SPECIES_FOOTPRINTS  FALSE       // By default, Pokémon have their updated footprints. This config can revert them back to GBA-style.
 
 // Other settings
-#define P_CRIES_ENABLED                  TRUE        // If TRUE, Pokémon will have cries. Disabling this saves around a LOT of ROM space (over 25%!), but instead we recommend disabling individual unused Pokémon families in include/config/species_enabled.h.
+#define ADMG_DEFAULT_P_CRIES_ENABLED                  TRUE        // If TRUE, enable Pokémon cries; the compiled default also controls whether cry data is built
+#define P_CRIES_ENABLED ADMG_CONFIG_EXTRA(P_CRIES_ENABLED)
 #define P_LEGENDARY_PERFECT_IVS          GEN_LATEST  // Since Gen 6, Legendaries, Mythicals and Ultra Beasts found in the wild or given through gifts have at least 3 perfect IVs.
 #define ADMG_DEFAULT_P_EV_CAP                         GEN_LATEST  // Since Gen 6, the max EVs per stat is 252 instead of 255.
 #define P_EV_CAP ADMG_CONFIG_EXTRA(P_EV_CAP)

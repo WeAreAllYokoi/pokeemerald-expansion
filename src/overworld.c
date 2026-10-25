@@ -93,7 +93,7 @@
 #include "constants/trainer_hill.h"
 #include "constants/weather.h"
 
-STATIC_ASSERT((B_FLAG_FOLLOWERS_DISABLED == 0 || OW_FOLLOWERS_ENABLED), FollowersFlagAssignedWithoutEnablingThem);
+STATIC_ASSERT((B_FLAG_FOLLOWERS_DISABLED == 0 || ADMG_DEFAULT_OW_FOLLOWERS_ENABLED), FollowersFlagAssignedWithoutEnablingThem); // Check the configured default
 
 struct CableClubPlayer
 {

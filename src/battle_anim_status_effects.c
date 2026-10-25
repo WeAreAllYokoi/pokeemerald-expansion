@@ -252,8 +252,8 @@ static u8 UNUSED Task_FlashingCircleImpacts(enum BattlerId battler, bool8 red)
     u8 spriteId;
     u8 i;
 
-    LoadCompressedSpriteSheetUsingHeap(&gBattleAnimTable[GET_TRUE_SPRITE_INDEX(ANIM_TAG_CIRCLE_IMPACT)].pic);
-    LoadSpritePalette(&gBattleAnimTable[GET_TRUE_SPRITE_INDEX(ANIM_TAG_CIRCLE_IMPACT)].palette);
+    LoadCompressedSpriteSheetUsingHeap(&ADMG_GetBattleAnimation(ANIM_TAG_CIRCLE_IMPACT)->pic);
+    LoadSpritePalette(&ADMG_GetBattleAnimation(ANIM_TAG_CIRCLE_IMPACT)->palette);
     gTasks[taskId].data[0] = battler;
     if (red)
     {

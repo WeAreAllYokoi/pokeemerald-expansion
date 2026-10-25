@@ -126,6 +126,64 @@ EWRAM_DATA static bool8 sAnimHideHpBoxes = FALSE;
 
 #include "data/battle_anim.h"
 
+// Keep original and updated particle graphics together so the B_NEW_* settings can choose at runtime
+// Unlisted particle tags use gBattleAnimTable
+// Terrain lookups use the updated backgrounds when B_NEW_TERRAIN_BACKGROUNDS is TRUE
+// Otherwise they use gBattleAnimBackgroundTable, which holds the compiled defaults
+struct ADMG_BattleAnimationChoice
+{
+    u16 tag;
+    u16 config;
+    struct BattleAnimation original;
+    struct BattleAnimation updated;
+};
+
+static const struct ADMG_BattleAnimationChoice sADMG_BattleAnimationChoices[] =
+{
+    {ANIM_TAG_SWORD, CONFIG_B_NEW_SWORD_PARTICLE, {.pic = {gBattleAnimSpriteGfx_Sword, 0x0400, ANIM_TAG_SWORD}, .palette = {gBattleAnimSpritePal_Sword, ANIM_TAG_SWORD}}, {.pic = {gBattleAnimSpriteGfx_NewSword, 0x0400, ANIM_TAG_SWORD}, .palette = {gBattleAnimSpritePal_NewSword, ANIM_TAG_SWORD}}},
+    {ANIM_TAG_SEED, CONFIG_B_NEW_LEECH_SEED_PARTICLE, {.pic = {gBattleAnimSpriteGfx_Seed, 0x0180, ANIM_TAG_SEED}, .palette = {gBattleAnimSpritePal_Seed, ANIM_TAG_SEED}}, {.pic = {gBattleAnimSpriteGfx_NewLeechSeed, 0x0180, ANIM_TAG_SEED}, .palette = {gBattleAnimSpritePal_NewLeechSeed, ANIM_TAG_SEED}}},
+    {ANIM_TAG_HORN_HIT, CONFIG_B_NEW_HORN_ATTACK_PARTICLE, {.pic = {gBattleAnimSpriteGfx_HornHit, 0x0200, ANIM_TAG_HORN_HIT}, .palette = {gBattleAnimSpritePal_HornHit, ANIM_TAG_HORN_HIT}}, {.pic = {gBattleAnimSpriteGfx_HornHit, 0x0200, ANIM_TAG_HORN_HIT}, .palette = {gBattleAnimSpritePal_NewHornHit, ANIM_TAG_HORN_HIT}}},
+    {ANIM_TAG_SMALL_EMBER, CONFIG_B_NEW_EMBER_PARTICLES, {.pic = {gBattleAnimSpriteGfx_SmallEmber, 0x0A00, ANIM_TAG_SMALL_EMBER}, .palette = {gBattleAnimSpritePal_SmallEmber, ANIM_TAG_SMALL_EMBER}}, {.pic = {gBattleAnimSpriteGfx_NewEmbers, 0x0A00, ANIM_TAG_SMALL_EMBER}, .palette = {gBattleAnimSpritePal_NewEmbers, ANIM_TAG_SMALL_EMBER}}},
+    {ANIM_TAG_ROCKS, CONFIG_B_NEW_ROCKS_PARTICLE, {.pic = {gBattleAnimSpriteGfx_Rocks, 0x0C00, ANIM_TAG_ROCKS}, .palette = {gBattleAnimSpritePal_Rocks, ANIM_TAG_ROCKS}}, {.pic = {gBattleAnimSpriteGfx_NewRocks, 0x0C00, ANIM_TAG_ROCKS}, .palette = {gBattleAnimSpritePal_NewRocks, ANIM_TAG_ROCKS}}},
+    {ANIM_TAG_LEAF, CONFIG_B_NEW_LEAF_PARTICLE, {.pic = {gBattleAnimSpriteGfx_Leaf, 0x0480, ANIM_TAG_LEAF}, .palette = {gBattleAnimSpritePal_Leaf, ANIM_TAG_LEAF}}, {.pic = {gBattleAnimSpriteGfx_NewLeaf, 0x0480, ANIM_TAG_LEAF}, .palette = {gBattleAnimSpritePal_NewLeaf, ANIM_TAG_LEAF}}},
+    {ANIM_TAG_IMPACT, CONFIG_B_NEW_IMPACT_PALETTE, {.pic = {gBattleAnimSpriteGfx_Impact, 0x0200, ANIM_TAG_IMPACT}, .palette = {gBattleAnimSpritePal_Impact, ANIM_TAG_IMPACT}}, {.pic = {gBattleAnimSpriteGfx_Impact, 0x0200, ANIM_TAG_IMPACT}, .palette = {gBattleAnimSpritePal_NewImpact, ANIM_TAG_IMPACT}}},
+    {ANIM_TAG_SHARP_TEETH, CONFIG_B_NEW_TEETH_PARTICLE, {.pic = {gBattleAnimSpriteGfx_SharpTeeth, 0x0800, ANIM_TAG_SHARP_TEETH}, .palette = {gBattleAnimSpritePal_SharpTeeth, ANIM_TAG_SHARP_TEETH}}, {.pic = {gBattleAnimSpriteGfx_NewTeeth, 0x0800, ANIM_TAG_SHARP_TEETH}, .palette = {gBattleAnimSpritePal_NewTeeth, ANIM_TAG_SHARP_TEETH}}},
+    {ANIM_TAG_HANDS_AND_FEET, CONFIG_B_NEW_HANDS_FEET_PARTICLE, {.pic = {gBattleAnimSpriteGfx_HandsAndFeet, 0x0800, ANIM_TAG_HANDS_AND_FEET}, .palette = {gBattleAnimSpritePal_HandsAndFeet, ANIM_TAG_HANDS_AND_FEET}}, {.pic = {gBattleAnimSpriteGfx_NewHandsAndFeet, 0x0800, ANIM_TAG_HANDS_AND_FEET}, .palette = {gBattleAnimSpritePal_NewHandsAndFeet, ANIM_TAG_HANDS_AND_FEET}}},
+    {ANIM_TAG_SPIKES, CONFIG_B_NEW_SPIKES_PARTICLE, {.pic = {gBattleAnimSpriteGfx_Spikes, 0x0080, ANIM_TAG_SPIKES}, .palette = {gBattleAnimSpritePal_Spikes, ANIM_TAG_SPIKES}}, {.pic = {gBattleAnimSpriteGfx_NewSpikes, 0x0080, ANIM_TAG_SPIKES}, .palette = {gBattleAnimSpritePal_NewSpikes, ANIM_TAG_SPIKES}}},
+    {ANIM_TAG_ROUND_SHADOW, CONFIG_B_NEW_FLY_BUBBLE_PARTICLE, {.pic = {gBattleAnimSpriteGfx_RoundShadow, 0x0800, ANIM_TAG_ROUND_SHADOW}, .palette = {gBattleAnimSpritePal_RoundShadow, ANIM_TAG_ROUND_SHADOW}}, {.pic = {gBattleAnimSpriteGfx_NewFly, 0x0800, ANIM_TAG_ROUND_SHADOW}, .palette = {gBattleAnimSpritePal_NewFly, ANIM_TAG_ROUND_SHADOW}}},
+    {ANIM_TAG_EYE, CONFIG_B_NEW_MEAN_LOOK_PARTICLE, {.pic = {gBattleAnimSpriteGfx_Eye, 0x0800, ANIM_TAG_EYE}, .palette = {gBattleAnimSpritePal_Eye, ANIM_TAG_EYE}}, {.pic = {gBattleAnimSpriteGfx_NewEye, 0x0800, ANIM_TAG_EYE}, .palette = {gBattleAnimSpritePal_NewEye, ANIM_TAG_EYE}}},
+    {ANIM_TAG_NAIL, CONFIG_B_NEW_CURSE_NAIL_PARTICLE, {.pic = {gBattleAnimSpriteGfx_Nail, 0x0400, ANIM_TAG_NAIL}, .palette = {gBattleAnimSpritePal_Nail, ANIM_TAG_NAIL}}, {.pic = {gBattleAnimSpriteGfx_NewNail, 0x0400, ANIM_TAG_NAIL}, .palette = {gBattleAnimSpritePal_Nail, ANIM_TAG_NAIL}}},
+    {ANIM_TAG_POKEBALL, CONFIG_B_NEW_BATON_PASS_BALL_PARTICLE, {.pic = {gBattleAnimSpriteGfx_Pokeball, 0x0080, ANIM_TAG_POKEBALL}, .palette = {gBattleAnimSpritePal_Pokeball, ANIM_TAG_POKEBALL}}, {.pic = {gBattleAnimSpriteGfx_NewPokeball, 0x0080, ANIM_TAG_POKEBALL}, .palette = {gBattleAnimSpritePal_NewPokeball, ANIM_TAG_POKEBALL}}},
+    {ANIM_TAG_GREEN_STAR, CONFIG_B_NEW_MORNING_SUN_STAR_PARTICLE, {.pic = {gBattleAnimSpriteGfx_GreenStar, 0x0200, ANIM_TAG_GREEN_STAR}, .palette = {gBattleAnimSpritePal_GreenStar, ANIM_TAG_GREEN_STAR}}, {.pic = {gBattleAnimSpriteGfx_NewGreenStar, 0x0200, ANIM_TAG_GREEN_STAR}, .palette = {gBattleAnimSpritePal_NewGreenStar, ANIM_TAG_GREEN_STAR}}},
+    {ANIM_TAG_TOXIC_SPIKES, CONFIG_B_NEW_SPIKES_PARTICLE, {.pic = {gBattleAnimSpriteGfx_Spikes, 0x0080, ANIM_TAG_TOXIC_SPIKES}, .palette = {gBattleAnimSpritePal_ToxicSpikes, ANIM_TAG_TOXIC_SPIKES}}, {.pic = {gBattleAnimSpriteGfx_NewSpikes, 0x0080, ANIM_TAG_TOXIC_SPIKES}, .palette = {gBattleAnimSpritePal_ToxicSpikes, ANIM_TAG_TOXIC_SPIKES}}},
+};
+
+static const struct BattleAnimBackground sADMG_UpdatedTerrainBackgrounds[] =
+{
+    [BG_ELECTRIC_TERRAIN] = {gBattleAnimBgImage_ElectricTerrainNew, gBattleAnimBgPalette_ElectricTerrainNew, gBattleAnimBgTilemap_ElectricTerrainNew},
+    [BG_GRASSY_TERRAIN] = {gBattleAnimBgImage_GrassyTerrainNew, gBattleAnimBgPalette_GrassyTerrainNew, gBattleAnimBgTilemap_GrassyTerrainNew},
+    [BG_MISTY_TERRAIN] = {gBattleAnimBgImage_MistyTerrainNew, gBattleAnimBgPalette_MistyTerrainNew, gBattleAnimBgTilemap_MistyTerrainNew},
+    [BG_PSYCHIC_TERRAIN] = {gBattleAnimBgImage_PsychicTerrainNew, gBattleAnimBgPalette_PsychicTerrainNew, gBattleAnimBgTilemap_PsychicTerrainNew},
+};
+
+const struct BattleAnimation *ADMG_GetBattleAnimation(u32 tag)
+{
+    for (u32 i = 0; i < ARRAY_COUNT(sADMG_BattleAnimationChoices); i++)
+    {
+        if (sADMG_BattleAnimationChoices[i].tag == tag)
+            return ADMG_GetConfig(sADMG_BattleAnimationChoices[i].config) ? &sADMG_BattleAnimationChoices[i].updated
+                                                                          : &sADMG_BattleAnimationChoices[i].original;
+    }
+    return &gBattleAnimTable[GET_TRUE_SPRITE_INDEX(tag)];
+}
+
+const struct BattleAnimBackground *ADMG_GetBattleAnimBackground(u32 bgId)
+{
+    if (bgId < ARRAY_COUNT(sADMG_UpdatedTerrainBackgrounds) && sADMG_UpdatedTerrainBackgrounds[bgId].image != NULL)
+        return B_NEW_TERRAIN_BACKGROUNDS ? &sADMG_UpdatedTerrainBackgrounds[bgId] : &gBattleAnimBackgroundTable[bgId];
+    return &gBattleAnimBackgroundTable[bgId];
+}
+
 static void (*const sScriptCmdTable[])(void) =
 {
     Cmd_unloadspritegfx,      // 0x00
@@ -561,7 +619,7 @@ bool32 TryLoadGfx(u32 tag)
     {
         if (StoreGfxTag(tag))
         {
-            LoadCompressedSpriteSheetUsingHeap(&gBattleAnimTable[GET_TRUE_SPRITE_INDEX(tag)].pic);
+            LoadCompressedSpriteSheetUsingHeap(&ADMG_GetBattleAnimation(tag)->pic);
             return TRUE;
         }
         else
@@ -582,7 +640,7 @@ bool32 TryLoadPal(u32 tag)
     {
         if (StorePalTag(tag))
         {
-            LoadSpritePalette(&gBattleAnimTable[GET_TRUE_SPRITE_INDEX(tag)].palette);
+            LoadSpritePalette(&ADMG_GetBattleAnimation(tag)->palette);
             return TRUE;
         }
         else
@@ -1768,18 +1826,18 @@ void LoadMoveBg(u16 bgId)
 {
     if (IsContest())
     {
-        void *decompressionBuffer = malloc_and_decompress(gBattleAnimBackgroundTable[bgId].tilemap, NULL);
+        void *decompressionBuffer = malloc_and_decompress(ADMG_GetBattleAnimBackground(bgId)->tilemap, NULL);
         RelocateBattleBgPal(GetBattleBgPaletteNum(), decompressionBuffer, 0x100, FALSE);
         DmaCopy32(3, decompressionBuffer, (void *)BG_SCREEN_ADDR(26), 0x800);
         Free(decompressionBuffer);
-        DecompressDataWithHeaderVram(gBattleAnimBackgroundTable[bgId].image, (void *)BG_SCREEN_ADDR(4));
-        LoadPalette(gBattleAnimBackgroundTable[bgId].palette, BG_PLTT_ID(GetBattleBgPaletteNum()), PLTT_SIZE_4BPP);
+        DecompressDataWithHeaderVram(ADMG_GetBattleAnimBackground(bgId)->image, (void *)BG_SCREEN_ADDR(4));
+        LoadPalette(ADMG_GetBattleAnimBackground(bgId)->palette, BG_PLTT_ID(GetBattleBgPaletteNum()), PLTT_SIZE_4BPP);
     }
     else
     {
-        DecompressDataWithHeaderVram(gBattleAnimBackgroundTable[bgId].tilemap, (void *)BG_SCREEN_ADDR(26));
-        DecompressDataWithHeaderVram(gBattleAnimBackgroundTable[bgId].image, (void *)BG_CHAR_ADDR(2));
-        LoadPalette(gBattleAnimBackgroundTable[bgId].palette, BG_PLTT_ID(2), PLTT_SIZE_4BPP);
+        DecompressDataWithHeaderVram(ADMG_GetBattleAnimBackground(bgId)->tilemap, (void *)BG_SCREEN_ADDR(26));
+        DecompressDataWithHeaderVram(ADMG_GetBattleAnimBackground(bgId)->image, (void *)BG_CHAR_ADDR(2));
+        LoadPalette(ADMG_GetBattleAnimBackground(bgId)->palette, BG_PLTT_ID(2), PLTT_SIZE_4BPP);
     }
 }
 

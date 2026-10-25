@@ -680,11 +680,10 @@ enum AnimBattler
 #define ANIM_SURF_PAL_SLUDGE_WAVE    2
 #define ANIM_SURF_PAL_SURF_NEW       3
 
-#if B_NEW_SURF_PARTICLE_PALETTE
-#define ANIM_SURF_PAL_SURF ANIM_SURF_PAL_SURF_NEW
-#else
-#define ANIM_SURF_PAL_SURF ANIM_SURF_PAL_SURF_ORIGINAL
-#endif
+// AnimTask_CreateSurfWave resolves this marker using B_NEW_SURF_PARTICLE_PALETTE
+// TRUE selects the new palette; FALSE selects the original
+#define ANIM_SURF_PAL_SURF_CONFIGURED 4
+#define ANIM_SURF_PAL_SURF ANIM_SURF_PAL_SURF_CONFIGURED
 
 // Order Up palettes for Commander
 #define ANIM_ORDER_UP_NONE           0

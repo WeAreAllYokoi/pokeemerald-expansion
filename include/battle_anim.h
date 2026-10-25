@@ -606,5 +606,7 @@ void AnimIceBeamParticle(struct Sprite *sprite);
 void AnimTranslateStinger(struct Sprite *sprite);
 
 extern const struct BattleAnimBackground gBattleAnimBackgroundTable[];
+const struct BattleAnimation *ADMG_GetBattleAnimation(u32 tag);
+const struct BattleAnimBackground *ADMG_GetBattleAnimBackground(u32 bgId);
 
 #endif // GUARD_BATTLE_ANIM_H
