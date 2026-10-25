@@ -2837,10 +2837,15 @@ void ClearCurrentTrainerWantRematchVsSeeker(void)
 #if FREE_MATCH_CALL == FALSE
     if ((gBattleTypeFlags & BATTLE_TYPE_TRAINER) && FlagGet(ADMG_GetFeatureBinding(ADMG_BINDING_I_VS_SEEKER_CHARGING)) && (ADMG_GetFeatureBinding(ADMG_BINDING_I_VS_SEEKER_CHARGING) != 0))
     {
-        for (u32 i = 0; i < REMATCH_TABLE_ENTRIES; i++)
+        // Clear each rematch row whose teams include the opponent
+        // The saved byte holds a rematch level, so compare trainer IDs in the table instead
+        for (u32 i = 0; i < REMATCH_TABLE_ENTRIES && i < MAX_REMATCH_ENTRIES; i++)
         {
-            if (gSaveBlock1Ptr->trainerRematches[i] == TRAINER_BATTLE_PARAM.opponentA)
-                gSaveBlock1Ptr->trainerRematches[i] = 0;
+            for (u32 j = 0; j < REMATCHES_COUNT; j++)
+            {
+                if (gRematchTable[i].trainerIds[j] == TRAINER_BATTLE_PARAM.opponentA)
+                    gSaveBlock1Ptr->trainerRematches[i] = 0;
+            }
         }
     }
 #endif //FREE_MATCH_CALL

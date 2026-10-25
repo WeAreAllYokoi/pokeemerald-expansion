@@ -538,7 +538,8 @@ static u8 GetVsSeekerResponseInArea(void)
             continue;
         }
 
-        gSaveBlock1Ptr->trainerRematches[VsSeekerConvertLocalIdToTableId(sVsSeeker->trainerInfo[vsSeekerIdx].localId)] = rematchTrainerIdx;
+        u32 rematchTableId = VsSeekerConvertLocalIdToTableId(sVsSeeker->trainerInfo[vsSeekerIdx].localId);
+        gSaveBlock1Ptr->trainerRematches[rematchTableId] = ADMG_VsSeekerRematchLevel(rematchTableId, rematchTrainerIdx);
         ShiftStillObjectEventCoords(&gObjectEvents[sVsSeeker->trainerInfo[vsSeekerIdx].objectEventId]);
         StartTrainerObjectMovementScript(&sVsSeeker->trainerInfo[vsSeekerIdx], sMovementScript_TrainerRematch);
         sVsSeeker->trainerIdxArray[sVsSeeker->numRematchableTrainers] = vsSeekerIdx;
@@ -621,6 +622,21 @@ static u32 GetGameProgressFlags()
     }
 
     return numGameProgressFlags;
+}
+
+// Save the chosen team's position in the rematch row, not its trainer ID
+// If no position from 1 onward matches, use 1 to mark the trainer ready; 0 means not ready
+// Entries from REMATCH_SPECIAL_TRAINER_START onward keep the supplied value
+static u8 ADMG_VsSeekerRematchLevel(u32 tableId, u16 chosen)
+{
+    if (tableId >= REMATCH_SPECIAL_TRAINER_START)
+        return chosen; // Keep the value supplied for this special-trainer entry
+    for (u32 i = 1; i < REMATCHES_COUNT; i++)
+    {
+        if (gRematchTable[tableId].trainerIds[i] == chosen)
+            return i;
+    }
+    return 1;
 }
 
 u16 GetRematchTrainerIdVSSeeker(enum TrainerId trainerId)
@@ -900,7 +916,9 @@ static void StartAllRespondantIdleMovements(void)
                 SetTrainerMovementType(objectEvent, sVsSeeker->runningBehaviourEtcArray[i]);
             TryOverrideTemplateCoordsForObjectEvent(objectEvent, sVsSeeker->runningBehaviourEtcArray[i]);
         }
-        gSaveBlock1Ptr->trainerRematches[VsSeekerConvertLocalIdToTableId(sVsSeeker->trainerInfo[j].localId)] = GetRematchTrainerIdVSSeeker(sVsSeeker->trainerInfo[j].trainerIdx);
+        u32 rematchTableId = VsSeekerConvertLocalIdToTableId(sVsSeeker->trainerInfo[j].localId);
+        u16 chosen = GetRematchTrainerIdVSSeeker(sVsSeeker->trainerInfo[j].trainerIdx);
+        gSaveBlock1Ptr->trainerRematches[rematchTableId] = chosen ? ADMG_VsSeekerRematchLevel(rematchTableId, chosen) : 0;
     }
 #endif //FREE_MATCH_CALL
 }
