@@ -499,7 +499,7 @@ bool32 IsTruantMonVulnerable(enum BattlerId battlerAI, enum BattlerId opposingBa
         enum BattleMoveEffects effect = GetMoveEffect(move);
         if (effect == EFFECT_PROTECT && move != MOVE_ENDURE)
             return TRUE;
-        if (effect == EFFECT_SEMI_INVULNERABLE && AI_IsSlower(battlerAI, opposingBattler, GetAIChosenMove(battlerAI), predictedMove, CONSIDER_PRIORITY))
+        if (IsSemiInvulnerableTwoTurnEffect(effect) && AI_IsSlower(battlerAI, opposingBattler, GetAIChosenMove(battlerAI), predictedMove, CONSIDER_PRIORITY))
             return TRUE;
     }
     return FALSE;
@@ -3249,10 +3249,12 @@ bool32 HasMoveWithFlag(enum BattlerId battler, MoveFlag getFlag)
 // Is two turn move but not semi semi-invulnerable
 bool32 IsTwoTurnNotSemiInvulnerableMove(enum BattlerId battlerAtk, enum Move move)
 {
-    switch (GetMoveEffect(move))
+    // Use the flags to include added two-turn effects that aren't semi-invulnerable
+    // Keep Geomancy out of this AI check, as before
+    enum BattleMoveEffects effect = GetMoveEffect(move);
+    switch (GetBattleMoveEffectInfo(effect)->twoTurnEffect && !GetBattleMoveEffectInfo(effect)->semiInvulnerableEffect && effect != EFFECT_GEOMANCY)
     {
-    case EFFECT_SOLAR_BEAM:
-    case EFFECT_TWO_TURNS_ATTACK:
+    case TRUE:
     {
         u32 weather = AI_GetWeather();
         u32 attackerWeather = GetAttackerWeather(gAiLogicData->holdEffects[battlerAtk], gAiLogicData->abilities[battlerAtk], weather);

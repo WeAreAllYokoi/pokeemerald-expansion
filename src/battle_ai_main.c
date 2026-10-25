@@ -1359,7 +1359,7 @@ static s32 AI_CheckBadMove(enum BattlerId battlerAtk, enum BattlerId battlerDef,
 
     // Don't use moves that miss against already semi-invulnerable targets when we move first.
     if (!CanBreakThroughSemiInvulnerablity(battlerAtk, battlerDef, aiData->abilities[battlerAtk], aiData->abilities[battlerDef], move)
-     && moveEffect != EFFECT_SEMI_INVULNERABLE && AI_IsFaster(battlerAtk, battlerDef, move, predictedMove, CONSIDER_PRIORITY)
+     && !IsSemiInvulnerableTwoTurnEffect(moveEffect) && AI_IsFaster(battlerAtk, battlerDef, move, predictedMove, CONSIDER_PRIORITY)
      && abilityAtk != ABILITY_NO_GUARD && abilityDef != ABILITY_NO_GUARD)
     {
         RETURN_SCORE_MINUS(10);
@@ -1369,9 +1369,9 @@ static s32 AI_CheckBadMove(enum BattlerId battlerAtk, enum BattlerId battlerDef,
     if (!IsSemiInvulnerable(battlerDef, CHECK_ALL)
      && predictedMove != MOVE_NONE
      && predictedMove != MOVE_UNAVAILABLE
-     && (GetMoveEffect(predictedMove) == EFFECT_SEMI_INVULNERABLE || GetMoveEffect(predictedMove) == EFFECT_SKY_DROP)
+     && (IsSemiInvulnerableTwoTurnEffect(GetMoveEffect(predictedMove)) || GetMoveEffect(predictedMove) == EFFECT_SKY_DROP)
      && AI_IsSlower(battlerAtk, battlerDef, move, predictedMove, CONSIDER_PRIORITY)
-     && moveEffect != EFFECT_SEMI_INVULNERABLE
+     && !IsSemiInvulnerableTwoTurnEffect(moveEffect)
      && aiData->holdEffects[battlerDef] != HOLD_EFFECT_POWER_HERB)
     {
         if (!BreaksThroughSemiInvulnerableState(battlerAtk, battlerDef, abilityAtk, abilityDef, move, GetTwoTurnMoveSemiInvulnerability(predictedMove)))
@@ -1384,7 +1384,7 @@ static s32 AI_CheckBadMove(enum BattlerId battlerAtk, enum BattlerId battlerDef,
         if (IsTwoTurnNotSemiInvulnerableMove(battlerAtk, move))
             RETURN_SCORE_MINUS(10);
 
-        if (moveEffect == EFFECT_SEMI_INVULNERABLE && aiData->holdEffects[battlerAtk] != HOLD_EFFECT_POWER_HERB)
+        if (IsSemiInvulnerableTwoTurnEffect(moveEffect) && aiData->holdEffects[battlerAtk] != HOLD_EFFECT_POWER_HERB)
         {
             if (abilityAtk == ABILITY_NO_GUARD || abilityDef == ABILITY_NO_GUARD)
                 RETURN_SCORE_MINUS(10);
@@ -4934,7 +4934,7 @@ static s32 AI_CalcMoveEffectScore(enum BattlerId battlerAtk, enum BattlerId batt
             if ((AI_IsFaster(battlerAtk, battlerDef, move, predictedMove, CONSIDER_PRIORITY))
              && (IsExplosionMove(incomingMove) || predictedEffect == EFFECT_PROTECT))
                 ADJUST_SCORE(GOOD_EFFECT);
-            else if (predictedEffect == EFFECT_SEMI_INVULNERABLE && !IsSemiInvulnerable(battlerDef, CHECK_ALL))
+            else if (IsSemiInvulnerableTwoTurnEffect(predictedEffect) && !IsSemiInvulnerable(battlerDef, CHECK_ALL))
                 ADJUST_SCORE(GOOD_EFFECT);
         }
         break;

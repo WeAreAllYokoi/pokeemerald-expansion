@@ -616,7 +616,9 @@ static inline u32 GetTwoTurnMoveSemiInvulnerability(enum Move moveId)
 {
     moveId = SanitizeMoveId(moveId);
     enum BattleMoveEffects effect = gMovesInfo[moveId].effect;
-    assertf(effect == EFFECT_SEMI_INVULNERABLE || effect == EFFECT_SKY_DROP, "not a two-turn move with status: %S", gMovesInfo[moveId].name);
+    // Check semiInvulnerableEffect so added effects can use this helper too
+    // EFFECT_SEMI_INVULNERABLE and EFFECT_SKY_DROP both set it
+    assertf(GetBattleMoveEffectInfo(effect)->semiInvulnerableEffect, "not a two-turn move with status: %S", gMovesInfo[moveId].name);
     return gMovesInfo[moveId].argument.twoTurnAttack.state;
 }
 
@@ -624,8 +626,20 @@ static inline u32 GetTwoTurnMoveWeather(enum Move moveId)
 {
     moveId = SanitizeMoveId(moveId);
     enum BattleMoveEffects effect = gMovesInfo[moveId].effect;
-    assertf(effect == EFFECT_TWO_TURNS_ATTACK || effect == EFFECT_SOLAR_BEAM, "not a two-turn move with weather: %S", gMovesInfo[moveId].name);
+    // Added effects can use this helper with twoTurnEffect set and semiInvulnerableEffect clear
+    // EFFECT_TWO_TURNS_ATTACK, EFFECT_SOLAR_BEAM and EFFECT_GEOMANCY use those flags too
+    assertf(GetBattleMoveEffectInfo(effect)->twoTurnEffect && !GetBattleMoveEffectInfo(effect)->semiInvulnerableEffect, "not a two-turn move with weather: %S", gMovesInfo[moveId].name);
     return gMovesInfo[moveId].argument.twoTurnAttack.weather;
+}
+
+// Two-turn helpers support effect flags
+#define ADMG_TWO_TURN_EFFECT_FLAGS 1
+
+// Let the AI recognize added effects with semiInvulnerableEffect, like Fly, Dig and Dive
+// Keep Sky Drop excluded here to preserve upstream's behavior at each call site
+static inline bool32 IsSemiInvulnerableTwoTurnEffect(enum BattleMoveEffects effect)
+{
+    return GetBattleMoveEffectInfo(effect)->semiInvulnerableEffect && effect != EFFECT_SKY_DROP;
 }
 
 static inline enum Species GetMoveSpeciesPowerOverride_Species(enum Move moveId)
