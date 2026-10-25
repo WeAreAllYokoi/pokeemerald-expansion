@@ -67,4 +67,6 @@ bool32 CanFireMoveThawTarget(enum Move move, enum Type moveType);
 extern void (*const gBattleScriptingCommandsTable[])(void);
 extern const struct StatFractions gAccuracyStageRatios[];
 
+u32 ADMG_BattleWaitFrames(u32 operand); // Convert marked wait units to frames; leave plain frame counts unchanged
+
 #endif // GUARD_BATTLE_SCRIPT_COMMANDS_H

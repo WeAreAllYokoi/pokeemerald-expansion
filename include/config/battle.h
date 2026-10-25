@@ -387,7 +387,8 @@
 #define B_SHOW_CATEGORY_ICON ADMG_CONFIG_EXTRA(B_SHOW_CATEGORY_ICON)
 #define ADMG_DEFAULT_B_HIDE_HEALTHBOX_IN_ANIMS           TRUE       // If set to TRUE, healthboxes will be hidden during move animations.
 #define B_HIDE_HEALTHBOX_IN_ANIMS ADMG_CONFIG_EXTRA(B_HIDE_HEALTHBOX_IN_ANIMS)
-#define B_WAIT_TIME_MULTIPLIER              16         // This determines how long text pauses for in battle. Vanilla is 16. Lower values result in faster battles.
+#define ADMG_DEFAULT_B_WAIT_TIME_MULTIPLIER              16         // Frames per B_WAIT_TIME unit; defaults to 16, with lower values shortening these waits
+#define B_WAIT_TIME_MULTIPLIER ADMG_CONFIG_EXTRA(B_WAIT_TIME_MULTIPLIER)
 #define ADMG_DEFAULT_B_QUICK_MOVE_CURSOR_TO_RUN          FALSE      // If set to TRUE, pushing B in the battle menu in a wild encounter will move the cursor to the Run option.
 #define B_QUICK_MOVE_CURSOR_TO_RUN ADMG_CONFIG_EXTRA(B_QUICK_MOVE_CURSOR_TO_RUN)
 #define ADMG_DEFAULT_B_RUN_TRAINER_BATTLE                TRUE       // If set to TRUE, players can run from Trainer battles as in Gen9+. This is treated as a white out.

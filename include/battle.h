@@ -627,7 +627,7 @@ struct BattleStruct
     u8 recordedActionSet; // related to choosing Pokémon?
     u8 wallyBattleState;
     u8 wallyMovesState;
-    u8 wallyWaitFrames;
+    u16 wallyWaitFrames; // B_WAIT_TIME_LONG exceeds 255 frames when the multiplier is above 63
     u8 wallyMoveFrames;
     enum Move lastTakenMove[MAX_BATTLERS_COUNT]; // Last move that a battler was hit with.
     u32 savedBattleTypeFlags;

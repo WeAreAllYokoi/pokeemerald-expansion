@@ -558,10 +558,14 @@ enum BattleEnvironments
     BATTLE_ENVIRONMENT_COUNT,
 };
 
-#define B_WAIT_TIME_LONG        (B_WAIT_TIME_MULTIPLIER * 4)
-#define B_WAIT_TIME_MED         (B_WAIT_TIME_MULTIPLIER * 3)
-#define B_WAIT_TIME_SHORT       (B_WAIT_TIME_MULTIPLIER * 2)
-#define B_WAIT_TIME_SHORTEST    (B_WAIT_TIME_MULTIPLIER)
+// Encode long, medium, short and shortest waits as 4, 3, 2 and 1 units
+// B_WAIT_TIME_UNITS marks them for conversion using the runtime B_WAIT_TIME_MULTIPLIER
+// waitmessage, pause and Wally's controller convert them; unmarked operands stay in frames
+#define B_WAIT_TIME_UNITS       0x8000
+#define B_WAIT_TIME_LONG        (B_WAIT_TIME_UNITS | 4)
+#define B_WAIT_TIME_MED         (B_WAIT_TIME_UNITS | 3)
+#define B_WAIT_TIME_SHORT       (B_WAIT_TIME_UNITS | 2)
+#define B_WAIT_TIME_SHORTEST    (B_WAIT_TIME_UNITS | 1)
 
 #define FLEE_ITEM    1
 #define FLEE_ABILITY 2

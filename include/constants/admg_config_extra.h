@@ -379,6 +379,7 @@
     F(P_MODIFIED_MEGA_CRIES, 1) \
     F(OW_PKMN_OBJECTS_SHARE_PALETTES, 1) \
     F(B_NUM_LOW_HEALTH_BEEPS, 0xFFFFFFFF) \
+    F(B_WAIT_TIME_MULTIPLIER, 255) \
 
 #define ADMG_CONFIG_EXTRA_TAG(_name, _maximum) CONFIG_##_name,
 
@@ -767,6 +768,7 @@ enum ADMG_ConfigExtraTag
 #define ADMG_CONFIG_EXTRA_MAX_P_MODIFIED_MEGA_CRIES (1)
 #define ADMG_CONFIG_EXTRA_MAX_OW_PKMN_OBJECTS_SHARE_PALETTES (1)
 #define ADMG_CONFIG_EXTRA_MAX_B_NUM_LOW_HEALTH_BEEPS (0xFFFFFFFF)
+#define ADMG_CONFIG_EXTRA_MAX_B_WAIT_TIME_MULTIPLIER (255)
 
 // Battle and event scripts need numeric tags because the assembler can't read the enum
 // config_changes.c checks each value against its CONFIG_<name> tag
@@ -1144,5 +1146,6 @@ enum ADMG_ConfigExtraTag
 #define ADMG_CONFIG_TAG_P_MODIFIED_MEGA_CRIES 0x1173
 #define ADMG_CONFIG_TAG_OW_PKMN_OBJECTS_SHARE_PALETTES 0x1174
 #define ADMG_CONFIG_TAG_B_NUM_LOW_HEALTH_BEEPS 0x1175
+#define ADMG_CONFIG_TAG_B_WAIT_TIME_MULTIPLIER 0x1176
 
 #endif

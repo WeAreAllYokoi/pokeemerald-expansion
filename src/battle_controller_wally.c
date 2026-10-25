@@ -3,6 +3,7 @@
 #include "battle_anim.h"
 #include "battle_controllers.h"
 #include "battle_interface.h"
+#include "battle_script_commands.h"
 #include "battle_message.h"
 #include "battle_setup.h"
 #include "battle_tv.h"
@@ -130,7 +131,7 @@ static void WallyHandleActions(enum BattlerId battler)
     switch (gBattleStruct->wallyBattleState)
     {
     case 0:
-        gBattleStruct->wallyWaitFrames = B_WAIT_TIME_LONG;
+        gBattleStruct->wallyWaitFrames = ADMG_BattleWaitFrames(B_WAIT_TIME_LONG);
         gBattleStruct->wallyBattleState++;
     case 1:
         if (--gBattleStruct->wallyWaitFrames == 0)
@@ -140,7 +141,7 @@ static void WallyHandleActions(enum BattlerId battler)
             BtlController_Complete(battler);
             gBattleStruct->wallyBattleState++;
             gBattleStruct->wallyMovesState = 0;
-            gBattleStruct->wallyWaitFrames = B_WAIT_TIME_LONG;
+            gBattleStruct->wallyWaitFrames = ADMG_BattleWaitFrames(B_WAIT_TIME_LONG);
         }
         break;
     case 2:
@@ -151,7 +152,7 @@ static void WallyHandleActions(enum BattlerId battler)
             BtlController_Complete(battler);
             gBattleStruct->wallyBattleState++;
             gBattleStruct->wallyMovesState = 0;
-            gBattleStruct->wallyWaitFrames = B_WAIT_TIME_LONG;
+            gBattleStruct->wallyWaitFrames = ADMG_BattleWaitFrames(B_WAIT_TIME_LONG);
         }
         break;
     case 3:
@@ -161,7 +162,7 @@ static void WallyHandleActions(enum BattlerId battler)
             BtlController_Complete(battler);
             gBattleStruct->wallyBattleState++;
             gBattleStruct->wallyMovesState = 0;
-            gBattleStruct->wallyWaitFrames = B_WAIT_TIME_LONG;
+            gBattleStruct->wallyWaitFrames = ADMG_BattleWaitFrames(B_WAIT_TIME_LONG);
         }
         break;
     case 4:
@@ -170,7 +171,7 @@ static void WallyHandleActions(enum BattlerId battler)
             PlaySE(SE_SELECT);
             ActionSelectionDestroyCursorAt(0);
             ActionSelectionCreateCursorAt(1, 0);
-            gBattleStruct->wallyWaitFrames = B_WAIT_TIME_LONG;
+            gBattleStruct->wallyWaitFrames = ADMG_BattleWaitFrames(B_WAIT_TIME_LONG);
             gBattleStruct->wallyBattleState++;
         }
         break;

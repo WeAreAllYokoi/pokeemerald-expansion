@@ -1536,6 +1536,15 @@ static void Cmd_printselectionstring(void)
     gBattleCommunication[MSG_DISPLAY] = MSG_DISPLAY_WAIT;
 }
 
+// Multiply marked wait units by the runtime B_WAIT_TIME_MULTIPLIER
+// Return unmarked frame counts unchanged
+u32 ADMG_BattleWaitFrames(u32 operand)
+{
+    if (operand & B_WAIT_TIME_UNITS)
+        return (operand & (B_WAIT_TIME_UNITS - 1)) * B_WAIT_TIME_MULTIPLIER;
+    return operand;
+}
+
 static void Cmd_waitmessage(void)
 {
     CMD_ARGS(u16 time);
@@ -1548,7 +1557,7 @@ static void Cmd_waitmessage(void)
         }
         else
         {
-            u16 toWait = cmd->time;
+            u16 toWait = ADMG_BattleWaitFrames(cmd->time);
             if (gTestRunnerHeadless)
                 gPauseCounterBattle = toWait;
             if (++gPauseCounterBattle >= toWait)
@@ -2969,7 +2978,7 @@ static void Cmd_pause(void)
 
     if (gBattleControllerExecFlags == 0)
     {
-        u16 value = cmd->frames;
+        u16 value = ADMG_BattleWaitFrames(cmd->frames);
         if (gTestRunnerHeadless)
             gPauseCounterBattle = value;
         if (++gPauseCounterBattle >= value)
