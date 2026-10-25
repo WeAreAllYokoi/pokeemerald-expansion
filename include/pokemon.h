@@ -761,6 +761,9 @@ extern const u32 sExpCandyExperienceTable[];
 extern const struct AbilityInfo gAbilitiesInfo[];
 extern const struct NatureInfo gNaturesInfo[];
 extern const struct BehaviorOWE gOWESpeciesBehavior[OWE_SPECIES_BEHAVIOR_COUNT];
+// Choose how a species moves, spots and approaches the player, and returns afterward
+// The default reads gOWESpeciesBehavior and uses OWE_IGNORE_PLAYER for an out-of-range index
+const struct BehaviorOWE *ADMG_GetOWEBehaviorForSpecies(u32 species, u32 behavior);
 
 void ZeroBoxMonData(struct BoxPokemon *boxMon);
 void ZeroMonData(struct Pokemon *mon);
@@ -1009,49 +1012,49 @@ static inline u32 OWE_GetMovementTypeFromSpecies(enum Species speciesId)
 {
     speciesId = SanitizeSpeciesId(speciesId);
     enum OverworldWildEncounterBehaviors behavior = gSpeciesInfo[speciesId].overworldEncounterBehavior;
-    return gOWESpeciesBehavior[behavior].movementType;
+    return ADMG_GetOWEBehaviorForSpecies(speciesId, behavior)->movementType;
 }
 
 static inline u32 OWE_GetViewDistanceFromSpecies(enum Species speciesId)
 {
     speciesId = SanitizeSpeciesId(speciesId);
     enum OverworldWildEncounterBehaviors behavior = gSpeciesInfo[speciesId].overworldEncounterBehavior;
-    return gOWESpeciesBehavior[behavior].viewDistance;
+    return ADMG_GetOWEBehaviorForSpecies(speciesId, behavior)->viewDistance;
 }
 
 static inline u32 OWE_GetViewWidthFromSpecies(enum Species speciesId)
 {
     speciesId = SanitizeSpeciesId(speciesId);
     enum OverworldWildEncounterBehaviors behavior = gSpeciesInfo[speciesId].overworldEncounterBehavior;
-    return gOWESpeciesBehavior[behavior].viewWidth;
+    return ADMG_GetOWEBehaviorForSpecies(speciesId, behavior)->viewWidth;
 }
 
 static inline u32 OWE_GetViewActiveDistanceFromSpecies(enum Species speciesId)
 {
     speciesId = SanitizeSpeciesId(speciesId);
     enum OverworldWildEncounterBehaviors behavior = gSpeciesInfo[speciesId].overworldEncounterBehavior;
-    return gOWESpeciesBehavior[behavior].activeDistance;
+    return ADMG_GetOWEBehaviorForSpecies(speciesId, behavior)->activeDistance;
 }
 
 static inline enum SpeedOWE OWE_GetIdleSpeedFromSpecies(enum Species speciesId)
 {
     speciesId = SanitizeSpeciesId(speciesId);
     enum OverworldWildEncounterBehaviors behavior = gSpeciesInfo[speciesId].overworldEncounterBehavior;
-    return gOWESpeciesBehavior[behavior].idleSpeed;
+    return ADMG_GetOWEBehaviorForSpecies(speciesId, behavior)->idleSpeed;
 }
 
 static inline enum SpeedOWE OWE_GetActiveSpeedFromSpecies(enum Species speciesId)
 {
     speciesId = SanitizeSpeciesId(speciesId);
     enum OverworldWildEncounterBehaviors behavior = gSpeciesInfo[speciesId].overworldEncounterBehavior;
-    return gOWESpeciesBehavior[behavior].activeSpeed;
+    return ADMG_GetOWEBehaviorForSpecies(speciesId, behavior)->activeSpeed;
 }
 
 static inline enum ReturnToIdleOWE OWE_GetReturnToIdleFromSpecies(enum Species speciesId)
 {
     speciesId = SanitizeSpeciesId(speciesId);
     enum OverworldWildEncounterBehaviors behavior = gSpeciesInfo[speciesId].overworldEncounterBehavior;
-    return gOWESpeciesBehavior[behavior].returnToIdle;
+    return ADMG_GetOWEBehaviorForSpecies(speciesId, behavior)->returnToIdle;
 }
 
 #endif // GUARD_POKEMON_H

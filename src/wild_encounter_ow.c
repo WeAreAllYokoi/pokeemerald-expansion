@@ -237,6 +237,15 @@ const struct FieldEffectInfoOWE gOverworldWildEncounterFieldEffectInfo[] =
 };
 
 
+// Mods can replace the behavior returned for a species or behavior index
+ADMG_NATIVE_ENTRY const struct BehaviorOWE *ADMG_GetOWEBehaviorForSpecies(ADMG_Word species, ADMG_Word behavior)
+{
+    if (behavior >= OWE_SPECIES_BEHAVIOR_COUNT)
+        behavior = OWE_IGNORE_PLAYER;
+    return &gOWESpeciesBehavior[behavior];
+}
+ADMG_RETAIN_FUNCTION(ADMG_GetOWEBehaviorForSpecies);
+
 ADMG_NATIVE_ENTRY bool32 ADMG_OverworldEncountersAvailable(void)
 {
     return OW_POKEMON_OBJECT_EVENTS && ROAMER_COUNT <= OWE_MAX_ROAMERS;
