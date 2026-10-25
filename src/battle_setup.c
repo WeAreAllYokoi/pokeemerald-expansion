@@ -58,6 +58,7 @@
 #include "wild_encounter_ow.h"
 #include "admg_trainer_script.h"
 #include "admg_registry.h"
+#include "admg_battle_request.h"
 #include "window.h"
 #include "constants/battle_frontier.h"
 #include "constants/battle_special.h"
@@ -100,7 +101,7 @@ static void HandleRematchVarsOnBattleEnd(void);
 static const u8 *GetIntroSpeechOfApproachingTrainer(void);
 static const u8 *GetTrainerCantBattleSpeech(void);
 static void CreateNPCTrainerParty(struct Pokemon *party, enum TrainerId trainerNum);
-static void DoTrainerBattle(void);
+static bool8 DoTrainerBattle(void);
 static bool8 IsNativeTrainerContent(u32 trainerId);
 static bool8 IsNativeTrainerBattleContent(u32 trainerId);
 static bool8 NativeBattleDefeatPairValid(void);
@@ -494,7 +495,113 @@ void BattleSetup_StartDoubleWildBattle(void)
     DoStandardWildBattle(TRUE);
 }
 
+static bool8 ADMG_StartMultiBattle(void);
+
+// Resume the script so a refused start doesn't leave the multi-battle macros stuck at waitstate
+// BattleSetup_StartMultiBattle sets VAR_RESULT to ADMG_BATTLE_REQUEST_REFUSED before queuing this task
+static void Task_ADMG_ResumeRefusedBattleScript(u8 taskId)
+{
+    DestroyTask(taskId);
+    ScriptContext_Enable();
+}
+
 void BattleSetup_StartMultiBattle(void)
+{
+    void (*savedCallback)(void) = gMain.savedCallback;
+    if (ADMG_StartMultiBattle())
+        return;
+    gMain.savedCallback = savedCallback;
+    gSpecialVar_Result = ADMG_BATTLE_REQUEST_REFUSED;
+    CreateTask(Task_ADMG_ResumeRefusedBattleScript, 80);
+}
+
+static bool8 ADMG_HasUsableMultiBattleMon(void)
+{
+    // Look for a living, non-Egg Pokémon in the first half of the player's party
+    for (u32 i = 0; i < PARTY_SIZE / 2; i++)
+    {
+        if (GetMonData(&gPlayerParty[i], MON_DATA_SPECIES) != SPECIES_NONE && !GetMonData(&gPlayerParty[i], MON_DATA_IS_EGG)
+         && GetMonData(&gPlayerParty[i], MON_DATA_HP) != 0)
+            return TRUE;
+    }
+    return FALSE;
+}
+
+ADMG_NATIVE_ENTRY void ADMG_ScriptStartMultiBattle(struct ScriptContext *ctx)
+{
+    if (ctx == NULL || ctx->scriptPtr == NULL) { ADMG_StateAccessRejected(0, __func__); ADMG_StopInvalidStateCommand(ctx); return; }
+    u32 format = ScriptReadHalfword(ctx);
+    u32 opponentA = ScriptReadWord(ctx);
+    const u8 *defeatTextA = (const u8 *)ScriptReadWord(ctx);
+    u32 opponentB = ScriptReadWord(ctx);
+    const u8 *defeatTextB = (const u8 *)ScriptReadWord(ctx);
+    u32 partner = ScriptReadHalfword(ctx);
+    u32 flags, type;
+
+    switch (format)
+    {
+    case ADMG_MULTI_BATTLE_TWO_VS_TWO:
+        flags = BATTLE_TYPE_TRAINER | BATTLE_TYPE_DOUBLE | BATTLE_TYPE_TWO_OPPONENTS | BATTLE_TYPE_MULTI | BATTLE_TYPE_INGAME_PARTNER;
+        type = MULTI_BATTLE_2_VS_2;
+        break;
+    case ADMG_MULTI_BATTLE_TWO_VS_ONE:
+        flags = BATTLE_TYPE_TRAINER | BATTLE_TYPE_DOUBLE | BATTLE_TYPE_MULTI | BATTLE_TYPE_INGAME_PARTNER;
+        type = MULTI_BATTLE_2_VS_1;
+        break;
+    default:
+        gSpecialVar_Result = ADMG_BATTLE_REQUEST_INVALID_FORMAT;
+        return;
+    }
+    if (partner == PARTNER_NONE || partner >= PARTNER_COUNT)
+    {
+        gSpecialVar_Result = ADMG_BATTLE_REQUEST_INVALID_PARTNER;
+        return;
+    }
+    // In 2v1, both opposing Pokémon belong to opponentA
+    // Require TRAINER_NONE for opponentB, then use the battle setup's 0xFFFF sentinel
+    if (type == MULTI_BATTLE_2_VS_1 && opponentB != TRAINER_NONE)
+    {
+        gSpecialVar_Result = ADMG_BATTLE_REQUEST_INVALID_OPPONENT;
+        return;
+    }
+    if (type == MULTI_BATTLE_2_VS_1)
+        opponentB = 0xFFFF;
+    if (opponentA == TRAINER_NONE || (type == MULTI_BATTLE_2_VS_2 && (opponentB == TRAINER_NONE || opponentB == opponentA))
+     || !ADMG_TryValidateBattleTrainerActors(flags, opponentA, opponentB, TRAINER_PARTNER(partner)))
+    {
+        gSpecialVar_Result = ADMG_BATTLE_REQUEST_INVALID_OPPONENT;
+        return;
+    }
+    if (!ADMG_HasUsableMultiBattleMon())
+    {
+        gSpecialVar_Result = ADMG_BATTLE_REQUEST_NOT_ENOUGH_MONS;
+        return;
+    }
+
+    TrainerBattleParameter previous = gTrainerBattleParameter;
+    u32 previousPartner = gPartnerTrainerId, previousType = gSpecialVar_0x8005;
+    void (*savedCallback)(void) = gMain.savedCallback;
+    InitTrainerBattleParameter();
+    TRAINER_BATTLE_PARAM.opponentA = opponentA;
+    TRAINER_BATTLE_PARAM.defeatTextA = defeatTextA;
+    TRAINER_BATTLE_PARAM.opponentB = type == MULTI_BATTLE_2_VS_1 ? TRAINER_NONE : opponentB;
+    TRAINER_BATTLE_PARAM.defeatTextB = defeatTextB;
+    gPartnerTrainerId = TRAINER_PARTNER(partner);
+    gSpecialVar_0x8005 = type;
+    if (ADMG_StartMultiBattle())
+    {
+        gSpecialVar_Result = ADMG_BATTLE_REQUEST_STARTED;
+        return;
+    }
+    gTrainerBattleParameter = previous;
+    gPartnerTrainerId = previousPartner;
+    gSpecialVar_0x8005 = previousType;
+    gMain.savedCallback = savedCallback;
+    gBattleTypeFlags = 0;
+    gSpecialVar_Result = ADMG_BATTLE_REQUEST_REFUSED;
+}
+
+static bool8 ADMG_StartMultiBattle(void)
 {
     gBattleScripting.specialTrainerBattleType = SPECIAL_BATTLE_MULTI;
     gMain.savedCallback = CB2_EndSpecialTrainerBattle;
@@ -519,16 +626,14 @@ void BattleSetup_StartMultiBattle(void)
 
     if (gSpecialVar_0x8005 & MULTI_BATTLE_2_VS_WILD)
     {
-        { u64 queued = ADMG_BeginStateAccessCheck(); CreateBattleStartTask(GetWildBattleTransition(), 0); if (!ADMG_EndStateAccessCheck(queued)) return; }
+        { u64 queued = ADMG_BeginStateAccessCheck(); CreateBattleStartTask(GetWildBattleTransition(), 0); if (!ADMG_EndStateAccessCheck(queued)) return FALSE; }
         IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
         IncrementGameStat(GAME_STAT_WILD_BATTLES);
         IncrementDailyWildBattles();
         TryUpdateGymLeaderRematchFromWild();
+        return TRUE;
     }
-    else
-    {
-        DoTrainerBattle();
-    }
+    return DoTrainerBattle();
 }
 
 
@@ -632,7 +737,7 @@ static void DoBattlePikeWildBattle(void)
     TryUpdateGymLeaderRematchFromWild();
 }
 
-static void DoTrainerBattle(void)
+static bool8 DoTrainerBattle(void)
 {
     u64 generation = ADMG_BeginStateAccessCheck();
     struct ADMG_BattleTrainerActors snapshot;
@@ -658,9 +763,10 @@ static void DoTrainerBattle(void)
     IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
     IncrementGameStat(GAME_STAT_TRAINER_BATTLES);
     TryUpdateGymLeaderRematchFromTrainer();
-    return;
+    return TRUE;
 rejected:
     ADMG_DiscardNativeBattleAssociation();
+    return FALSE;
 }
 
 static void DoBattlePyramidTrainerHillBattle(void)
@@ -3248,3 +3354,4 @@ ADMG_NATIVE_ENTRY void ADMG_ClearNativeTrainerBattleRematches(void)
 }
 
 ADMG_RETAIN_FUNCTION(ADMG_ComposeTrainerBattleScript);
+ADMG_RETAIN_FUNCTION(ADMG_ScriptStartMultiBattle);
