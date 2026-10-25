@@ -681,6 +681,13 @@ struct Fusion
 
 extern const struct Fusion *const gFusionTablePointers[NUM_SPECIES];
 
+// Return the species' fusion table, or NULL if it has none
+// IDs at or above NUM_SPECIES, including species added at runtime, are outside this table
+static inline const struct Fusion *ADMG_GetFusionTable(u32 species)
+{
+    return species < NUM_SPECIES ? gFusionTablePointers[species] : NULL;
+}
+
 #if P_FUSION_FORMS
 #if P_FAMILY_KYUREM
 #if P_FAMILY_RESHIRAM

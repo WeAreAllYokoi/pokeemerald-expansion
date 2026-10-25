@@ -6302,7 +6302,7 @@ static void SpriteCB_FormChangeIconMosaic(struct Sprite *sprite);
 static bool32 IsFusionMon(enum Species species)
 {
     u16 i;
-    const struct Fusion *itemFusion = gFusionTablePointers[species];
+    const struct Fusion *itemFusion = ADMG_GetFusionTable(species);
     if (itemFusion == NULL)
         return FALSE;
     for (i = 0; itemFusion[i].fusionStorageIndex != FUSION_TERMINATOR; i++)
@@ -6643,7 +6643,7 @@ void ItemUseCB_Fusion(u8 taskId, TaskFunc taskFunc)
     u16 i;
     struct Task *task = &gTasks[taskId];
     enum Species species = GetMonData(&gParties[B_TRAINER_PLAYER][gPartyMenu.slotId], MON_DATA_SPECIES);
-    const struct Fusion *itemFusion = gFusionTablePointers[species];
+    const struct Fusion *itemFusion = ADMG_GetFusionTable(species);
 
     PlaySE(SE_SELECT);
     switch (IsFusionMon(species))

@@ -135,7 +135,7 @@ static bool32 IsRandomSpeciesInFusionTables(enum Species species, const enum Spe
 {
     for (u32 i = 0; formTable[i] != FORM_SPECIES_END; i++)
     {
-        const struct Fusion *fusionTable = gFusionTablePointers[formTable[i]];
+        const struct Fusion *fusionTable = ADMG_GetFusionTable(formTable[i]);
 
         for (u32 j = 0; fusionTable != NULL && fusionTable[j].fusionStorageIndex != FUSION_TERMINATOR; j++)
         {
