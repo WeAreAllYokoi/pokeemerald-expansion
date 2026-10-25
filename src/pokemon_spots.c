@@ -3,6 +3,8 @@
 #include "constants/species.h"
 #include "pokemon.h"
 #include "pokemon_spots.h"
+#include "admg_native.h"
+#include "admg_retention.h"
 
 /* INFO: DrawPokemonSpots
  *
@@ -96,7 +98,7 @@ const struct MonSpotTemplate gSpindaSpotTemplate = {
 
 /*NOTE: End of Spot Defintions */
 
-static const struct MonSpotTemplate* GetSpeciesSpots(enum Species species)
+static const struct MonSpotTemplate* GetSourceSpeciesSpots(enum Species species)
 {
     switch (species)
     {
@@ -105,6 +107,25 @@ static const struct MonSpotTemplate* GetSpeciesSpots(enum Species species)
     default:
         return NULL;
     }
+}
+
+// Use the species' built-in spot pattern by default
+// Mods can supply another pattern or return NULL for no spots
+ADMG_NATIVE_ENTRY const struct MonSpotTemplate *ADMG_GetSpeciesSpots(ADMG_Word species, const struct MonSpotTemplate *source)
+{
+    return source;
+}
+ADMG_RETAIN_FUNCTION(ADMG_GetSpeciesSpots);
+
+static const struct MonSpotTemplate* GetSpeciesSpots(enum Species species)
+{
+    const struct MonSpotTemplate *spots = ADMG_GetSpeciesSpots(species, GetSourceSpeciesSpots(species));
+    // Each spot uses one personality byte, so a pattern can have 1-4 spots
+    // GetSpotRow supports scales 1, 2 and 4
+    if (spots == NULL || spots->spots == NULL || spots->count == 0 || spots->count > 4
+     || (spots->scale != SCALE_1 && spots->scale != SCALE_2 && spots->scale != SCALE_4))
+        return NULL;
+    return spots;
 }
 
 static inline void TryDrawSpotPixel(u8* pixels, u8 pixelShift, u8 firstColor, u8 lastColor, u8 spotColorAdjust)
@@ -156,8 +177,10 @@ static void DrawPokemonSpots(u32 personality, const struct MonSpotTemplate* spot
         u8 pidLowerNibble = pidByteForSpot & NIBBLE_LOWER;
         u8 pidUpperNibble = (pidByteForSpot & NIBBLE_UPPER) >> 4;
 
-        s32 x = spot->x + pidLowerNibble * (spotTemplate->scale / 2);
-        s32 y = spot->y + pidUpperNibble * (spotTemplate->scale / 2);
+        // Multiply before dividing so SCALE_1 spots still move with the personality
+        // SCALE_2 and SCALE_4 keep the same offsets
+        s32 x = spot->x + (pidLowerNibble * spotTemplate->scale) / 2;
+        s32 y = spot->y + (pidUpperNibble * spotTemplate->scale) / 2;
 
         switch (spotAnimFrame)
         {
@@ -207,6 +230,8 @@ static void DrawPokemonSpots(u32 personality, const struct MonSpotTemplate* spot
 void DrawPokemonSpotsBothFrames(u32 personality, enum Species species, u8 *dest)
 {
     const struct MonSpotTemplate* spotTemplate = GetSpeciesSpots(species);
+    if (spotTemplate == NULL) // No valid pattern to draw
+        return;
     DrawPokemonSpots(personality, spotTemplate, dest, FRAME_1);
     DrawPokemonSpots(personality, spotTemplate, dest, FRAME_2);
 }

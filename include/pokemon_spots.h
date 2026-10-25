@@ -30,5 +30,6 @@ struct MonSpotTemplate {
 
 bool32 ShouldDrawSpotsOnSpecies(enum Species species);
 void DrawPokemonSpotsBothFrames(u32 personality, enum Species species, u8 *dest);
+const struct MonSpotTemplate *ADMG_GetSpeciesSpots(u32 species, const struct MonSpotTemplate *source);
 
 #endif /* end of include guard: GUARD_POKEMON_SPOTS_H */
