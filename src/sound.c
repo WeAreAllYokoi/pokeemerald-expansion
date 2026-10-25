@@ -648,13 +648,21 @@ static struct MusicPlayerInfo *ADMG_LowHealthPlayer(void)
     return gMPlayTable[gSongTable[SE_LOW_HEALTH].ms].info;
 }
 
-void ADMG_PlayLowHealthBeep(void)
+// Choose the song for B_NUM_LOW_HEALTH_BEEPS: 0 means no song, negative counts loop endlessly
+// Positive counts are capped at 16
+struct SongHeader *ADMG_GetLowHealthBeepSong(void)
 {
     s32 beeps = (s32)B_NUM_LOW_HEALTH_BEEPS;
     if (beeps == 0)
-        return;
-    MPlayStart(ADMG_LowHealthPlayer(), beeps < 0 ? &admg_low_health_loops_infinite
-                                                 : sADMG_LowHealthBeeps[min(beeps, 16) - 1]);
+        return NULL;
+    return beeps < 0 ? &admg_low_health_loops_infinite : sADMG_LowHealthBeeps[min(beeps, 16) - 1];
+}
+
+void ADMG_PlayLowHealthBeep(void)
+{
+    struct SongHeader *song = ADMG_GetLowHealthBeepSong();
+    if (song != NULL)
+        MPlayStart(ADMG_LowHealthPlayer(), song);
 }
 
 void ADMG_StopLowHealthBeep(void)

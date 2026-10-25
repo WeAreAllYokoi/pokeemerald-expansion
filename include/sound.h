@@ -46,6 +46,7 @@ bool8 IsBGMPlaying(void);
 bool8 IsSpecialSEPlaying(void);
 void Task_DuckBGMForPokemonCry(u8 taskId);
 
+struct SongHeader *ADMG_GetLowHealthBeepSong(void);
 void ADMG_PlayLowHealthBeep(void);
 void ADMG_StopLowHealthBeep(void);
 

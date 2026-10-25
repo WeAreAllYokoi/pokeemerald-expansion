@@ -6,7 +6,7 @@ MID_ASM_DIR := $(MID_SUBDIR)
 CRY_BIN_DIR := $(CRY_SUBDIR)
 SOUND_BIN_DIR := sound
 
-# Needs to recompile for B_NUM_LOW_HEALTH_BEEPS in battle.h
+# Depend on battle.h because it supplies the compiled low-HP beep default
 EXPANSION_BATTLE_CONFIG := include/config/battle.h
 
 SPECIAL_OUTDIRS := $(MID_ASM_DIR) $(CRY_BIN_DIR)
@@ -48,7 +48,7 @@ endef
 
 $(foreach line,$(shell cat $(MID_CFG_PATH) | sed "s/ /__SPACE__/g"),$(call MID_EXPANSION,$(subst __SPACE__, ,$(line))))
 
-# Generate the low-HP songs that ADMG_PlayLowHealthBeep chooses from
+# Generate the low-HP songs that ADMG_GetLowHealthBeepSong chooses from
 $(MID_ASM_DIR)/admg_low_health_loops_infinite.s: $(MID_SUBDIR)/se_low_health.mid $(MID_CFG_PATH)
 	$(MID) $< $@ -E -R50 -G_rs_sfx_1 -V100 -P3 -L admg_low_health_loops_infinite -B -1
 $(MID_ASM_DIR)/admg_low_health_loops_%.s: $(MID_SUBDIR)/se_low_health.mid $(MID_CFG_PATH)
