@@ -74,6 +74,11 @@ void PrepareNamebox(u32 tileNum)
     };
 
     sNameboxWindowId = AddWindow(&template);
+    if (sNameboxWindowId == WINDOW_NONE) // No window was created, so skip drawing
+    {
+        Free(strbuf);
+        return;
+    }
     FillNamebox();
 
     u8 colors[3] = {TEXT_COLOR_TRANSPARENT, OW_NAME_BOX_FOREGROUND_COLOR, OW_NAME_BOX_SHADOW_COLOR};
@@ -146,6 +151,11 @@ void FillNamebox(void)
 
 void DrawNamebox(u32 windowId, u32 tileNum, bool32 copyToVram)
 {
+    // PrepareNamebox can return without a window
+    // Reject out-of-range IDs before indexing gWindows
+    if (windowId >= WINDOWS_MAX)
+        return;
+
     // manual instead of using CallWindowFunction for extra tileNum param
     struct WindowTemplate *w = &gWindows[windowId].window;
     u32 size = TILE_OFFSET_4BPP(NAME_BOX_BASE_TILES_TOTAL);
