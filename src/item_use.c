@@ -1503,6 +1503,12 @@ static bool32 IsValidLocationForVsSeeker(void)
     return FALSE;
 }
 
+// Apply the item's location rules to requests from ADMG_StartVsSeekerUse
+bool32 ADMG_IsValidLocationForVsSeeker(void)
+{
+    return IsValidLocationForVsSeeker();
+}
+
 void FieldUseFunc_VsSeeker(u8 taskId)
 {
     if (IsValidLocationForVsSeeker())

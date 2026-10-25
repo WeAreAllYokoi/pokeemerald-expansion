@@ -1,5 +1,6 @@
 #include "global.h"
 #include "admg_feature_bindings.h"
+#include "admg_retention.h"
 #include "main.h"
 #include "admg_rematch_response.h"
 #include "admg_rematch_movement.h"
@@ -344,10 +345,26 @@ static void VsSeekerResetChargingStepCounter(void)
 #define tNumBeeps       data[2]
 #define tResponseCode   data[3]
 
+// Result of the use started by ADMG_StartVsSeekerUse, updated by the item task
+static EWRAM_DATA u8 sADMG_VsSeekerResult = 0; // ADMG_VSSEEKER_RESULT_NONE
+
+static void ADMG_SetVsSeekerResult(u32 result)
+{
+    if (sADMG_VsSeekerResult == ADMG_VSSEEKER_RESULT_PENDING)
+        sADMG_VsSeekerResult = result;
+}
+
 void Task_InitVsSeekerAndCheckForTrainersOnScreen(u8 taskId)
 {
     if (!ADMG_GetFeatureBinding(ADMG_BINDING_I_VS_SEEKER_CHARGING)) return;
-    (void)InitVsSeekerField(taskId, NULL);
+    if (!InitVsSeekerField(taskId, NULL) && sADMG_VsSeekerResult == ADMG_VSSEEKER_RESULT_PENDING)
+    {
+        // Release field controls and frozen objects if the requested use cannot start
+        sADMG_VsSeekerResult = ADMG_VSSEEKER_RESULT_FAILED;
+        DestroyTask(taskId);
+        ScriptUnfreezeObjectEvents();
+        UnlockPlayerFieldControls();
+    }
 }
 
 
@@ -385,6 +402,8 @@ static void Task_VsSeeker_PlaySoundAndGetResponseCode(u8 taskId)
         }
         else VsSeekerResetInBagStepCounter();
         tResponseCode = GetVsSeekerResponseInArea();
+        ADMG_SetVsSeekerResult(tResponseCode == VSSEEKER_RESPONSE_FOUND_REMATCHES ? ADMG_VSSEEKER_RESULT_REMATCHES
+            : tResponseCode == VSSEEKER_RESPONSE_UNFOUGHT_TRAINERS ? ADMG_VSSEEKER_RESULT_UNFOUGHT_ONLY : ADMG_VSSEEKER_RESULT_NO_RESPONSE);
         if (!NativeVsSeekerTaskCurrent(taskId)) return;
         ScriptMovement_StartObjectMovementScript(LOCALID_PLAYER, gSaveBlock1Ptr->location.mapId, sMovementScript_Wait48);
         gTasks[taskId].func = Task_VsSeeker_ShowResponseToPlayer;
@@ -540,6 +559,11 @@ static u8 GetVsSeekerResponseInArea(void)
         }
 
         u32 rematchTableId = VsSeekerConvertLocalIdToTableId(sVsSeeker->trainerInfo[vsSeekerIdx].localId);
+        if (rematchTableId >= MAX_REMATCH_ENTRIES) // Reject missing or out-of-range rematch rows before indexing the save
+        {
+            StartTrainerObjectMovementScript(&sVsSeeker->trainerInfo[vsSeekerIdx], sMovementScript_TrainerNoRematch);
+            continue;
+        }
         gSaveBlock1Ptr->trainerRematches[rematchTableId] = ADMG_VsSeekerRematchLevel(rematchTableId, rematchTrainerIdx);
         ShiftStillObjectEventCoords(&gObjectEvents[sVsSeeker->trainerInfo[vsSeekerIdx].objectEventId]);
         StartTrainerObjectMovementScript(&sVsSeeker->trainerInfo[vsSeekerIdx], sMovementScript_TrainerRematch);
@@ -639,6 +663,89 @@ static u8 ADMG_VsSeekerRematchLevel(u32 tableId, u16 chosen)
     }
     return 1;
 }
+
+// Inspect the trainers gathered by the item without starting its animation, sound or messages
+// Copy up to capacity rows and report how many were written through count
+// Check charge and eligible trainers without rolling their rematch responses
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_ProbeVsSeeker(struct ADMG_VsSeekerProbeRow *rows, ADMG_Word capacity, ADMG_Word *count)
+{
+    ADMG_Word status = ADMG_VSSEEKER_PROBE_FAILED;
+    if (count != NULL)
+        *count = 0;
+    if (!ADMG_GetFeatureBinding(ADMG_BINDING_I_VS_SEEKER_CHARGING))
+        return ADMG_VSSEEKER_PROBE_UNAVAILABLE;
+    if (sVsSeeker != NULL)
+        return ADMG_VSSEEKER_PROBE_BUSY; // a real use owns the gathered state
+    if (gSaveBlock1Ptr == NULL || gMapHeader.events == NULL)
+        return ADMG_VSSEEKER_PROBE_FAILED;
+#if FREE_MATCH_CALL == FALSE
+    sVsSeeker = AllocZeroed(sizeof(struct VsSeekerStruct));
+    if (sVsSeeker == NULL)
+        return ADMG_VSSEEKER_PROBE_FAILED;
+    if (GatherNearbyTrainerInfo())
+    {
+        for (u32 i = 0; i < sVsSeeker->trainerCount; i++)
+        {
+            const struct VsSeekerTrainerInfo *info = &sVsSeeker->trainerInfo[i];
+            if (rows == NULL || i >= capacity)
+                break;
+            rows[i].localId = info->localId;
+            rows[i].trainerId = info->trainerIdx;
+            rows[i].objectEventId = info->objectEventId;
+            rows[i].visible = IsTrainerVisibleOnScreen(&sVsSeeker->trainerInfo[i]);
+            rows[i].fought = info->trainerIdx != TRAINER_NONE && HasTrainerBeenFought(info->trainerIdx);
+            rows[i].rematchTrainerId = rows[i].fought ? GetRematchTrainerIdVSSeeker(info->trainerIdx) : 0;
+            if (count != NULL)
+                *count = i + 1;
+        }
+        // Use the same checks as CanUseVsSeeker without filling gStringVar1 with the steps-left message
+        if ((gSaveBlock1Ptr->trainerRematchStepCounter & 0xFF) != VSSEEKER_RECHARGE_STEPS)
+            status = ADMG_VSSEEKER_PROBE_NOT_CHARGED;
+        else
+            status = HasFightableTrainers() ? ADMG_VSSEEKER_PROBE_CAN_USE : ADMG_VSSEEKER_PROBE_NO_ONE_IN_RANGE;
+    }
+    Free(sVsSeeker);
+    sVsSeeker = NULL;
+#endif //FREE_MATCH_CALL
+    return status;
+}
+
+// Start the usual VS Seeker task from CB2_Overworld with save data available,
+// field controls unlocked and no running script
+// The charging binding, a valid location and a free task slot are needed,
+// and no other use can already be running or pending
+// The item shows its usual responses; ADMG_GetVsSeekerResult reports the outcome
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_StartVsSeekerUse(void)
+{
+    if (!ADMG_GetFeatureBinding(ADMG_BINDING_I_VS_SEEKER_CHARGING))
+        return ADMG_VSSEEKER_START_UNAVAILABLE;
+    if (sVsSeeker != NULL || sADMG_VsSeekerResult == ADMG_VSSEEKER_RESULT_PENDING)
+        return ADMG_VSSEEKER_START_BUSY;
+    if (gSaveBlock1Ptr == NULL || gMain.callback2 != CB2_Overworld || ArePlayerFieldControlsLocked() || ScriptContext_IsEnabled())
+        return ADMG_VSSEEKER_START_FIELD_NOT_IDLE;
+    if (!ADMG_IsValidLocationForVsSeeker())
+        return ADMG_VSSEEKER_START_INVALID_LOCATION;
+    u8 taskId = CreateTask(Task_InitVsSeekerAndCheckForTrainersOnScreen, 8);
+    if (taskId >= NUM_TASKS)
+        return ADMG_VSSEEKER_START_FIELD_NOT_IDLE;
+    LockPlayerFieldControls();
+    FreezeObjectEvents();
+    PlayerFreeze();
+    StopPlayerAvatar();
+    gTasks[taskId].data[3] = TRUE; // InitVsSeekerField clears this before use
+    sADMG_VsSeekerResult = ADMG_VSSEEKER_RESULT_PENDING;
+    return ADMG_VSSEEKER_START_STARTED;
+}
+
+// Read the last started request's result, which stays PENDING until the item task decides
+// The result stays available until another request starts
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetVsSeekerResult(void)
+{
+    return sADMG_VsSeekerResult;
+}
+ADMG_RETAIN_FUNCTION(ADMG_ProbeVsSeeker);
+ADMG_RETAIN_FUNCTION(ADMG_StartVsSeekerUse);
+ADMG_RETAIN_FUNCTION(ADMG_GetVsSeekerResult);
 
 u16 GetRematchTrainerIdVSSeeker(enum TrainerId trainerId)
 {
@@ -919,7 +1026,8 @@ static void StartAllRespondantIdleMovements(void)
         }
         u32 rematchTableId = VsSeekerConvertLocalIdToTableId(sVsSeeker->trainerInfo[j].localId);
         u16 chosen = GetRematchTrainerIdVSSeeker(sVsSeeker->trainerInfo[j].trainerIdx);
-        gSaveBlock1Ptr->trainerRematches[rematchTableId] = chosen ? ADMG_VsSeekerRematchLevel(rematchTableId, chosen) : 0;
+        if (rematchTableId < MAX_REMATCH_ENTRIES)
+            gSaveBlock1Ptr->trainerRematches[rematchTableId] = chosen ? ADMG_VsSeekerRematchLevel(rematchTableId, chosen) : 0;
     }
 #endif //FREE_MATCH_CALL
 }
@@ -1135,6 +1243,7 @@ static bool8 InitVsSeekerField(u32 taskId, const struct ADMG_RematchContext *nat
     if (response == VSSEEKER_NOT_CHARGED || response == VSSEEKER_NO_ONE_IN_RANGE)
     {
         Free(sVsSeeker); sVsSeeker = NULL;
+        ADMG_SetVsSeekerResult(response == VSSEEKER_NOT_CHARGED ? ADMG_VSSEEKER_RESULT_NOT_CHARGED : ADMG_VSSEEKER_RESULT_NO_ONE_IN_RANGE);
         DisplayItemMessageOnField(taskId, response == VSSEEKER_NOT_CHARGED
             ? VSSeeker_Text_BatteryNotChargedNeedXSteps : VSSeeker_Text_NoTrainersWithinRange,
             Task_ItemUse_CloseMessageBoxAndReturnToField_VsSeeker);
