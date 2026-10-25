@@ -21,7 +21,8 @@
 #define P_EVOLUTION_LEVEL_1_LEARN ADMG_CONFIG_EXTRA(P_EVOLUTION_LEVEL_1_LEARN)
 
 // Evolution settings
-#define P_FRIENDSHIP_EVO_THRESHOLD   GEN_LATEST  // Since Gen 8, Pokémon that evolve by friendship evolve at or above 160 friendship instead of 220.
+#define ADMG_DEFAULT_P_FRIENDSHIP_EVO_THRESHOLD   GEN_LATEST  // Since Gen 8, Pokémon that evolve by friendship evolve at or above 160 friendship instead of 220.
+#define P_FRIENDSHIP_EVO_THRESHOLD ADMG_CONFIG_EXTRA(P_FRIENDSHIP_EVO_THRESHOLD)
 
 // Breeding settings
 #define ADMG_DEFAULT_P_NIDORAN_M_DITTO_BREED        GEN_LATEST                // Since Gen 5, when Nidoran♂ breeds with Ditto it can produce Nidoran♀ offspring. Before, it would only yield male offspring. This change also applies to Volbeat.

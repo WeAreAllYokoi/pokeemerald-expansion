@@ -86,7 +86,9 @@
 
 extern enum Item gSpecialVar_ItemId;
 
-#define FRIENDSHIP_EVO_THRESHOLD ((P_FRIENDSHIP_EVO_THRESHOLD >= GEN_8) ? 160 : 220)
+// Store a marker in species data so ADMG_GetFriendshipEvoThreshold can read the setting at runtime
+// The configured threshold is 160 from Gen 8 onward and 220 before that; explicit thresholds stay unchanged
+#define FRIENDSHIP_EVO_THRESHOLD ADMG_FRIENDSHIP_EVO_THRESHOLD_CONFIGURED
 
 struct SpeciesItem
 {
@@ -4037,6 +4039,13 @@ enum Species GetGMaxTargetSpecies(enum Species species)
     return species;
 }
 
+u32 ADMG_GetFriendshipEvoThreshold(u32 arg1)
+{
+    if (arg1 == ADMG_FRIENDSHIP_EVO_THRESHOLD_CONFIGURED)
+        return (P_FRIENDSHIP_EVO_THRESHOLD >= GEN_8) ? 160 : 220;
+    return arg1;
+}
+
 bool32 DoesMonMeetAdditionalConditions(struct Pokemon *mon, const struct EvolutionParam *params, struct Pokemon *tradePartner, u32 partyId, bool32 *canStopEvo, enum EvoState evoState)
 {
     u32 i, j;
@@ -4084,7 +4093,7 @@ bool32 DoesMonMeetAdditionalConditions(struct Pokemon *mon, const struct Evoluti
                 currentCondition = TRUE;
             break;
         case IF_MIN_FRIENDSHIP:
-            if (friendship >= params[i].arg1)
+            if (friendship >= ADMG_GetFriendshipEvoThreshold(params[i].arg1))
                 currentCondition = TRUE;
             break;
         case IF_ATK_GT_DEF:

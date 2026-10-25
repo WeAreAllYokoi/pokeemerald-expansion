@@ -221,6 +221,8 @@ enum OtIdMethod
 #define AFFECTION_FIVE_HEARTS   5 // Max friendship
 
 #define MAX_FRIENDSHIP  255
+// IF_MIN_FRIENDSHIP uses this marker for the threshold selected by P_FRIENDSHIP_EVO_THRESHOLD
+#define ADMG_FRIENDSHIP_EVO_THRESHOLD_CONFIGURED 0xFFFFFFFF
 #define MAX_SHEEN       255
 #define MAX_CONDITION   255
 
