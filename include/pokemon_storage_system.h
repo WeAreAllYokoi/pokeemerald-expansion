@@ -73,6 +73,31 @@ u8 *GetWaldaPhrasePtr(void);
 void SetWaldaPhrase(const u8 *src);
 bool32 IsWaldaPhraseEmpty(void);
 
+// Deposit, withdraw, move, release and update held-item forms while the storage screen is closed
+// Each operation returns an ADMG_StorageResult
+enum ADMG_StorageResult
+{
+    ADMG_STORAGE_DONE,
+    ADMG_STORAGE_INVALID,             // no such party slot, box or position
+    ADMG_STORAGE_EMPTY,               // no Pokémon there
+    ADMG_STORAGE_OCCUPIED,            // the destination holds a Pokémon
+    ADMG_STORAGE_BOX_FULL,
+    ADMG_STORAGE_PARTY_FULL,
+    ADMG_STORAGE_LAST_ALIVE,          // No other party Pokémon can battle
+    ADMG_STORAGE_HOLDS_MAIL,
+    ADMG_STORAGE_BAD_EGG,
+    ADMG_STORAGE_LAST_USABLE,         // fewer than three usable Pokémon in the party and boxes
+    ADMG_STORAGE_KNOWS_REQUIRED_MOVE, // the last Pokémon that knows a move this map requires (Surf, Dive...)
+    ADMG_STORAGE_SCREEN_OPEN,         // the storage screen is open
+};
+#define ADMG_STORAGE_ANY_POSITION 0xFF // ADMG_StorageDeposit: the box's first free position
+
+u32 ADMG_StorageDeposit(u32 partySlot, u32 boxId, u32 position);
+u32 ADMG_StorageWithdraw(u32 boxId, u32 position);
+u32 ADMG_StorageMove(u32 fromBox, u32 fromPosition, u32 toBox, u32 toPosition);
+u32 ADMG_StorageRelease(u32 boxId, u32 position);
+u32 ADMG_StorageApplyHeldItemForm(u32 boxId, u32 position);
+
 void ChooseMonFromStorage();
 u32 CountPartyNonEggMons(void);
 void RemoveSelectedPcMon(struct Pokemon *mon);

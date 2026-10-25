@@ -2909,6 +2909,8 @@ u8 CopyMonToPC(struct Pokemon *mon)
             {
                 MonRestorePP(mon);
                 CopyMon(checkingMon, &mon->box, sizeof(mon->box));
+                // Apply the deposit form when sending a Pokémon to the PC, as the storage screen does
+                TryBoxMonFormChange(checkingMon, FORM_CHANGE_DEPOSIT);
                 gSpecialVar_MonBoxId = boxNo;
                 gSpecialVar_MonBoxPos = boxPos;
                 if (GetPCBoxToSendMon() != boxNo)

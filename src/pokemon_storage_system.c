@@ -46,6 +46,7 @@
 #include "constants/pokemon_icon.h"
 #include "chooseboxmon.h"
 #include "party_menu.h"
+#include "admg_native.h"
 
 /*
     NOTE: This file is large. Some general groups of functions have
@@ -10125,4 +10126,184 @@ void RemoveSelectedPcMon(struct Pokemon *mon)
     struct BoxPokemon *boxmon = GetBoxedMonPtr(gSpecialVar_MonBoxId, gSpecialVar_MonBoxPos);
     BoxMonToMon(boxmon, mon);
     ZeroBoxMonData(boxmon);
+}
+
+// These operations refuse to run while the storage screen is open
+// The screen owns the moving Pokémon and its display copies
+static bool32 ADMG_StorageScreenOpen(void)
+{
+    return sStorage != NULL;
+}
+
+static bool32 ADMG_IsStoragePosition(u32 boxId, u32 position)
+{
+    return boxId < TOTAL_BOXES_COUNT && position < IN_BOX_COUNT;
+}
+
+// Heal the Pokémon if OW_PC_HEAL <= GEN_7, then store it and apply its deposit form
+static void ADMG_PlaceInBox(u32 boxId, u32 position, struct Pokemon *mon)
+{
+    if (OW_PC_HEAL <= GEN_7)
+        HealPokemon(mon);
+    SetBoxMonAt(boxId, position, &mon->box);
+    TryBoxMonFormChange(&gPokemonStoragePtr->boxes[boxId][position], FORM_CHANGE_DEPOSIT);
+}
+
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_StorageDeposit(ADMG_Word partySlot, ADMG_Word boxId, ADMG_Word position)
+{
+    struct Pokemon *mon;
+    s32 i;
+
+    if (ADMG_StorageScreenOpen())
+        return ADMG_STORAGE_SCREEN_OPEN;
+    if (partySlot >= PARTY_SIZE || boxId >= TOTAL_BOXES_COUNT || (position >= IN_BOX_COUNT && position != ADMG_STORAGE_ANY_POSITION))
+        return ADMG_STORAGE_INVALID;
+    mon = &gParties[B_TRAINER_PLAYER][partySlot];
+    if (GetMonData(mon, MON_DATA_SPECIES) == SPECIES_NONE)
+        return ADMG_STORAGE_EMPTY;
+    if (!GetMonData(mon, MON_DATA_SANITY_HAS_SPECIES))
+        return ADMG_STORAGE_BAD_EGG;
+    // Leave another party Pokémon able to battle, and keep mail attached to its holder
+    if (CountPartyAliveNonEggMonsExcept(partySlot) == 0)
+        return ADMG_STORAGE_LAST_ALIVE;
+    if (ItemIsMail(GetMonData(mon, MON_DATA_HELD_ITEM)))
+        return ADMG_STORAGE_HOLDS_MAIL;
+    if (position == ADMG_STORAGE_ANY_POSITION)
+    {
+        for (i = 0; i < IN_BOX_COUNT; i++)
+        {
+            if (GetBoxMonDataAt(boxId, i, MON_DATA_SPECIES) == SPECIES_NONE)
+                break;
+        }
+        if (i == IN_BOX_COUNT)
+            return ADMG_STORAGE_BOX_FULL;
+        position = i;
+    }
+    else if (GetBoxMonDataAt(boxId, position, MON_DATA_SPECIES) != SPECIES_NONE)
+    {
+        return ADMG_STORAGE_OCCUPIED;
+    }
+    if (mon == GetFirstLiveMon())
+        gFollowerSteps = 0;
+    ADMG_PlaceInBox(boxId, position, mon);
+    ZeroMonData(mon);
+    CompactPartySlots();
+    CalculatePlayerPartyCount();
+    gSpecialVar_MonBoxId = boxId;
+    gSpecialVar_MonBoxPos = position;
+    return ADMG_STORAGE_DONE;
+}
+
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_StorageWithdraw(ADMG_Word boxId, ADMG_Word position)
+{
+    struct Pokemon *mon;
+    u32 slot;
+
+    if (ADMG_StorageScreenOpen())
+        return ADMG_STORAGE_SCREEN_OPEN;
+    if (!ADMG_IsStoragePosition(boxId, position))
+        return ADMG_STORAGE_INVALID;
+    if (GetBoxMonDataAt(boxId, position, MON_DATA_SPECIES) == SPECIES_NONE)
+        return ADMG_STORAGE_EMPTY;
+    if (!CheckBoxMonSanityAt(boxId, position) && !GetBoxMonDataAt(boxId, position, MON_DATA_IS_EGG))
+        return ADMG_STORAGE_BAD_EGG;
+    slot = CalculatePlayerPartyCount();
+    if (slot >= PARTY_SIZE)
+        return ADMG_STORAGE_PARTY_FULL;
+    mon = &gParties[B_TRAINER_PLAYER][slot];
+    BoxMonAtToMon(boxId, position, mon);
+    if (OW_PC_HEAL <= GEN_7)
+        HealPokemon(mon);
+    TryFormChange(mon, FORM_CHANGE_WITHDRAW, B_TRAINER_PLAYER);
+    if (mon == GetFirstLiveMon())
+        gFollowerSteps = 0;
+    ZeroBoxMonAt(boxId, position);
+    CalculatePlayerPartyCount();
+    return ADMG_STORAGE_DONE;
+}
+
+// Move into an empty box position or swap with the Pokémon already there
+// Apply the usual PC healing and deposit-form rules to each Pokémon placed in a box
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_StorageMove(ADMG_Word fromBox, ADMG_Word fromPosition, ADMG_Word toBox, ADMG_Word toPosition)
+{
+    struct Pokemon moving, other;
+    bool32 swap;
+
+    if (ADMG_StorageScreenOpen())
+        return ADMG_STORAGE_SCREEN_OPEN;
+    if (!ADMG_IsStoragePosition(fromBox, fromPosition) || !ADMG_IsStoragePosition(toBox, toPosition))
+        return ADMG_STORAGE_INVALID;
+    if (GetBoxMonDataAt(fromBox, fromPosition, MON_DATA_SPECIES) == SPECIES_NONE)
+        return ADMG_STORAGE_EMPTY;
+    if (fromBox == toBox && fromPosition == toPosition)
+        return ADMG_STORAGE_DONE;
+    swap = GetBoxMonDataAt(toBox, toPosition, MON_DATA_SPECIES) != SPECIES_NONE;
+    BoxMonAtToMon(fromBox, fromPosition, &moving);
+    if (swap)
+        BoxMonAtToMon(toBox, toPosition, &other);
+    ZeroBoxMonAt(fromBox, fromPosition);
+    ADMG_PlaceInBox(toBox, toPosition, &moving);
+    if (swap)
+        ADMG_PlaceInBox(fromBox, fromPosition, &other);
+    return ADMG_STORAGE_DONE;
+}
+
+// Keep at least two usable Pokémon across the party and boxes
+// Don't release the last Pokémon that knows a restricted move for the current map
+// If OW_PC_RELEASE_ITEM >= GEN_8, try to put its held item back in the bag
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_StorageRelease(ADMG_Word boxId, ADMG_Word position)
+{
+    enum Move restricted[ARRAY_COUNT(sRestrictedReleaseMoves) + 1];
+    u32 knownMoves;
+    enum Item item = ITEM_NONE;
+    bool8 moving;
+    bool32 usable;
+    s32 i, j;
+
+    if (ADMG_StorageScreenOpen())
+        return ADMG_STORAGE_SCREEN_OPEN;
+    if (!ADMG_IsStoragePosition(boxId, position))
+        return ADMG_STORAGE_INVALID;
+    if (GetBoxMonDataAt(boxId, position, MON_DATA_SPECIES) == SPECIES_NONE)
+        return ADMG_STORAGE_EMPTY;
+    // Exclude the storage screen's moving Pokémon from this count
+    moving = sIsMonBeingMoved;
+    sIsMonBeingMoved = FALSE;
+    usable = AtLeastThreeUsableMons();
+    sIsMonBeingMoved = moving;
+    if (!usable)
+        return ADMG_STORAGE_LAST_USABLE;
+    GetRestrictedReleaseMoves(restricted);
+    knownMoves = GetAndCopyBoxMonDataAt(boxId, position, MON_DATA_KNOWN_MOVES, (u8 *)restricted);
+    for (i = 0; i < PARTY_SIZE && knownMoves != 0; i++)
+        knownMoves &= ~GetMonData(&gParties[B_TRAINER_PLAYER][i], MON_DATA_KNOWN_MOVES, (u8 *)restricted);
+    for (i = 0; i < TOTAL_BOXES_COUNT && knownMoves != 0; i++)
+    {
+        for (j = 0; j < IN_BOX_COUNT && knownMoves != 0; j++)
+        {
+            if (i != (s32)boxId || j != (s32)position)
+                knownMoves &= ~GetAndCopyBoxMonDataAt(i, j, MON_DATA_KNOWN_MOVES, (u8 *)restricted);
+        }
+    }
+    if (knownMoves != 0)
+        return ADMG_STORAGE_KNOWS_REQUIRED_MOVE;
+    if (OW_PC_RELEASE_ITEM >= GEN_8)
+        item = GetBoxMonDataAt(boxId, position, MON_DATA_HELD_ITEM);
+    ZeroBoxMonAt(boxId, position);
+    if (item != ITEM_NONE)
+        AddBagItem(item, 1);
+    return ADMG_STORAGE_DONE;
+}
+
+// Recheck the stored Pokémon's form after changing its held item
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_StorageApplyHeldItemForm(ADMG_Word boxId, ADMG_Word position)
+{
+    if (ADMG_StorageScreenOpen())
+        return ADMG_STORAGE_SCREEN_OPEN;
+    if (!ADMG_IsStoragePosition(boxId, position))
+        return ADMG_STORAGE_INVALID;
+    if (GetBoxMonDataAt(boxId, position, MON_DATA_SPECIES) == SPECIES_NONE)
+        return ADMG_STORAGE_EMPTY;
+    TryBoxMonFormChange(&gPokemonStoragePtr->boxes[boxId][position], FORM_CHANGE_ITEM_HOLD);
+    return ADMG_STORAGE_DONE;
 }
