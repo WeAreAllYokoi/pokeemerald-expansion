@@ -1150,6 +1150,9 @@ static void DebugAction_DestroyExtraWindow(u8 taskId)
     DestroyTask(taskId);
     ScriptContext_Enable();
     UnfreezeObjectEvents();
+    // Free the list data and mark the menu closed on this exit path too
+    Free(sDebugMenuListData);
+    sDebugMenuListData = NULL;
 }
 
 static u8 DebugNativeStep_CreateDebugWindow(void)
