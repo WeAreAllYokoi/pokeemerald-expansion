@@ -4872,6 +4872,12 @@ void MonGainEVs(struct Pokemon *mon, enum Species defeatedSpecies)
         totalEVs += evs[i];
     }
 
+    const struct SpeciesInfo *info = &gSpeciesInfo[defeatedSpecies];
+    const u8 yields[NUM_STATS] = {
+        [STAT_HP] = info->evYield_HP, [STAT_ATK] = info->evYield_Attack, [STAT_DEF] = info->evYield_Defense,
+        [STAT_SPEED] = info->evYield_Speed, [STAT_SPATK] = info->evYield_SpAttack, [STAT_SPDEF] = info->evYield_SpDefense,
+    };
+
     for (i = 0; i < NUM_STATS; i++)
     {
         if (totalEVs >= currentEVCap)
@@ -4882,47 +4888,11 @@ void MonGainEVs(struct Pokemon *mon, enum Species defeatedSpecies)
         else
             multiplier = 1;
 
-        switch (i)
-        {
-        case STAT_HP:
-            if (holdEffect == HOLD_EFFECT_POWER_ITEM && stat == STAT_HP)
-                evIncrease = (gSpeciesInfo[defeatedSpecies].evYield_HP + bonus) * multiplier;
-            else
-                evIncrease = gSpeciesInfo[defeatedSpecies].evYield_HP * multiplier;
-            break;
-        case STAT_ATK:
-            if (holdEffect == HOLD_EFFECT_POWER_ITEM && stat == STAT_ATK)
-                evIncrease = (gSpeciesInfo[defeatedSpecies].evYield_Attack + bonus) * multiplier;
-            else
-                evIncrease = gSpeciesInfo[defeatedSpecies].evYield_Attack * multiplier;
-            break;
-        case STAT_DEF:
-            if (holdEffect == HOLD_EFFECT_POWER_ITEM && stat == STAT_DEF)
-                evIncrease = (gSpeciesInfo[defeatedSpecies].evYield_Defense + bonus) * multiplier;
-            else
-                evIncrease = gSpeciesInfo[defeatedSpecies].evYield_Defense * multiplier;
-            break;
-        case STAT_SPEED:
-            if (holdEffect == HOLD_EFFECT_POWER_ITEM && stat == STAT_SPEED)
-                evIncrease = (gSpeciesInfo[defeatedSpecies].evYield_Speed + bonus) * multiplier;
-            else
-                evIncrease = gSpeciesInfo[defeatedSpecies].evYield_Speed * multiplier;
-            break;
-        case STAT_SPATK:
-            if (holdEffect == HOLD_EFFECT_POWER_ITEM && stat == STAT_SPATK)
-                evIncrease = (gSpeciesInfo[defeatedSpecies].evYield_SpAttack + bonus) * multiplier;
-            else
-                evIncrease = gSpeciesInfo[defeatedSpecies].evYield_SpAttack * multiplier;
-            break;
-        case STAT_SPDEF:
-            if (holdEffect == HOLD_EFFECT_POWER_ITEM && stat == STAT_SPDEF)
-                evIncrease = (gSpeciesInfo[defeatedSpecies].evYield_SpDefense + bonus) * multiplier;
-            else
-                evIncrease = gSpeciesInfo[defeatedSpecies].evYield_SpDefense * multiplier;
-            break;
-        default:
-            break;
-        }
+        // Read yields by stat index to avoid a switch jump table
+        // GCC spilled that table's address to the stack when the EV limit became a runtime read,
+        // leaving a dispatch the recompiler couldn't resolve
+        // Keep the same yield and matching Power-item bonus, then apply the multiplier
+        evIncrease = (yields[i] + ((holdEffect == HOLD_EFFECT_POWER_ITEM && stat == i) ? bonus : 0)) * multiplier;
 
         if (holdEffect == HOLD_EFFECT_MACHO_BRACE)
             evIncrease *= 2;
