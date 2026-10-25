@@ -442,7 +442,10 @@ static void TextSpeed_DrawChoices(u8 selection)
     styles[0] = 0;
     styles[1] = 0;
     styles[2] = 0;
-    styles[selection] = 1;
+    // Instant text speed (OPTIONS_TEXT_SPEED_INSTANT, 3) is valid but has no choice here
+    // Leave it unhighlighted, and keep any out-of-range selection from writing past styles
+    if (selection < ARRAY_COUNT(styles))
+        styles[selection] = 1;
 
     DrawOptionMenuChoice(gText_TextSpeedSlow, 104, YPOS_TEXTSPEED, styles[0]);
 
