@@ -96,6 +96,7 @@ struct VsSeekerStruct
 static bool8 InitVsSeekerField(u32, const struct ADMG_RematchContext *);
 static bool8 NativeVsSeekerTaskCurrent(u32);
 static u8 NativeVsSeekerCanUse(void);
+static u8 ADMG_VsSeekerRematchLevel(u32 tableId, u16 chosen);
 static u8 NativeVsSeekerGetResponse(void);
 static bool8 NativeVsSeekerStartIdleMovements(void);
 
