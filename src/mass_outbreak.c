@@ -79,7 +79,6 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_CopyStaticOutbreak(ADMG_Word index, struct Mass
 void ZeroMassOutbreak(void)
 {
     gSaveBlock1Ptr->outbreakPokemonSpecies = 0;
-    gSaveBlock1Ptr->outbreakPokemonSpecies = 0;
     gSaveBlock1Ptr->outbreakLocation = 0;
     gSaveBlock1Ptr->outbreakPokemonLevel = 0;
     for (u32 i = 0; i < MAX_MON_MOVES; i++)
@@ -139,8 +138,10 @@ void StartStaticMassOutbreak(enum MassOutbreakIndex outbreakIdx)
 
 void UpdateMassOutbreakDaysLeft(u32 days)
 {
+    // Clear the outbreak data when it expires, including its species
+    // TV won't count down to the next outbreak until outbreakPokemonSpecies is SPECIES_NONE
     if (gSaveBlock1Ptr->outbreakDaysLeft <= days)
-        gSaveBlock1Ptr->outbreakDaysLeft = 0;
+        ZeroMassOutbreak();
     else
         gSaveBlock1Ptr->outbreakDaysLeft -= days;
 }
