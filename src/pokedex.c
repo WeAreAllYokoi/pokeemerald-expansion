@@ -4492,6 +4492,11 @@ s8 GetSetPokedexFlag(enum NationalDexOrder nationalDexNo, u8 caseID)
     u32 index, bit, mask;
     s8 retVal = 0;
 
+    // No National Dex number means no seen or caught flags
+    // Stop here so decrementing zero doesn't take us past the flag arrays
+    if (nationalDexNo == NATIONAL_DEX_NONE)
+        return 0;
+
     if (nationalDexNo >= FIRST_ADDED_NATIONAL_DEX)
     {
         // A number added at run time: its flags are in the extended stores
