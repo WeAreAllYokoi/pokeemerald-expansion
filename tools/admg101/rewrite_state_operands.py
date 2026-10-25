@@ -75,13 +75,18 @@ def rewrite(text, catalog, rules, initial_source):
         label = re.match(r"\s*(\w+)::?\s*$", code.rstrip())
         if label:
             labels[source] = label[1]
-        for rule in rules["mixed_script_rules"]:
-            if source != rule["file"]:
-                continue
-            if label and label[1] == rule["from_label"]:
-                labels[source + ":owner"] = rule["owner"]
-            if label and label[1] == rule.get("until_label"):
-                labels[source + ":owner"] = "hoenn"
+        # Apply range endings before range starts when a label belongs to both
+        # EventScript_ResetAllMapFlagsFrlg ends the Hoenn reset and starts the Kanto reset,
+        # so Kanto must win regardless of the rules' order
+        file_rules = [rule for rule in rules["mixed_script_rules"] if source == rule["file"]]
+        if label:
+            for rule in file_rules:
+                if label[1] == rule.get("until_label"):
+                    labels[source + ":owner"] = "hoenn"
+            for rule in file_rules:
+                if label[1] == rule["from_label"]:
+                    labels[source + ":owner"] = rule["owner"]
+        if file_rules:
             owner = labels.get(source + ":owner", "hoenn")
         if owner in {"kanto", "engine"} and not code.lstrip().startswith(("#", ".", '"')) and not label:
             match = re.match(r"(\s*)(\w+)(\s+)(.*?)(\r?\n)?$", code)
