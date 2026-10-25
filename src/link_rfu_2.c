@@ -133,7 +133,9 @@ static const u8 sAvailSlots[] = {
     [4] = AVAIL_SLOT4
 };
 
-#define BLOCK_MASK(bitNum) ((1 << (bitNum)) - 1)
+// Cover all 32 fragments the received mask can track, at 12 bytes per fragment
+// The old table stopped at 24 fragments, so larger blocks indexed past its end
+#define BLOCK_MASK(bitNum) ((bitNum) == 32 ? 0xFFFFFFFFu : (1u << (bitNum)) - 1)
 static const u32 sAllBlocksReceived[] = {
     BLOCK_MASK(0),
     BLOCK_MASK(1),
@@ -160,8 +162,18 @@ static const u32 sAllBlocksReceived[] = {
     BLOCK_MASK(22),
     BLOCK_MASK(23),
     BLOCK_MASK(24),
+    BLOCK_MASK(25),
+    BLOCK_MASK(26),
+    BLOCK_MASK(27),
+    BLOCK_MASK(28),
+    BLOCK_MASK(29),
+    BLOCK_MASK(30),
+    BLOCK_MASK(31),
+    BLOCK_MASK(32),
 };
 #undef BLOCK_MASK
+#define RFU_MAX_BLOCK_SIZE ((ARRAY_COUNT(sAllBlocksReceived) - 1) * (COMM_SLOT_LENGTH - 2))
+STATIC_ASSERT(LINK_PARTY_PAIR_SIZE <= RFU_MAX_BLOCK_SIZE, rfuBlocksHoldAPartyPair);
 
 static const u8 sSlotToLinkPlayerTableId[] = {
     0, 0, 1,
@@ -216,7 +228,8 @@ static const struct BlockRequest sBlockRequests[] = {
     [BLOCK_REQ_SIZE_200]  = { gBlockSendBuffer, 200 },
     [BLOCK_REQ_SIZE_100]  = { gBlockSendBuffer, 100 },
     [BLOCK_REQ_SIZE_220]  = { gBlockSendBuffer, 220 },
-    [BLOCK_REQ_SIZE_40]   = { gBlockSendBuffer,  40 }
+    [BLOCK_REQ_SIZE_40]   = { gBlockSendBuffer,  40 },
+    [BLOCK_REQ_SIZE_PARTY_PAIR] = { gBlockSendBuffer, LINK_PARTY_PAIR_SIZE },
 };
 
 static const u16 sAcceptedSerialNos[] = {
@@ -1292,6 +1305,8 @@ bool32 Rfu_InitBlockSend(const u8 *src, size_t size)
         sRfuDebug.blockSendTime++;
         return FALSE;
     }
+    if (size > RFU_MAX_BLOCK_SIZE)
+        return FALSE; // More than 32 fragments would not fit the receiver's mask
     r4 = (size % 12) != 0;
     gRfu.sendBlock.owner = GetMultiplayerId();
     gRfu.sendBlock.sending = TRUE;

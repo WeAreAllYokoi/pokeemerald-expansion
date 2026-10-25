@@ -166,8 +166,10 @@ static const struct BlockRequest sBlockRequests[] = {
     [BLOCK_REQ_SIZE_200]  = {gBlockSendBuffer, 200},
     [BLOCK_REQ_SIZE_100]  = {gBlockSendBuffer, 100},
     [BLOCK_REQ_SIZE_220]  = {gBlockSendBuffer, 220},
-    [BLOCK_REQ_SIZE_40]   = {gBlockSendBuffer,  40}
+    [BLOCK_REQ_SIZE_40]   = {gBlockSendBuffer,  40},
+    [BLOCK_REQ_SIZE_PARTY_PAIR] = {gBlockSendBuffer, LINK_PARTY_PAIR_SIZE},
 };
+STATIC_ASSERT(LINK_PARTY_PAIR_SIZE <= BLOCK_BUFFER_SIZE, linkPartyPairFitsTheBlockBuffer);
 static const u8 sBGControlRegs[] = {
     REG_OFFSET_BG0CNT,
     REG_OFFSET_BG1CNT,

@@ -111,7 +111,11 @@ enum {
     BLOCK_REQ_SIZE_100,
     BLOCK_REQ_SIZE_220,
     BLOCK_REQ_SIZE_40,
+    // Trades send two Pokémon at a time, sized for this build's struct Pokemon
+    // The vanilla 200-byte request cut the second Pokémon short after the identity fields grew
+    BLOCK_REQ_SIZE_PARTY_PAIR,
 };
+#define LINK_PARTY_PAIR_SIZE (2 * sizeof(struct Pokemon))
 
 struct LinkStatus
 {
