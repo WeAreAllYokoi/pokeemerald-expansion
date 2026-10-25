@@ -48,6 +48,12 @@ endef
 
 $(foreach line,$(shell cat $(MID_CFG_PATH) | sed "s/ /__SPACE__/g"),$(call MID_EXPANSION,$(subst __SPACE__, ,$(line))))
 
+# Generate the low-HP songs that ADMG_PlayLowHealthBeep chooses from
+$(MID_ASM_DIR)/admg_low_health_loops_infinite.s: $(MID_SUBDIR)/se_low_health.mid $(MID_CFG_PATH)
+	$(MID) $< $@ -E -R50 -G_rs_sfx_1 -V100 -P3 -L admg_low_health_loops_infinite -B -1
+$(MID_ASM_DIR)/admg_low_health_loops_%.s: $(MID_SUBDIR)/se_low_health.mid $(MID_CFG_PATH)
+	$(MID) $< $@ -E -R50 -G_rs_sfx_1 -V100 -P3 -L admg_low_health_loops_$* -B $*
+
 # Warn users building without a .cfg - build will fail at link time
 $(MID_ASM_DIR)/%.s: $(MID_SUBDIR)/%.mid
 	$(warning $< does not have an associated entry in midi.cfg! It cannot be built)

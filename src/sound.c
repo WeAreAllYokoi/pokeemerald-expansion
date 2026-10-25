@@ -619,3 +619,50 @@ bool8 IsSpecialSEPlaying(void)
         return FALSE;
     return TRUE;
 }
+
+// audio_rules.mk builds songs for 1-16 beeps and an endless loop
+// Play the selected song on SE_LOW_HEALTH's music player
+// Stop it only if that player holds the original low-HP song or one of these variants
+extern struct SongHeader admg_low_health_loops_1;
+extern struct SongHeader admg_low_health_loops_2;
+extern struct SongHeader admg_low_health_loops_3;
+extern struct SongHeader admg_low_health_loops_4;
+extern struct SongHeader admg_low_health_loops_5;
+extern struct SongHeader admg_low_health_loops_6;
+extern struct SongHeader admg_low_health_loops_7;
+extern struct SongHeader admg_low_health_loops_8;
+extern struct SongHeader admg_low_health_loops_9;
+extern struct SongHeader admg_low_health_loops_10;
+extern struct SongHeader admg_low_health_loops_11;
+extern struct SongHeader admg_low_health_loops_12;
+extern struct SongHeader admg_low_health_loops_13;
+extern struct SongHeader admg_low_health_loops_14;
+extern struct SongHeader admg_low_health_loops_15;
+extern struct SongHeader admg_low_health_loops_16;
+extern struct SongHeader admg_low_health_loops_infinite;
+
+static struct SongHeader *const sADMG_LowHealthBeeps[] = {&admg_low_health_loops_1, &admg_low_health_loops_2, &admg_low_health_loops_3, &admg_low_health_loops_4, &admg_low_health_loops_5, &admg_low_health_loops_6, &admg_low_health_loops_7, &admg_low_health_loops_8, &admg_low_health_loops_9, &admg_low_health_loops_10, &admg_low_health_loops_11, &admg_low_health_loops_12, &admg_low_health_loops_13, &admg_low_health_loops_14, &admg_low_health_loops_15, &admg_low_health_loops_16};
+
+static struct MusicPlayerInfo *ADMG_LowHealthPlayer(void)
+{
+    return gMPlayTable[gSongTable[SE_LOW_HEALTH].ms].info;
+}
+
+void ADMG_PlayLowHealthBeep(void)
+{
+    s32 beeps = (s32)B_NUM_LOW_HEALTH_BEEPS;
+    if (beeps == 0)
+        return;
+    MPlayStart(ADMG_LowHealthPlayer(), beeps < 0 ? &admg_low_health_loops_infinite
+                                                 : sADMG_LowHealthBeeps[min(beeps, 16) - 1]);
+}
+
+void ADMG_StopLowHealthBeep(void)
+{
+    struct MusicPlayerInfo *player = ADMG_LowHealthPlayer();
+    bool32 ours = player->songHeader == gSongTable[SE_LOW_HEALTH].header || player->songHeader == &admg_low_health_loops_infinite;
+    for (u32 i = 0; i < ARRAY_COUNT(sADMG_LowHealthBeeps); i++)
+        ours |= player->songHeader == sADMG_LowHealthBeeps[i];
+    if (ours)
+        m4aMPlayStop(player);
+}

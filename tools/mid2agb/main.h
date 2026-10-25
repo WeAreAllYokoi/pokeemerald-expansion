@@ -35,5 +35,7 @@ extern int g_reverb;
 extern int g_clocksPerBeat;
 extern bool g_exactGateTime;
 extern bool g_compressionEnabled;
+extern bool g_forceTrackLoops; // TRUE when -B supplies the track loop count
+extern int g_trackLoops;
 
 #endif // MAIN_H

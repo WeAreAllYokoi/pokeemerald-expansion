@@ -459,7 +459,10 @@
 #define NUM_BEEPS_GEN_LATEST            4                    // Loops 4 times
 #define NUM_BEEPS_GEN_3                 -1                   // Loops infinitely
 #define NUM_BEEPS_OFF                   0                    // Does not play at all
-#define B_NUM_LOW_HEALTH_BEEPS          NUM_BEEPS_GEN_LATEST // This controls the number of times the "low HP" beep will loop. Setting this value to NUM_BEEPS_OFF will disable the beep, while NUM_BEEPS_GEN_3 will loop infinitely. You can set this to any number you want, the defines listed are just for ease of use.
+#define ADMG_DEFAULT_B_NUM_LOW_HEALTH_BEEPS          NUM_BEEPS_GEN_LATEST // Low-HP beep count: 0 disables it, any negative value loops endlessly
+// Positive counts above 16 play 16 beeps
+// NUM_BEEPS_OFF is 0; NUM_BEEPS_GEN_3 is -1
+#define B_NUM_LOW_HEALTH_BEEPS ADMG_CONFIG_EXTRA(B_NUM_LOW_HEALTH_BEEPS)
 
 // Animation Settings
 #define ADMG_DEFAULT_B_NEW_SWORD_PARTICLE            FALSE    // If set to TRUE, it updates Swords Dance's particle.

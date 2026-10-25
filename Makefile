@@ -331,6 +331,9 @@ DATA_ASM_OBJS := $(patsubst $(DATA_ASM_SUBDIR)/%.s,$(DATA_ASM_BUILDDIR)/%.o,$(DA
 
 MID_SRCS := $(wildcard $(MID_SUBDIR)/*.mid)
 MID_OBJS := $(patsubst $(MID_SUBDIR)/%.mid,$(MID_BUILDDIR)/%.o,$(MID_SRCS))
+# Build low-HP beep songs for counts 1-16 and an endless loop
+ADMG_LOW_HEALTH_LOOPS := 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 infinite
+MID_OBJS += $(foreach n,$(ADMG_LOW_HEALTH_LOOPS),$(MID_BUILDDIR)/admg_low_health_loops_$(n).o)
 
 OBJS     := $(C_OBJS) $(C_ASM_OBJS) $(ASM_OBJS) $(DATA_ASM_OBJS) $(MID_OBJS)
 OBJS_REL := $(patsubst $(OBJ_DIR)/%,%,$(OBJS))

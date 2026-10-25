@@ -41,6 +41,8 @@ int g_reverb = -1;
 int g_clocksPerBeat = 1;
 bool g_exactGateTime = false;
 bool g_compressionEnabled = true;
+bool g_forceTrackLoops = false; // TRUE when -B supplies the track loop count
+int g_trackLoops = 0;
 
 [[noreturn]] static void PrintUsage()
 {
@@ -142,6 +144,13 @@ int main(int argc, char** argv)
 
             switch (std::toupper(option[1]))
             {
+            case 'B': // Set the track loop count; negative values keep the MIDI's own loop commands
+                arg = GetArgument(argc, argv, i);
+                if (arg == nullptr)
+                    PrintUsage();
+                g_forceTrackLoops = true;
+                g_trackLoops = std::stoi(arg);
+                break;
             case 'E':
                 g_exactGateTime = true;
                 break;

@@ -1199,7 +1199,7 @@ static void SetLinkBattleEndCallbacks(enum BattlerId battler)
     {
         if (!gReceivedRemoteLinkPlayers)
         {
-            m4aSongNumStop(SE_LOW_HEALTH);
+            ADMG_StopLowHealthBeep();
             gMain.inBattle = FALSE;
             gMain.callback1 = gPreBattleCallback1;
             SetMainCallback2(CB2_InitEndLinkBattle);
@@ -1212,7 +1212,7 @@ static void SetLinkBattleEndCallbacks(enum BattlerId battler)
     {
         if (IsLinkTaskFinished())
         {
-            m4aSongNumStop(SE_LOW_HEALTH);
+            ADMG_StopLowHealthBeep();
             gMain.inBattle = FALSE;
             gMain.callback1 = gPreBattleCallback1;
             SetMainCallback2(CB2_InitEndLinkBattle);
@@ -1242,7 +1242,7 @@ void SetBattleEndCallbacks(enum BattlerId battler)
         }
         else
         {
-            m4aSongNumStop(SE_LOW_HEALTH);
+            ADMG_StopLowHealthBeep();
             gMain.inBattle = FALSE;
             gMain.callback1 = gPreBattleCallback1;
             SetMainCallback2(gMain.savedCallback);
