@@ -20,10 +20,20 @@ enum ADMG_SaveSection
     ADMG_SAVE_SECTION_EXTENDED_TRAINER_DEFEATS = 8, // admg_extended.h: bytes of a bit store, as many as it has
     ADMG_SAVE_SECTION_EXTENDED_DEX_SEEN = 9,
     ADMG_SAVE_SECTION_EXTENDED_DEX_CAUGHT = 10,
+    // Regional state exposed through ADMG_GetRegionalSaveRegions
+    ADMG_SAVE_SECTION_REGIONAL_FLAGS = 11,          // gADMG_KantoFlags
+    ADMG_SAVE_SECTION_REGIONAL_UNION_FLAGS = 12,    // gADMG_UnionVisibility
+    ADMG_SAVE_SECTION_REGIONAL_VARS = 13,           // gADMG_KantoVars
+    ADMG_SAVE_SECTION_REGIONAL_REMATCH = 14,        // gADMG_KantoNpcReadiness
+    ADMG_SAVE_SECTION_REGIONAL_VS_SEEKER = 15,      // gADMG_KantoVsSeekerCounter
+    ADMG_SAVE_SECTION_REGIONAL_CONTEXT = 16,        // gADMG_RegionalContext: which regions' content is initialized
 };
 
-// The most regions one save hands over: the save slot, the Hall of Fame and every extended store.
-#define ADMG_SAVE_MAX_REGIONS 8
+// Regional sections included in each native save slot
+#define ADMG_SAVE_REGIONAL_REGIONS 6
+
+// Room for the save blocks, Pokémon storage, Hall of Fame, extended stores and regional banks
+#define ADMG_SAVE_MAX_REGIONS (8 + ADMG_SAVE_REGIONAL_REGIONS)
 
 struct ADMG_SaveRegion
 {

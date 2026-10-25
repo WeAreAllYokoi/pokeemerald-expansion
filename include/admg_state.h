@@ -75,14 +75,21 @@ ADMG_NATIVE_ENTRY bool8 ADMG_EndStateAccessCheck(u64 generation);
         } \
     } while (0)
 
-/* Passive logical banks; S3-E owns serialization. No legacy save root grows.
- * Native mod persistence is a separate platform facility. */
+// Keep these banks outside the legacy save roots
+// Of the banks declared here, native save slots include Kanto flags and vars,
+// Union Room visibility and regional context
+// Scratch and feature-binding banks are not included; mod persistence is separate
 extern u8 gADMG_KantoFlags[288];
 extern u32 gADMG_KantoVars[224];
 extern u8 gADMG_UnionVisibility[2];
+extern u32 gADMG_RegionalContext[1];
 extern u8 gADMG_NativeSpecialScratch[1];
 extern u32 gADMG_TextColorScratch[2];
 extern u8 gADMG_FeatureBindingFlags[(ADMG_STATE_FEATURE_BINDING_FLAGS_COUNT + 7) / 8];
 extern u32 gADMG_FeatureBindingVars[ADMG_STATE_FEATURE_BINDING_VARS_COUNT];
+
+struct ADMG_SaveRegion;
+// Describe the ADMG_SAVE_REGIONAL_REGIONS sections included in native saves
+u32 ADMG_GetRegionalSaveRegions(struct ADMG_SaveRegion *regions);
 
 #endif

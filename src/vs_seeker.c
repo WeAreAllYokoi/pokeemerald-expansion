@@ -1378,9 +1378,15 @@ ADMG_NATIVE_ENTRY void ADMG_InitializeNativeRematchGameState(void)
 
 ADMG_NATIVE_ENTRY void ADMG_PrepareNativeRematchContinue(void)
 {
+    struct ADMG_RematchContext context;
     ADMG_CancelNativeVsSeeker();
     ADMG_DiscardNativeBattleAssociation();
     (void)ADMG_TryPrepareNativeRematchRestore();
+    // Try to resume the saved readiness and VS Seeker counter for the saved map
+    // Check their values and the map's declared rematch NPCs before binding them
+    // If resume fails, call the new-game rematch initializer instead of leaving restore pending
+    if (!ADMG_TryResumeNativeRematchBindings(&context))
+        ADMG_InitNativeRematchState();
 }
 
 static bool8 NativeRematchResetObjectValid(u32 objectId)

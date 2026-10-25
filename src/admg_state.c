@@ -2,6 +2,8 @@
 #include "event_data.h"
 #include "event_object_movement.h"
 #include "admg_state.h"
+#include "admg_native_save.h"
+#include "admg_rematch_state.h"
 #include "overworld.h"
 #include "data/admg_state_routes.h"
 #include "constants/map_groups.h"
@@ -16,6 +18,8 @@ EWRAM_DATA u8 gADMG_NativeSpecialScratch[1] = {0};
 EWRAM_DATA u32 gADMG_TextColorScratch[2] = {0};
 EWRAM_DATA u8 gADMG_FeatureBindingFlags[(ADMG_STATE_FEATURE_BINDING_FLAGS_COUNT + 7) / 8] = {0};
 EWRAM_DATA u32 gADMG_FeatureBindingVars[ADMG_STATE_FEATURE_BINDING_VARS_COUNT] = {0};
+// Saved bits reserved for regional content initialization
+EWRAM_DATA u32 gADMG_RegionalContext[1] = {0};
 static EWRAM_DATA u64 sADMG_StateRejectionGeneration = 0;
 static EWRAM_DATA bool8 sADMG_StateRejectionExhausted = FALSE;
 
@@ -329,6 +333,21 @@ void ADMG_InitRegionalEventData(void)
     memset(gADMG_TextColorScratch, 0, sizeof(gADMG_TextColorScratch));
     memset(gADMG_FeatureBindingFlags, 0, sizeof(gADMG_FeatureBindingFlags));
     memset(gADMG_FeatureBindingVars, 0, sizeof(gADMG_FeatureBindingVars));
+    memset(gADMG_RegionalContext, 0, sizeof(gADMG_RegionalContext));
+}
+
+// Include Kanto flags and vars, Union Room visibility, rematch readiness,
+// the VS Seeker counter and regional context in native save/load
+// These banks live outside the save blocks, so they need their own section descriptors
+u32 ADMG_GetRegionalSaveRegions(struct ADMG_SaveRegion *regions)
+{
+    regions[0] = (struct ADMG_SaveRegion){ADMG_SAVE_SECTION_REGIONAL_FLAGS, gADMG_KantoFlags, sizeof(gADMG_KantoFlags)};
+    regions[1] = (struct ADMG_SaveRegion){ADMG_SAVE_SECTION_REGIONAL_UNION_FLAGS, gADMG_UnionVisibility, sizeof(gADMG_UnionVisibility)};
+    regions[2] = (struct ADMG_SaveRegion){ADMG_SAVE_SECTION_REGIONAL_VARS, gADMG_KantoVars, sizeof(gADMG_KantoVars)};
+    regions[3] = (struct ADMG_SaveRegion){ADMG_SAVE_SECTION_REGIONAL_REMATCH, gADMG_KantoNpcReadiness, sizeof(gADMG_KantoNpcReadiness)};
+    regions[4] = (struct ADMG_SaveRegion){ADMG_SAVE_SECTION_REGIONAL_VS_SEEKER, &gADMG_KantoVsSeekerCounter, sizeof(gADMG_KantoVsSeekerCounter)};
+    regions[5] = (struct ADMG_SaveRegion){ADMG_SAVE_SECTION_REGIONAL_CONTEXT, gADMG_RegionalContext, sizeof(gADMG_RegionalContext)};
+    return ADMG_SAVE_REGIONAL_REGIONS;
 }
 
 void ADMG_ClearRegionalDailyFlags(void)

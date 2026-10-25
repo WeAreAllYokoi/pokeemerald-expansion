@@ -1,5 +1,6 @@
 #include "global.h"
 #include "admg_native_save.h"
+#include "admg_state.h"
 #include "agb_flash.h"
 #include "gba/flash_internal.h"
 #include "fieldmap.h"
@@ -101,6 +102,7 @@ static u32 GetSaveSlotRegions(struct ADMG_SaveRegion *regions, bool32 withPokemo
     if (withPokemonStorage)
         regions[count++] = (struct ADMG_SaveRegion){ADMG_SAVE_SECTION_POKEMON_STORAGE, gPokemonStoragePtr, sizeof(struct PokemonStorage)};
     count += ADMG_GetExtendedSaveRegions(&regions[count]);
+    count += ADMG_GetRegionalSaveRegions(&regions[count]);
     return count;
 }
 
