@@ -1,12 +1,48 @@
+// Keep both versions of these descriptions available for gContestEffects
+// C_UPDATED_MOVE_EFFECTS selects the Gen 6+ text or the earlier text
+// Retain both strings in each pair, whichever one the compiled table uses
+const u8 gADMG_ContestEffectDescription_HIGHLY_APPEALING[] = _("Quite the appealing move.");
+const u8 gADMG_ContestEffectDescription_HIGHLY_APPEALING_Gen1To5[] = _("A highly appealing move.");
+const u8 gADMG_ContestEffectDescription_STARTLE_PREV_MON[] = _("Startles the last Pokémon\nto act before the user.");
+const u8 gADMG_ContestEffectDescription_STARTLE_PREV_MON_Gen1To5[] = _("Startles the POKéMON that\nappealed before the user.");
+const u8 gADMG_ContestEffectDescription_STARTLE_PREV_MONS[] = _("Startles all of the Pokémon\nto act before the user.");
+const u8 gADMG_ContestEffectDescription_STARTLE_PREV_MONS_Gen1To5[] = _("Startles all POKéMON that\nhave done their appeals.");
+const u8 gADMG_ContestEffectDescription_SHIFT_JUDGE_ATTENTION[] = _("Makes audience expect\nlittle of other contestants.");
+const u8 gADMG_ContestEffectDescription_SHIFT_JUDGE_ATTENTION_Gen1To5[] = _("Shifts the JUDGE's\nattention from others.");
+const u8 gADMG_ContestEffectDescription_MAKE_FOLLOWING_MONS_NERVOUS[] = _("Makes the remaining\nPokémon nervous.");
+const u8 gADMG_ContestEffectDescription_MAKE_FOLLOWING_MONS_NERVOUS_Gen1To5[] = _("Makes all POKéMON after\nthe user nervous.");
+const u8 gADMG_ContestEffectDescription_QUALITY_DEPENDS_ON_TIMING[] = _("Effectiveness varies\ndepending on when it is used.");
+const u8 gADMG_ContestEffectDescription_QUALITY_DEPENDS_ON_TIMING_Gen1To5[] = _("The appeal's quality varies\ndepending on its timing.");
+const u8 gADMG_ContestEffectDescription_AFFECTED_BY_PREV_APPEAL[] = _("Affected by how well the\nprevious Pokémon's move went.");
+const u8 gADMG_ContestEffectDescription_AFFECTED_BY_PREV_APPEAL_Gen1To5[] = _("Affected by how well the\nappeal in front goes.");
+const u8 gADMG_ContestEffectDescription_NEXT_APPEAL_EARLIER[] = _("Causes the user to move\nearlier on the next turn.");
+const u8 gADMG_ContestEffectDescription_NEXT_APPEAL_EARLIER_Gen1To5[] = _("The next appeal can be\nmade earlier next turn.");
+const u8 gADMG_ContestEffectDescription_NEXT_APPEAL_LATER[] = _("Causes the user to move\nlater on the next turn.");
+const u8 gADMG_ContestEffectDescription_NEXT_APPEAL_LATER_Gen1To5[] = _("The next appeal can be\nmade later next turn.");
+ADMG_RETAIN_DATA(gADMG_ContestEffectDescription_HIGHLY_APPEALING);
+ADMG_RETAIN_DATA(gADMG_ContestEffectDescription_HIGHLY_APPEALING_Gen1To5);
+ADMG_RETAIN_DATA(gADMG_ContestEffectDescription_STARTLE_PREV_MON);
+ADMG_RETAIN_DATA(gADMG_ContestEffectDescription_STARTLE_PREV_MON_Gen1To5);
+ADMG_RETAIN_DATA(gADMG_ContestEffectDescription_STARTLE_PREV_MONS);
+ADMG_RETAIN_DATA(gADMG_ContestEffectDescription_STARTLE_PREV_MONS_Gen1To5);
+ADMG_RETAIN_DATA(gADMG_ContestEffectDescription_SHIFT_JUDGE_ATTENTION);
+ADMG_RETAIN_DATA(gADMG_ContestEffectDescription_SHIFT_JUDGE_ATTENTION_Gen1To5);
+ADMG_RETAIN_DATA(gADMG_ContestEffectDescription_MAKE_FOLLOWING_MONS_NERVOUS);
+ADMG_RETAIN_DATA(gADMG_ContestEffectDescription_MAKE_FOLLOWING_MONS_NERVOUS_Gen1To5);
+ADMG_RETAIN_DATA(gADMG_ContestEffectDescription_QUALITY_DEPENDS_ON_TIMING);
+ADMG_RETAIN_DATA(gADMG_ContestEffectDescription_QUALITY_DEPENDS_ON_TIMING_Gen1To5);
+ADMG_RETAIN_DATA(gADMG_ContestEffectDescription_AFFECTED_BY_PREV_APPEAL);
+ADMG_RETAIN_DATA(gADMG_ContestEffectDescription_AFFECTED_BY_PREV_APPEAL_Gen1To5);
+ADMG_RETAIN_DATA(gADMG_ContestEffectDescription_NEXT_APPEAL_EARLIER);
+ADMG_RETAIN_DATA(gADMG_ContestEffectDescription_NEXT_APPEAL_EARLIER_Gen1To5);
+ADMG_RETAIN_DATA(gADMG_ContestEffectDescription_NEXT_APPEAL_LATER);
+ADMG_RETAIN_DATA(gADMG_ContestEffectDescription_NEXT_APPEAL_LATER_Gen1To5);
+
 const struct ContestEffect gContestEffects[] =
 {
     [CONTEST_EFFECT_HIGHLY_APPEALING] =
     {
-        #if C_UPDATED_MOVE_EFFECTS >= GEN_6
-        .description = COMPOUND_STRING("Quite the appealing move."),
-        #else
-        .description = COMPOUND_STRING("A highly appealing move."),
-        #endif
+        .description = C_UPDATED_MOVE_EFFECTS >= GEN_6 ? gADMG_ContestEffectDescription_HIGHLY_APPEALING : gADMG_ContestEffectDescription_HIGHLY_APPEALING_Gen1To5,
         .effectType = CONTEST_EFFECT_TYPE_APPEAL,
         .appeal = 40,
         .jam = 0,
@@ -86,11 +122,7 @@ const struct ContestEffect gContestEffects[] =
     },
     [CONTEST_EFFECT_STARTLE_PREV_MON] =
     {
-        #if C_UPDATED_MOVE_EFFECTS >= GEN_6
-        .description = COMPOUND_STRING("Startles the last Pokémon\nto act before the user."),
-        #else
-        .description = COMPOUND_STRING("Startles the POKéMON that\nappealed before the user."),
-        #endif
+        .description = C_UPDATED_MOVE_EFFECTS >= GEN_6 ? gADMG_ContestEffectDescription_STARTLE_PREV_MON : gADMG_ContestEffectDescription_STARTLE_PREV_MON_Gen1To5,
         .effectType = CONTEST_EFFECT_TYPE_STARTLE_MON,
         .appeal = 20,
         .jam = 30,
@@ -98,11 +130,7 @@ const struct ContestEffect gContestEffects[] =
     },
     [CONTEST_EFFECT_STARTLE_PREV_MONS] =
     {
-        #if C_UPDATED_MOVE_EFFECTS >= GEN_6
-        .description = COMPOUND_STRING("Startles all of the Pokémon\nto act before the user."),
-        #else
-        .description = COMPOUND_STRING("Startles all POKéMON that\nhave done their appeals."),
-        #endif
+        .description = C_UPDATED_MOVE_EFFECTS >= GEN_6 ? gADMG_ContestEffectDescription_STARTLE_PREV_MONS : gADMG_ContestEffectDescription_STARTLE_PREV_MONS_Gen1To5,
         .effectType = CONTEST_EFFECT_TYPE_STARTLE_MONS,
         .appeal = 20,
         .jam = 20,
@@ -142,11 +170,7 @@ const struct ContestEffect gContestEffects[] =
     },
     [CONTEST_EFFECT_SHIFT_JUDGE_ATTENTION] =
     {
-        #if C_UPDATED_MOVE_EFFECTS >= GEN_6
-        .description = COMPOUND_STRING("Makes audience expect\nlittle of other contestants."),
-        #else
-        .description = COMPOUND_STRING("Shifts the JUDGE's\nattention from others."),
-        #endif
+        .description = C_UPDATED_MOVE_EFFECTS >= GEN_6 ? gADMG_ContestEffectDescription_SHIFT_JUDGE_ATTENTION : gADMG_ContestEffectDescription_SHIFT_JUDGE_ATTENTION_Gen1To5,
         .effectType = CONTEST_EFFECT_TYPE_WORSEN,
         .appeal = 30,
         .jam = 0,
@@ -226,11 +250,7 @@ const struct ContestEffect gContestEffects[] =
     },
     [CONTEST_EFFECT_MAKE_FOLLOWING_MONS_NERVOUS] =
     {
-        #if C_UPDATED_MOVE_EFFECTS >= GEN_6
-        .description = COMPOUND_STRING("Makes the remaining\nPokémon nervous."),
-        #else
-        .description = COMPOUND_STRING("Makes all POKéMON after\nthe user nervous."),
-        #endif
+        .description = C_UPDATED_MOVE_EFFECTS >= GEN_6 ? gADMG_ContestEffectDescription_MAKE_FOLLOWING_MONS_NERVOUS : gADMG_ContestEffectDescription_MAKE_FOLLOWING_MONS_NERVOUS_Gen1To5,
         .effectType = CONTEST_EFFECT_TYPE_WORSEN,
         .appeal = 20,
         .jam = 0,
@@ -294,11 +314,7 @@ const struct ContestEffect gContestEffects[] =
     },
     [CONTEST_EFFECT_QUALITY_DEPENDS_ON_TIMING] =
     {
-        #if C_UPDATED_MOVE_EFFECTS >= GEN_6
-        .description = COMPOUND_STRING("Effectiveness varies\ndepending on when it is used."),
-        #else
-        .description = COMPOUND_STRING("The appeal's quality varies\ndepending on its timing."),
-        #endif
+        .description = C_UPDATED_MOVE_EFFECTS >= GEN_6 ? gADMG_ContestEffectDescription_QUALITY_DEPENDS_ON_TIMING : gADMG_ContestEffectDescription_QUALITY_DEPENDS_ON_TIMING_Gen1To5,
         .effectType = CONTEST_EFFECT_TYPE_SPECIAL_APPEAL,
         .appeal = 10,
         .jam = 0,
@@ -322,11 +338,7 @@ const struct ContestEffect gContestEffects[] =
     },
     [CONTEST_EFFECT_AFFECTED_BY_PREV_APPEAL] =
     {
-        #if C_UPDATED_MOVE_EFFECTS >= GEN_6
-        .description = COMPOUND_STRING("Affected by how well the\nprevious Pokémon's move went."),
-        #else
-        .description = COMPOUND_STRING("Affected by how well the\nappeal in front goes."),
-        #endif
+        .description = C_UPDATED_MOVE_EFFECTS >= GEN_6 ? gADMG_ContestEffectDescription_AFFECTED_BY_PREV_APPEAL : gADMG_ContestEffectDescription_AFFECTED_BY_PREV_APPEAL_Gen1To5,
         .effectType = CONTEST_EFFECT_TYPE_SPECIAL_APPEAL,
         .appeal = 30,
         .jam = 0,
@@ -350,11 +362,7 @@ const struct ContestEffect gContestEffects[] =
     },
     [CONTEST_EFFECT_NEXT_APPEAL_EARLIER] =
     {
-        #if C_UPDATED_MOVE_EFFECTS >= GEN_6
-        .description = COMPOUND_STRING("Causes the user to move\nearlier on the next turn."),
-        #else
-        .description = COMPOUND_STRING("The next appeal can be\nmade earlier next turn."),
-        #endif
+        .description = C_UPDATED_MOVE_EFFECTS >= GEN_6 ? gADMG_ContestEffectDescription_NEXT_APPEAL_EARLIER : gADMG_ContestEffectDescription_NEXT_APPEAL_EARLIER_Gen1To5,
         .effectType = CONTEST_EFFECT_TYPE_TURN_ORDER,
         .appeal = 30,
         .jam = 0,
@@ -362,11 +370,7 @@ const struct ContestEffect gContestEffects[] =
     },
     [CONTEST_EFFECT_NEXT_APPEAL_LATER] =
     {
-        #if C_UPDATED_MOVE_EFFECTS >= GEN_6
-        .description = COMPOUND_STRING("Causes the user to move\nlater on the next turn."),
-        #else
-        .description = COMPOUND_STRING("The next appeal can be\nmade later next turn."),
-        #endif
+        .description = C_UPDATED_MOVE_EFFECTS >= GEN_6 ? gADMG_ContestEffectDescription_NEXT_APPEAL_LATER : gADMG_ContestEffectDescription_NEXT_APPEAL_LATER_Gen1To5,
         .effectType = CONTEST_EFFECT_TYPE_TURN_ORDER,
         .appeal = 30,
         .jam = 0,

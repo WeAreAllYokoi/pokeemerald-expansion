@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_retention.h"
 #include "move.h"
 #include "random.h"
 #include "constants/moves.h"

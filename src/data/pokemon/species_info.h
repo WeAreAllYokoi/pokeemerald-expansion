@@ -3,6 +3,28 @@
 #include "species_info/shared_dex_text.h"
 #include "species_info/shared_front_pic_anims.h"
 
+// Include the generation selected by P_LVL_UP_LEARNSETS before defining the species tables
+// Their levelUpLearnset fields point to these lists
+#if P_LVL_UP_LEARNSETS >= GEN_9
+#include "level_up_learnsets/gen_9.h" // Scarlet/Violet
+#elif P_LVL_UP_LEARNSETS >= GEN_8
+#include "level_up_learnsets/gen_8.h" // Sword/Shield
+#elif P_LVL_UP_LEARNSETS >= GEN_7
+#include "level_up_learnsets/gen_7.h" // Ultra Sun/Ultra Moon
+#elif P_LVL_UP_LEARNSETS >= GEN_6
+#include "level_up_learnsets/gen_6.h" // Omega Ruby/Alpha Sapphire
+#elif P_LVL_UP_LEARNSETS >= GEN_5
+#include "level_up_learnsets/gen_5.h" // Black 2/White 2
+#elif P_LVL_UP_LEARNSETS >= GEN_4
+#include "level_up_learnsets/gen_4.h" // HeartGold/SoulSilver
+#elif P_LVL_UP_LEARNSETS >= GEN_3
+#include "level_up_learnsets/gen_3.h" // Ruby/Sapphire/Emerald
+#elif P_LVL_UP_LEARNSETS >= GEN_2
+#include "level_up_learnsets/gen_2.h" // Crystal
+#elif P_LVL_UP_LEARNSETS >= GEN_1
+#include "level_up_learnsets/gen_1.h" // Yellow
+#endif
+
 // Standard starting friendship: 50 from Gen 8 onward, 70 before that
 #define STANDARD_FRIENDSHIP ((P_UPDATED_FRIENDSHIP >= GEN_8) ? 50 : 70)
 // Perfect IV count used by legendary species entries: 3 from Gen 6 onward, 0 before that
