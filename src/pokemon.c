@@ -3,6 +3,8 @@
 #include "admg_feature_policies.h"
 #include "admg_trainer_actor.h"
 #include "admg_state.h"
+#include "admg_native.h"
+#include "script.h"
 #include "admg_trainer.h"
 #include "malloc.h"
 #include "apprentice.h"
@@ -1460,6 +1462,11 @@ u8 GetLevelFromBoxMonExp(struct BoxPokemon *boxMon)
 enum Move GiveMoveToMon(struct Pokemon *mon, enum Move move)
 {
     return GiveMoveToBoxMon(&mon->box, move);
+}
+
+ADMG_NATIVE_ENTRY const struct Fusion *ADMG_GetFusionTable(u32 species)
+{
+    return species < NUM_SPECIES ? gFusionTablePointers[species] : NULL;
 }
 
 // Recheck move-based forms after move edits outside battle

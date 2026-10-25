@@ -681,12 +681,11 @@ struct Fusion
 
 extern const struct Fusion *const gFusionTablePointers[NUM_SPECIES];
 
-// Return the species' fusion table, or NULL if it has none
-// IDs at or above NUM_SPECIES, including species added at runtime, are outside this table
-static inline const struct Fusion *ADMG_GetFusionTable(u32 species)
-{
-    return species < NUM_SPECIES ? gFusionTablePointers[species] : NULL;
-}
+// Get a species' fusion table, or NULL if it has none
+// The default reads built-in species; mods can supply their own tables through this provider
+// Mod fusion partners use slots starting at ADMG_FIRST_MOD_FUSION_STORAGE
+const struct Fusion *ADMG_GetFusionTable(u32 species);
+#define ADMG_FIRST_MOD_FUSION_STORAGE 4
 
 #if P_FUSION_FORMS
 #if P_FAMILY_KYUREM

@@ -6672,6 +6672,8 @@ void ItemUseCB_Fusion(u8 taskId, TaskFunc taskFunc)
         }
         for (i = 0; itemFusion[i].fusionStorageIndex != FUSION_TERMINATOR; i++) // Loops through fusion table and checks if the mon can be unfused
         {
+            if (itemFusion[i].fusionStorageIndex >= MAX_FUSION_STORAGE) // Skip entries whose partner-storage index is out of range
+                continue;
             if (gPokemonStoragePtr->fusions[itemFusion[i].fusionStorageIndex].level == 0)
                 continue;
             if (itemFusion[i].itemId == gSpecialVar_ItemId && GetMonData(&gPokemonStoragePtr->fusions[itemFusion[i].fusionStorageIndex], MON_DATA_SPECIES) == itemFusion[i].targetSpecies2)
@@ -6694,7 +6696,7 @@ void ItemUseCB_Fusion(u8 taskId, TaskFunc taskFunc)
             break;
         for (i = 0; itemFusion[i].fusionStorageIndex != FUSION_TERMINATOR; i++) // Run through the Fusion table for each species and check if the item matches one of the entries
         {
-            if (itemFusion[i].itemId == gSpecialVar_ItemId)
+            if (itemFusion[i].itemId == gSpecialVar_ItemId && itemFusion[i].fusionStorageIndex < MAX_FUSION_STORAGE)
             {
                 task->fusionType = FUSE_MON;
                 task->firstFusion = species;
@@ -6714,6 +6716,8 @@ void ItemUseCB_Fusion(u8 taskId, TaskFunc taskFunc)
                 break;
             for (i = 0; itemFusion[i].fusionStorageIndex != FUSION_TERMINATOR; i++) // run through fusion table and check if the fusion works
             {
+                if (itemFusion[i].fusionStorageIndex >= MAX_FUSION_STORAGE)
+                    continue;
                 if (gPokemonStoragePtr->fusions[itemFusion[i].fusionStorageIndex].level != 0)
                     continue;
                 if (itemFusion[i].itemId == gSpecialVar_ItemId && itemFusion[i].targetSpecies1 == task->firstFusion && itemFusion[i].targetSpecies2 == species)

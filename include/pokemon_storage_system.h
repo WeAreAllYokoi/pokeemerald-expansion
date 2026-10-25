@@ -6,7 +6,7 @@
 #define IN_BOX_COLUMNS          6 // Number of columns, 5 Pokémon per column
 #define IN_BOX_COUNT            (IN_BOX_ROWS * IN_BOX_COLUMNS)
 #define BOX_NAME_LENGTH         8
-#define MAX_FUSION_STORAGE      4
+#define MAX_FUSION_STORAGE      16 // Built-in fusions use slots 0-3; mods have slots 4-15
 
 /*
             COLUMNS
