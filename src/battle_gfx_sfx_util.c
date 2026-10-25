@@ -999,11 +999,11 @@ void BattleLoadSubstituteOrMonSpriteGfx(enum BattlerId battler, bool8 loadMonSpr
             position = GetBattlerPosition(battler);
 
         if (IsContest())
-            DecompressDataWithHeaderVram(gBattleAnimSpriteGfx_SubstituteBack, gMonSpritesGfxPtr->spritesGfx[position]);
+            DecompressDataWithHeaderVram((P_GBA_STYLE_SPECIES_GFX ? gBattleAnimSpriteGfx_SubstituteBack_Gba : gBattleAnimSpriteGfx_SubstituteBack), gMonSpritesGfxPtr->spritesGfx[position]);
         else if (!IsOnPlayerSide(battler))
-            DecompressDataWithHeaderVram(gBattleAnimSpriteGfx_Substitute, gMonSpritesGfxPtr->spritesGfx[position]);
+            DecompressDataWithHeaderVram((P_GBA_STYLE_SPECIES_GFX ? gBattleAnimSpriteGfx_Substitute_Gba : gBattleAnimSpriteGfx_Substitute), gMonSpritesGfxPtr->spritesGfx[position]);
         else
-            DecompressDataWithHeaderVram(gBattleAnimSpriteGfx_SubstituteBack, gMonSpritesGfxPtr->spritesGfx[position]);
+            DecompressDataWithHeaderVram((P_GBA_STYLE_SPECIES_GFX ? gBattleAnimSpriteGfx_SubstituteBack_Gba : gBattleAnimSpriteGfx_SubstituteBack), gMonSpritesGfxPtr->spritesGfx[position]);
 
         for (u32 i = 1; i < 2; i++)
         {
@@ -1011,7 +1011,7 @@ void BattleLoadSubstituteOrMonSpriteGfx(enum BattlerId battler, bool8 loadMonSpr
         }
 
         palOffset = OBJ_PLTT_ID(battler);
-        LoadPalette(gBattleAnimSpritePal_Substitute, palOffset, PLTT_SIZE_4BPP);
+        LoadPalette((P_GBA_STYLE_SPECIES_GFX ? gBattleAnimSpritePal_Substitute_Gba : gBattleAnimSpritePal_Substitute), palOffset, PLTT_SIZE_4BPP);
     }
     else
     {

@@ -57,7 +57,8 @@
 #define P_FOOTPRINTS ADMG_CONFIG_EXTRA(P_FOOTPRINTS)
 #define ADMG_DEFAULT_P_TWO_FRAME_FRONT_SPRITES       TRUE        // In Pokémon Emerald, Pokémon front sprites always consist of two frames. This config can revert it to only use the first frame, as is the case in the other Gen 3 games.
 #define P_TWO_FRAME_FRONT_SPRITES ADMG_CONFIG_EXTRA(P_TWO_FRAME_FRONT_SPRITES)
-#define P_GBA_STYLE_SPECIES_GFX         FALSE       // By default, Pokémon sprites use Gen 4/5's style. This config can revert them back to GBA-style. NOTE: B_ENEMY_MON_SHADOW_STYLE is disabled when using these sprites for now.
+#define ADMG_DEFAULT_P_GBA_STYLE_SPECIES_GFX         FALSE       // By default, Pokémon sprites use Gen 4/5's style. This config can revert them back to GBA-style. NOTE: B_ENEMY_MON_SHADOW_STYLE is disabled when using these sprites for now.
+#define P_GBA_STYLE_SPECIES_GFX ADMG_CONFIG_EXTRA(P_GBA_STYLE_SPECIES_GFX)
 #define P_GBA_STYLE_SPECIES_ICONS       FALSE       // By default, Pokémon have their updated icons. This config can revert them back to GBA-style.
 #define P_GBA_STYLE_SPECIES_FOOTPRINTS  FALSE       // By default, Pokémon have their updated footprints. This config can revert them back to GBA-style.
 
@@ -99,7 +100,10 @@
 #include "constants/sound.h"
 
 // Sound related settings
-#define P_MODIFIED_MEGA_CRIES            P_MEGA_EVOLUTIONS  // If TRUE, will use the extra separate Mega Cries (approx. 3% space of ROM). if FALSE, will use the same cry for all Mega Evolutions except modified with P_MODIFIED_MEGA_CRY_MODE. By default, this is set based on if mega evolutions are enabled.
+#define ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES            P_MEGA_EVOLUTIONS  // If TRUE, use separate Mega Evolution cries
+// Otherwise play the base species' cry using P_MODIFIED_MEGA_CRY_MODE
+// Defaults to P_MEGA_EVOLUTIONS; the separate cries stay available either way
+#define P_MODIFIED_MEGA_CRIES ADMG_CONFIG_EXTRA(P_MODIFIED_MEGA_CRIES)
 #define ADMG_DEFAULT_P_MODIFIED_MEGA_CRY_MODE         CRY_MODE_HIGH_PITCH
 #define P_MODIFIED_MEGA_CRY_MODE ADMG_CONFIG_EXTRA(P_MODIFIED_MEGA_CRY_MODE)
 

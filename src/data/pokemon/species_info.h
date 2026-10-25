@@ -1,3 +1,4 @@
+#include "admg_gba_style_aliases.h" // Set up the asset aliases before defining species data
 #include "constants/abilities.h"
 #include "constants/teaching_types.h"
 #include "species_info/shared_dex_text.h"
@@ -43,7 +44,7 @@
 #define FOOTPRINT(sprite)
 #endif
 
-#if ADMG_DEFAULT_B_ENEMY_MON_SHADOW_STYLE >= GEN_4 && P_GBA_STYLE_SPECIES_GFX == FALSE // Build the species shadow fields from the configured defaults
+#if ADMG_DEFAULT_B_ENEMY_MON_SHADOW_STYLE >= GEN_4 && ADMG_DEFAULT_P_GBA_STYLE_SPECIES_GFX == FALSE // Build the species shadow fields from the configured defaults
 #define SHADOW(x, y, size)  .enemyShadowXOffset = x, .enemyShadowYOffset = y, .enemyShadowSize = size,
 #define NO_SHADOW           .suppressEnemyShadow = TRUE,
 #else
@@ -58,7 +59,7 @@
 #define COMP OW_GFX_COMPRESS
 
 #if ADMG_DEFAULT_OW_POKEMON_OBJECT_EVENTS
-#if OW_PKMN_OBJECTS_SHARE_PALETTES == FALSE
+#if ADMG_DEFAULT_OW_PKMN_OBJECTS_SHARE_PALETTES == FALSE
 #define OVERWORLD_PAL(...)                                  \
     .overworldPalette = DEFAULT(NULL, __VA_ARGS__),         \
     .overworldShinyPalette = DEFAULT_2(NULL, __VA_ARGS__),
@@ -68,7 +69,7 @@
 #else
 #define OVERWORLD_PAL(...)
 #define OVERWORLD_PAL_FEMALE(...)
-#endif //OW_PKMN_OBJECTS_SHARE_PALETTES == FALSE
+#endif //ADMG_DEFAULT_OW_PKMN_OBJECTS_SHARE_PALETTES == FALSE
 
 #define OVERWORLD_DATA(picTable, _size, shadow, _tracks, _anims)                                                                     \
 {                                                                                                                                       \

@@ -1524,11 +1524,11 @@ const struct SpeciesInfo gSpeciesInfoGen7[] =
         .abilities = { ABILITY_IRON_FIST, ABILITY_IRON_FIST, ABILITY_IRON_FIST },
         .bodyColor = BODY_COLOR_WHITE,
         .speciesName = _("Crabominable"),
-    #if P_MODIFIED_MEGA_CRIES
+    #if ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .cryId = CRY_CRABOMINABLE_MEGA,
     #else
         .cryId = CRY_CRABOMINABLE,
-    #endif // P_MODIFIED_MEGA_CRIES
+    #endif // ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .natDexNum = NATIONAL_DEX_CRABOMINABLE,
         .categoryName = _("Woolly Crab"),
         .height = 26,
@@ -4284,11 +4284,11 @@ const struct SpeciesInfo gSpeciesInfoGen7[] =
         .abilities = { ABILITY_TOUGH_CLAWS, ABILITY_TOUGH_CLAWS, ABILITY_TOUGH_CLAWS },
         .bodyColor = BODY_COLOR_GRAY,
         .speciesName = _("Golisopod"),
-    #if P_MODIFIED_MEGA_CRIES
+    #if ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .cryId = CRY_GOLISOPOD_MEGA,
     #else
         .cryId = CRY_GOLISOPOD,
-    #endif // P_MODIFIED_MEGA_CRIES
+    #endif // ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .natDexNum = NATIONAL_DEX_GOLISOPOD,
         .categoryName = _("Hard Scale"),
         .height = 23,
@@ -5489,11 +5489,11 @@ const struct SpeciesInfo gSpeciesInfoGen7[] =
         .abilities = { ABILITY_BERSERK, ABILITY_BERSERK, ABILITY_BERSERK },
         .bodyColor = BODY_COLOR_BLACK,
         .speciesName = _("Drampa"),
-    #if P_MODIFIED_MEGA_CRIES
+    #if ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .cryId = CRY_DRAMPA_MEGA,
     #else
         .cryId = CRY_DRAMPA,
-    #endif // P_MODIFIED_MEGA_CRIES
+    #endif // ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .natDexNum = NATIONAL_DEX_DRAMPA,
         .categoryName = _("Imposing"),
         .height = 3,
@@ -7412,11 +7412,11 @@ const struct SpeciesInfo gSpeciesInfoGen7[] =
         .abilities = { ABILITY_SOUL_HEART, ABILITY_NONE, ABILITY_NONE },
         .bodyColor = BODY_COLOR_RED,
         .speciesName = _("Magearna"),
-    #if P_MODIFIED_MEGA_CRIES
+    #if ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .cryId = CRY_MAGEARNA_MEGA,
     #else
         .cryId = CRY_MAGEARNA,
-    #endif // P_MODIFIED_MEGA_CRIES
+    #endif // ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .natDexNum = NATIONAL_DEX_MAGEARNA,
         .categoryName = _("Artificial"),
         .height = 13,
@@ -7472,11 +7472,11 @@ const struct SpeciesInfo gSpeciesInfoGen7[] =
         .abilities = { ABILITY_SOUL_HEART, ABILITY_NONE, ABILITY_NONE },
         .bodyColor = BODY_COLOR_RED,
         .speciesName = _("Magearna"),
-    #if P_MODIFIED_MEGA_CRIES
+    #if ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .cryId = CRY_MAGEARNA_MEGA,
     #else
         .cryId = CRY_MAGEARNA,
-    #endif // P_MODIFIED_MEGA_CRIES
+    #endif // ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .natDexNum = NATIONAL_DEX_MAGEARNA,
         .categoryName = _("Artificial"),
         .height = 13,
@@ -7961,11 +7961,11 @@ const struct SpeciesInfo gSpeciesInfoGen7[] =
         .abilities = { ABILITY_VOLT_ABSORB, ABILITY_NONE, ABILITY_NONE },
         .bodyColor = BODY_COLOR_BLACK,
         .speciesName = _("Zeraora"),
-    #if P_MODIFIED_MEGA_CRIES
+    #if ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .cryId = CRY_ZERAORA_MEGA,
     #else
         .cryId = CRY_ZERAORA,
-    #endif // P_MODIFIED_MEGA_CRIES
+    #endif // ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .natDexNum = NATIONAL_DEX_ZERAORA,
         .categoryName = _("Thunderclap"),
         .height = 15,

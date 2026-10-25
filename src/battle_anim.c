@@ -140,6 +140,7 @@ struct ADMG_BattleAnimationChoice
 
 static const struct ADMG_BattleAnimationChoice sADMG_BattleAnimationChoices[] =
 {
+    {ANIM_TAG_MONSTER_DOLL, CONFIG_P_GBA_STYLE_SPECIES_GFX, {.pic = {gBattleAnimSpriteGfx_MonsterDoll, 0x0200, ANIM_TAG_MONSTER_DOLL}, .palette = {gBattleAnimSpritePal_MonsterDoll, ANIM_TAG_MONSTER_DOLL}}, {.pic = {gBattleAnimSpriteGfx_MonsterDoll_Gba, 0x0200, ANIM_TAG_MONSTER_DOLL}, .palette = {gBattleAnimSpritePal_MonsterDoll_Gba, ANIM_TAG_MONSTER_DOLL}}},
     {ANIM_TAG_SWORD, CONFIG_B_NEW_SWORD_PARTICLE, {.pic = {gBattleAnimSpriteGfx_Sword, 0x0400, ANIM_TAG_SWORD}, .palette = {gBattleAnimSpritePal_Sword, ANIM_TAG_SWORD}}, {.pic = {gBattleAnimSpriteGfx_NewSword, 0x0400, ANIM_TAG_SWORD}, .palette = {gBattleAnimSpritePal_NewSword, ANIM_TAG_SWORD}}},
     {ANIM_TAG_SEED, CONFIG_B_NEW_LEECH_SEED_PARTICLE, {.pic = {gBattleAnimSpriteGfx_Seed, 0x0180, ANIM_TAG_SEED}, .palette = {gBattleAnimSpritePal_Seed, ANIM_TAG_SEED}}, {.pic = {gBattleAnimSpriteGfx_NewLeechSeed, 0x0180, ANIM_TAG_SEED}, .palette = {gBattleAnimSpritePal_NewLeechSeed, ANIM_TAG_SEED}}},
     {ANIM_TAG_HORN_HIT, CONFIG_B_NEW_HORN_ATTACK_PARTICLE, {.pic = {gBattleAnimSpriteGfx_HornHit, 0x0200, ANIM_TAG_HORN_HIT}, .palette = {gBattleAnimSpritePal_HornHit, ANIM_TAG_HORN_HIT}}, {.pic = {gBattleAnimSpriteGfx_HornHit, 0x0200, ANIM_TAG_HORN_HIT}, .palette = {gBattleAnimSpritePal_NewHornHit, ANIM_TAG_HORN_HIT}}},

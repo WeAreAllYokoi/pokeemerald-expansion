@@ -761,13 +761,11 @@ const u16 gBattleAnimSpritePal_ClosingEye2[] = INCGFX_U16("graphics/battle_anims
 const u32 gBattleAnimSpriteGfx_MetalBall[] = INCGFX_U32("graphics/battle_anims/sprites/metal_ball.png", ".4bpp.smol");
 const u16 gBattleAnimSpritePal_MetalBall[] = INCGFX_U16("graphics/battle_anims/sprites/metal_ball.png", ".gbapal");
 
-#if !P_GBA_STYLE_SPECIES_GFX
+// Build both versions; the GBA-style graphics and palettes use the _Gba suffix
     const u32 gBattleAnimSpriteGfx_MonsterDoll[] = INCGFX_U32("graphics/battle_anims/sprites/monster_doll.png", ".4bpp.smol");
     const u16 gBattleAnimSpritePal_MonsterDoll[] = INCGFX_U16("graphics/battle_anims/sprites/monster_doll.png", ".gbapal");
-#else
-    const u32 gBattleAnimSpriteGfx_MonsterDoll[] = INCGFX_U32("graphics/battle_anims/sprites/monster_doll_gba.png", ".4bpp.smol");
-    const u16 gBattleAnimSpritePal_MonsterDoll[] = INCGFX_U16("graphics/battle_anims/sprites/monster_doll_gba.png", ".gbapal");
-#endif //P_GBA_STYLE_SPECIES_GFX
+    const u32 gBattleAnimSpriteGfx_MonsterDoll_Gba[] = INCGFX_U32("graphics/battle_anims/sprites/monster_doll_gba.png", ".4bpp.smol");
+    const u16 gBattleAnimSpritePal_MonsterDoll_Gba[] = INCGFX_U16("graphics/battle_anims/sprites/monster_doll_gba.png", ".gbapal");
 
 const u32 gBattleAnimSpriteGfx_Whirlwind[] = INCGFX_U32("graphics/battle_anims/sprites/whirlwind.png", ".4bpp.smol");
 const u16 gBattleAnimSpritePal_Whirlwind[] = INCGFX_U16("graphics/battle_anims/sprites/whirlwind.png", ".gbapal");
@@ -1226,15 +1224,13 @@ const u16 gBattleAnimSpritePal_HandsAndFeet[] = INCGFX_U16("graphics/battle_anim
 const u32 gBattleAnimSpriteGfx_Confetti[] = INCGFX_U32("graphics/battle_anims/sprites/confetti.png", ".4bpp.smol");
 const u16 gBattleAnimSpritePal_Confetti[] = INCGFX_U16("graphics/battle_anims/sprites/confetti.png", ".gbapal");
 
-#if !P_GBA_STYLE_SPECIES_GFX
+// Build both versions; the GBA-style graphics and palettes use the _Gba suffix
     const u32 gBattleAnimSpriteGfx_Substitute[] = INCGFX_U32("graphics/battle_anims/sprites/substitute.png", ".4bpp.smol");
     const u32 gBattleAnimSpriteGfx_SubstituteBack[] = INCGFX_U32("graphics/battle_anims/sprites/substitute_back.png", ".4bpp.smol");
     const u16 gBattleAnimSpritePal_Substitute[] = INCGFX_U16("graphics/battle_anims/sprites/substitute.png", ".gbapal");
-#else
-    const u32 gBattleAnimSpriteGfx_Substitute[] = INCGFX_U32("graphics/battle_anims/sprites/substitute_gba.png", ".4bpp.smol");
-    const u32 gBattleAnimSpriteGfx_SubstituteBack[] = INCGFX_U32("graphics/battle_anims/sprites/substitute_back_gba.png", ".4bpp.smol");
-    const u16 gBattleAnimSpritePal_Substitute[] = INCGFX_U16("graphics/battle_anims/sprites/substitute_gba.png", ".gbapal");
-#endif //P_GBA_STYLE_SPECIES_GFX
+    const u32 gBattleAnimSpriteGfx_Substitute_Gba[] = INCGFX_U32("graphics/battle_anims/sprites/substitute_gba.png", ".4bpp.smol");
+    const u32 gBattleAnimSpriteGfx_SubstituteBack_Gba[] = INCGFX_U32("graphics/battle_anims/sprites/substitute_back_gba.png", ".4bpp.smol");
+    const u16 gBattleAnimSpritePal_Substitute_Gba[] = INCGFX_U16("graphics/battle_anims/sprites/substitute_gba.png", ".gbapal");
 
 const u32 gBattleAnimSpriteGfx_GreenStar[] = INCGFX_U32("graphics/battle_anims/sprites/green_star.png", ".4bpp.smol");
 const u16 gBattleAnimSpritePal_GreenStar[] = INCGFX_U16("graphics/battle_anims/sprites/green_star.png", ".gbapal");

@@ -2301,8 +2301,8 @@ static u32 LoadDynamicFollowerPalette(enum Species species, bool32 shiny, bool32
 {
     u32 paletteNum;
     // Use standalone palette, unless entry is OOB or NULL (fallback to front-sprite-based)
-#if ADMG_DEFAULT_OW_POKEMON_OBJECT_EVENTS == TRUE && OW_PKMN_OBJECTS_SHARE_PALETTES == FALSE
-    if (OW_POKEMON_OBJECT_EVENTS && ((shiny && gSpeciesInfo[species].overworldPalette)
+#if ADMG_DEFAULT_OW_POKEMON_OBJECT_EVENTS == TRUE && ADMG_DEFAULT_OW_PKMN_OBJECTS_SHARE_PALETTES == FALSE
+    if (OW_POKEMON_OBJECT_EVENTS && !OW_PKMN_OBJECTS_SHARE_PALETTES && ((shiny && gSpeciesInfo[species].overworldPalette)
     || (!shiny && gSpeciesInfo[species].overworldShinyPalette))
      && !ADMG_IsSpeciesOverworldDataHidden(species))
     {
@@ -2332,7 +2332,7 @@ static u32 LoadDynamicFollowerPalette(enum Species species, bool32 shiny, bool32
         paletteNum = LoadSpritePalette(&spritePalette);
     }
     else
-#endif //ADMG_DEFAULT_OW_POKEMON_OBJECT_EVENTS == TRUE && OW_PKMN_OBJECTS_SHARE_PALETTES == FALSE
+#endif //ADMG_DEFAULT_OW_POKEMON_OBJECT_EVENTS == TRUE && ADMG_DEFAULT_OW_PKMN_OBJECTS_SHARE_PALETTES == FALSE
     {
         const u16 *palette = GetMonSpritePalFromSpecies(species, shiny, female); //ETODO
         // palette already loaded

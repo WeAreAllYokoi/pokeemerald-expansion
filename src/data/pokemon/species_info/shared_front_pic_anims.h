@@ -1,4 +1,5 @@
-static const union AnimCmd *const sAnims_SingleFramePlaceHolder[] =
+// Keep this table available by name for GBA-style species animations
+const union AnimCmd *const sAnims_SingleFramePlaceHolder[] =
 {
     sAnim_GeneralFrame0,
     (const union AnimCmd[]) {
@@ -6,6 +7,7 @@ static const union AnimCmd *const sAnims_SingleFramePlaceHolder[] =
         ANIMCMD_END,
     },
 };
+ADMG_RETAIN_DATA(sAnims_SingleFramePlaceHolder);
 
 static const union AnimCmd *const sAnims_TwoFramePlaceHolder[] =
 {

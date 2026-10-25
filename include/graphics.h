@@ -3027,6 +3027,12 @@ extern const u32 gBattleAnimBgImage_ClangorousSoulblaze[];
 extern const u16 gBattleAnimBgPalette_ClangorousSoulblaze[];
 extern const u32 gBattleAnimBgTilemap_ClangorousSoulblaze[];
 extern const u16 gBattleAnimBgPalette_DynamaxCannon[];
+// GBA-style Monster Doll and Substitute graphics and palettes
+extern const u32 gBattleAnimSpriteGfx_MonsterDoll_Gba[];
+extern const u16 gBattleAnimSpritePal_MonsterDoll_Gba[];
+extern const u32 gBattleAnimSpriteGfx_Substitute_Gba[];
+extern const u32 gBattleAnimSpriteGfx_SubstituteBack_Gba[];
+extern const u16 gBattleAnimSpritePal_Substitute_Gba[];
 // Updated terrain images, palettes and tilemaps for B_NEW_TERRAIN_BACKGROUNDS
 extern const u32 gBattleAnimBgImage_ElectricTerrainNew[];
 extern const u16 gBattleAnimBgPalette_ElectricTerrainNew[];

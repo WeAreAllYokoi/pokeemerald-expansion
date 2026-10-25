@@ -503,12 +503,12 @@ struct SpeciesInfo /*0xC4*/
 #if ADMG_DEFAULT_OW_POKEMON_OBJECT_EVENTS
     struct ObjectEventGraphicsInfo overworldData;
     struct ObjectEventGraphicsInfo overworldDataFemale;
-#if OW_PKMN_OBJECTS_SHARE_PALETTES == FALSE
+#if ADMG_DEFAULT_OW_PKMN_OBJECTS_SHARE_PALETTES == FALSE
     const void *overworldPalette;
     const void *overworldShinyPalette;
     const void *overworldPaletteFemale;
     const void *overworldShinyPaletteFemale;
-#endif //OW_PKMN_OBJECTS_SHARE_PALETTES
+#endif //ADMG_DEFAULT_OW_PKMN_OBJECTS_SHARE_PALETTES
 #endif //ADMG_DEFAULT_OW_POKEMON_OBJECT_EVENTS
     enum OverworldWildEncounterBehaviors overworldEncounterBehavior;
 };

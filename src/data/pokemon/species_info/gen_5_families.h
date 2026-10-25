@@ -538,11 +538,11 @@ const struct SpeciesInfo gSpeciesInfoGen5[] =
         .bodyColor = BODY_COLOR_RED,
         .noFlip = TRUE,
         .speciesName = _("Emboar"),
-    #if P_MODIFIED_MEGA_CRIES
+    #if ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .cryId = CRY_EMBOAR_MEGA,
     #else
         .cryId = CRY_EMBOAR,
-    #endif // P_MODIFIED_MEGA_CRIES
+    #endif // ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .natDexNum = NATIONAL_DEX_EMBOAR,
         .categoryName = _("Fire Pig"),
         .height = 18,
@@ -2856,11 +2856,11 @@ const struct SpeciesInfo gSpeciesInfoGen5[] =
         .bodyColor = BODY_COLOR_GRAY,
         .noFlip = TRUE,
         .speciesName = _("Excadrill"),
-    #if P_MODIFIED_MEGA_CRIES
+    #if ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .cryId = CRY_EXCADRILL_MEGA,
     #else
         .cryId = CRY_EXCADRILL,
-    #endif // P_MODIFIED_MEGA_CRIES
+    #endif // ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .natDexNum = NATIONAL_DEX_EXCADRILL,
         .categoryName = _("Subterrene"),
         .height = 9,
@@ -2991,11 +2991,11 @@ const struct SpeciesInfo gSpeciesInfoGen5[] =
         .abilities = { ABILITY_HEALER, ABILITY_HEALER, ABILITY_HEALER },
         .bodyColor = BODY_COLOR_WHITE,
         .speciesName = _("Audino"),
-    #if P_MODIFIED_MEGA_CRIES
+    #if ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .cryId = CRY_AUDINO_MEGA,
     #else
         .cryId = CRY_AUDINO,
-    #endif // P_MODIFIED_MEGA_CRIES
+    #endif // ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .natDexNum = NATIONAL_DEX_AUDINO,
         .categoryName = _("Hearing"),
         .height = 15,
@@ -4087,11 +4087,11 @@ const struct SpeciesInfo gSpeciesInfoGen5[] =
         .abilities = { ABILITY_SHELL_ARMOR, ABILITY_SHELL_ARMOR, ABILITY_SHELL_ARMOR },
         .bodyColor = BODY_COLOR_PURPLE,
         .speciesName = _("Scolipede"),
-    #if P_MODIFIED_MEGA_CRIES
+    #if ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .cryId = CRY_SCOLIPEDE_MEGA,
     #else
         .cryId = CRY_SCOLIPEDE,
-    #endif // P_MODIFIED_MEGA_CRIES
+    #endif // ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .natDexNum = NATIONAL_DEX_SCOLIPEDE,
         .categoryName = _("Megapede"),
         .height = 32,
@@ -5826,11 +5826,11 @@ const struct SpeciesInfo gSpeciesInfoGen5[] =
         .abilities = { ABILITY_INTIMIDATE, ABILITY_INTIMIDATE, ABILITY_INTIMIDATE },
         .bodyColor = BODY_COLOR_BROWN,
         .speciesName = _("Scrafty"),
-    #if P_MODIFIED_MEGA_CRIES
+    #if ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .cryId = CRY_SCRAFTY_MEGA,
     #else
         .cryId = CRY_SCRAFTY,
-    #endif // P_MODIFIED_MEGA_CRIES
+    #endif // ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .natDexNum = NATIONAL_DEX_SCRAFTY,
         .categoryName = _("Hoodlum"),
         .height = 11,
@@ -9820,11 +9820,11 @@ const struct SpeciesInfo gSpeciesInfoGen5[] =
         .abilities = { ABILITY_EELEVATE, ABILITY_EELEVATE, ABILITY_EELEVATE },
         .bodyColor = BODY_COLOR_BLUE,
         .speciesName = _("Eelektross"),
-    #if P_MODIFIED_MEGA_CRIES
+    #if ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .cryId = CRY_EELEKTROSS_MEGA,
     #else
         .cryId = CRY_EELEKTROSS,
-    #endif // P_MODIFIED_MEGA_CRIES
+    #endif // ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .natDexNum = NATIONAL_DEX_EELEKTROSS,
         .categoryName = _("EleFish"),
         .height = 30,
@@ -10248,11 +10248,11 @@ const struct SpeciesInfo gSpeciesInfoGen5[] =
         .bodyColor = BODY_COLOR_BLACK,
         .noFlip = TRUE,
         .speciesName = _("Chandelure"),
-    #if P_MODIFIED_MEGA_CRIES
+    #if ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .cryId = CRY_CHANDELURE_MEGA,
     #else
         .cryId = CRY_CHANDELURE,
-    #endif // P_MODIFIED_MEGA_CRIES
+    #endif // ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .natDexNum = NATIONAL_DEX_CHANDELURE,
         .categoryName = _("Luring"),
         .height = 25,
@@ -11372,11 +11372,11 @@ const struct SpeciesInfo gSpeciesInfoGen5[] =
         .bodyColor = BODY_COLOR_GREEN,
         .noFlip = TRUE,
         .speciesName = _("Golurk"),
-    #if P_MODIFIED_MEGA_CRIES
+    #if ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .cryId = CRY_GOLURK_MEGA,
     #else
         .cryId = CRY_GOLURK,
-    #endif // P_MODIFIED_MEGA_CRIES
+    #endif // ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .natDexNum = NATIONAL_DEX_GOLURK,
         .categoryName = _("Automaton"),
         .height = 40,

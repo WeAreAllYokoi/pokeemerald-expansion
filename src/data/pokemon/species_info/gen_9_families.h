@@ -3417,11 +3417,11 @@ const struct SpeciesInfo gSpeciesInfoGen9[] =
         .abilities = { ABILITY_SPICY_SPRAY, ABILITY_SPICY_SPRAY, ABILITY_SPICY_SPRAY },
         .bodyColor = BODY_COLOR_GREEN,
         .speciesName = _("Scovillain"),
-    #if P_MODIFIED_MEGA_CRIES
+    #if ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .cryId = CRY_SCOVILLAIN_MEGA,
     #else
         .cryId = CRY_SCOVILLAIN,
-    #endif // P_MODIFIED_MEGA_CRIES
+    #endif // ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .natDexNum = NATIONAL_DEX_SCOVILLAIN,
         .categoryName = _("Spicy Pepper"),
         .height = 12,
@@ -4715,11 +4715,11 @@ const struct SpeciesInfo gSpeciesInfoGen9[] =
         .abilities = { ABILITY_ADAPTABILITY, ABILITY_ADAPTABILITY, ABILITY_ADAPTABILITY },
         .bodyColor = BODY_COLOR_BLUE,
         .speciesName = _("Glimmora"),
-    #if P_MODIFIED_MEGA_CRIES
+    #if ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .cryId = CRY_GLIMMORA_MEGA,
     #else
         .cryId = CRY_GLIMMORA,
-    #endif // P_MODIFIED_MEGA_CRIES
+    #endif // ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .natDexNum = NATIONAL_DEX_GLIMMORA,
         .categoryName = _("Ore"),
         .height = 15,
@@ -5433,11 +5433,11 @@ const struct SpeciesInfo gSpeciesInfoGen9[] =
         .abilities = { ABILITY_STORM_DRAIN, ABILITY_NONE, ABILITY_STORM_DRAIN },
         .bodyColor = BODY_COLOR_RED,
         .speciesName = _("Tatsugiri"),
-    #if P_MODIFIED_MEGA_CRIES
+    #if ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .cryId = CRY_TATSUGIRI_MEGA,
     #else
         .cryId = CRY_TATSUGIRI_CURLY,
-    #endif // P_MODIFIED_MEGA_CRIES
+    #endif // ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .natDexNum = NATIONAL_DEX_TATSUGIRI,
         .categoryName = _("Mimicry"),
         .height = 6,
@@ -5491,11 +5491,11 @@ const struct SpeciesInfo gSpeciesInfoGen9[] =
         .abilities = { ABILITY_STORM_DRAIN, ABILITY_NONE, ABILITY_STORM_DRAIN },
         .bodyColor = BODY_COLOR_PINK,
         .speciesName = _("Tatsugiri"),
-    #if P_MODIFIED_MEGA_CRIES
+    #if ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .cryId = CRY_TATSUGIRI_MEGA,
     #else
         .cryId = CRY_TATSUGIRI_DROOPY,
-    #endif // P_MODIFIED_MEGA_CRIES
+    #endif // ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .natDexNum = NATIONAL_DEX_TATSUGIRI,
         .categoryName = _("Mimicry"),
         .height = 6,
@@ -5549,11 +5549,11 @@ const struct SpeciesInfo gSpeciesInfoGen9[] =
         .abilities = { ABILITY_STORM_DRAIN, ABILITY_NONE, ABILITY_STORM_DRAIN },
         .bodyColor = BODY_COLOR_YELLOW,
         .speciesName = _("Tatsugiri"),
-    #if P_MODIFIED_MEGA_CRIES
+    #if ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .cryId = CRY_TATSUGIRI_MEGA,
     #else
         .cryId = CRY_TATSUGIRI_STRETCHY,
-    #endif // P_MODIFIED_MEGA_CRIES
+    #endif // ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .natDexNum = NATIONAL_DEX_TATSUGIRI,
         .categoryName = _("Mimicry"),
         .height = 6,
@@ -6613,11 +6613,11 @@ const struct SpeciesInfo gSpeciesInfoGen9[] =
         .abilities = { ABILITY_THERMAL_EXCHANGE, ABILITY_THERMAL_EXCHANGE, ABILITY_THERMAL_EXCHANGE },
         .bodyColor = BODY_COLOR_BLUE,
         .speciesName = _("Baxcalibur"),
-    #if P_MODIFIED_MEGA_CRIES
+    #if ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .cryId = CRY_BAXCALIBUR_MEGA,
     #else
         .cryId = CRY_BAXCALIBUR,
-    #endif // P_MODIFIED_MEGA_CRIES
+    #endif // ADMG_DEFAULT_P_MODIFIED_MEGA_CRIES
         .natDexNum = NATIONAL_DEX_BAXCALIBUR,
         .categoryName = _("Ice Dragon"),
         .height = 21,
