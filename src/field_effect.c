@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_region.h"
 #include "data.h"
 #include "decompress.h"
 #include "event_data.h"
@@ -3340,7 +3341,7 @@ u8 FldEff_UseSurf(void)
     u8 taskId = CreateTask(Task_SurfFieldEffect, 0xff);
     gTasks[taskId].tMonId = gFieldEffectArguments[0];
     Overworld_ClearSavedMusic();
-    Overworld_ChangeMusicTo(IS_FRLG ? MUS_RG_SURF : MUS_SURF);
+    Overworld_ChangeMusicTo(ADMG_IsFrlgContext() ? MUS_RG_SURF : MUS_SURF);
     return FALSE;
 }
 

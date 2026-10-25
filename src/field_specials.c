@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_region.h"
 #include "admg_feature_bindings.h"
 #include "debug.h"
 #include "malloc.h"
@@ -1039,7 +1040,7 @@ void FieldShowRegionMap(void)
 
 static bool32 IsBuildingPCTile(u32 tileId)
 {
-    if (IS_FRLG)
+    if (ADMG_IsFrlgContext())
         return FALSE;
 
     return (MetatileBehavior_IsPC(GetAttributeByMetatileIdAndMapLayout(tileId, METATILE_ATTRIBUTE_BEHAVIOR, FALSE)));
@@ -1047,7 +1048,7 @@ static bool32 IsBuildingPCTile(u32 tileId)
 
 static bool32 IsBuildingPCTileFrlg(u32 tileId)
 {
-    if (IS_FRLG)
+    if (ADMG_IsFrlgContext())
         return gMapHeader.mapLayout->primaryTileset == &gTileset_BuildingFrlg && (tileId == METATILE_BuildingFrlg_PCOn || tileId == METATILE_BuildingFrlg_PCOff);
 
     return FALSE;
@@ -1055,7 +1056,7 @@ static bool32 IsBuildingPCTileFrlg(u32 tileId)
 
 static bool32 IsPlayerHousePCTile(u32 tileId)
 {
-    if (IS_FRLG)
+    if (ADMG_IsFrlgContext())
         return FALSE;
 
     return gMapHeader.mapLayout->secondaryTileset == &gTileset_BrendansMaysHouse
@@ -1067,7 +1068,7 @@ static bool32 IsPlayerHousePCTile(u32 tileId)
 
 static bool32 IsPlayerHousePCTileFrlg(u32 tileId)
 {
-    if (IS_FRLG)
+    if (ADMG_IsFrlgContext())
         return gMapHeader.mapLayout->secondaryTileset == &gTileset_GenericBuilding1
             && (tileId == METATILE_GenericBuilding1_PlayersPCOn || tileId == METATILE_GenericBuilding1_PlayersPCOff);
 
@@ -1165,7 +1166,7 @@ static void PCTurnOnEffect_SetMetatile(s16 isScreenOn, s8 dx, s8 dy)
     {
         // Screen is on, set it off
         if (gSpecialVar_0x8004 == PC_LOCATION_OTHER)
-            metatileId = IS_FRLG ? METATILE_BuildingFrlg_PCOff : METATILE_Building_PC_Off;
+            metatileId = ADMG_IsFrlgContext() ? METATILE_BuildingFrlg_PCOff : METATILE_Building_PC_Off;
         else if (gSpecialVar_0x8004 == PC_LOCATION_BRENDANS_HOUSE)
             metatileId = METATILE_BrendansMaysHouse_BrendanPC_Off;
         else if (gSpecialVar_0x8004 == PC_LOCATION_MAYS_HOUSE)
@@ -1177,7 +1178,7 @@ static void PCTurnOnEffect_SetMetatile(s16 isScreenOn, s8 dx, s8 dy)
     {
         // Screen is off, set it on
         if (gSpecialVar_0x8004 == PC_LOCATION_OTHER)
-            metatileId = IS_FRLG ? METATILE_BuildingFrlg_PCOn : METATILE_Building_PC_On;
+            metatileId = ADMG_IsFrlgContext() ? METATILE_BuildingFrlg_PCOn : METATILE_Building_PC_On;
         else if (gSpecialVar_0x8004 == PC_LOCATION_BRENDANS_HOUSE)
             metatileId = METATILE_BrendansMaysHouse_BrendanPC_On;
         else if (gSpecialVar_0x8004 == PC_LOCATION_MAYS_HOUSE)
@@ -1224,7 +1225,7 @@ static void PCTurnOffEffect(void)
     }
 
     if (gSpecialVar_0x8004 == PC_LOCATION_OTHER)
-        metatileId = IS_FRLG ? METATILE_BuildingFrlg_PCOff : METATILE_Building_PC_Off;
+        metatileId = ADMG_IsFrlgContext() ? METATILE_BuildingFrlg_PCOff : METATILE_Building_PC_Off;
     else if (gSpecialVar_0x8004 == PC_LOCATION_BRENDANS_HOUSE)
         metatileId = METATILE_BrendansMaysHouse_BrendanPC_Off;
     else if (gSpecialVar_0x8004 == PC_LOCATION_MAYS_HOUSE)
@@ -5442,8 +5443,8 @@ void ForcePlayerOntoBike(void)
 {
     if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_ON_FOOT)
         SetPlayerAvatarTransitionFlags(PLAYER_AVATAR_FLAG_ACRO_BIKE);
-    Overworld_SetSavedMusic(IS_FRLG ? MUS_RG_CYCLING : MUS_CYCLING);
-    Overworld_ChangeMusicTo(IS_FRLG ? MUS_RG_CYCLING : MUS_CYCLING);
+    Overworld_SetSavedMusic(ADMG_IsFrlgContext() ? MUS_RG_CYCLING : MUS_CYCLING);
+    Overworld_ChangeMusicTo(ADMG_IsFrlgContext() ? MUS_RG_CYCLING : MUS_CYCLING);
 }
 
 bool8 IsPlayerNotInTrainerTowerLobby(void)

@@ -1,5 +1,6 @@
 #include "global.h"
 #include "admg_developer_tools.h"
+#include "admg_region.h"
 #include "admg_retention.h"
 #include "admg_feature_settings.h"
 #include "admg_feature_state.h"
@@ -1362,7 +1363,7 @@ void Overworld_PlaySpecialMapMusic(void)
         else if (GetCurrentMapType() == MAP_TYPE_UNDERWATER)
             music = MUS_UNDERWATER;
         else if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING))
-            music = (IS_FRLG ? MUS_RG_SURF : MUS_SURF);
+            music = (ADMG_IsFrlgContext() ? MUS_RG_SURF : MUS_SURF);
     }
 
     music = GetNightMusicFromTrack(music);
@@ -1397,10 +1398,10 @@ static void TransitionMapMusic(void)
         u16 currentMusic = GetCurrentMapMusic();
         if (newMusic != MUS_ABNORMAL_WEATHER && newMusic != MUS_NONE)
         {
-            if (currentMusic == MUS_UNDERWATER || currentMusic == (IS_FRLG ? MUS_RG_SURF : MUS_SURF))
+            if (currentMusic == MUS_UNDERWATER || currentMusic == (ADMG_IsFrlgContext() ? MUS_RG_SURF : MUS_SURF))
                 return;
             if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING))
-                newMusic = (IS_FRLG ? MUS_RG_SURF : MUS_SURF);
+                newMusic = (ADMG_IsFrlgContext() ? MUS_RG_SURF : MUS_SURF);
         }
         newMusic = GetNightMusicFromTrack(newMusic);
         if (newMusic != currentMusic)
