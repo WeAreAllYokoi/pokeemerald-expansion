@@ -278,7 +278,7 @@ enum VolatileFlags
     F(VOLATILE_ENCORED_MOVE_POS,            encoredMovePos,                (u32, MAX_BITS(MAX_MON_MOVES))) \
     F(VOLATILE_DISABLE_TIMER,               disableTimer,                  (u32, ADMG_VOLATILE_TIMER_MAX)) \
     F(VOLATILE_ENCORE_TIMER,                encoreTimer,                   (u32, ADMG_VOLATILE_TIMER_MAX)) \
-    F(VOLATILE_PERISH_SONG_TIMER,           perishSongTimer,               (u32, B_PERISH_SONG_TIMER)) \
+    F(VOLATILE_PERISH_SONG_TIMER,           perishSongTimer,               (u32, ADMG_VOLATILE_TIMER_MAX)) \
     F(VOLATILE_ROLLOUT_TIMER,               rolloutTimer,                  (u32, UINT8_MAX)) \
     F(VOLATILE_FURY_CUTTER_COUNTER,         furyCutterCounter,             (u32, UINT8_MAX)) \
     F(VOLATILE_METRONOME_ITEM_COUNTER,      metronomeItemCounter,          (u32, UINT8_MAX)) \

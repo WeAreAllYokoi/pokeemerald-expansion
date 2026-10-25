@@ -6717,7 +6717,7 @@ static void Cmd_trysetperishsong(void)
         else
         {
             gBattleMons[i].volatiles.perishSong = TRUE;
-            gBattleMons[i].volatiles.perishSongTimer = 3;
+            gBattleMons[i].volatiles.perishSongTimer = B_PERISH_SONG_TIMER; // Start the countdown from the current B_PERISH_SONG_TIMER setting
         }
     }
 

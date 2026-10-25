@@ -6219,7 +6219,8 @@ BattleScript_DynamaxBegins_SwitchIn:
 	updatedynamax
 	playanimation BS_SCRIPTING, B_ANIM_DYNAMAX_GROWTH
 	waitanimation
-	jumpifbyteequal B_SHOW_DYNAMAX_MESSAGE, FALSE, BattleScript_DynamaxBegins_Ret
+	@ ADMG: B_SHOW_DYNAMAX_MESSAGE is selected at run time (upstream compared the bytes at addresses B_SHOW_DYNAMAX_MESSAGE and FALSE)
+	jumpifgenconfiglowerthan ADMG_CONFIG_TAG_B_SHOW_DYNAMAX_MESSAGE, TRUE, BattleScript_DynamaxBegins_Ret
 	jumpifcangigantamax BS_ATTACKER, BattleScript_DynamaxBegins_GigantamaxString_02
 	printstring STRINGID_PKMNDYNAMAXED
 	waitmessage B_WAIT_TIME_LONG

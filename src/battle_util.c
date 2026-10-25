@@ -4304,10 +4304,10 @@ u32 AbilityBattleEffects(enum AbilityEffect caseID, enum BattlerId battler, enum
                 if (!gBattleMons[battler].volatiles.perishSong)
                 {
                     gBattleMons[battler].volatiles.perishSong = TRUE;
-                    gBattleMons[battler].volatiles.perishSongTimer = 3;
+                    gBattleMons[battler].volatiles.perishSongTimer = B_PERISH_SONG_TIMER; // Start the countdown from the current B_PERISH_SONG_TIMER setting
                 }
                 gBattleMons[gBattlerAttacker].volatiles.perishSong = TRUE;
-                gBattleMons[gBattlerAttacker].volatiles.perishSongTimer = 3;
+                gBattleMons[gBattlerAttacker].volatiles.perishSongTimer = B_PERISH_SONG_TIMER; // Start the countdown from the current B_PERISH_SONG_TIMER setting
                 BattleScriptCall(BattleScript_PerishBodyActivates);
                 effect++;
             }

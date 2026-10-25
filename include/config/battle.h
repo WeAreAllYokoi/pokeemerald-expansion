@@ -240,7 +240,8 @@
 #define B_DISABLE_TIMER ADMG_CONFIG_EXTRA(B_DISABLE_TIMER)
 #define ADMG_DEFAULT_B_ENCORE_TIMER       4
 #define B_ENCORE_TIMER ADMG_CONFIG_EXTRA(B_ENCORE_TIMER)
-#define B_PERISH_SONG_TIMER  3
+#define ADMG_DEFAULT_B_PERISH_SONG_TIMER  3
+#define B_PERISH_SONG_TIMER ADMG_CONFIG_EXTRA(B_PERISH_SONG_TIMER)
 #define ADMG_DEFAULT_B_TAUNT_TIMER        5
 #define B_TAUNT_TIMER ADMG_CONFIG_EXTRA(B_TAUNT_TIMER)
 #define ADMG_DEFAULT_B_SLOW_START_TIMER   5
@@ -398,7 +399,8 @@
 #define B_ANIMATE_MON_AFTER_KO ADMG_CONFIG_EXTRA(B_ANIMATE_MON_AFTER_KO)
 #define ADMG_DEFAULT_B_ANIMATE_MON_AFTER_FAILED_POKEBALL TRUE       // If set to TRUE, a wild Pokémon that breaks of a thrown Poké Ball will play its animation.
 #define B_ANIMATE_MON_AFTER_FAILED_POKEBALL ADMG_CONFIG_EXTRA(B_ANIMATE_MON_AFTER_FAILED_POKEBALL)
-#define B_SHOW_DYNAMAX_MESSAGE              FALSE      // If set to TRUE, an additional battle message is shown after Dynamaxing or Gigantamaxing.
+#define ADMG_DEFAULT_B_SHOW_DYNAMAX_MESSAGE              FALSE      // If set to TRUE, an additional battle message is shown after Dynamaxing or Gigantamaxing.
+#define B_SHOW_DYNAMAX_MESSAGE ADMG_CONFIG_EXTRA(B_SHOW_DYNAMAX_MESSAGE)
 #define ADMG_DEFAULT_B_HPBAR_COLOR_THRESHOLD             GEN_LATEST // In Gen5+, HP bar color thresholds were changed to be based on the actual HP values instead of the pixel length of the HP bar, leading to more accurate HP bar colors.
 #define B_HPBAR_COLOR_THRESHOLD ADMG_CONFIG_EXTRA(B_HPBAR_COLOR_THRESHOLD)
 #define B_HP_PERCENTAGE_DISPLAY             FALSE      // If set to TRUE, Pokémon on the opposing side's HP will be displayed in percentage alongside the HP bar. In single battles, this extends the healthbox to add the percentage below the HP bar. In double battles, the same input used to toggle your side's HP values will also toggle the opposing side's percentage display.
