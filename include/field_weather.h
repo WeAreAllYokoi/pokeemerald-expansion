@@ -174,6 +174,22 @@ void ResetPaletteColorMapType(u8 paletteIndex);
 void ResetPreservedPalettesInWeather(void);
 bool32 IsWeatherAlphaBlend(void);
 
+// Field weather requests and providers for map weather, dynamic pools and aliases
+enum ADMG_WeatherRequestResult
+{
+    ADMG_WEATHER_REQUEST_STARTED,
+    ADMG_WEATHER_REQUEST_INVALID,
+    ADMG_WEATHER_REQUEST_FIELD_NOT_IDLE,
+};
+#define ADMG_WEATHER_REQUEST_PERSIST 1
+#define ADMG_WEATHER_CYCLE_LENGTH 4 // Steps in the Route 119/123 cycles, tracked by weatherCycleStage
+u32 ADMG_IsFieldWeatherRunning(void);
+u32 ADMG_GetMapWeather(u32 mapId, u32 headerWeather);
+const u8 *ADMG_GetRegisteredDynamicWeatherPool(u32 mapSec, u32 mapId, u32 *count);
+u32 ADMG_TranslateRegisteredWeather(u32 weather, u32 day, u32 hash);
+u32 ADMG_TranslateWeather(u32 weather);
+u32 ADMG_RequestFieldWeather(u32 weather, u32 flags);
+
 // field_weather_effect.c
 void Clouds_InitVars(void);
 void Clouds_Main(void);

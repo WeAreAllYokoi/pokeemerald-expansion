@@ -20,6 +20,8 @@
 #include "gpu_regs.h"
 #include "field_camera.h"
 #include "overworld.h"
+#include "admg_native.h"
+#include "admg_retention.h"
 
 #define DROUGHT_COLOR_INDEX(color) ((((color) >> 1) & 0xF) | (((color) >> 2) & 0xF0) | (((color) >> 3) & 0xF00))
 
@@ -225,8 +227,16 @@ void StartWeather(void)
     }
 }
 
+// sWeatherFuncs only covers WEATHER_NONE through WEATHER_UNDERWATER_BUBBLES
+// Use WEATHER_NONE for higher IDs so they cannot index past the table
+static u8 ADMG_LiveWeather(u8 weather)
+{
+    return weather <= WEATHER_UNDERWATER_BUBBLES ? weather : WEATHER_NONE;
+}
+
 void SetNextWeather(u8 weather)
 {
+    weather = ADMG_LiveWeather(weather);
     if (weather != WEATHER_RAIN && weather != WEATHER_RAIN_THUNDERSTORM && weather != WEATHER_DOWNPOUR)
     {
         PlayRainStoppingSoundEffect();
@@ -260,6 +270,7 @@ static void UpdateWeatherForms(void)
 
 void SetCurrentAndNextWeather(u8 weather)
 {
+    weather = ADMG_LiveWeather(weather);
     PlayRainStoppingSoundEffect();
     gWeatherPtr->currWeather = weather;
     gWeatherPtr->nextWeather = weather;
@@ -268,6 +279,7 @@ void SetCurrentAndNextWeather(u8 weather)
 
 void SetCurrentAndNextWeatherNoDelay(u8 weather)
 {
+    weather = ADMG_LiveWeather(weather);
     PlayRainStoppingSoundEffect();
     gWeatherPtr->currWeather = weather;
     gWeatherPtr->nextWeather = weather;
@@ -1144,6 +1156,13 @@ void PlayRainStoppingSoundEffect(void)
         }
     }
 }
+
+// TRUE while Task_WeatherMain is active
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_IsFieldWeatherRunning(void)
+{
+    return FuncIsActiveTask(Task_WeatherMain);
+}
+ADMG_RETAIN_FUNCTION(ADMG_IsFieldWeatherRunning);
 
 u8 IsWeatherChangeComplete(void)
 {

@@ -16,6 +16,10 @@
 #include "trig.h"
 #include "gpu_regs.h"
 #include "palette.h"
+#include "admg_native.h"
+#include "admg_retention.h"
+#include "event_data.h"
+#include "main.h"
 
 EWRAM_DATA static u8 sCurrentAbnormalWeather = 0;
 
@@ -2512,6 +2516,29 @@ static enum OverworldWeather TranslateWeatherNum(enum OverworldWeather weather);
 static void UpdateRainCounter(u8, u8);
 static u8 GetDynamicWeather(void);
 
+// Choose a map's weather before translating it for storage
+// Return the header weather by default; mods can supply a different weather ID
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetMapWeather(ADMG_Word mapId, ADMG_Word headerWeather)
+{
+    return headerWeather;
+}
+// Supply a WEATHER_DYNAMIC pool for this map and section, with 1-255 entries
+// Repeated entries give a weather more weight; NULL or an invalid count uses the built-in pools
+ADMG_NATIVE_ENTRY const u8 *ADMG_GetRegisteredDynamicWeatherPool(ADMG_Word mapSec, ADMG_Word mapId, ADMG_Word *count)
+{
+    return NULL;
+}
+// Resolve a mod weather alias above WEATHER_COUNT and at most 255 to a live weather
+// Return WEATHER_COUNT for an undefined alias
+// hash is the day's map hash, or 0 when checking whether the alias can be requested
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_TranslateRegisteredWeather(ADMG_Word weather, ADMG_Word day, ADMG_Word hash)
+{
+    return WEATHER_COUNT;
+}
+ADMG_RETAIN_FUNCTION(ADMG_GetMapWeather);
+ADMG_RETAIN_FUNCTION(ADMG_GetRegisteredDynamicWeatherPool);
+ADMG_RETAIN_FUNCTION(ADMG_TranslateRegisteredWeather);
+
 void SetSavedWeather(enum OverworldWeather weather)
 {
     u8 oldWeather = gSaveBlock1Ptr->weather;
@@ -2527,7 +2554,7 @@ u8 GetSavedWeather(void)
 void SetSavedWeatherFromCurrMapHeader(void)
 {
     enum OverworldWeather oldWeather = gSaveBlock1Ptr->weather;
-    gSaveBlock1Ptr->weather = TranslateWeatherNum(gMapHeader.weather);
+    gSaveBlock1Ptr->weather = TranslateWeatherNum(ADMG_GetMapWeather(gSaveBlock1Ptr->location.mapId, gMapHeader.weather));
     UpdateRainCounter(gSaveBlock1Ptr->weather, oldWeather);
 }
 
@@ -2575,7 +2602,7 @@ void ResumePausedWeather(void)
     SetCurrentAndNextWeather(weather);
 }
 
-#define WEATHER_CYCLE_LENGTH  4
+#define WEATHER_CYCLE_LENGTH  ADMG_WEATHER_CYCLE_LENGTH
 
 static const u8 sWeatherCycleRoute119[WEATHER_CYCLE_LENGTH] =
 {
@@ -2627,6 +2654,14 @@ static const struct DynamicWeatherPool sDynamicWeatherPools[] =
 static const u8 *GetDynamicWeatherPool(u8 *count)
 {
     mapsec_u16_t mapSec = gMapHeader.regionMapSectionId;
+    ADMG_Word registeredCount = 0;
+    const u8 *registered = ADMG_GetRegisteredDynamicWeatherPool(mapSec, gSaveBlock1Ptr->location.mapId, &registeredCount);
+
+    if (registered != NULL && registeredCount != 0 && registeredCount <= 0xFF)
+    {
+        *count = registeredCount;
+        return registered;
+    }
 
     for (u32 i = 0; i < ARRAY_COUNT(sDynamicWeatherPools); i++)
     {
@@ -2641,10 +2676,9 @@ static const u8 *GetDynamicWeatherPool(u8 *count)
     return sDefaultDynamicWeathers;
 }
 
-static u8 GetDynamicWeather(void)
+// Use the same draw while the daily seed, map, layout and section stay the same
+static u32 DynamicWeatherHash(void)
 {
-    u8 count;
-    const u8 *weathers = GetDynamicWeatherPool(&count);
     rng_value_t localRngState;
     const u32 hashPieces[] =
     {
@@ -2654,11 +2688,19 @@ static u8 GetDynamicWeather(void)
         gMapHeader.regionMapSectionId,
     };
 
+    localRngState = LocalRandomSeed(Crc32B((const u8 *)hashPieces, sizeof(hashPieces)));
+    return LocalRandom32(&localRngState);
+}
+
+static u8 GetDynamicWeather(void)
+{
+    u8 count;
+    const u8 *weathers = GetDynamicWeatherPool(&count);
+
     if (count == 0)
         return WEATHER_NONE;
 
-    localRngState = LocalRandomSeed(Crc32B((const u8 *)hashPieces, sizeof(hashPieces)));
-    return weathers[LocalRandom32(&localRngState) % count];
+    return weathers[DynamicWeatherHash() % count];
 }
 
 static enum OverworldWeather TranslateWeatherNum(enum OverworldWeather weather)
@@ -2688,8 +2730,68 @@ static enum OverworldWeather TranslateWeatherNum(enum OverworldWeather weather)
     case WEATHER_DYNAMIC:            return GetDynamicWeather();
     }
 
+    // Resolve a mod alias to live weather; an undefined alias or non-live result falls back to WEATHER_NONE
+    if (weather > WEATHER_COUNT && weather <= 0xFF)
+    {
+        ADMG_Word registered = ADMG_TranslateRegisteredWeather(weather, VarGet(VAR_DAYS), DynamicWeatherHash());
+        if (registered <= WEATHER_UNDERWATER_BUBBLES)
+            return registered;
+    }
     return WEATHER_NONE;
 }
+
+// Resolve a weather ID for the current map and day without changing saved weather
+// Dynamic weather uses a local RNG
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_TranslateWeather(ADMG_Word weather)
+{
+    if (weather > 0xFF || gSaveBlock1Ptr == NULL)
+        return WEATHER_NONE;
+    return TranslateWeatherNum(weather);
+}
+
+// Accept live weather, WEATHER_ABNORMAL, route cycles, WEATHER_DYNAMIC and aliases recognized by the provider
+// WEATHER_FOG has no live entry and cannot be requested
+static bool32 ADMG_IsRequestableWeather(ADMG_Word weather)
+{
+    if (weather <= WEATHER_UNDERWATER_BUBBLES)
+        return TRUE;
+    switch (weather)
+    {
+    case WEATHER_ABNORMAL:
+    case WEATHER_ROUTE119_CYCLE:
+    case WEATHER_ROUTE123_CYCLE:
+    case WEATHER_DYNAMIC:
+        return TRUE;
+    }
+    return weather > WEATHER_COUNT && weather <= 0xFF && ADMG_TranslateRegisteredWeather(weather, VarGet(VAR_DAYS), 0) != WEATHER_COUNT;
+}
+
+// Request a weather transition with save data, CB2_Overworld and Task_WeatherMain active
+// ADMG_WEATHER_REQUEST_PERSIST saves the translated weather before applying it
+// Without it, change only the live weather and leave saved weather alone
+// The field weather task handles the transition
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_RequestFieldWeather(ADMG_Word weather, ADMG_Word flags)
+{
+    if (!ADMG_IsRequestableWeather(weather) || (flags & ~ADMG_WEATHER_REQUEST_PERSIST) != 0)
+        return ADMG_WEATHER_REQUEST_INVALID;
+    if (gSaveBlock1Ptr == NULL || gMain.callback2 != CB2_Overworld || !ADMG_IsFieldWeatherRunning())
+        return ADMG_WEATHER_REQUEST_FIELD_NOT_IDLE;
+    if (flags & ADMG_WEATHER_REQUEST_PERSIST)
+    {
+        SetSavedWeather(weather);
+        DoCurrentWeather();
+    }
+    else
+    {
+        enum OverworldWeather live = TranslateWeatherNum(weather);
+        if (live > WEATHER_UNDERWATER_BUBBLES) // WEATHER_ABNORMAL needs the task started by DoCurrentWeather, so it requires PERSIST
+            return ADMG_WEATHER_REQUEST_INVALID;
+        SetNextWeather(live);
+    }
+    return ADMG_WEATHER_REQUEST_STARTED;
+}
+ADMG_RETAIN_FUNCTION(ADMG_TranslateWeather);
+ADMG_RETAIN_FUNCTION(ADMG_RequestFieldWeather);
 
 void UpdateWeatherPerDay(u32 increment)
 {
