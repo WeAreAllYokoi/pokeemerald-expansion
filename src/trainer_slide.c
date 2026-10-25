@@ -43,6 +43,10 @@
 #include "constants/weather.h"
 #include "trainer_slide.h"
 #include "battle_message.h"
+#include "admg_native.h"
+#include "admg_registry.h"
+#include "admg_retention.h"
+#include "admg_trainer.h"
 
 static u32 BattlerHPPercentage(enum BattlerId battler, enum ComparisonOperators operation, u32 threshold);
 static u32 GetPartyMonCount(u32 lastId, struct Pokemon *party, bool32 onlyAlive);
@@ -247,6 +251,8 @@ static const u8* const *GetTrainerSlideArray(enum DifficultyLevel difficulty, u3
     {
         struct ADMG_TrainerRef ref;
         if (!ADMG_TryResolveTrainer(trainerId, &ref)) return NULL;
+        // Added trainers have no compiled slide row; return NULL without reporting a rejection
+        if (ref.owner == ADMG_TRAINER_ADDED) return NULL;
         if (ref.owner == ADMG_TRAINER_KANTO)
         {
             if (ref.nativeIndex >= ARRAY_COUNT(sADMG_KantoTrainerSlides[0]))
@@ -278,9 +284,30 @@ static const u8* const *GetTrainerSlideArray(enum DifficultyLevel difficulty, u3
 #endif
 }
 
+// Hook for registered trainer slide text; return NULL to use the compiled tables
+// ADMG_RunTrainerSlide sets gBattleScripting.battler, which is passed here as battler
+// For TRAINER_SLIDE_ADMG_CUSTOM, the provider decides whether its condition holds this turn
+ADMG_NATIVE_ENTRY const u8 *ADMG_GetRegisteredTrainerSlide(ADMG_Word difficulty, ADMG_Word trainerId, ADMG_Word slideId, ADMG_Word battler)
+{
+    return NULL;
+}
+
+static const u8 *ADMG_RegisteredTrainerSlide(enum DifficultyLevel difficulty, u32 trainerId, u32 slideId)
+{
+    u64 generation = ADMG_BeginStateAccessCheck();
+    u32 flags = gBattleTypeFlags;
+    const u8 *text = ADMG_GetRegisteredTrainerSlide(difficulty, trainerId, slideId, gBattleScripting.battler);
+    if (text == NULL) return NULL;
+    if (!ADMG_EndStateAccessCheck(generation) || gBattleTypeFlags != flags
+     || !(((u32)text >= ROM_START && (u32)text < ROM_END) || ADMG_IsNativeAddress((u32)text)))
+    { ADMG_StateAccessRejected(trainerId, __func__); return NULL; }
+    return text;
+}
+
 static bool32 DoesTrainerHaveSlideMessage(enum DifficultyLevel difficulty, u32 trainerId, u32 slideId)
 {
     if (!ADMG_TrainerSlideResourceBounds(difficulty, trainerId, slideId)) return FALSE;
+    if (ADMG_RegisteredTrainerSlide(difficulty, trainerId, slideId) != NULL) return TRUE;
     u64 generation = ADMG_BeginStateAccessCheck();
     u32 flags = gBattleTypeFlags;
     const u8* const *trainerSlides = GetTrainerSlideArray(difficulty, trainerId, slideId);
@@ -300,6 +327,13 @@ void SetTrainerSlideMessage(enum DifficultyLevel difficulty, u32 trainerId, u32 
     struct BattleStruct *battle = gBattleStruct;
     u32 flags = gBattleTypeFlags;
     if (battle == NULL) { ADMG_StateAccessRejected(trainerId, __func__); return; }
+    const u8 *registered = ADMG_RegisteredTrainerSlide(difficulty, trainerId, slideId);
+    if (registered != NULL)
+    {
+        if (gBattleStruct != battle) { ADMG_StateAccessRejected(trainerId, __func__); return; }
+        battle->trainerSlideMsg = registered;
+        return;
+    }
     u64 generation = ADMG_BeginStateAccessCheck();
     const u8* const *trainerSlides = GetTrainerSlideArray(difficulty, trainerId, slideId);
     if (!ADMG_TrainerSlideLookupCurrent(flags, generation)) return;
@@ -557,7 +591,8 @@ static enum TrainerSlideTargets ADMG_RunTrainerSlide(enum BattlerId battler, enu
         gBattleScripting.battler = battler;
         return TRAINER_SLIDE_TARGET_NONE;
     }
-    bool8 played = IsTrainerSlidePlayed(battler, slideId);
+    // Ignore the played flag for custom slides so the provider can check its condition again
+    bool8 played = slideId == TRAINER_SLIDE_ADMG_CUSTOM ? FALSE : IsTrainerSlidePlayed(battler, slideId);
     if (!ADMG_TrainerSlideCallerCurrent(battler, battle, flags, position, controller,
         trainerId, retValue, generation, scope, published, debug, count)) return TRAINER_SLIDE_TARGET_NONE;
     if (!played && retValue != TRAINER_SLIDE_TARGET_NONE)
@@ -641,6 +676,7 @@ static enum TrainerSlideTargets ADMG_RunTrainerSlide(enum BattlerId battler, enu
         case TRAINER_SLIDE_OPPONENT_Z_MOVE:
         case TRAINER_SLIDE_OPPONENT_DYNAMAX:
         case TRAINER_SLIDE_OPPONENT_TERA:
+        case TRAINER_SLIDE_ADMG_CUSTOM: // The provider handles the custom condition
             shouldRun = TRUE;
             break;
         default:
@@ -889,3 +925,4 @@ void MarkTrainerSlideAsPlayed(enum BattlerId battler, enum TrainerSlideType slid
 
     gBattleStruct->slideMessageStatus.messagePlayed[battler][arrayIndex] |= (1 << bitPosition);
 }
+ADMG_RETAIN_FUNCTION(ADMG_GetRegisteredTrainerSlide);

@@ -1443,7 +1443,8 @@ static bool32 TryEndTurnTrainerSlide(enum BattlerId battler)
          || (ShouldDoTrainerSlide(battler, TRAINER_SLIDE_DEFENDER_TAKES_FIRST_STAB_MOVE) != TRAINER_SLIDE_TARGET_NONE)
          || (ShouldDoTrainerSlide(battler, TRAINER_SLIDE_ATTACKER_LANDS_FIRST_STAB_MOVE) != TRAINER_SLIDE_TARGET_NONE)
          || (ShouldDoTrainerSlide(battler, TRAINER_SLIDE_OPPONENT_MON_UNAFFECTED) != TRAINER_SLIDE_TARGET_NONE)
-         || (ShouldDoTrainerSlide(battler, TRAINER_SLIDE_SELF_MON_UNAFFECTED) != TRAINER_SLIDE_TARGET_NONE));
+         || (ShouldDoTrainerSlide(battler, TRAINER_SLIDE_SELF_MON_UNAFFECTED) != TRAINER_SLIDE_TARGET_NONE)
+         || (ShouldDoTrainerSlide(battler, TRAINER_SLIDE_ADMG_CUSTOM) != TRAINER_SLIDE_TARGET_NONE)); // Try the custom condition after the built-in ones
 }
 
 static bool32 HandleEndTurnTrainerASlides(enum BattlerId battler)

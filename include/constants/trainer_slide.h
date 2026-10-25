@@ -29,6 +29,7 @@ enum TrainerSlideType
     TRAINER_SLIDE_OPPONENT_Z_MOVE,
     TRAINER_SLIDE_OPPONENT_DYNAMAX,
     TRAINER_SLIDE_OPPONENT_TERA,
+    TRAINER_SLIDE_ADMG_CUSTOM,  // End-of-turn slide whose condition is checked by ADMG_GetRegisteredTrainerSlide
     TRAINER_SLIDE_COUNT,
 };
 
