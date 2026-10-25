@@ -26,6 +26,13 @@ struct ADMG_ItemSeenByte
     u8 bits;
 };
 
+// One picked bit per tree ID, stored separately from SaveBlock3
+// IDs are 1-255; bit 0 is unused
+struct ADMG_ApricornTreesPicked
+{
+    u8 bits[32];
+};
+
 /* Store NPC follower state separately from the conditional SaveBlock3 layout.
  * Content IDs remain 32-bit, and movement fields keep their original byte-sized representation. */
 struct ADMG_NPCFollower
@@ -53,6 +60,7 @@ enum ADMG_FeatureStateId
     ADMG_FEATURE_STATE_NPC_FOLLOWER = 3,
     ADMG_FEATURE_STATE_DEXNAV_SEARCH_LEVELS = 4,
     ADMG_FEATURE_STATE_DEXNAV_SELECTION = 5,
+    ADMG_FEATURE_STATE_APRICORN_TREES = 6,
 };
 ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeatureStateBridgeVersion(void);
 ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeatureState(ADMG_Word state);

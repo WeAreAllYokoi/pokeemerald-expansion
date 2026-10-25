@@ -63,6 +63,7 @@ static void WarpToTruck(void);
 static void ResetMiniGamesRecords(void);
 static void ResetItemFlags(void);
 static void ResetDexNav(void);
+static void ResetApricornTrees(void);
 
 EWRAM_DATA bool8 gDifferentSaveFile = FALSE;
 EWRAM_DATA bool8 gEnableContestDebugging = FALSE;
@@ -235,6 +236,7 @@ void NewGameInitData(void)
     SetCurrentDifficultyLevel(DIFFICULTY_NORMAL);
     ResetItemFlags();
     ResetDexNav();
+    ResetApricornTrees();
     ClearFollowerNPCData();
 }
 
@@ -253,6 +255,12 @@ static void ResetItemFlags(void)
     ADMG_Word address = ADMG_GetFeatureState(ADMG_FEATURE_STATE_ITEMS_SEEN);
     if (address != 0)
         ADMG_InitializeFeatureState(ADMG_FEATURE_STATE_ITEMS_SEEN, address, ADMG_GetFeatureStateCount(ADMG_FEATURE_STATE_ITEMS_SEEN));
+}
+
+// Reset the apricorn picked-state record for a new game
+static void ResetApricornTrees(void)
+{
+    ADMG_ResetFeatureState(ADMG_FEATURE_STATE_APRICORN_TREES);
 }
 
 static void ResetDexNav(void)

@@ -24,7 +24,8 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeatureStateCount(ADMG_Word state)
     {
     case ADMG_FEATURE_STATE_CLOCK:
     case ADMG_FEATURE_STATE_NPC_FOLLOWER:
-    case ADMG_FEATURE_STATE_DEXNAV_SELECTION: return 1;
+    case ADMG_FEATURE_STATE_DEXNAV_SELECTION:
+    case ADMG_FEATURE_STATE_APRICORN_TREES: return 1;
     case ADMG_FEATURE_STATE_DEXNAV_SEARCH_LEVELS: return RUNTIME_SPECIES_COUNT;
     case ADMG_FEATURE_STATE_ITEMS_SEEN: return RUNTIME_ITEMS_COUNT / 8 + (RUNTIME_ITEMS_COUNT % 8 != 0);
     default: return 0;
@@ -39,6 +40,7 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFeatureStateRecordSize(ADMG_Word state)
     case ADMG_FEATURE_STATE_NPC_FOLLOWER: return sizeof(struct ADMG_NPCFollower);
     case ADMG_FEATURE_STATE_DEXNAV_SEARCH_LEVELS: return sizeof(struct ADMG_DexNavSearchLevel);
     case ADMG_FEATURE_STATE_DEXNAV_SELECTION: return sizeof(struct ADMG_DexNavSelection);
+    case ADMG_FEATURE_STATE_APRICORN_TREES: return sizeof(struct ADMG_ApricornTreesPicked);
     default: return 0;
     }
 }
@@ -70,6 +72,11 @@ ADMG_NATIVE_ENTRY ADMG_Word ADMG_InitializeFeatureState(ADMG_Word state, ADMG_Wo
     if (state == ADMG_FEATURE_STATE_DEXNAV_SEARCH_LEVELS && address != 0 && count != 0 && count == ADMG_GetFeatureStateCount(state))
     {
         memset((void *)address, 0, count * sizeof(struct ADMG_DexNavSearchLevel));
+        return 1;
+    }
+    if (state == ADMG_FEATURE_STATE_APRICORN_TREES && address != 0 && count == 1)
+    {
+        memset((void *)address, 0, sizeof(struct ADMG_ApricornTreesPicked));
         return 1;
     }
     if (state == ADMG_FEATURE_STATE_ITEMS_SEEN && address != 0 && count != 0 && count == ADMG_GetFeatureStateCount(state))
