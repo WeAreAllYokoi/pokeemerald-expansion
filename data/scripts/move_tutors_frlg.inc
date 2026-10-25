@@ -1,9 +1,12 @@
 VictoryRoad_2F_EventScript_DoubleEdgeTutor::
 	lock
 	faceplayer
-.if I_REUSABLE_TMS == FALSE
+	@ Skip the tutor-used flag check when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip1
 	goto_if_set FLAG_TUTOR_DOUBLE_EDGE, EventScript_DoubleEdgeTaught
-.endif
+EventScript_AdmgReusableTmsSkip1:
 	msgbox Text_DoubleEdgeTeach, MSGBOX_YESNO
 	goto_if_eq VAR_RESULT, NO, EventScript_DoubleEdgeDeclined
 	call EventScript_CanOnlyBeLearnedOnce
@@ -12,9 +15,12 @@ VictoryRoad_2F_EventScript_DoubleEdgeTutor::
 	setvar VAR_0x8005, MOVE_DOUBLE_EDGE
 	call EventScript_ChooseMoveTutorMon
 	goto_if_eq VAR_RESULT, FALSE, EventScript_DoubleEdgeDeclined
-.if I_REUSABLE_TMS == FALSE
+	@ Don't set the tutor-used flag when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip2
 	setflag FLAG_TUTOR_DOUBLE_EDGE
-.endif
+EventScript_AdmgReusableTmsSkip2:
 	goto EventScript_DoubleEdgeTaught
 	end
 
@@ -31,9 +37,12 @@ EventScript_DoubleEdgeTaught::
 EventScript_ThunderWaveTutor::
 	lock
 	faceplayer
-.if I_REUSABLE_TMS == FALSE
+	@ Skip the tutor-used flag check when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip3
 	goto_if_set FLAG_TUTOR_THUNDER_WAVE, EventScript_ThunderWaveTaught
-.endif
+EventScript_AdmgReusableTmsSkip3:
 	msgbox Text_ThunderWaveTeach, MSGBOX_YESNO
 	goto_if_eq VAR_RESULT, NO, EventScript_ThunderWaveDeclined
 	call EventScript_CanOnlyBeLearnedOnce
@@ -42,9 +51,12 @@ EventScript_ThunderWaveTutor::
 	setvar VAR_0x8005, MOVE_THUNDER_WAVE
 	call EventScript_ChooseMoveTutorMon
 	goto_if_eq VAR_RESULT, FALSE, EventScript_ThunderWaveDeclined
-.if I_REUSABLE_TMS == FALSE
+	@ Don't set the tutor-used flag when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip4
 	setflag FLAG_TUTOR_THUNDER_WAVE
-.endif
+EventScript_AdmgReusableTmsSkip4:
 	goto EventScript_ThunderWaveTaught
 	end
 
@@ -61,9 +73,12 @@ EventScript_ThunderWaveTaught::
 RockTunnel_B1F_EventScript_RockSlideTutor::
 	lock
 	faceplayer
-.if I_REUSABLE_TMS == FALSE
+	@ Skip the tutor-used flag check when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip5
 	goto_if_set FLAG_TUTOR_ROCK_SLIDE, EventScript_RockSlideTaught
-.endif
+EventScript_AdmgReusableTmsSkip5:
 	msgbox Text_RockSlideTeach, MSGBOX_YESNO
 	goto_if_eq VAR_RESULT, NO, EventScript_RockSlideDeclined
 	call EventScript_CanOnlyBeLearnedOnce
@@ -72,9 +87,12 @@ RockTunnel_B1F_EventScript_RockSlideTutor::
 	setvar VAR_0x8005, MOVE_ROCK_SLIDE
 	call EventScript_ChooseMoveTutorMon
 	goto_if_eq VAR_RESULT, FALSE, EventScript_RockSlideDeclined
-.if I_REUSABLE_TMS == FALSE
+	@ Don't set the tutor-used flag when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip6
 	setflag FLAG_TUTOR_ROCK_SLIDE
-.endif
+EventScript_AdmgReusableTmsSkip6:
 	goto EventScript_RockSlideTaught
 	end
 
@@ -91,9 +109,12 @@ EventScript_RockSlideTaught::
 MtEmber_Exterior_EventScript_ExplosionTutor::
 	lock
 	faceplayer
-.if I_REUSABLE_TMS == FALSE
+	@ Skip the tutor-used flag check when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip7
 	goto_if_set FLAG_TUTOR_EXPLOSION, EventScript_ExplosionTaught
-.endif
+EventScript_AdmgReusableTmsSkip7:
 	msgbox Text_ExplosionTeach, MSGBOX_YESNO
 	goto_if_eq VAR_RESULT, NO, EventScript_ExplosionDeclined
 	call EventScript_CanOnlyBeLearnedOnce
@@ -102,9 +123,12 @@ MtEmber_Exterior_EventScript_ExplosionTutor::
 	setvar VAR_0x8005, MOVE_EXPLOSION
 	call EventScript_ChooseMoveTutorMon
 	goto_if_eq VAR_RESULT, FALSE, EventScript_ExplosionDeclined
-.if I_REUSABLE_TMS == FALSE
+	@ Don't set the tutor-used flag when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip8
 	setflag FLAG_TUTOR_EXPLOSION
-.endif
+EventScript_AdmgReusableTmsSkip8:
 	goto EventScript_ExplosionTaught
 	end
 
@@ -121,9 +145,12 @@ EventScript_ExplosionTaught::
 Route4_EventScript_MegaPunchTutor::
 	lock
 	faceplayer
-.if I_REUSABLE_TMS == FALSE
+	@ Skip the tutor-used flag check when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip9
 	goto_if_set FLAG_TUTOR_MEGA_PUNCH, EventScript_MegaPunchTaught
-.endif
+EventScript_AdmgReusableTmsSkip9:
 	msgbox Text_MegaPunchTeach, MSGBOX_YESNO
 	goto_if_eq VAR_RESULT, NO, EventScript_MegaPunchDeclined
 	call EventScript_CanOnlyBeLearnedOnce
@@ -132,9 +159,12 @@ Route4_EventScript_MegaPunchTutor::
 	setvar VAR_0x8005, MOVE_MEGA_PUNCH
 	call EventScript_ChooseMoveTutorMon
 	goto_if_eq VAR_RESULT, FALSE, EventScript_MegaPunchDeclined
-.if I_REUSABLE_TMS == FALSE
+	@ Don't set the tutor-used flag when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip10
 	setflag FLAG_TUTOR_MEGA_PUNCH
-.endif
+EventScript_AdmgReusableTmsSkip10:
 	goto EventScript_MegaPunchTaught
 	end
 
@@ -151,9 +181,12 @@ EventScript_MegaPunchTaught::
 Route4_EventScript_MegaKickTutor::
 	lock
 	faceplayer
-.if I_REUSABLE_TMS == FALSE
+	@ Skip the tutor-used flag check when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip11
 	goto_if_set FLAG_TUTOR_MEGA_KICK, EventScript_MegaKickTaught
-.endif
+EventScript_AdmgReusableTmsSkip11:
 	msgbox Text_MegaKickTeach, MSGBOX_YESNO
 	goto_if_eq VAR_RESULT, NO, EventScript_MegaKickDeclined
 	call EventScript_CanOnlyBeLearnedOnce
@@ -162,9 +195,12 @@ Route4_EventScript_MegaKickTutor::
 	setvar VAR_0x8005, MOVE_MEGA_KICK
 	call EventScript_ChooseMoveTutorMon
 	goto_if_eq VAR_RESULT, FALSE, EventScript_MegaKickDeclined
-.if I_REUSABLE_TMS == FALSE
+	@ Don't set the tutor-used flag when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip12
 	setflag FLAG_TUTOR_MEGA_KICK
-.endif
+EventScript_AdmgReusableTmsSkip12:
 	goto EventScript_MegaKickTaught
 	end
 
@@ -181,9 +217,12 @@ EventScript_MegaKickTaught::
 EventScript_DreamEaterTutor::
 	lock
 	faceplayer
-.if I_REUSABLE_TMS == FALSE
+	@ Skip the tutor-used flag check when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip13
 	goto_if_set FLAG_TUTOR_DREAM_EATER, EventScript_DreamEaterTaught
-.endif
+EventScript_AdmgReusableTmsSkip13:
 	msgbox Text_DreamEaterTeach, MSGBOX_YESNO
 	goto_if_eq VAR_RESULT, NO, EventScript_DreamEaterDeclined
 	call EventScript_CanOnlyBeLearnedOnce
@@ -192,9 +231,12 @@ EventScript_DreamEaterTutor::
 	setvar VAR_0x8005, MOVE_DREAM_EATER
 	call EventScript_ChooseMoveTutorMon
 	goto_if_eq VAR_RESULT, FALSE, EventScript_DreamEaterDeclined
-.if I_REUSABLE_TMS == FALSE
+	@ Don't set the tutor-used flag when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip14
 	setflag FLAG_TUTOR_DREAM_EATER
-.endif
+EventScript_AdmgReusableTmsSkip14:
 	goto EventScript_DreamEaterTaught
 	end
 
@@ -211,9 +253,12 @@ EventScript_DreamEaterTaught::
 EventScript_SoftboiledTutor::
 	lock
 	faceplayer
-.if I_REUSABLE_TMS == FALSE
+	@ Skip the tutor-used flag check when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip15
 	goto_if_set FLAG_TUTOR_SOFT_BOILED, EventScript_SoftboiledTaught
-.endif
+EventScript_AdmgReusableTmsSkip15:
 	msgbox Text_SoftboiledTeach, MSGBOX_YESNO
 	goto_if_eq VAR_RESULT, NO, EventScript_SoftboiledDeclined
 	call EventScript_CanOnlyBeLearnedOnce
@@ -222,9 +267,12 @@ EventScript_SoftboiledTutor::
 	setvar VAR_0x8005, MOVE_SOFT_BOILED
 	call EventScript_ChooseMoveTutorMon
 	goto_if_eq VAR_RESULT, FALSE, EventScript_SoftboiledDeclined
-.if I_REUSABLE_TMS == FALSE
+	@ Don't set the tutor-used flag when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip16
 	setflag FLAG_TUTOR_SOFT_BOILED
-.endif
+EventScript_AdmgReusableTmsSkip16:
 	goto EventScript_SoftboiledTaught
 	end
 
@@ -241,9 +289,12 @@ EventScript_SoftboiledTaught::
 FuchsiaCity_EventScript_SubstituteTutor::
 	lock
 	faceplayer
-.if I_REUSABLE_TMS == FALSE
+	@ Skip the tutor-used flag check when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip17
 	goto_if_set FLAG_TUTOR_SUBSTITUTE, EventScript_SubstituteTaught
-.endif
+EventScript_AdmgReusableTmsSkip17:
 	msgbox Text_SubstituteTeach, MSGBOX_YESNO
 	goto_if_eq VAR_RESULT, NO, EventScript_SubstituteDeclined
 	call EventScript_CanOnlyBeLearnedOnce
@@ -252,9 +303,12 @@ FuchsiaCity_EventScript_SubstituteTutor::
 	setvar VAR_0x8005, MOVE_SUBSTITUTE
 	call EventScript_ChooseMoveTutorMon
 	goto_if_eq VAR_RESULT, FALSE, EventScript_SubstituteDeclined
-.if I_REUSABLE_TMS == FALSE
+	@ Don't set the tutor-used flag when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip18
 	setflag FLAG_TUTOR_SUBSTITUTE
-.endif
+EventScript_AdmgReusableTmsSkip18:
 	goto EventScript_SubstituteTaught
 	end
 
@@ -271,9 +325,12 @@ EventScript_SubstituteTaught::
 SevenIsland_EventScript_SwordsDanceTutor::
 	lock
 	faceplayer
-.if I_REUSABLE_TMS == FALSE
+	@ Skip the tutor-used flag check when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip19
 	goto_if_set FLAG_TUTOR_SWORDS_DANCE, EventScript_SwordsDanceTaught
-.endif
+EventScript_AdmgReusableTmsSkip19:
 	msgbox Text_SwordsDanceTeach, MSGBOX_YESNO
 	goto_if_eq VAR_RESULT, NO, EventScript_SwordsDanceDeclined
 	call EventScript_CanOnlyBeLearnedOnce
@@ -282,9 +339,12 @@ SevenIsland_EventScript_SwordsDanceTutor::
 	setvar VAR_0x8005, MOVE_SWORDS_DANCE
 	call EventScript_ChooseMoveTutorMon
 	goto_if_eq VAR_RESULT, FALSE, EventScript_SwordsDanceDeclined
-.if I_REUSABLE_TMS == FALSE
+	@ Don't set the tutor-used flag when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip20
 	setflag FLAG_TUTOR_SWORDS_DANCE
-.endif
+EventScript_AdmgReusableTmsSkip20:
 	goto EventScript_SwordsDanceTaught
 	end
 
@@ -301,9 +361,12 @@ EventScript_SwordsDanceTaught::
 PewterCity_Museum_1F_EventScript_SeismicTossTutor::
 	lock
 	faceplayer
-.if I_REUSABLE_TMS == FALSE
+	@ Skip the tutor-used flag check when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip21
 	goto_if_set FLAG_TUTOR_SEISMIC_TOSS, EventScript_SeismicTossTaught
-.endif
+EventScript_AdmgReusableTmsSkip21:
 	msgbox Text_SeismicTossTeach, MSGBOX_YESNO
 	goto_if_eq VAR_RESULT, NO, EventScript_SeismicTossDeclined
 	call EventScript_CanOnlyBeLearnedOnce
@@ -312,9 +375,12 @@ PewterCity_Museum_1F_EventScript_SeismicTossTutor::
 	setvar VAR_0x8005, MOVE_SEISMIC_TOSS
 	call EventScript_ChooseMoveTutorMon
 	goto_if_eq VAR_RESULT, FALSE, EventScript_SeismicTossDeclined
-.if I_REUSABLE_TMS == FALSE
+	@ Don't set the tutor-used flag when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip22
 	setflag FLAG_TUTOR_SEISMIC_TOSS
-.endif
+EventScript_AdmgReusableTmsSkip22:
 	goto EventScript_SeismicTossTaught
 	end
 
@@ -331,9 +397,12 @@ EventScript_SeismicTossTaught::
 EventScript_CounterTutor::
 	lock
 	faceplayer
-.if I_REUSABLE_TMS == FALSE
+	@ Skip the tutor-used flag check when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip23
 	goto_if_set FLAG_TUTOR_COUNTER, EventScript_CounterTaught
-.endif
+EventScript_AdmgReusableTmsSkip23:
 	msgbox Text_CounterTeach, MSGBOX_YESNO
 	goto_if_eq VAR_RESULT, NO, EventScript_CounterDeclined
 	call EventScript_CanOnlyBeLearnedOnce
@@ -342,9 +411,12 @@ EventScript_CounterTutor::
 	setvar VAR_0x8005, MOVE_COUNTER
 	call EventScript_ChooseMoveTutorMon
 	goto_if_eq VAR_RESULT, FALSE, EventScript_CounterDeclined
-.if I_REUSABLE_TMS == FALSE
+	@ Don't set the tutor-used flag when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip24
 	setflag FLAG_TUTOR_COUNTER
-.endif
+EventScript_AdmgReusableTmsSkip24:
 	goto EventScript_CounterTaught
 	end
 
@@ -361,9 +433,12 @@ EventScript_CounterTaught::
 EventScript_MetronomeTutor::
 	lock
 	faceplayer
-.if I_REUSABLE_TMS == FALSE
+	@ Skip the tutor-used flag check when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip25
 	goto_if_set FLAG_TUTOR_METRONOME, EventScript_MetronomeTaught
-.endif
+EventScript_AdmgReusableTmsSkip25:
 	msgbox Text_MetronomeTeach, MSGBOX_YESNO
 	goto_if_eq VAR_RESULT, NO, EventScript_MetronomeDeclined
 	call EventScript_CanOnlyBeLearnedOnce
@@ -372,9 +447,12 @@ EventScript_MetronomeTutor::
 	setvar VAR_0x8005, MOVE_METRONOME
 	call EventScript_ChooseMoveTutorMon
 	goto_if_eq VAR_RESULT, FALSE, EventScript_MetronomeDeclined
-.if I_REUSABLE_TMS == FALSE
+	@ Don't set the tutor-used flag when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip26
 	setflag FLAG_TUTOR_METRONOME
-.endif
+EventScript_AdmgReusableTmsSkip26:
 	goto EventScript_MetronomeTaught
 	end
 
@@ -389,9 +467,12 @@ EventScript_MetronomeTaught::
 	end
 
 EventScript_MimicTutor::
-.if I_REUSABLE_TMS == FALSE
+	@ Skip the tutor-used flag check when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip27
 	goto_if_set FLAG_TUTOR_MIMIC, EventScript_MimicTaught
-.endif
+EventScript_AdmgReusableTmsSkip27:
 	msgbox Text_MimicTeach, MSGBOX_YESNO
 	goto_if_eq VAR_RESULT, NO, EventScript_MimicDeclined
 	call EventScript_CanOnlyBeLearnedOnce
@@ -403,9 +484,12 @@ EventScript_MimicTutor::
 	faceplayer
 	goto_if_eq VAR_RESULT, 0, EventScript_MimicDeclined
 	removeitem ITEM_POKE_DOLL
-.if I_REUSABLE_TMS == FALSE
+	@ Don't set the tutor-used flag when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip28
 	setflag FLAG_TUTOR_MIMIC
-.endif
+EventScript_AdmgReusableTmsSkip28:
 	goto EventScript_MimicTaught
 	end
 
@@ -432,9 +516,12 @@ EventScript_MimicTaughtFemale::
 FourIsland_House1_EventScript_BodySlamTutor::
 	lock
 	faceplayer
-.if I_REUSABLE_TMS == FALSE
+	@ Skip the tutor-used flag check when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip29
 	goto_if_set FLAG_TUTOR_BODY_SLAM, EventScript_BodySlamTaught
-.endif
+EventScript_AdmgReusableTmsSkip29:
 	msgbox Text_BodySlamTeach, MSGBOX_YESNO
 	goto_if_eq VAR_RESULT, NO, EventScript_BodySlamDeclined
 	call EventScript_CanOnlyBeLearnedOnce
@@ -443,9 +530,12 @@ FourIsland_House1_EventScript_BodySlamTutor::
 	setvar VAR_0x8005, MOVE_BODY_SLAM
 	call EventScript_ChooseMoveTutorMon
 	goto_if_eq VAR_RESULT, FALSE, EventScript_BodySlamDeclined
-.if I_REUSABLE_TMS == FALSE
+	@ Don't set the tutor-used flag when I_REUSABLE_TMS is TRUE
+	callnative ADMG_ScriptTestConfig, requests_effects=1
+	.4byte ADMG_CONFIG_TAG_I_REUSABLE_TMS
+	goto_if_eq EventScript_AdmgReusableTmsSkip30
 	setflag FLAG_TUTOR_BODY_SLAM
-.endif
+EventScript_AdmgReusableTmsSkip30:
 	goto EventScript_BodySlamTaught
 	end
 

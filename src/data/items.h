@@ -12266,6 +12266,7 @@ const struct ItemInfo gItemsInfo[] =
     },
 
 // TMs/HMs. They don't have a set flingPower, as that's handled by GetFlingPowerFromItemId.
+// Initialize TM importance from ADMG_DEFAULT_I_REUSABLE_TMS
 
     [ITEM_TM_FOCUS_PUNCH] =
     {
@@ -12275,7 +12276,7 @@ const struct ItemInfo gItemsInfo[] =
             "Powerful, but fails\n"
             "if the user is\n"
             "hit by the foe."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12289,7 +12290,7 @@ const struct ItemInfo gItemsInfo[] =
             "Hooks and slashes\n"
             "the foe with long,\n"
             "sharp claws."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12303,7 +12304,7 @@ const struct ItemInfo gItemsInfo[] =
             "Generates an\n"
             "ultrasonic wave\n"
             "that may confuse."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12317,7 +12318,7 @@ const struct ItemInfo gItemsInfo[] =
             "Raises Sp. Atk and\n"
             "Sp. Def by focusing\n"
             "the mind."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12331,7 +12332,7 @@ const struct ItemInfo gItemsInfo[] =
             "A roar that makes\n"
             "the foe switch or\n"
             "ends the battle."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12345,7 +12346,7 @@ const struct ItemInfo gItemsInfo[] =
             "Poisons the foe\n"
             "with a toxin that\n"
             "gradually worsens."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12365,7 +12366,7 @@ const struct ItemInfo gItemsInfo[] =
             "types except Ice\n"
             "for 5 turns."),
         #endif
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12379,7 +12380,7 @@ const struct ItemInfo gItemsInfo[] =
             "Bulks up the body\n"
             "to raise both\n"
             "Attack & Defense."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12393,7 +12394,7 @@ const struct ItemInfo gItemsInfo[] =
             "Shoots 2 to 5 seeds\n"
             "in a row to strike\n"
             "the foe."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12407,7 +12408,7 @@ const struct ItemInfo gItemsInfo[] =
             "The type\n"
             "varies among\n"
             "different Pokémon."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12421,7 +12422,7 @@ const struct ItemInfo gItemsInfo[] =
             "Boosts the power\n"
             "of Fire-type moves\n"
             "for 5 turns."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12441,7 +12442,7 @@ const struct ItemInfo gItemsInfo[] =
         #else
             "for 2 turns."),
         #endif
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12459,7 +12460,7 @@ const struct ItemInfo gItemsInfo[] =
         #else
             "freeze the foe."),
         #endif
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12479,7 +12480,7 @@ const struct ItemInfo gItemsInfo[] =
             "wind attack that\n"
             "may freeze the foe."),
         #endif
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12499,7 +12500,7 @@ const struct ItemInfo gItemsInfo[] =
             "it doesn't knock\n"
             "out the target."),
         #endif
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12513,7 +12514,7 @@ const struct ItemInfo gItemsInfo[] =
             "Creates a wall of\n"
             "light that reduces\n"
             "special damage."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12527,7 +12528,7 @@ const struct ItemInfo gItemsInfo[] =
             "Negates all damage,\n"
             "but may fail if used\n"
             "in succession."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12541,7 +12542,7 @@ const struct ItemInfo gItemsInfo[] =
             "Boosts the power\n"
             "of Water-type\n"
             "moves for 5 turns."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12555,7 +12556,7 @@ const struct ItemInfo gItemsInfo[] =
             "Recovers half the\n"
             "HP of the damage \n"
             "this move inflicts."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12569,7 +12570,7 @@ const struct ItemInfo gItemsInfo[] =
             "Guards allies from\n"
             "status problems\n"
             "for 5 turns."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12583,7 +12584,7 @@ const struct ItemInfo gItemsInfo[] =
             "The less the user\n"
             "likes you, the more\n"
             "powerful this move."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12597,7 +12598,7 @@ const struct ItemInfo gItemsInfo[] =
             "Absorbs sunlight in\n"
             "the 1st turn, then\n"
             "attacks next turn."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12611,7 +12612,7 @@ const struct ItemInfo gItemsInfo[] =
             "Slams the foe with\n"
             "a hard tail. It may\n"
             "lower Defense."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12625,7 +12626,7 @@ const struct ItemInfo gItemsInfo[] =
             "A powerful electric\n"
             "attack that may\n"
             "cause paralysis."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12639,7 +12640,7 @@ const struct ItemInfo gItemsInfo[] =
             "Strikes the foe\n"
             "with a thunderbolt.\n"
             "It may paralyze."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12653,7 +12654,7 @@ const struct ItemInfo gItemsInfo[] =
             "Causes a quake\n"
             "that hits all\n"
             "other Pokémon."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12667,7 +12668,7 @@ const struct ItemInfo gItemsInfo[] =
             "The more the user\n"
             "likes you, the more\n"
             "powerful this move."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12681,7 +12682,7 @@ const struct ItemInfo gItemsInfo[] =
             "Digs underground\n"
             "the 1st turn, then\n"
             "strikes next turn."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12695,7 +12696,7 @@ const struct ItemInfo gItemsInfo[] =
             "A powerful psychic\n"
             "attack that may\n"
             "lower Sp. Def."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12709,7 +12710,7 @@ const struct ItemInfo gItemsInfo[] =
             "Hurls a dark lump\n"
             "at the foe. It may\n"
             "lower Sp. Def."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12723,7 +12724,7 @@ const struct ItemInfo gItemsInfo[] =
             "Destroys barriers\n"
             "like Light Screen\n"
             "and causes damage."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12737,7 +12738,7 @@ const struct ItemInfo gItemsInfo[] =
             "Creates illusory\n"
             "copies to raise\n"
             "evasiveness."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12751,7 +12752,7 @@ const struct ItemInfo gItemsInfo[] =
             "Creates a wall of\n"
             "light that weakens\n"
             "physical attacks."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12765,7 +12766,7 @@ const struct ItemInfo gItemsInfo[] =
             "Zaps the foe with a\n"
             "jolt of electricity\n"
             "that never misses."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12779,7 +12780,7 @@ const struct ItemInfo gItemsInfo[] =
             "Looses a stream of\n"
             "fire that may burn\n"
             "the foe."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12793,7 +12794,7 @@ const struct ItemInfo gItemsInfo[] =
             "Hurls sludge at the\n"
             "foe. It may poison\n"
             "the foe."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12807,7 +12808,7 @@ const struct ItemInfo gItemsInfo[] =
             "Causes a sandstorm\n"
             "that hits\n"
             "over 5 turns."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12821,7 +12822,7 @@ const struct ItemInfo gItemsInfo[] =
             "A powerful fire\n"
             "attack that may\n"
             "burn the foe."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12835,7 +12836,7 @@ const struct ItemInfo gItemsInfo[] =
             "Stops the foe from\n"
             "moving with rocks.\n"
             "May lower Speed."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12849,7 +12850,7 @@ const struct ItemInfo gItemsInfo[] =
             "An extremely fast\n"
             "attack that can't\n"
             "be avoided."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12863,7 +12864,7 @@ const struct ItemInfo gItemsInfo[] =
             "Prevents the foe\n"
             "from using the same\n"
             "move in a row."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12877,7 +12878,7 @@ const struct ItemInfo gItemsInfo[] =
             "Boosts power when\n"
             "poisoned, burned,\n"
             "or paralyzed."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12891,7 +12892,7 @@ const struct ItemInfo gItemsInfo[] =
             "Adds an effect to\n"
             "attack depending\n"
             "on the location."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12905,7 +12906,7 @@ const struct ItemInfo gItemsInfo[] =
             "The user sleeps for\n"
             "2 turns to restore\n"
             "health and status."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12919,7 +12920,7 @@ const struct ItemInfo gItemsInfo[] =
             "Makes it tough for\n"
             "the opposite\n"
             "gender to attack."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12933,7 +12934,7 @@ const struct ItemInfo gItemsInfo[] =
             "While attacking,\n"
             "it steals the\n"
             "foe's held item."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12947,7 +12948,7 @@ const struct ItemInfo gItemsInfo[] =
             "Slams into the\n"
             "foe. This may\n"
             "raise Defense."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12961,7 +12962,7 @@ const struct ItemInfo gItemsInfo[] =
             "Switches Abilities\n"
             "with the foe on the\n"
             "turn this is used."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12975,7 +12976,7 @@ const struct ItemInfo gItemsInfo[] =
             "Steals the next\n"
             "healing or stat-\n"
             "changing move."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -12989,7 +12990,7 @@ const struct ItemInfo gItemsInfo[] =
             "Enables full-power\n"
             "attack, but harshly\n"
             "lowers Sp. Atk."),
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13000,7 +13001,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM51"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13011,7 +13012,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM52"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13022,7 +13023,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM53"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13033,7 +13034,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM54"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13044,7 +13045,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM55"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13055,7 +13056,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM56"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13066,7 +13067,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM57"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13077,7 +13078,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM58"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13088,7 +13089,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM59"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13099,7 +13100,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM60"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13110,7 +13111,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM61"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13121,7 +13122,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM62"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13132,7 +13133,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM63"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13143,7 +13144,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM64"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13154,7 +13155,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM65"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13165,7 +13166,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM66"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13176,7 +13177,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM67"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13187,7 +13188,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM68"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13198,7 +13199,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM69"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13209,7 +13210,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM70"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13220,7 +13221,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM71"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13231,7 +13232,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM72"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13242,7 +13243,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM73"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13253,7 +13254,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM74"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13264,7 +13265,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM75"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13275,7 +13276,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM76"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13286,7 +13287,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM77"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13297,7 +13298,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM78"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13308,7 +13309,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM79"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13319,7 +13320,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM80"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13330,7 +13331,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM81"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13341,7 +13342,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM82"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13352,7 +13353,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM83"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13363,7 +13364,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM84"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13374,7 +13375,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM85"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13385,7 +13386,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM86"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13396,7 +13397,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM87"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13407,7 +13408,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM88"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13418,7 +13419,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM89"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13429,7 +13430,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM90"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13440,7 +13441,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM91"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13451,7 +13452,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM92"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13462,7 +13463,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM93"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13473,7 +13474,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM94"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13484,7 +13485,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM95"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13495,7 +13496,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM96"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13506,7 +13507,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM97"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13517,7 +13518,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM98"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13528,7 +13529,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM99"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,
@@ -13539,7 +13540,7 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("TM100"),
         .price = 3000,
         .description = COMPOUND_STRING("?????"), // Todo
-        .importance = I_REUSABLE_TMS,
+        .importance = ADMG_DEFAULT_I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_TMHM,

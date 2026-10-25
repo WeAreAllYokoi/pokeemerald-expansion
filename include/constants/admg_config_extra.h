@@ -349,6 +349,7 @@
     F(B_PERISH_SONG_TIMER, 15) \
     F(I_KEY_ESCAPE_ROPE, GEN_COUNT - 1) \
     F(P_FRIENDSHIP_EVO_THRESHOLD, GEN_COUNT - 1) \
+    F(I_REUSABLE_TMS, 1) \
 
 #define ADMG_CONFIG_EXTRA_TAG(_name, _maximum) CONFIG_##_name,
 
@@ -707,6 +708,7 @@ enum ADMG_ConfigExtraTag
 #define ADMG_CONFIG_EXTRA_MAX_B_PERISH_SONG_TIMER (15)
 #define ADMG_CONFIG_EXTRA_MAX_I_KEY_ESCAPE_ROPE (GEN_COUNT - 1)
 #define ADMG_CONFIG_EXTRA_MAX_P_FRIENDSHIP_EVO_THRESHOLD (GEN_COUNT - 1)
+#define ADMG_CONFIG_EXTRA_MAX_I_REUSABLE_TMS (1)
 
 // Battle and event scripts need numeric tags because the assembler can't read the enum
 // config_changes.c checks each value against its CONFIG_<name> tag
@@ -1054,5 +1056,6 @@ enum ADMG_ConfigExtraTag
 #define ADMG_CONFIG_TAG_B_PERISH_SONG_TIMER 0x1155
 #define ADMG_CONFIG_TAG_I_KEY_ESCAPE_ROPE 0x1156
 #define ADMG_CONFIG_TAG_P_FRIENDSHIP_EVO_THRESHOLD 0x1157
+#define ADMG_CONFIG_TAG_I_REUSABLE_TMS 0x1158
 
 #endif
