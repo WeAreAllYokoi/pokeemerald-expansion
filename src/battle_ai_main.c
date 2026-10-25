@@ -68,6 +68,7 @@ EWRAM_DATA AiSwitchFunc gDynamicAiSwitchFunc = NULL;
 
 // const rom data
 static s32 AI_CheckBadMove(enum BattlerId battlerAtk, enum BattlerId battlerDef, enum Move move, s32 score);
+ADMG_NATIVE_ENTRY s32 ADMG_ModAiFlagScore(enum BattlerId battlerAtk, enum BattlerId battlerDef, enum Move move, s32 score);
 static s32 AI_TryToFaint(enum BattlerId battlerAtk, enum BattlerId battlerDef, enum Move move, s32 score);
 static s32 AI_CheckViability(enum BattlerId battlerAtk, enum BattlerId battlerDef, enum Move move, s32 score);
 static s32 AI_ForceSetupFirstTurn(enum BattlerId battlerAtk, enum BattlerId battlerDef, enum Move move, s32 score);
@@ -125,29 +126,30 @@ static s32 (*const sBattleAiFuncTable[])(enum BattlerId, enum BattlerId, enum Mo
     [34] = NULL,                     // AI_FLAG_ABILITY_OMNISCIENCE
     [35] = NULL,                     // AI_FLAG_ITEM_OMNISCIENCE
     [36] = NULL,                     // AI_FLAG_MOVE_OMNISCIENCE
-    [37] = NULL,                     // Unused
-    [38] = NULL,                     // Unused
-    [39] = NULL,                     // Unused
-    [40] = NULL,                     // Unused
-    [41] = NULL,                     // Unused
-    [42] = NULL,                     // Unused
-    [43] = NULL,                     // Unused
-    [44] = NULL,                     // Unused
-    [45] = NULL,                     // Unused
-    [46] = NULL,                     // Unused
-    [47] = NULL,                     // Unused
-    [48] = NULL,                     // Unused
-    [49] = NULL,                     // Unused
-    [50] = NULL,                     // Unused
-    [51] = NULL,                     // Unused
-    [52] = NULL,                     // Unused
-    [53] = NULL,                     // Unused
-    [54] = NULL,                     // Unused
-    [55] = NULL,                     // Unused
-    [56] = NULL,                     // Unused
-    [57] = NULL,                     // Unused
-    [58] = NULL,                     // Unused
-    [59] = NULL,                     // Unused
+    // Mod AI flags: ADMG_AI_FLAG_MOD_FIRST through ADMG_AI_FLAG_MOD_LAST
+    [37] = ADMG_ModAiFlagScore,
+    [38] = ADMG_ModAiFlagScore,
+    [39] = ADMG_ModAiFlagScore,
+    [40] = ADMG_ModAiFlagScore,
+    [41] = ADMG_ModAiFlagScore,
+    [42] = ADMG_ModAiFlagScore,
+    [43] = ADMG_ModAiFlagScore,
+    [44] = ADMG_ModAiFlagScore,
+    [45] = ADMG_ModAiFlagScore,
+    [46] = ADMG_ModAiFlagScore,
+    [47] = ADMG_ModAiFlagScore,
+    [48] = ADMG_ModAiFlagScore,
+    [49] = ADMG_ModAiFlagScore,
+    [50] = ADMG_ModAiFlagScore,
+    [51] = ADMG_ModAiFlagScore,
+    [52] = ADMG_ModAiFlagScore,
+    [53] = ADMG_ModAiFlagScore,
+    [54] = ADMG_ModAiFlagScore,
+    [55] = ADMG_ModAiFlagScore,
+    [56] = ADMG_ModAiFlagScore,
+    [57] = ADMG_ModAiFlagScore,
+    [58] = ADMG_ModAiFlagScore,
+    [59] = ADMG_ModAiFlagScore,
     [60] = AI_DynamicFunc,          // AI_FLAG_DYNAMIC_FUNC
     [61] = AI_Roaming,              // AI_FLAG_ROAMING
     [62] = AI_Safari,               // AI_FLAG_SAFARI
@@ -6804,6 +6806,11 @@ static s32 AI_DynamicFunc(enum BattlerId battlerAtk, enum BattlerId battlerDef, 
     return score;
 }
 
+ADMG_NATIVE_ENTRY s32 ADMG_ModAiFlagScore(enum BattlerId battlerAtk, enum BattlerId battlerDef, enum Move move, s32 score)
+{
+    return score;
+}
+
 void ScriptSetDynamicAiFunc(struct ScriptContext *ctx)
 {
     Script_RequestEffects(SCREFF_V1);
@@ -6857,3 +6864,4 @@ ADMG_RETAIN_FUNCTION(ADMG_SetDynamicAiSwitchFunc);
 ADMG_RETAIN_FUNCTION(ADMG_GetDynamicAiScoreFunc);
 ADMG_RETAIN_FUNCTION(ADMG_GetDynamicAiSwitchFunc);
 ADMG_RETAIN_FUNCTION(ResetDynamicAiFunctions);
+ADMG_RETAIN_FUNCTION(ADMG_ModAiFlagScore);
