@@ -151,4 +151,36 @@ bool32 SetUpFieldMove_RockClimb(void);
 s8 Test_UpdatePartySelectionSingleLayout(s8 slotId, s8 movementDir, bool8 chooseHalf, u8 lastSelectedSlot);
 #endif
 
+// Open a field party menu, or move held items and swap party slots while the menu is closed
+enum ADMG_PartyMenuOpen
+{
+    ADMG_PARTY_OPEN_OK,
+    ADMG_PARTY_OPEN_CHOOSE,           // action: choose a Pokémon, as from the start menu
+    ADMG_PARTY_OPEN_USE_ITEM,         // action: use a bag item on a Pokémon
+    ADMG_PARTY_OPEN_NOT_ON_FIELD,     // Not on the overworld, in battle, or no exit callback
+    ADMG_PARTY_OPEN_NO_POKEMON,
+    ADMG_PARTY_OPEN_NOT_A_PARTY_ITEM, // Item cannot use this party-menu path
+    ADMG_PARTY_OPEN_NOT_IN_BAG,
+    ADMG_PARTY_OPEN_INVALID,
+};
+
+enum ADMG_PartyResult
+{
+    ADMG_PARTY_DONE,
+    ADMG_PARTY_ITEM_MOVED,   // to a Pokémon without an item
+    ADMG_PARTY_ITEM_SWAPPED, // with the target's item
+    ADMG_PARTY_INVALID,      // Slot is outside the current party
+    ADMG_PARTY_SAME_SLOT,
+    ADMG_PARTY_EGG,
+    ADMG_PARTY_NO_ITEM,      // the source holds no item
+    ADMG_PARTY_MAIL,         // either holds mail
+    ADMG_PARTY_MENU_OPEN,    // the party menu is open
+};
+
+u32 ADMG_OpenFieldPartyMenu(u32 action, u32 item, MainCallback exitCallback);
+u32 ADMG_GetFieldPartyMenuOpen(void);
+void ADMG_EndFieldPartyMenu(void);
+u32 ADMG_PartyMoveHeldItem(u32 from, u32 to);
+u32 ADMG_PartySwap(u32 slot1, u32 slot2);
+
 #endif // GUARD_PARTY_MENU_H

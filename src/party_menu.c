@@ -1,5 +1,6 @@
 #include "global.h"
 #include "admg_feature_policies.h"
+#include "admg_native.h"
 #include "malloc.h"
 #include "battle.h"
 #include "battle_anim.h"
@@ -209,6 +210,11 @@ struct PartyMenuBox
 
 // EWRAM vars
 static EWRAM_DATA struct PartyMenuInternal *sPartyMenuInternal = NULL;
+// Exit callback and action for the menu opened by ADMG_OpenFieldPartyMenu
+static EWRAM_DATA MainCallback sADMG_PartyMenuExit = NULL;
+static EWRAM_DATA u8 sADMG_PartyMenuOpen = 0;
+static void CB2_ADMG_ExitFieldPartyMenu(void);
+ADMG_Word ADMG_ItemFormChangeMoves(struct Pokemon *mon, ADMG_Word item, ADMG_Word targetSpecies);
 EWRAM_DATA struct PartyMenu gPartyMenu = {0};
 static EWRAM_DATA struct PartyMenuBox *sPartyMenuBoxes = NULL;
 static EWRAM_DATA u8 *sPartyBgGfxTilemap = NULL;
@@ -3173,9 +3179,6 @@ void CB2_ReturnToPartyMenuFromSummaryScreen(void)
 
 static void CursorCb_Switch(u8 taskId)
 {
-    // Reset follower steps when the party leader is changed
-    if (gPartyMenu.slotId == 0 || gPartyMenu.slotId2 == 0)
-        gFollowerSteps = 0;
     PlaySE(SE_SELECT);
     gPartyMenu.action = PARTY_ACTION_SWITCH;
     PartyMenuRemoveWindow(&sPartyMenuInternal->windowId[1]);
@@ -3403,6 +3406,9 @@ static void SwitchPartyMon(void)
     menuBoxes[1] = &sPartyMenuBoxes[gPartyMenu.slotId2];
     mon1 = &gParties[B_TRAINER_PLAYER][gPartyMenu.slotId];
     mon2 = &gParties[B_TRAINER_PLAYER][gPartyMenu.slotId2];
+    // Wait until both slots are known before resetting follower steps, so swapping the leader works either way
+    if (gPartyMenu.slotId == 0 || gPartyMenu.slotId2 == 0)
+        gFollowerSteps = 0;
     monBuffer = Alloc(sizeof(struct Pokemon));
     *monBuffer = *mon1;
     *mon1 = *mon2;
@@ -4688,6 +4694,9 @@ void CB2_ShowPartyMenuForItemUse(void)
         callback = CB2_ReturnToField;
         gPartyMenu.data1 = 0;
     }
+    // Use the requested exit callback whenever one is set, including when the menu reopens
+    if (sADMG_PartyMenuExit != NULL)
+        callback = CB2_ADMG_ExitFieldPartyMenu;
 
     if (gMain.inBattle)
     {
@@ -6810,20 +6819,10 @@ static void Task_TryItemUseFormChange(u8 taskId)
     case 4:
         if (!IsPartyMenuTextPrinterActive())
         {
-            if (gSpecialVar_ItemId == ITEM_ROTOM_CATALOG) //only for Rotom currently
-            {
-                u32 i;
-                for (i = 0; i < ARRAY_COUNT(sRotomFormChangeMoves); i++)
-                    DeleteMove(mon, sRotomFormChangeMoves[i]);
-
-                if (I_ROTOM_CATALOG_THUNDER_SHOCK < GEN_9 && gSpecialVar_0x8000 == ROTOM_BASE_MOVE)
-                {
-                    if (!DoesMonHaveAnyMoves(mon))
-                        FormChangeTeachMove(taskId, gSpecialVar_0x8000, gPartyMenu.slotId);
-                }
-                else
-                    FormChangeTeachMove(taskId, gSpecialVar_0x8000, gPartyMenu.slotId);
-            }
+            // Update form-specific moves and teach the move returned by the provider
+            enum Move move = ADMG_ItemFormChangeMoves(mon, gSpecialVar_ItemId, gTasks[taskId].tTargetSpecies);
+            if (move != MOVE_NONE)
+                FormChangeTeachMove(taskId, move, gPartyMenu.slotId);
 
             gTasks[taskId].tState++;
         }
@@ -8306,8 +8305,10 @@ void CursorCb_MoveItemCallback(u8 taskId)
         break;
     case 1:     // User hit A on a Pokemon
         // Pokemon can't give away items to eggs or themselves
+        // Don't swap an item off a Pokémon holding mail; the item needs to stay with its letter
         if (GetMonData(&gParties[B_TRAINER_PLAYER][gPartyMenu.slotId2], MON_DATA_IS_EGG)
-            || gPartyMenu.slotId == gPartyMenu.slotId2)
+            || gPartyMenu.slotId == gPartyMenu.slotId2
+            || ItemIsMail(GetMonData(&gParties[B_TRAINER_PLAYER][gPartyMenu.slotId2], MON_DATA_HELD_ITEM)))
         {
             PlaySE(SE_FAILURE);
             return;
@@ -8633,3 +8634,162 @@ s8 Test_UpdatePartySelectionSingleLayout(s8 slotId, s8 movementDir, bool8 choose
     return slotId;
 }
 #endif
+
+static void CB2_ADMG_ExitFieldPartyMenu(void)
+{
+    MainCallback exit = sADMG_PartyMenuExit;
+
+    sADMG_PartyMenuExit = NULL;
+    sADMG_PartyMenuOpen = 0;
+    SetMainCallback2(exit != NULL ? exit : CB2_ReturnToField);
+}
+
+static void CB2_ADMG_PartyMenuChoose(void)
+{
+    InitPartyMenu(PARTY_MENU_TYPE_FIELD, PARTY_LAYOUT_SINGLE, PARTY_ACTION_CHOOSE_MON, FALSE, PARTY_MSG_CHOOSE_MON, Task_HandleChooseMonInput, CB2_ADMG_ExitFieldPartyMenu);
+}
+
+static void Task_ADMG_OpenChoosePartyMenu(u8 taskId)
+{
+    if (!gPaletteFade.active)
+    {
+        CleanupOverworldWindowsAndTilemaps();
+        SetMainCallback2(CB2_ADMG_PartyMenuChoose);
+        DestroyTask(taskId);
+    }
+}
+
+// CHOOSE opens the normal field party menu; USE_ITEM calls the bag item's field-use function
+// Open from the overworld, outside battle, with an exit callback
+// Menu exits use that callback; field moves that return directly need ADMG_EndFieldPartyMenu
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_OpenFieldPartyMenu(ADMG_Word action, ADMG_Word item, MainCallback exitCallback)
+{
+    u8 taskId;
+
+    if (gMain.inBattle || gMain.callback2 != CB2_Overworld || exitCallback == NULL)
+        return ADMG_PARTY_OPEN_NOT_ON_FIELD;
+    if (CalculatePlayerPartyCount() == 0)
+        return ADMG_PARTY_OPEN_NO_POKEMON;
+    if (action == ADMG_PARTY_OPEN_USE_ITEM)
+    {
+        // TMs and HMs need the bag's confirmation step; other party-menu items can start here
+        if (item == ITEM_NONE || GetItemFieldFunc(item) == NULL || GetItemType(item) != ITEM_USE_PARTY_MENU
+         || GetItemFieldFunc(item) == ItemUseOutOfBattle_TMHM)
+            return ADMG_PARTY_OPEN_NOT_A_PARTY_ITEM;
+        if (!CheckBagHasItem(item, 1))
+            return ADMG_PARTY_OPEN_NOT_IN_BAG;
+    }
+    else if (action != ADMG_PARTY_OPEN_CHOOSE)
+    {
+        return ADMG_PARTY_OPEN_INVALID;
+    }
+
+    sADMG_PartyMenuExit = exitCallback;
+    sADMG_PartyMenuOpen = action;
+    LockPlayerFieldControls();
+    FreezeObjectEvents();
+    PlayerFreeze();
+    StopPlayerAvatar();
+    if (action == ADMG_PARTY_OPEN_USE_ITEM)
+    {
+        gSpecialVar_ItemId = item;
+        taskId = CreateTask(GetItemFieldFunc(item), 8);
+        gTasks[taskId].data[3] = TRUE; // tUsingRegisteredKeyItem: open the party menu from the field
+    }
+    else
+    {
+        FadeScreen(FADE_TO_BLACK, 0);
+        CreateTask(Task_ADMG_OpenChoosePartyMenu, 8);
+    }
+    return ADMG_PARTY_OPEN_OK;
+}
+
+// Read the requested menu action, or 0 if no exit callback is registered
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetFieldPartyMenuOpen(void)
+{
+    return sADMG_PartyMenuExit != NULL ? sADMG_PartyMenuOpen : 0;
+}
+
+// Clear the request if a field move returned without using the exit callback
+// Later bag item uses can then return to the bag again
+ADMG_NATIVE_ENTRY void ADMG_EndFieldPartyMenu(void)
+{
+    sADMG_PartyMenuExit = NULL;
+    sADMG_PartyMenuOpen = 0;
+}
+
+// Move or swap a held item between different party slots while the menu is closed
+// The source needs a held item; neither Pokémon can be an egg or hold mail
+// Recheck both held-item forms, and refresh the follower on the field if slot 0 changed
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_PartyMoveHeldItem(ADMG_Word from, ADMG_Word to)
+{
+    struct Pokemon *source, *target;
+    enum Item item1, item2;
+    u32 count = CalculatePlayerPartyCount();
+
+    if (sPartyMenuInternal != NULL)
+        return ADMG_PARTY_MENU_OPEN;
+    if (from >= count || to >= count)
+        return ADMG_PARTY_INVALID;
+    if (from == to)
+        return ADMG_PARTY_SAME_SLOT;
+    source = &gParties[B_TRAINER_PLAYER][from];
+    target = &gParties[B_TRAINER_PLAYER][to];
+    if (GetMonData(source, MON_DATA_IS_EGG) || GetMonData(target, MON_DATA_IS_EGG))
+        return ADMG_PARTY_EGG;
+    item1 = GetMonData(source, MON_DATA_HELD_ITEM);
+    item2 = GetMonData(target, MON_DATA_HELD_ITEM);
+    if (item1 == ITEM_NONE)
+        return ADMG_PARTY_NO_ITEM;
+    if (ItemIsMail(item1) || ItemIsMail(item2))
+        return ADMG_PARTY_MAIL;
+    SetMonData(source, MON_DATA_HELD_ITEM, &item2);
+    SetMonData(target, MON_DATA_HELD_ITEM, &item1);
+    TryFormChange(source, FORM_CHANGE_ITEM_HOLD, B_TRAINER_PLAYER);
+    TryFormChange(target, FORM_CHANGE_ITEM_HOLD, B_TRAINER_PLAYER);
+    if ((from == 0 || to == 0) && gMain.callback2 == CB2_Overworld)
+        UpdateFollowingPokemon();
+    return item2 == ITEM_NONE ? ADMG_PARTY_ITEM_MOVED : ADMG_PARTY_ITEM_SWAPPED;
+}
+
+// Swap two party slots while the menu is closed
+// Changing slot 0 resets follower steps and refreshes the follower if on the overworld
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_PartySwap(ADMG_Word slot1, ADMG_Word slot2)
+{
+    struct Pokemon buffer;
+    u32 count = CalculatePlayerPartyCount();
+
+    if (sPartyMenuInternal != NULL)
+        return ADMG_PARTY_MENU_OPEN;
+    if (slot1 >= count || slot2 >= count)
+        return ADMG_PARTY_INVALID;
+    if (slot1 == slot2)
+        return ADMG_PARTY_SAME_SLOT;
+    buffer = gParties[B_TRAINER_PLAYER][slot1];
+    gParties[B_TRAINER_PLAYER][slot1] = gParties[B_TRAINER_PLAYER][slot2];
+    gParties[B_TRAINER_PLAYER][slot2] = buffer;
+    if (slot1 == 0 || slot2 == 0)
+    {
+        gFollowerSteps = 0;
+        if (gMain.callback2 == CB2_Overworld)
+            UpdateFollowingPokemon();
+    }
+    return ADMG_PARTY_DONE;
+}
+
+// Choose a move to teach after an item changes a Pokémon's form, or MOVE_NONE
+// The Rotom Catalog removes the form moves and returns the selected move
+// With I_ROTOM_CATALOG_THUNDER_SHOCK < GEN_9, skip the base move if another move remains
+// Other items return MOVE_NONE by default; mods can extend this provider
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_ItemFormChangeMoves(struct Pokemon *mon, ADMG_Word item, ADMG_Word targetSpecies)
+{
+    u32 i;
+
+    if (item != ITEM_ROTOM_CATALOG)
+        return MOVE_NONE;
+    for (i = 0; i < ARRAY_COUNT(sRotomFormChangeMoves); i++)
+        DeleteMove(mon, sRotomFormChangeMoves[i]);
+    if (I_ROTOM_CATALOG_THUNDER_SHOCK < GEN_9 && gSpecialVar_0x8000 == ROTOM_BASE_MOVE && DoesMonHaveAnyMoves(mon))
+        return MOVE_NONE;
+    return gSpecialVar_0x8000;
+}
