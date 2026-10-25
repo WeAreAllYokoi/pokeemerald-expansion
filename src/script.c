@@ -15,6 +15,7 @@
 #include "field_message_box.h"
 
 #include "dexnav.h"
+#include "admg_trainer_script.h"
 
 #define RAM_SCRIPT_MAGIC 51
 
@@ -369,6 +370,11 @@ void ScriptContext_SetupContextFromStack(struct ScriptStack *stk, struct ScriptC
 void ScriptContext_SetupGlobalContextFromStack(struct ScriptStack *stk)
 {
     ScriptContext_SetupContextFromStack(stk, &sGlobalScriptContext);
+}
+
+u8 ADMG_GetGlobalScriptStackDepth(void)
+{
+    return sGlobalScriptContext.stackDepth;
 }
 
 // Sets up and runs a script in its own context immediately. The script will be

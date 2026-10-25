@@ -56,6 +56,8 @@
 #include "overworld.h"
 #include "vs_seeker.h"
 #include "wild_encounter_ow.h"
+#include "admg_trainer_script.h"
+#include "admg_registry.h"
 #include "window.h"
 #include "constants/battle_frontier.h"
 #include "constants/battle_special.h"
@@ -1303,7 +1305,9 @@ void SetMapVarsToTrainerB(void)
     }
 }
 
-#define PUSH(script) ScriptStackPush(scrStack, script);
+// If a snippet won't fit, reject the battle instead of silently dropping it
+static bool8 sADMG_TrainerScriptDropped;
+#define PUSH(script) { if (!ScriptStackPush(scrStack, script)) sADMG_TrainerScriptDropped = TRUE; }
 
 #define PUSH_IF_SET(script, cond) \
 if (cond)           \
@@ -1477,22 +1481,58 @@ static void BattleSetup_ConfigureTrainerBattle(TrainerBattleParameter *battlePar
     return;
 }
 
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_ComposeTrainerBattleScript(ADMG_Word kind, struct ScriptStack *stack, ADMG_Word contextDepth)
+{
+    return TRUE;
+}
+
+// Reject empty lists and dropped snippets before calling the composition provider
+// After composition, the list must still be nonempty and fit alongside the existing call frames
+// Each address must be in ROM or the native memory range
+// Replace a rejected list with the releaseall/end snippet
+static void ADMG_FinishTrainerBattleScript(u32 kind, struct ScriptStack *stack, u32 contextDepth)
+{
+    bool8 accepted = !sADMG_TrainerScriptDropped && stack->stackDepth != 0
+        && ADMG_ComposeTrainerBattleScript(kind, stack, contextDepth)
+        && stack->stackDepth != 0 && stack->stackDepth <= ADMG_TRAINER_SCRIPT_CAPACITY
+        && contextDepth + stack->stackDepth <= ADMG_TRAINER_SCRIPT_CAPACITY;
+    for (u32 i = 0; accepted && i < stack->stackDepth; i++)
+    {
+        u32 address = (u32)stack->stack[i];
+        if (!((address >= ROM_START && address < ROM_END) || ADMG_IsNativeAddress(address)))
+            accepted = FALSE;
+    }
+    sADMG_TrainerScriptDropped = FALSE;
+    if (accepted)
+        return;
+    ADMG_StateAccessRejected(kind, __func__);
+    InitScriptStack(stack);
+    ScriptStackPush(stack, EventSnippet_ADMG_RefusedTrainerBattle);
+}
+
 void ConfigureTrainerBattle(struct ScriptContext *ctx)
 {
     TrainerBattleParameter decoded;
+    struct ScriptStack trainerBattleScriptStack;
     if (ctx == NULL || ctx->scriptPtr == NULL) { ADMG_StateAccessRejected(0, __func__); return; }
+    InitScriptStack(&trainerBattleScriptStack);
+    sADMG_TrainerScriptDropped = FALSE;
     memcpy(decoded.data, ctx->scriptPtr, sizeof(decoded));
-    if (!ADMG_TryValidateOrdinaryTrainerOperands(decoded.params.opponentA, decoded.params.opponentB)) return;
+    if (!ADMG_TryValidateOrdinaryTrainerOperands(decoded.params.opponentA, decoded.params.opponentB))
+    {
+        // Select the refusal snippet instead of treating trainerbattle operands as script commands
+        ADMG_FinishTrainerBattleScript(ADMG_TRAINER_SCRIPT_TALK, &trainerBattleScriptStack, ctx->stackDepth);
+        ScriptContext_SetupContextFromStack(&trainerBattleScriptStack, ctx);
+        return;
+    }
 
     InitTrainerBattleParameter();
-
-    struct ScriptStack trainerBattleScriptStack;
-    InitScriptStack(&trainerBattleScriptStack);
 
     TrainerBattleParameter *battleParams = (TrainerBattleParameter*)(ctx->scriptPtr);
     TrainerBattleLoadArgs(battleParams->data);
 
     BattleSetup_ConfigureTrainerBattle(&gTrainerBattleParameter, &trainerBattleScriptStack);
+    ADMG_FinishTrainerBattleScript(ADMG_TRAINER_SCRIPT_TALK, &trainerBattleScriptStack, ctx->stackDepth);
     ScriptContext_SetupContextFromStack(&trainerBattleScriptStack, ctx);
     ScriptContext_Enable();
 }
@@ -1517,6 +1557,7 @@ void ConfigureApproachingTrainerBattle(struct ApproachingTrainer *approachingTra
 
     struct ScriptStack trainerBattleScriptStack;
     InitScriptStack(&trainerBattleScriptStack);
+    sADMG_TrainerScriptDropped = FALSE;
 
     TrainerBattleParameter *battleParams = (TrainerBattleParameter*)(approachingTrainer[0].trainerScriptPtr + TRAINERBATTLE_OPCODE_OFFSET);
     TrainerBattleLoadArgs(battleParams->data);
@@ -1528,6 +1569,7 @@ void ConfigureApproachingTrainerBattle(struct ApproachingTrainer *approachingTra
     }
 
     BattleSetup_ConfigureApproachingTrainerBattle(&gTrainerBattleParameter, &trainerBattleScriptStack);
+    ADMG_FinishTrainerBattleScript(ADMG_TRAINER_SCRIPT_APPROACH, &trainerBattleScriptStack, ADMG_GetGlobalScriptStackDepth());
     ScriptContext_SetupGlobalContextFromStack(&trainerBattleScriptStack);
     ScriptContext_Enable();
 }
@@ -1584,6 +1626,7 @@ void ConfigureFacilityTrainerBattle(u8 facility, const u8* scriptEndPtr)
 
     struct ScriptStack trainerBattleScriptStack;
     InitScriptStack(&trainerBattleScriptStack);
+    sADMG_TrainerScriptDropped = FALSE;
 
     SetFacilityOpponent(facility, gSpecialVar_LastTalked, TRUE);
     if (!ADMG_EndStateAccessCheck(generation)) goto ADMG_reject;
@@ -1597,6 +1640,7 @@ void ConfigureFacilityTrainerBattle(u8 facility, const u8* scriptEndPtr)
 
     BattleSetup_ConfigureFacilityTrainerBattle(&gTrainerBattleParameter, &trainerBattleScriptStack);
     if (!ADMG_EndStateAccessCheck(generation)) goto ADMG_reject;
+    ADMG_FinishTrainerBattleScript(ADMG_TRAINER_SCRIPT_FACILITY, &trainerBattleScriptStack, ADMG_GetGlobalScriptStackDepth());
     ScriptContext_SetupGlobalContextFromStack(&trainerBattleScriptStack);
     ScriptContext_Enable();
     return;
@@ -1635,6 +1679,7 @@ void ConfigureApproachingFacilityTrainerBattle(struct ApproachingTrainer *approa
 
     struct ScriptStack trainerBattleScriptStack;
     InitScriptStack(&trainerBattleScriptStack);
+    sADMG_TrainerScriptDropped = FALSE;
 
     facility = *(approachingTrainer[0].trainerScriptPtr + FACILITYBATTLE_OPCODE_OFFSET);
     localId = gObjectEvents[approachingTrainer[0].objectEventId].localId;
@@ -1675,6 +1720,7 @@ void ConfigureApproachingFacilityTrainerBattle(struct ApproachingTrainer *approa
 
     BattleSetup_ConfigureApproachingFacilityTrainerBattle(&gTrainerBattleParameter, &trainerBattleScriptStack);
     if (!ADMG_EndStateAccessCheck(generation)) goto ADMG_reject;
+    ADMG_FinishTrainerBattleScript(ADMG_TRAINER_SCRIPT_FACILITY_APPROACH, &trainerBattleScriptStack, ADMG_GetGlobalScriptStackDepth());
     ScriptContext_SetupGlobalContextFromStack(&trainerBattleScriptStack);
     ScriptContext_Enable();
     return;
@@ -3200,3 +3246,5 @@ ADMG_NATIVE_ENTRY void ADMG_ClearNativeTrainerBattleRematches(void)
      && ADMG_TryGetNativeBattleNpc(TRAINER_BATTLE_PARAM.opponentA, &context, &localId))
         (void)ADMG_TryClearNativeRematchFamilyMovement(TRAINER_BATTLE_PARAM.opponentA);
 }
+
+ADMG_RETAIN_FUNCTION(ADMG_ComposeTrainerBattleScript);

@@ -195,3 +195,8 @@ EventSnippet_NotEnoughMonsForDoubleBattle::
 	waitbuttonpress
 	release
 	end
+
+@ Release field controls and end the script when trainer-battle composition is refused
+EventSnippet_ADMG_RefusedTrainerBattle::
+	releaseall
+	end
