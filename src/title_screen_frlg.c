@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_developer_tools.h"
 #include "berry_fix_program.h"
 #include "bg.h"
 #include "clear_save_data_menu.h"
@@ -655,7 +656,7 @@ static void SetTitleScreenScene_Run(s16 *data)
     switch (tState)
     {
     case 0:
-        if (QUICKSTART && QUICKSTART_HUD)
+        if (QUICKSTART && QUICKSTART_HUD && ADMG_DeveloperToolEnabled(ADMG_DEVTOOL_QUICKSTART_HUD))
             CreateQuickstartHud();
         CreateTask(Task_TitleScreen_BlinkPressStart, 0);
 #if defined(FIRERED)

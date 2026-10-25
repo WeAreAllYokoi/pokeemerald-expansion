@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_developer_tools.h"
 #include "admg_feature_bindings.h"
 #include "config/save.h"
 #include "battle_pike.h"
@@ -311,7 +312,7 @@ static void BuildStartMenuActions(void)
     }
     else
     {
-        if (DEBUG_OVERWORLD_MENU == TRUE && DEBUG_OVERWORLD_IN_MENU == TRUE)
+        if (DEBUG_OVERWORLD_MENU == TRUE && DEBUG_OVERWORLD_IN_MENU == TRUE && ADMG_DeveloperToolEnabled(ADMG_DEVTOOL_FIELD_MENU))
             BuildDebugStartMenu();
         else
             BuildNormalStartMenu();

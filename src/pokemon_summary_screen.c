@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_developer_tools.h"
 #include "admg_feature_bindings.h"
 #include "admg_feature_policies.h"
 #include "admg_feature_settings.h"
@@ -1806,7 +1807,7 @@ static void Task_HandleInput(u8 taskId)
             PlaySE(SE_SELECT);
             BeginCloseSummaryScreen(taskId);
         }
-        else if (DEBUG_POKEMON_SPRITE_VISUALIZER && JOY_NEW(SELECT_BUTTON) && !gMain.inBattle)
+        else if (DEBUG_POKEMON_SPRITE_VISUALIZER && ADMG_DeveloperToolEnabled(ADMG_DEVTOOL_SPRITE_VISUALIZER) && JOY_NEW(SELECT_BUTTON) && !gMain.inBattle)
         {
             sMonSummaryScreen->callback = CB2_Pokemon_Sprite_Visualizer;
             StopPokemonAnimations();

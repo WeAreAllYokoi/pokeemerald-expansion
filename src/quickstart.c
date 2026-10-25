@@ -1,4 +1,6 @@
 #include "global.h"
+#include "admg_developer_tools.h"
+#include "admg_retention.h"
 #include "config/general.h"
 #include "constants/global.h"
 #include "constants/rgb.h"
@@ -96,6 +98,7 @@ static void CB2_SkipToNewGame(void)
         ResetSpriteData();
         FreeAllSpritePalettes();
         ResetTasks();
+        ADMG_SetQuickstartPending();
         SetMainCallback2(CB2_NewGame);
     }
 }
@@ -114,6 +117,36 @@ void CreateQuickstartHud(void)
     LoadQuickstartSpritsheetAndPal();
     CreateSprite(&sQuickstartHudTemplate, x, y, 0);
 }
+
+// CB2_NewGame consumes the pending flag once and remembers whether this game used quickstart
+// ADMG_QuickstartPrepare can then customize the new game
+static EWRAM_DATA bool8 sADMG_QuickstartPending = FALSE;
+static EWRAM_DATA bool8 sADMG_QuickstartGame = FALSE;
+
+void ADMG_SetQuickstartPending(void)
+{
+    sADMG_QuickstartPending = TRUE;
+}
+
+bool32 ADMG_TakeQuickstartPending(void)
+{
+    bool32 pending = sADMG_QuickstartPending;
+    sADMG_QuickstartPending = FALSE;
+    sADMG_QuickstartGame = pending;
+    return pending;
+}
+
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_QuickstartPrepare(void)
+{
+    return FALSE;
+}
+ADMG_RETAIN_FUNCTION(ADMG_QuickstartPrepare);
+
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_IsQuickstartGame(void)
+{
+    return sADMG_QuickstartGame;
+}
+ADMG_RETAIN_FUNCTION(ADMG_IsQuickstartGame);
 
 void Quickstart(void)
 {

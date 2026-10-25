@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_developer_tools.h"
 #include "admg_retention.h"
 #include "admg_feature_settings.h"
 #include "admg_feature_state.h"
@@ -1998,6 +1999,12 @@ void CB2_NewGame(void)
         gFieldCallback = FieldCB_WarpExitFadeFromBlack;
     else
         gFieldCallback = ExecuteTruckSequence;
+    // Let quickstart prepare the new game; a TRUE result selects the warp fade-in
+    if (ADMG_TakeQuickstartPending() && ADMG_QuickstartPrepare())
+    {
+        ResetInitialPlayerAvatarState();
+        gFieldCallback = FieldCB_WarpExitFadeFromBlack;
+    }
     gFieldCallback2 = NULL;
     DoMapLoadLoop(&gMain.state);
     SetFieldVBlankCallback();

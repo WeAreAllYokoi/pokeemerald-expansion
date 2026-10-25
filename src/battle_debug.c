@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_developer_tools.h"
 #include "battle.h"
 #include "battle_anim.h"
 #include "battle_controllers.h"
@@ -1288,6 +1289,153 @@ static void Task_DebugMenuProcessInput(u8 taskId)
         }
     }
 }
+
+// Queue the menu for a player action choice, except in link or recorded battles
+// Values and outcomes can be changed only while Task_DebugMenuProcessInput is active
+#define ADMG_BATTLE_DEBUG_REFUSED_TYPES (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED | BATTLE_TYPE_RECORDED_LINK)
+static EWRAM_DATA bool8 sADMG_BattleDebugRequested = FALSE;
+
+static bool32 ADMG_BattleDebugAllowed(void)
+{
+    return DEBUG_BATTLE_MENU && ADMG_DeveloperToolEnabled(ADMG_DEVTOOL_BATTLE_MENU) && gMain.inBattle
+        && !(gBattleTypeFlags & ADMG_BATTLE_DEBUG_REFUSED_TYPES);
+}
+
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_RequestBattleDebugMenu(void)
+{
+    if (!ADMG_BattleDebugAllowed() || gMain.callback2 != BattleMainCB2)
+        return FALSE;
+    sADMG_BattleDebugRequested = TRUE;
+    return TRUE;
+}
+ADMG_RETAIN_FUNCTION(ADMG_RequestBattleDebugMenu);
+
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_CancelBattleDebugRequest(void)
+{
+    bool32 pending = sADMG_BattleDebugRequested;
+    sADMG_BattleDebugRequested = FALSE;
+    return pending;
+}
+ADMG_RETAIN_FUNCTION(ADMG_CancelBattleDebugRequest);
+
+bool32 ADMG_TakeBattleDebugRequest(void)
+{
+    bool32 pending = sADMG_BattleDebugRequested;
+    sADMG_BattleDebugRequested = FALSE;
+    return pending && ADMG_BattleDebugAllowed();
+}
+
+static u8 ADMG_BattleDebugOpenTask(void)
+{
+    return FindTaskIdByFunc(Task_DebugMenuProcessInput);
+}
+
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetBattleDebugMenuState(void)
+{
+    if (ADMG_BattleDebugOpenTask() != TASK_NONE)
+        return ADMG_BATTLE_DEBUG_OPEN;
+    if (FindTaskIdByFunc(Task_DebugMenuFadeOut) != TASK_NONE)
+        return ADMG_BATTLE_DEBUG_CLOSING;
+    if (gMain.callback2 == CB2_BattleDebugMenu || FindTaskIdByFunc(Task_DebugMenuFadeIn) != TASK_NONE)
+        return ADMG_BATTLE_DEBUG_OPENING;
+    if (sADMG_BattleDebugRequested)
+        return ADMG_BATTLE_DEBUG_QUEUED;
+    return ADMG_BATTLE_DEBUG_CLOSED;
+}
+ADMG_RETAIN_FUNCTION(ADMG_GetBattleDebugMenuState);
+
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetBattleDebugBattler(void)
+{
+    u8 taskId = ADMG_BattleDebugOpenTask();
+    return taskId == TASK_NONE ? MAX_BATTLERS_COUNT : GetStructPtr(taskId)->battlerId;
+}
+ADMG_RETAIN_FUNCTION(ADMG_GetBattleDebugBattler);
+
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_BattleDebugSetValue(ADMG_Word battler, ADMG_Word field, ADMG_Word index, ADMG_Word value)
+{
+    u8 taskId = ADMG_BattleDebugOpenTask();
+    struct BattleDebugMenu *data;
+    struct BattlePokemon *mon;
+
+    if (taskId == TASK_NONE || battler >= gBattlersCount)
+        return FALSE;
+    data = GetStructPtr(taskId);
+    mon = &gBattleMons[battler];
+    switch (field)
+    {
+    case ADMG_BATTLE_DEBUG_HP:
+        if (value > mon->maxHP)
+            return FALSE;
+        mon->hp = value;
+        break;
+    case ADMG_BATTLE_DEBUG_MAX_HP:
+        if (value == 0 || value > 0xFFFF || value < mon->hp)
+            return FALSE;
+        mon->maxHP = value;
+        break;
+    case ADMG_BATTLE_DEBUG_STATUS1:
+        mon->status1 = value;
+        break;
+    case ADMG_BATTLE_DEBUG_HELD_ITEM:
+        if (value >= ITEMS_COUNT)
+            return FALSE;
+        mon->item = value;
+        break;
+    case ADMG_BATTLE_DEBUG_ABILITY:
+        if (value >= ABILITIES_COUNT)
+            return FALSE;
+        mon->ability = value;
+        break;
+    case ADMG_BATTLE_DEBUG_MOVE:
+        if (index >= MAX_MON_MOVES || value >= MOVES_COUNT)
+            return FALSE;
+        mon->moves[index] = value;
+        break;
+    case ADMG_BATTLE_DEBUG_PP:
+        if (index >= MAX_MON_MOVES || value > 0xFF)
+            return FALSE;
+        mon->pp[index] = value;
+        break;
+    case ADMG_BATTLE_DEBUG_STAT_STAGE:
+        if (index >= NUM_BATTLE_STATS || value > MAX_STAT_STAGE)
+            return FALSE;
+        mon->statStages[index] = value;
+        break;
+    default:
+        return FALSE;
+    }
+    data->battlerWasChanged[battler] = TRUE; // On close, copy the held item, status, HP, max HP and moves back to the party
+    if (battler == data->battlerId)
+        PrintOnBattlerWindow(data->battlerWindowId, data->battlerId);
+    return TRUE;
+}
+ADMG_RETAIN_FUNCTION(ADMG_BattleDebugSetValue);
+
+static void ADMG_BattleDebugBeginClose(u8 taskId)
+{
+    BeginNormalPaletteFade(-1, 0, 0, 0x10, 0);
+    gTasks[taskId].func = Task_DebugMenuFadeOut;
+}
+
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_BattleDebugForceOutcome(ADMG_Word outcome)
+{
+    u8 taskId = ADMG_BattleDebugOpenTask();
+    if (taskId == TASK_NONE || !ADMG_BattleDebugEndWithOutcome(outcome))
+        return FALSE;
+    ADMG_BattleDebugBeginClose(taskId); // as Instant Win
+    return TRUE;
+}
+ADMG_RETAIN_FUNCTION(ADMG_BattleDebugForceOutcome);
+
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_CloseBattleDebugMenu(void)
+{
+    u8 taskId = ADMG_BattleDebugOpenTask();
+    if (taskId == TASK_NONE)
+        return FALSE;
+    ADMG_BattleDebugBeginClose(taskId);
+    return TRUE;
+}
+ADMG_RETAIN_FUNCTION(ADMG_CloseBattleDebugMenu);
 
 static void Task_DebugMenuFadeOut(u8 taskId)
 {

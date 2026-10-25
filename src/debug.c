@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_developer_tools.h"
 #include "admg_feature_bindings.h"
 #include "admg_feature_policies.h"
 #include "admg_trainer.h"
@@ -1065,6 +1066,7 @@ static void Debug_DestroyMenu_Full(u8 taskId)
     ScriptContext_Enable();
     UnfreezeObjectEvents();
     Free(sDebugMenuListData);
+    sDebugMenuListData = NULL; // Mark this menu closed for ADMG_IsFieldDebugMenuOpen
 }
 
 static void Debug_DestroyMenu_Full_Script(u8 taskId, const u8 *script)
@@ -4960,6 +4962,28 @@ static void DebugAction_Party_BattleSingle(u8 taskId)
     BattleSetup_StartTrainerBattle_Debug();
     Debug_DestroyMenu_Full(taskId);
 }
+
+// Open the enabled field debug menu through Debug_ShowMainMenu
+// This needs CB2_Overworld, unlocked controls, no active fade and no menu already open
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_OpenFieldDebugMenu(void)
+{
+    if (!DEBUG_OVERWORLD_MENU || !ADMG_DeveloperToolEnabled(ADMG_DEVTOOL_FIELD_MENU) || sDebugMenuListData != NULL
+     || gMain.callback2 != CB2_Overworld || ArePlayerFieldControlsLocked() || gPaletteFade.active)
+        return FALSE;
+    PlaySE(SE_WIN_OPEN);
+    FreezeObjectEvents();
+    Debug_ShowMainMenu();
+    LockPlayerFieldControls(); // Lock field controls after opening the menu
+    HideMapNamePopUpWindow();
+    return TRUE;
+}
+ADMG_RETAIN_FUNCTION(ADMG_OpenFieldDebugMenu);
+
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_IsFieldDebugMenuOpen(void)
+{
+    return sDebugMenuListData != NULL;
+}
+ADMG_RETAIN_FUNCTION(ADMG_IsFieldDebugMenuOpen);
 
 void CheckEWRAMCounters(struct ScriptContext *ctx)
 {

@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_developer_tools.h"
 #include "admg_battle_gimmicks.h"
 #include "admg_retention.h"
 #include "admg_feature_bindings.h"
@@ -5959,6 +5960,19 @@ void BattleDebug_WonBattle(void)
 {
     gBattleOutcome |= B_OUTCOME_WON;
     gBattleMainFunc = sEndTurnFuncsTable[gBattleOutcome & 0x7F];
+}
+
+// Use the Instant Win exit path for a win, loss or draw
+// Running is allowed only outside trainer battles
+bool32 ADMG_BattleDebugEndWithOutcome(u32 outcome)
+{
+    if (outcome != B_OUTCOME_WON && outcome != B_OUTCOME_LOST && outcome != B_OUTCOME_DREW && outcome != B_OUTCOME_RAN)
+        return FALSE;
+    if (outcome == B_OUTCOME_RAN && (gBattleTypeFlags & BATTLE_TYPE_TRAINER))
+        return FALSE;
+    gBattleOutcome |= outcome;
+    gBattleMainFunc = sEndTurnFuncsTable[gBattleOutcome & 0x7F];
+    return TRUE;
 }
 
 /* Set the battler's usable gimmick for activation through the controller's RET_GIMMICK response. */

@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_developer_tools.h"
 #include "battle.h"
 #include "config/quickstart.h"
 #include "quickstart.h"
@@ -757,7 +758,7 @@ static void Task_TitleScreenPhase2(u8 taskId)
                                     | DISPCNT_OBJ_ON);
         CreatePressStartBanner(START_BANNER_X, 108);
         CreateCopyrightBanner(START_BANNER_X, 148);
-        if (QUICKSTART && QUICKSTART_HUD)
+        if (QUICKSTART && QUICKSTART_HUD && ADMG_DeveloperToolEnabled(ADMG_DEVTOOL_QUICKSTART_HUD))
             CreateQuickstartHud();
         gTasks[taskId].tBg1Y = 0;
         gTasks[taskId].func = Task_TitleScreenPhase3;
@@ -778,9 +779,20 @@ static void Task_TitleScreenPhase2(u8 taskId)
 }
 
 // Show Rayquaza silhouette and process main title screen input
+// Start quickstart from the waiting title screen, as SELECT does
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_StartQuickstart(void)
+{
+    if (!QUICKSTART || !ADMG_DeveloperToolEnabled(ADMG_DEVTOOL_QUICKSTART) || !FuncIsActiveTask(Task_TitleScreenPhase3)
+     || gMain.callback2 != MainCB2 || gPaletteFade.active)
+        return FALSE;
+    Quickstart();
+    return TRUE;
+}
+ADMG_RETAIN_FUNCTION(ADMG_StartQuickstart);
+
 static void Task_TitleScreenPhase3(u8 taskId)
 {
-    if (QUICKSTART && JOY_NEW(SELECT_BUTTON))
+    if (QUICKSTART && ADMG_DeveloperToolEnabled(ADMG_DEVTOOL_QUICKSTART) && JOY_NEW(SELECT_BUTTON))
         Quickstart();
 
     if (JOY_NEW(A_BUTTON) || JOY_NEW(START_BUTTON))

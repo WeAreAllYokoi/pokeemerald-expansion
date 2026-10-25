@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_developer_tools.h"
 #include "admg_feature_settings.h"
 #include "admg_feature_bindings.h"
 #include "battle_setup.h"
@@ -149,7 +150,7 @@ void FieldGetPlayerInput(struct FieldInput *input, u16 newKeys, u16 heldKeys)
     else if (heldKeys & DPAD_RIGHT)
         input->dpadDirection = DIR_EAST;
 
-    if (DEBUG_OVERWORLD_MENU && !DEBUG_OVERWORLD_IN_MENU)
+    if (DEBUG_OVERWORLD_MENU && !DEBUG_OVERWORLD_IN_MENU && ADMG_DeveloperToolEnabled(ADMG_DEVTOOL_FIELD_MENU))
     {
         if ((heldKeys & DEBUG_OVERWORLD_HELD_KEYS) && input->DEBUG_OVERWORLD_TRIGGER_EVENT)
         {
@@ -241,7 +242,7 @@ int ProcessPlayerFieldInput(struct FieldInput *input)
     if (input->pressedRButton && TryStartDexNavSearch())
         return TRUE;
 
-    if (input->input_field_1_2 && DEBUG_OVERWORLD_MENU && !DEBUG_OVERWORLD_IN_MENU)
+    if (input->input_field_1_2 && DEBUG_OVERWORLD_MENU && !DEBUG_OVERWORLD_IN_MENU && ADMG_DeveloperToolEnabled(ADMG_DEVTOOL_FIELD_MENU))
     {
         PlaySE(SE_WIN_OPEN);
         FreezeObjectEvents();

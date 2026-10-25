@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_developer_tools.h"
 #include "battle.h"
 #include "battle_anim.h"
 #include "battle_gfx_sfx_util.h"
@@ -1207,6 +1208,73 @@ static void ResetPokemonSpriteVisualizerWindows(void)
 #define MALE_PERSONALITY 0xFE
 #define FEMALE_PERSONALITY 0X0
 
+// Remember the species, shiny state and gender requested when opening from the field
+// Return to the field when this visualizer session closes
+static EWRAM_DATA struct
+{
+    bool8 active;
+    bool8 shiny;
+    bool8 female;
+    u16 species;
+} sADMG_VisualizerRequest = {0};
+
+static void Task_ADMG_OpenSpriteVisualizer(u8 taskId)
+{
+    if (gPaletteFade.active)
+        return;
+    DestroyTask(taskId);
+    CleanupOverworldWindowsAndTilemaps();
+    SetMainCallback2(CB2_Pokemon_Sprite_Visualizer);
+}
+
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_OpenSpriteVisualizer(ADMG_Word species, ADMG_Word shiny, ADMG_Word female)
+{
+    if (!DEBUG_POKEMON_SPRITE_VISUALIZER || !ADMG_DeveloperToolEnabled(ADMG_DEVTOOL_SPRITE_VISUALIZER)
+     || species == SPECIES_NONE || species >= NUM_SPECIES || !IsSpeciesEnabled(species)
+     || gMain.callback2 != CB2_Overworld || ArePlayerFieldControlsLocked() || gPaletteFade.active)
+        return FALSE;
+    sADMG_VisualizerRequest.active = TRUE;
+    sADMG_VisualizerRequest.species = species;
+    sADMG_VisualizerRequest.shiny = shiny != 0;
+    sADMG_VisualizerRequest.female = female != 0;
+    LockPlayerFieldControls();
+    FreezeObjectEvents();
+    BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+    CreateTask(Task_ADMG_OpenSpriteVisualizer, 0);
+    return TRUE;
+}
+ADMG_RETAIN_FUNCTION(ADMG_OpenSpriteVisualizer);
+
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetSpriteVisualizerValue(ADMG_Word key)
+{
+    u8 taskId = FindTaskIdByFunc(HandleInput_PokemonSpriteVisualizer);
+    struct PokemonSpriteVisualizer *data;
+
+    if (taskId == TASK_NONE)
+        return 0xFFFFFFFF;
+    data = GetStructPtr(taskId);
+    switch (key)
+    {
+    case ADMG_VISUALIZER_SPECIES:            return data->currentmonId;
+    case ADMG_VISUALIZER_SHINY:              return data->isShiny;
+    case ADMG_VISUALIZER_FEMALE:             return data->isFemale;
+    case ADMG_VISUALIZER_FRONT_SPRITE:       return data->frontspriteId;
+    case ADMG_VISUALIZER_BACK_SPRITE:        return data->backspriteId;
+    case ADMG_VISUALIZER_ICON_SPRITE:        return data->iconspriteId;
+    case ADMG_VISUALIZER_FRONT_ANIM:         return data->animIdFront;
+    case ADMG_VISUALIZER_BACK_ANIM:          return data->animIdBack;
+    case ADMG_VISUALIZER_BATTLE_ENVIRONMENT: return data->battleEnvironment;
+    case ADMG_VISUALIZER_MOVE_BACKGROUND:    return data->moveBackground;
+    case ADMG_VISUALIZER_SUBMENU:            return data->currentSubmenu;
+    case ADMG_VISUALIZER_FRONT_ANIMATING:    return gSprites[data->frontspriteId].callback != SpriteCallbackDummy;
+    case ADMG_VISUALIZER_BACK_ANIMATING:     return gSprites[data->backspriteId].callback != SpriteCallbackDummy;
+    case ADMG_VISUALIZER_ICON_IMAGE:         return (ADMG_Word)gSprites[data->iconspriteId].images;
+    case ADMG_VISUALIZER_OPTION_ROW:         return data->submenuYpos[1];
+    default:                                 return 0xFFFFFFFF;
+    }
+}
+ADMG_RETAIN_FUNCTION(ADMG_GetSpriteVisualizerValue);
+
 void CB2_Pokemon_Sprite_Visualizer(void)
 {
     u8 taskId;
@@ -1269,6 +1337,12 @@ void CB2_Pokemon_Sprite_Visualizer(void)
         SetStructPtr(taskId, data);
 
         data->currentmonId = SPECIES_BULBASAUR;
+        if (sADMG_VisualizerRequest.active) // Use the requested starting species and appearance
+        {
+            data->currentmonId = sADMG_VisualizerRequest.species;
+            data->isShiny = sADMG_VisualizerRequest.shiny;
+            data->isFemale = sADMG_VisualizerRequest.female && SpeciesHasGenderDifferences(data->currentmonId);
+        }
         species = IsSpeciesEnabled(data->currentmonId) ? SanitizeSpeciesId(data->currentmonId) : SPECIES_NONE;
 
         //Print instructions
@@ -2082,7 +2156,15 @@ static void Exit_PokemonSpriteVisualizer(u8 taskId)
         Free(data);
         FreeMonSpritesGfx();
         DestroyTask(taskId);
-        SetMainCallback2(CB2_ReturnToFieldWithOpenMenu);
+        if (sADMG_VisualizerRequest.active)
+        {
+            sADMG_VisualizerRequest.active = FALSE;
+            SetMainCallback2(CB2_ReturnToField); // Return to the field that opened the visualizer
+        }
+        else
+        {
+            SetMainCallback2(CB2_ReturnToFieldWithOpenMenu);
+        }
         m4aMPlayVolumeControl(&gMPlayInfo_BGM, TRACKS_ALL, 0x100);
     }
 }
