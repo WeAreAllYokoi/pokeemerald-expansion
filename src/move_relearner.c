@@ -1,5 +1,6 @@
 #include "global.h"
 #include "admg_retention.h"
+#include "admg_native.h"
 #include "admg_feature_policies.h"
 #include "admg_feature_bindings.h"
 #include "main.h"
@@ -908,18 +909,26 @@ static void SortMovesAlphabetically(enum Move *moves, u32 numMoves)
         QuickSortMoves(moves, 0, numMoves - 1);
 }
 
-static bool32 IsTmAvailable(enum Item item)
+static bool32 IsTmAvailable(enum Item item, bool32 scriptMode)
 {
     if (P_ENABLE_ALL_TM_MOVES)
         return TRUE;
-    if (gRelearnMode == RELEARN_MODE_SCRIPT)
+    if (scriptMode)
         return TRUE;
     return CheckBagHasItem(item, 1);
 }
 
-// Cap each level-up, egg, TM and tutor list at MAX_RELEARNER_MOVES
-// Longer lists would overwrite the menu items after movesToLearn
-static u32 GetRelearnerLevelUpMoves(struct BoxPokemon *mon, enum Move *moves)
+// Use the same collectors for the menu, its prompts and ADMG_CollectRelearnerMoves
+// Write at most capacity moves, but keep counting eligible entries after the buffer fills
+// The level-up collector skips moves already written to the buffer
+static void ADMG_AddRelearnerMove(enum Move *moves, u32 capacity, u32 *count, enum Move move)
+{
+    if (*count < capacity)
+        moves[*count] = move;
+    (*count)++;
+}
+
+static u32 CollectRelearnerLevelUpMoves(struct BoxPokemon *mon, enum Move *moves, u32 capacity)
 {
     enum Species species = GetBoxMonData(mon, MON_DATA_SPECIES);
     u32 level = (P_ENABLE_ALL_LEVEL_UP_MOVES ? MAX_LEVEL : GetLevelFromBoxMonExp(mon));
@@ -937,13 +946,13 @@ static u32 GetRelearnerLevelUpMoves(struct BoxPokemon *mon, enum Move *moves)
                 continue;
 
             bool32 alreadyInList = FALSE;
-            for (u32 j = 0; j < numMoves; j++)
+            for (u32 j = 0; j < numMoves && j < capacity; j++)
             {
                 if (learnset[i].move == moves[j])
                     alreadyInList = TRUE;
             }
-            if (!alreadyInList && numMoves < MAX_RELEARNER_MOVES)
-                moves[numMoves++] = learnset[i].move;
+            if (!alreadyInList)
+                ADMG_AddRelearnerMove(moves, capacity, &numMoves, learnset[i].move);
         }
 
         species = (P_PRE_EVO_MOVES ? GetSpeciesPreEvolution(species) : SPECIES_NONE);
@@ -952,7 +961,7 @@ static u32 GetRelearnerLevelUpMoves(struct BoxPokemon *mon, enum Move *moves)
     return numMoves;
 }
 
-static u32 GetRelearnerEggMoves(struct BoxPokemon *mon, enum Move *moves)
+static u32 CollectRelearnerEggMoves(struct BoxPokemon *mon, enum Move *moves, u32 capacity)
 {
     enum Species species = GetBoxMonData(mon, MON_DATA_SPECIES);
     u32 numMoves = 0;
@@ -966,14 +975,14 @@ static u32 GetRelearnerEggMoves(struct BoxPokemon *mon, enum Move *moves)
 
     for (u32 i = 0; eggMoves[i] != MOVE_UNAVAILABLE; i++)
     {
-        if (!BoxMonKnowsMove(mon, eggMoves[i]) && numMoves < MAX_RELEARNER_MOVES)
-            moves[numMoves++] = eggMoves[i];
+        if (!BoxMonKnowsMove(mon, eggMoves[i]))
+            ADMG_AddRelearnerMove(moves, capacity, &numMoves, eggMoves[i]);
     }
 
     return numMoves;
 }
 
-static u32 GetRelearnerTMMoves(struct BoxPokemon *mon, enum Move *moves)
+static u32 CollectRelearnerTMMoves(struct BoxPokemon *mon, bool32 scriptMode, enum Move *moves, u32 capacity)
 {
     enum Species species = GetBoxMonData(mon, MON_DATA_SPECIES);
     u32 numMoves = 0;
@@ -986,20 +995,20 @@ static u32 GetRelearnerTMMoves(struct BoxPokemon *mon, enum Move *moves)
         if (move == MOVE_NONE)
             continue;
 
-        if (!IsTmAvailable(item))
+        if (!IsTmAvailable(item, scriptMode))
             continue;
 
         if (!CanLearnTeachableMove(species, move))
             continue;
 
-        if (!BoxMonKnowsMove(mon, move) && numMoves < MAX_RELEARNER_MOVES)
-            moves[numMoves++] = move;
+        if (!BoxMonKnowsMove(mon, move))
+            ADMG_AddRelearnerMove(moves, capacity, &numMoves, move);
     }
 
     return numMoves;
 }
 
-static u32 GetRelearnerTutorMoves(struct BoxPokemon *mon, enum Move *moves)
+static u32 CollectRelearnerTutorMoves(struct BoxPokemon *mon, enum Move *moves, u32 capacity)
 {
     enum Species species = GetBoxMonData(mon, MON_DATA_SPECIES);
     u32 numMoves = 0;
@@ -1011,11 +1020,71 @@ static u32 GetRelearnerTutorMoves(struct BoxPokemon *mon, enum Move *moves)
         if (!CanLearnTeachableMove(species, move))
             continue;
 
-        if (!BoxMonKnowsMove(mon, move) && numMoves < MAX_RELEARNER_MOVES)
-            moves[numMoves++] = move;
+        if (!BoxMonKnowsMove(mon, move))
+            ADMG_AddRelearnerMove(moves, capacity, &numMoves, move);
     }
 
     return numMoves;
+}
+
+// Collect moves for one MoveRelearnerStates list using the relearner's eligibility rules
+// With scriptMode, TMs and HMs don't need to be in the bag; the other checks still apply
+// Mods can change the selection through this provider
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_CollectRelearnerMoves(struct BoxPokemon *boxMon, ADMG_Word list, ADMG_Word scriptMode, enum Move *moves, ADMG_Word capacity)
+{
+    switch (list)
+    {
+    case MOVE_RELEARNER_LEVEL_UP_MOVES:
+        return CollectRelearnerLevelUpMoves(boxMon, moves, capacity);
+    case MOVE_RELEARNER_EGG_MOVES:
+        return CollectRelearnerEggMoves(boxMon, moves, capacity);
+    case MOVE_RELEARNER_TM_MOVES:
+        return CollectRelearnerTMMoves(boxMon, scriptMode, moves, capacity);
+    case MOVE_RELEARNER_TUTOR_MOVES:
+        return CollectRelearnerTutorMoves(boxMon, moves, capacity);
+    default:
+        return 0;
+    }
+}
+
+// Check whether the selected rules enable this list; return FALSE for an out-of-range list
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_IsRelearnerListActive(ADMG_Word list)
+{
+    return list < MOVE_RELEARNER_COUNT && sRelearnTypes[list].isActive();
+}
+
+// Keep both the written list and the menu's count within MAX_RELEARNER_MOVES
+static u32 GetRelearnerMoves(struct BoxPokemon *mon, enum MoveRelearnerStates list, enum Move *moves)
+{
+    u32 count = ADMG_CollectRelearnerMoves(mon, list, gRelearnMode == RELEARN_MODE_SCRIPT, moves, MAX_RELEARNER_MOVES);
+    return count < MAX_RELEARNER_MOVES ? count : MAX_RELEARNER_MOVES;
+}
+
+static EWRAM_DATA enum Move sADMG_RelearnerScratch[MAX_RELEARNER_MOVES] = {0};
+
+static bool32 HasRelearnerMoves(struct BoxPokemon *mon, enum MoveRelearnerStates list)
+{
+    return ADMG_CollectRelearnerMoves(mon, list, gRelearnMode == RELEARN_MODE_SCRIPT, sADMG_RelearnerScratch, MAX_RELEARNER_MOVES) != 0;
+}
+
+static u32 GetRelearnerLevelUpMoves(struct BoxPokemon *mon, enum Move *moves)
+{
+    return GetRelearnerMoves(mon, MOVE_RELEARNER_LEVEL_UP_MOVES, moves);
+}
+
+static u32 GetRelearnerEggMoves(struct BoxPokemon *mon, enum Move *moves)
+{
+    return GetRelearnerMoves(mon, MOVE_RELEARNER_EGG_MOVES, moves);
+}
+
+static u32 GetRelearnerTMMoves(struct BoxPokemon *mon, enum Move *moves)
+{
+    return GetRelearnerMoves(mon, MOVE_RELEARNER_TM_MOVES, moves);
+}
+
+static u32 GetRelearnerTutorMoves(struct BoxPokemon *mon, enum Move *moves)
+{
+    return GetRelearnerMoves(mon, MOVE_RELEARNER_TUTOR_MOVES, moves);
 }
 
 void Special_HasMoveToRelearn(void)
@@ -1043,89 +1112,22 @@ bool32 HasMoveToRelearn(struct BoxPokemon *boxMon, enum MoveRelearnerStates stat
 
 static bool32 HasRelearnerLevelUpMoves(struct BoxPokemon *boxMon)
 {
-    enum Species species = GetBoxMonData(boxMon, MON_DATA_SPECIES);
-    u32 level = (P_ENABLE_ALL_LEVEL_UP_MOVES == TRUE) ? MAX_LEVEL : GetLevelFromBoxMonExp(boxMon);
-
-    do
-    {
-        const struct LevelUpMove *learnset = GetSpeciesLevelUpLearnset(species);
-
-        for (u32 i = 0; learnset[i].move != LEVEL_UP_MOVE_END; i++)
-        {
-            if (learnset[i].level > level)
-                break;
-
-            if (!BoxMonKnowsMove(boxMon, learnset[i].move))
-                return TRUE;
-        }
-
-        species = (P_PRE_EVO_MOVES ? GetSpeciesPreEvolution(species) : SPECIES_NONE);
-
-    } while (species != SPECIES_NONE);
-
-    return FALSE;
+    return HasRelearnerMoves(boxMon, MOVE_RELEARNER_LEVEL_UP_MOVES);
 }
 
 static bool32 HasRelearnerEggMoves(struct BoxPokemon *boxMon)
 {
-    enum Species species = GetBoxMonData(boxMon, MON_DATA_SPECIES);
-    while (GetSpeciesPreEvolution(species) != SPECIES_NONE)
-        species = GetSpeciesPreEvolution(species);
-
-    const enum Move *eggMoves = GetSpeciesEggMoves(species);
-
-    if (eggMoves[0] == MOVE_UNAVAILABLE)
-        return FALSE;
-
-    for (u32 i = 0; eggMoves[i] != MOVE_UNAVAILABLE; i++)
-    {
-        if (!BoxMonKnowsMove(boxMon, eggMoves[i]))
-            return TRUE;
-    }
-
-    return FALSE;
+    return HasRelearnerMoves(boxMon, MOVE_RELEARNER_EGG_MOVES);
 }
 
 static bool32 HasRelearnerTMMoves(struct BoxPokemon *boxMon)
 {
-    enum Species species = GetBoxMonData(boxMon, MON_DATA_SPECIES);
-    for (u32 i = 0; i < NUM_ALL_MACHINES; i++)
-    {
-        enum Item item = GetTMHMItemId(i + 1);
-        enum Move move = GetTMHMMoveId(i + 1);
-
-        if (move == MOVE_NONE)
-            continue;
-
-        bool32 tmAvailable = IsTmAvailable(item);
-        if (!tmAvailable)
-            continue;
-
-        if (!CanLearnTeachableMove(species, move))
-            continue;
-
-        if (!BoxMonKnowsMove(boxMon, move))
-            return TRUE;
-    }
-
-    return FALSE;
+    return HasRelearnerMoves(boxMon, MOVE_RELEARNER_TM_MOVES);
 }
 
 static bool32 HasRelearnerTutorMoves(struct BoxPokemon *boxMon)
 {
-    enum Species species = GetBoxMonData(boxMon, MON_DATA_SPECIES);
-    for (u32 i = 0; gTutorMoves[i] != MOVE_UNAVAILABLE; i++)
-    {
-        enum Move move = gTutorMoves[i];
-
-        if (!CanLearnTeachableMove(species, move))
-            continue;
-
-        if (!BoxMonKnowsMove(boxMon, move))
-            return TRUE;
-    }
-
-    return FALSE;
+    return HasRelearnerMoves(boxMon, MOVE_RELEARNER_TUTOR_MOVES);
 }
 
 static bool32 IsLevelUpMoveRelearnerActive(void)
