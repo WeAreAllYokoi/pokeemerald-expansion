@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_retention.h"
 #include "admg_feature_policies.h"
 #include "admg_feature_bindings.h"
 #include "main.h"
@@ -476,6 +477,9 @@ static bool32 ShouldConsumeTmItem(enum Move move)
         return FALSE;
     return TRUE;
 }
+
+// Retain a named copy of ShouldConsumeTmItem so tests can call it with different I_REUSABLE_TMS settings
+ADMG_RETAIN_FUNCTION(ShouldConsumeTmItem);
 
 static void FreeMoveRelearnerResources(void)
 {
