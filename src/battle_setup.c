@@ -59,6 +59,7 @@
 #include "admg_trainer_script.h"
 #include "admg_registry.h"
 #include "admg_battle_request.h"
+#include "admg_retention.h"
 #include "window.h"
 #include "constants/battle_frontier.h"
 #include "constants/battle_special.h"
@@ -583,9 +584,9 @@ ADMG_NATIVE_ENTRY void ADMG_ScriptStartMultiBattle(struct ScriptContext *ctx)
     void (*savedCallback)(void) = gMain.savedCallback;
     InitTrainerBattleParameter();
     TRAINER_BATTLE_PARAM.opponentA = opponentA;
-    TRAINER_BATTLE_PARAM.defeatTextA = defeatTextA;
+    TRAINER_BATTLE_PARAM.defeatTextA = (u8 *)defeatTextA;
     TRAINER_BATTLE_PARAM.opponentB = type == MULTI_BATTLE_2_VS_1 ? TRAINER_NONE : opponentB;
-    TRAINER_BATTLE_PARAM.defeatTextB = defeatTextB;
+    TRAINER_BATTLE_PARAM.defeatTextB = (u8 *)defeatTextB;
     gPartnerTrainerId = TRAINER_PARTNER(partner);
     gSpecialVar_0x8005 = type;
     if (ADMG_StartMultiBattle())
