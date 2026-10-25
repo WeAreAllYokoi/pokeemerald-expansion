@@ -4329,21 +4329,22 @@ bool32 DoesMonMeetAdditionalConditions(struct Pokemon *mon, const struct Evoluti
             break;
         }
 
-        // check if an evolution is about to happen and items should be removed
-        if (evoState == DO_EVO)
-        {
-            if (removeHoldItem)
-            {
-                enum Item heldItem = ITEM_NONE;
-                SetMonData(mon, MON_DATA_HELD_ITEM, &heldItem);
-            }
-
-            if (removeBagItem != ITEM_NONE)
-                RemoveBagItem(removeBagItem, removeBagItemCount);
-        }
-
         if (currentCondition == FALSE)
             return FALSE;
+    }
+
+    // Once all additional conditions pass, consume the required items if evoState is DO_EVO
+    // Keep this outside the loop so later conditions can't consume the bag items again
+    if (evoState == DO_EVO)
+    {
+        if (removeHoldItem)
+        {
+            enum Item heldItem = ITEM_NONE;
+            SetMonData(mon, MON_DATA_HELD_ITEM, &heldItem);
+        }
+
+        if (removeBagItem != ITEM_NONE)
+            RemoveBagItem(removeBagItem, removeBagItemCount);
     }
 
     return TRUE;
