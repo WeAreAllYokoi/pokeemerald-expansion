@@ -55,4 +55,11 @@ enum Item GetRandomItem(u32 optionId, const struct FilterFuncArgs *filterFuncArg
 enum PokeBall GetRandomBall(void);
 void ResolveMoves(enum Species species, u32 level, const u32 *movesTemplate, enum Move *moves);
 
+// Random-generation option providers and candidate counts without a random selection
+#include "admg_native.h"
+ADMG_NATIVE_ENTRY const struct RandomSpeciesGeneratorOptions *ADMG_GetRandomSpeciesOptions(ADMG_Word optionId);
+ADMG_NATIVE_ENTRY const struct RandomItemGeneratorOptions *ADMG_GetRandomItemOptions(ADMG_Word optionId);
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_CountRandomSpeciesCandidates(ADMG_Word optionId, const struct FilterFuncArgs *filterFuncArgs);
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_CountRandomItemCandidates(ADMG_Word optionId, const struct FilterFuncArgs *filterFuncArgs);
+
 #endif // GUARD_RANDOM_MON_GENERATION_H

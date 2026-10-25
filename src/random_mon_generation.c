@@ -18,12 +18,12 @@
 #define INVALID_RANDOM_SPECIES SPECIES_NONE
 
 static enum Species GetSpeciesCandidateForm(enum Species species, const struct RandomSpeciesGeneratorOptions *options, const struct FilterFuncArgs *filterFuncArgs);
-static bool32 UNUSED IsInBstRangeFilterFunc(enum Species species, const struct FilterFuncArgs *filterFuncArgs);
+static bool32 IsInBstRangeFilterFunc(enum Species species, const struct FilterFuncArgs *filterFuncArgs);
 static enum Species GetRandomSpeciesAtIndex(const struct RandomSpeciesGeneratorOptions *options, u32 index);
 static enum Species SlowPickRandomSpecies(const struct RandomSpeciesGeneratorOptions *options, u32 poolSize, const struct FilterFuncArgs *filterFuncArgs);
 static enum Species FastPickRandomSpecies(const struct RandomSpeciesGeneratorOptions *options, u32 poolSize, const struct FilterFuncArgs *filterFuncArgs);
 static enum Item GetRandomItemAtIndex(const struct RandomItemGeneratorOptions *options, u32 index);
-static bool32 UNUSED IsHeldItemFilterFunc(enum Item item, const struct FilterFuncArgs *filterFuncArgs);
+static bool32 IsHeldItemFilterFunc(enum Item item, const struct FilterFuncArgs *filterFuncArgs);
 static enum Item SlowPickRandomItem(const struct RandomItemGeneratorOptions *options, u32 poolSize, const struct FilterFuncArgs *filterFuncArgs);
 static enum Item FastPickRandomItem(const struct RandomItemGeneratorOptions *options, u32 poolSize, const struct FilterFuncArgs *filterFuncArgs);
 static bool32 MoveOrder(enum Move moveA, enum Move moveB);
@@ -69,7 +69,7 @@ static bool32 IsSpeciesBannedByRandomSpeciesOptions(enum Species species, const 
 * This only applies if .filterFunc for your struct points to this function.
 */
 
-static bool32 UNUSED IsInBstRangeFilterFunc(enum Species species, const struct FilterFuncArgs *filterFuncArgs)
+static bool32 IsInBstRangeFilterFunc(enum Species species, const struct FilterFuncArgs *filterFuncArgs)
 {
     u16 bstStandard = filterFuncArgs->arg1;
     u16 bstLeniency = filterFuncArgs->arg2;
@@ -213,34 +213,48 @@ static enum Species GetSpeciesCandidateForm(enum Species species, const struct R
     return formTable[validForms[RandomUniform(RNG_NONE, 0, validFormsCount - 1)]];
 }
 
-enum Species GetRandomSpecies(u32 optionId, const struct FilterFuncArgs *filterFuncArgs)
+// Return built-in options by ID, or NULL when the ID is outside the table
+// Mods can supply other options through these providers
+ADMG_NATIVE_ENTRY const struct RandomSpeciesGeneratorOptions *ADMG_GetRandomSpeciesOptions(ADMG_Word optionId)
 {
-    const struct RandomSpeciesGeneratorOptions *options;
-    u32 poolSize;
+    return optionId < RANDOM_SPECIES_OPTIONS_COUNT ? &sRandomSpeciesGeneratorOptions[optionId] : NULL;
+}
 
-    assertf(optionId < RANDOM_SPECIES_OPTIONS_COUNT, "invalid random species option: %d", optionId)
-    {
-        return INVALID_RANDOM_SPECIES;
-    }
+ADMG_NATIVE_ENTRY const struct RandomItemGeneratorOptions *ADMG_GetRandomItemOptions(ADMG_Word optionId)
+{
+    return optionId < RANDOM_ITEM_OPTIONS_COUNT ? &sRandomItemGeneratorOptions[optionId] : NULL;
+}
 
-    options = &sRandomSpeciesGeneratorOptions[optionId];
-
+// Use the explicit pool size when supplied, otherwise the Hoenn or runtime National Dex count
+// Dex pools exclude entry 0; a nonzero pool size with a NULL pool returns 0
+static u32 ADMG_RandomSpeciesPoolSize(const struct RandomSpeciesGeneratorOptions *options)
+{
     if (options->speciesPoolCount != 0)
     {
         assertf(options->speciesPool != NULL, "positive speciesPoolCount passed with empty speciesPool")
         {
-            return INVALID_RANDOM_SPECIES;
+            return 0;
         }
-        poolSize = options->speciesPoolCount;
+        return options->speciesPoolCount;
     }
-    else if (options->dexMode == RANDOM_MON_DEX_HOENN)
+    if (options->dexMode == RANDOM_MON_DEX_HOENN)
+        return HOENN_DEX_COUNT - 1;
+    return RUNTIME_NATIONAL_DEX_COUNT - 1;
+}
+
+enum Species GetRandomSpecies(u32 optionId, const struct FilterFuncArgs *filterFuncArgs)
+{
+    const struct RandomSpeciesGeneratorOptions *options = ADMG_GetRandomSpeciesOptions(optionId);
+    u32 poolSize;
+
+    assertf(options != NULL, "invalid random species option: %d", optionId)
     {
-        poolSize = HOENN_DEX_COUNT - 1;
+        return INVALID_RANDOM_SPECIES;
     }
-    else
-    {
-        poolSize = NATIONAL_DEX_COUNT;
-    }
+
+    poolSize = ADMG_RandomSpeciesPoolSize(options);
+    if (poolSize == 0)
+        return INVALID_RANDOM_SPECIES;
 
     if (poolSize <= EXHAUSTIVE_SEARCH_POOL_MAX_SIZE)
         return SlowPickRandomSpecies(options, poolSize, filterFuncArgs);
@@ -303,7 +317,7 @@ static bool32 IsRandomItemAllowed(const struct RandomItemGeneratorOptions *optio
     return TRUE;
 }
 
-static bool32 UNUSED IsHeldItemFilterFunc(enum Item item, const struct FilterFuncArgs *filterFuncArgs)
+static bool32 IsHeldItemFilterFunc(enum Item item, const struct FilterFuncArgs *filterFuncArgs)
 {
     (void)filterFuncArgs;
 
@@ -354,15 +368,13 @@ static enum Item FastPickRandomItem(const struct RandomItemGeneratorOptions *opt
 
 enum Item GetRandomItem(u32 optionId, const struct FilterFuncArgs *filterFuncArgs)
 {
-    const struct RandomItemGeneratorOptions *options;
+    const struct RandomItemGeneratorOptions *options = ADMG_GetRandomItemOptions(optionId);
     u32 poolSize;
 
-    assertf(optionId < RANDOM_ITEM_OPTIONS_COUNT, "invalid random item option: %d", optionId)
+    assertf(options != NULL, "invalid random item option: %d", optionId)
     {
         return ITEM_NONE;
     }
-
-    options = &sRandomItemGeneratorOptions[optionId];
 
     if (options->heldItemPoolCount != 0)
     {
@@ -382,6 +394,52 @@ enum Item GetRandomItem(u32 optionId, const struct FilterFuncArgs *filterFuncArg
 
     return FastPickRandomItem(options, poolSize, filterFuncArgs);
 }
+
+// Count eligible pool entries without making a random selection
+// With randomized forms, count an entry once if any of its forms passes the filters
+// This distinguishes an empty eligible pool from a sampled search that missed its candidates
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_CountRandomSpeciesCandidates(ADMG_Word optionId, const struct FilterFuncArgs *filterFuncArgs)
+{
+    const struct RandomSpeciesGeneratorOptions *options = ADMG_GetRandomSpeciesOptions(optionId);
+    u32 count = 0;
+    if (options == NULL)
+        return 0;
+    for (u32 i = 0, poolSize = ADMG_RandomSpeciesPoolSize(options); i < poolSize; i++)
+    {
+        enum Species species = GetRandomSpeciesAtIndex(options, i);
+        const enum Species *formTable = GetSpeciesFormTable(species);
+        if (!options->randomizeForms || formTable == NULL)
+        {
+            count += !IsSpeciesBannedByRandomSpeciesOptions(species, options, filterFuncArgs);
+            continue;
+        }
+        for (u32 j = 0; formTable[j] != FORM_SPECIES_END; j++)
+        {
+            if (IsRandomSpeciesFormAllowed(formTable[j], formTable) && !IsSpeciesBannedByRandomSpeciesOptions(formTable[j], options, filterFuncArgs))
+            {
+                count++;
+                break;
+            }
+        }
+    }
+    return count;
+}
+
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_CountRandomItemCandidates(ADMG_Word optionId, const struct FilterFuncArgs *filterFuncArgs)
+{
+    const struct RandomItemGeneratorOptions *options = ADMG_GetRandomItemOptions(optionId);
+    u32 count = 0;
+    if (options == NULL || (options->heldItemPoolCount != 0 && options->heldItemPool == NULL))
+        return 0;
+    u32 poolSize = options->heldItemPoolCount != 0 ? options->heldItemPoolCount : RUNTIME_ITEMS_COUNT - 1;
+    for (u32 i = 0; i < poolSize; i++)
+        count += IsRandomItemAllowed(options, GetRandomItemAtIndex(options, i), filterFuncArgs);
+    return count;
+}
+
+// Keep the built-in filters available for mod rulesets to use
+ADMG_RETAIN_FUNCTION(IsInBstRangeFilterFunc);
+ADMG_RETAIN_FUNCTION(IsHeldItemFilterFunc);
 
 enum PokeBall GetRandomBall(void)
 {
