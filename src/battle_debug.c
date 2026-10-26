@@ -29,6 +29,7 @@
 #include "string_util.h"
 #include "util.h"
 #include "data.h"
+#include "recorded_battle.h"
 #include "reset_rtc_screen.h"
 #include "reshow_battle_screen.h"
 #include "constants/abilities.h"
@@ -2299,6 +2300,10 @@ static void UpdateMonData(struct BattleDebugMenu *data)
             SetMonData(mon, MON_DATA_MAX_HP, &battleMon->maxHP);
             for (j = 0; j < 4; j++)
                 SetMonData(mon, MON_DATA_MOVE1 + j, &battleMon->moves[j]);
+            // Refresh the player's recorded moveset baseline after debug edits, except in link battles or playback
+            // The recorder can encode reordered moves, but a move absent from the old baseline
+            // makes the moveset check reject the turn repeatedly
+            RecordedBattle_CopyBattlerMoves(i);
         }
     }
 }
