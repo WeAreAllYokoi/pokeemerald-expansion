@@ -122,12 +122,10 @@ struct CableClubPlayer
 #define FACING_FORCED_RIGHT 10
 
 extern const struct MapLayout *const gMapLayouts[];
-// The layouts added at run time (FIRST_ADDED_LAYOUT and up), moved and counted by the native registry.
-const struct MapLayout *const gADMG_AddedLayouts[1] = {0};
+// Layouts for IDs starting at FIRST_ADDED_LAYOUT, defined in admg_registry_tables.c
+// gADMG_RegistryCounts.addedLayouts gives the row count
+extern const struct MapLayout *const gADMG_AddedLayouts[];
 extern const struct MapHeader *const *const gMapGroups[];
-// The headers of the maps added at run time (FIRST_ADDED_MAP and up). The native registry moves this table and
-// sets gADMG_RegistryCounts.addedMaps; a removed mod's maps keep their rows as placeholders.
-const struct MapHeader *const gADMG_AddedMaps[1] = {0};
 
 static void Overworld_ResetStateAfterWhiteOut(void);
 static void CB2_ReturnToFieldLocal(void);

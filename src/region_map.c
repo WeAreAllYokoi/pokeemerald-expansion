@@ -1162,7 +1162,6 @@ void PokedexAreaScreen_UpdateRegionMapVariablesAndVideoRegs(s16 x, s16 y)
     }
 }
 
-const struct ADMG_AddedMapSection gADMG_AddedMapSections[1] = {0};
 static const u8 sText_NoMapSectionName[] = _("");
 static const struct RegionMapLocation sNoMapSection = {.name = sText_NoMapSectionName};
 

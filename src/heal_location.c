@@ -7,8 +7,6 @@
 
 #include "data/heal_locations.h"
 
-const struct ADMG_AddedHealLocation gADMG_AddedHealLocations[1] = {0};
-
 static const struct ADMG_AddedHealLocation *GetAddedHealLocation(u32 index)
 {
     if (index >= FIRST_ADDED_HEAL_LOCATION && index - FIRST_ADDED_HEAL_LOCATION < RUNTIME_ADDED_HEAL_LOCATIONS_COUNT)

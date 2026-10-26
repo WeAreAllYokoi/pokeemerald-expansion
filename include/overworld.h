@@ -99,6 +99,8 @@ const struct MapLayout *GetMapLayout(u32 mapLayoutId);
 void ApplyCurrentWarp(void);
 struct MapHeader const *const Overworld_GetMapHeaderByGroupAndId(u32 mapGroup, u32 mapNum);
 const struct MapHeader *GetMapHeader(MapId mapId);
+// Map headers for IDs starting at FIRST_ADDED_MAP, defined in admg_registry_tables.c
+// gADMG_RegistryCounts.addedMaps gives the row count; NULL entries have no map
 extern const struct MapHeader *const gADMG_AddedMaps[];
 struct MapHeader const *const GetDestinationWarpMapHeader(void);
 void WarpIntoMap(void);
