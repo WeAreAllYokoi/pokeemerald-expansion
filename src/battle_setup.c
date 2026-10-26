@@ -1135,7 +1135,8 @@ static u16 GetSumOfPlayerPartyLevel(u8 numMons)
     return sum;
 }
 
-static u8 GetSumOfEnemyPartyLevel(u16 opponentId, u8 numMons)
+// Keep the full trainer ID; added trainers start at 0x10000
+static u8 GetSumOfEnemyPartyLevel(enum TrainerId opponentId, u8 numMons)
 {
     u8 i;
     u8 sum;

@@ -313,7 +313,7 @@ static inline const enum TrainerClassID GetTrainerClassFromId(enum TrainerId tra
     return trainer->trainerClass;
 }
 
-static inline const u8 *GetTrainerClassNameFromId(u16 trainerId)
+static inline const u8 *GetTrainerClassNameFromId(enum TrainerId trainerId)
 {
     u64 generation = ADMG_BeginStateAccessCheck();
     u32 trainerClass = GetTrainerClassFromId(trainerId);
@@ -343,12 +343,12 @@ static inline const enum TrainerBattleType GetTrainerBattleType(enum TrainerId t
     return GetTrainerStructFromId(trainerId)->battleType;
 }
 
-static inline const u8 GetTrainerPartySizeFromId(u16 trainerId)
+static inline const u8 GetTrainerPartySizeFromId(enum TrainerId trainerId)
 {
     return GetTrainerStructFromId(trainerId)->partySize;
 }
 
-static inline const bool32 DoesTrainerHaveMugshot(u16 trainerId)
+static inline const bool32 DoesTrainerHaveMugshot(enum TrainerId trainerId)
 {
     return GetTrainerStructFromId(trainerId)->mugshotColor;
 }
