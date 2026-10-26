@@ -18,4 +18,6 @@ const struct ADMG_RegistryCounts gADMG_RegistryCounts =
     .addedLayouts = 0,
     .addedMapSections = 0,
     .addedHealLocations = 0,
+    .addedObjectEventGraphics = 0,
+    .addedObjectEventPalettes = 0,
 };

@@ -1,4 +1,5 @@
 #include "global.h"
+#include "event_object_movement.h"
 #include "heal_location.h"
 #include "region_map.h"
 #include "constants/event_objects.h"
@@ -27,6 +28,12 @@ const struct ADMG_AddedMapSection gADMG_AddedMapSections[1] =
         .flyMap = MAP_UNDEFINED,
     },
 };
+
+// Object graphics for IDs starting at FIRST_ADDED_OBJ_EVENT_GFX; NULL entries have no graphics
+const struct ObjectEventGraphicsInfo *const gADMG_AddedObjectEventGraphics[1] = {0};
+
+// Object palettes for tags starting at FIRST_ADDED_OBJ_EVENT_PAL_TAG; NULL data means no palette
+const struct SpritePalette gADMG_AddedObjectEventPalettes[1] = {0};
 
 // Heal locations for IDs starting at FIRST_ADDED_HEAL_LOCATION
 // The placeholder has no map, respawn map or respawn NPC

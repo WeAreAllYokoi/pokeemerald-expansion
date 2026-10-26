@@ -567,4 +567,11 @@ u8 MovementType_OverworldWildEncounter_Despawn_Step8(struct ObjectEvent *objectE
 u8 MovementType_OverworldWildEncounter_Despawn_Step10(struct ObjectEvent *objectEvent, struct Sprite *sprite);
 u8 MovementType_OverworldWildEncounter_Despawn_Step11(struct ObjectEvent *objectEvent, struct Sprite *sprite);
 
+// Added object graphics and palettes, defined in admg_registry_tables.c
+// Graphics IDs start at FIRST_ADDED_OBJ_EVENT_GFX; a NULL row uses OBJ_EVENT_GFX_NINJA_BOY
+// Palette tags start at FIRST_ADDED_OBJ_EVENT_PAL_TAG; each row carries its own tag
+// A palette row with no data is unavailable; the registry counts bound both tables
+extern const struct ObjectEventGraphicsInfo *const gADMG_AddedObjectEventGraphics[];
+extern const struct SpritePalette gADMG_AddedObjectEventPalettes[];
+
 #endif //GUARD_EVENT_OBJECT_MOVEMENT_H

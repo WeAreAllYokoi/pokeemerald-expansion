@@ -32,6 +32,8 @@ struct ADMG_RegistryCounts
     u32 addedLayouts;   // Rows of gADMG_AddedLayouts: the layouts added at run time, from FIRST_ADDED_LAYOUT
     u32 addedMapSections;   // Rows of gADMG_AddedMapSections, from FIRST_ADDED_MAPSEC
     u32 addedHealLocations; // Rows of gADMG_AddedHealLocations, from FIRST_ADDED_HEAL_LOCATION
+    u32 addedObjectEventGraphics; // Rows of gADMG_AddedObjectEventGraphics, from FIRST_ADDED_OBJ_EVENT_GFX
+    u32 addedObjectEventPalettes; // Rows of gADMG_AddedObjectEventPalettes, tags from FIRST_ADDED_OBJ_EVENT_PAL_TAG
 };
 
 // Keep the defaults in a separate source file so callers read the counts from ROM
@@ -52,6 +54,8 @@ extern const struct ADMG_RegistryCounts gADMG_RegistryCounts;
 #define RUNTIME_ADDED_LAYOUTS_COUNT    (gADMG_RegistryCounts.addedLayouts)
 #define RUNTIME_ADDED_MAPSECS_COUNT    (gADMG_RegistryCounts.addedMapSections)
 #define RUNTIME_ADDED_HEAL_LOCATIONS_COUNT (gADMG_RegistryCounts.addedHealLocations)
+#define RUNTIME_ADDED_OBJ_EVENT_GFX_COUNT  (gADMG_RegistryCounts.addedObjectEventGraphics)
+#define RUNTIME_ADDED_OBJ_EVENT_PALS_COUNT (gADMG_RegistryCounts.addedObjectEventPalettes)
 
 #define FIRST_ADDED_SPECIES        (NUM_SPECIES + 1)
 #define FIRST_ADDED_MOVE           (MOVES_COUNT_ALL + 1)
@@ -71,6 +75,14 @@ extern const struct ADMG_RegistryCounts gADMG_RegistryCounts;
 // Above MAPSEC_NONE and the met locations 0xFD-0xFF that share map sections' values.
 #define FIRST_ADDED_MAPSEC         0x100
 #define FIRST_ADDED_HEAL_LOCATION  0x100
+// Reserve u16 graphics IDs 0x800-0xFFF for added object graphics
+// These sit above the built-in graphics and graphics vars, below the Pokémon flag bits
+#define FIRST_ADDED_OBJ_EVENT_GFX  0x800
+#define MAX_ADDED_OBJ_EVENT_GFX    (0x1000 - FIRST_ADDED_OBJ_EVENT_GFX)
+// Reserve palette tags 0x3000-0x3FFF for added object palettes
+// This range is above the main 0x1100-0x11FF tags and below OBJ_EVENT_MON (0x4000)
+#define FIRST_ADDED_OBJ_EVENT_PAL_TAG 0x3000
+#define MAX_ADDED_OBJ_EVENT_PAL_TAGS  0x1000
 
 static inline bool32 IsSpeciesIdValid(u32 species) { return species < RUNTIME_SPECIES_COUNT; }
 static inline bool32 IsMoveIdValid(u32 move) { return move < RUNTIME_MOVES_COUNT && move != MOVES_COUNT_ALL; }
