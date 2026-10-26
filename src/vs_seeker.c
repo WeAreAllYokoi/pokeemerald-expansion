@@ -25,6 +25,7 @@
 #include "random.h"
 #include "field_player_avatar.h"
 #include "fieldmap.h"
+#include "overworld.h"
 #include "vs_seeker.h"
 #include "menu.h"
 #include "string_util.h"
