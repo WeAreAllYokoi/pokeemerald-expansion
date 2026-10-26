@@ -136,7 +136,8 @@ static u32 GetPartyMonCount(u32 lastId, struct Pokemon *party, bool32 onlyAlive)
 
 static bool8 ADMG_TrainerSlideResourceBounds(enum DifficultyLevel difficulty, u32 trainerId, u32 slideId)
 {
-    if ((u32)difficulty >= DIFFICULTY_COUNT || slideId >= TRAINER_SLIDE_COUNT || trainerId > 0xFFFF)
+    // Let added trainer IDs through to the registered slide lookup
+    if ((u32)difficulty >= DIFFICULTY_COUNT || slideId >= TRAINER_SLIDE_COUNT || (trainerId > 0xFFFF && trainerId < FIRST_ADDED_TRAINER))
     { ADMG_StateAccessRejected(trainerId, __func__); return FALSE; }
     return TRUE;
 }

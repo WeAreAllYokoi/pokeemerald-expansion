@@ -3171,6 +3171,9 @@ bool8 IsTrainerReadyForRematch(void)
         return ADMG_TryIsNativeNpcReady(&context,
             trainerId, gSpecialVar_LastTalked, &result) && result;
     }
+    // Added trainers have no rematch table entry, so return FALSE without reporting a rejection
+    if (ref.owner == ADMG_TRAINER_ADDED)
+        return FALSE;
     if (ref.owner != ADMG_TRAINER_HOENN)
     {
         ADMG_StateAccessRejected(trainerId, __func__);
