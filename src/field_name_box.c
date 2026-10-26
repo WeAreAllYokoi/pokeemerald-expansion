@@ -1,5 +1,7 @@
 #include "global.h"
 #include "admg_feature_bindings.h"
+#include "admg_native.h"
+#include "admg_retention.h"
 #include "main.h"
 #include "menu.h"
 #include "bg.h"
@@ -191,13 +193,22 @@ static void WindowFunc_ClearNamebox(u8 bg, u8 L, u8 T, u8 w, u8 h, u8 p)
     FillBgTilemapBufferRect(bg, 0, L - 1, T, w + 2, h, 0); // palette doesn't matter
 }
 
+// Use gSpeakerNamesTable for built-in IDs and return NULL for IDs outside it
+// Mods can supply names through this provider; setspeaker and the text control code accept IDs through 255
+// This keeps unknown IDs from indexing past the table in the text printer and IsSpeakerBuffered
+ADMG_NATIVE_ENTRY const u8 *ADMG_GetSpeakerName(ADMG_Word id)
+{
+    return id < SP_NAME_COUNT ? gSpeakerNamesTable[id] : NULL;
+}
+ADMG_RETAIN_FUNCTION(ADMG_GetSpeakerName);
+
 void SetSpeaker(struct ScriptContext *ctx)
 {
     u32 arg = ScriptReadWord(ctx);
     const u8 *speaker = NULL;
 
-    if (arg < SP_NAME_COUNT)
-        speaker = gSpeakerNamesTable[arg];
+    if (arg <= 0xFF)
+        speaker = ADMG_GetSpeakerName(arg);
     else if ((arg >= ROM_START && arg < ROM_END) || ADMG_IsNativeAddress(arg))
         speaker = (const u8 *)arg;
 
@@ -227,10 +238,9 @@ void TrySpawnAndShowNamebox(const u8 *speaker, u32 tileNum)
 bool32 IsSpeakerBuffered(const u8 *str)
 {
     if (str[0] == EXT_CTRL_CODE_BEGIN
-     && str[1] == EXT_CTRL_CODE_SPEAKER
-     && str[2] >= SP_NAME_NONE)
+     && str[1] == EXT_CTRL_CODE_SPEAKER)
     {
-        gSpeakerName = gSpeakerNamesTable[str[2]];
+        gSpeakerName = ADMG_GetSpeakerName(str[2]);
     }
 
     u32 res = FALSE;

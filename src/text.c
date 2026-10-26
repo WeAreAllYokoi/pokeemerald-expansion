@@ -1533,7 +1533,7 @@ static u16 RenderText(struct TextPrinter *textPrinter)
             case EXT_CTRL_CODE_SPEAKER:
                 {
                     enum SpeakerNames name = *textPrinter->printerTemplate.currentChar++;
-                    TrySpawnAndShowNamebox(gSpeakerNamesTable[name], NAME_BOX_BASE_TILE_NUM);
+                    TrySpawnAndShowNamebox(ADMG_GetSpeakerName(name), NAME_BOX_BASE_TILE_NUM);
 
                     return RENDER_REPEAT;
                 }

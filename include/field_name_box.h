@@ -19,6 +19,8 @@ void ClearNamebox(u32 windowId, bool32 copyToVram);
 u32 GetNameboxWidth(void);
 void TrySpawnAndShowNamebox(const u8 *speaker, u32 tileNum);
 bool32 IsSpeakerBuffered(const u8 *str);
+// Get a speaker's name, or NULL for no name; mods can supply IDs from SP_NAME_COUNT through 255
+const u8 *ADMG_GetSpeakerName(u32 id);
 
 static inline void TrySpawnNamebox(const u8 *dialogue, u32 tileNum)
 {
