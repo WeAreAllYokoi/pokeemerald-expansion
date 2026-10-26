@@ -1,5 +1,6 @@
 #include "global.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "event_object_movement.h"
 #include "field_camera.h"
 #include "field_screen_effect.h"
@@ -283,7 +284,9 @@ bool8 TrySetPortholeWarpDestination(void)
     s8 mapGroup, mapNum;
     s16 x, y;
 
-    if (GetSSTidalLocation(&mapGroup, &mapNum, &x, &y) != SS_TIDAL_LOCATION_CURRENTS)
+    enum SSTidalLocation location;
+    if (!ADMG_TryGetSSTidalLocation(&mapGroup, &mapNum, &x, &y, &location)
+     || location != SS_TIDAL_LOCATION_CURRENTS)
     {
         return FALSE;
     }
@@ -297,7 +300,7 @@ bool8 TrySetPortholeWarpDestination(void)
 void Task_HandlePorthole(u8 taskId)
 {
     s16 *data = gTasks[taskId].data;
-    u16 *cruiseState = GetVarPointer(VAR_SS_TIDAL_STATE);
+    u16 *cruiseState = ADMG_REQUIRE_VAR_SPAN(VAR_SS_TIDAL_STATE, 1);
     struct WarpData *location = &gSaveBlock1Ptr->location;
 
     switch ((enum PortholeState)data[0])

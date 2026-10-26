@@ -3,6 +3,7 @@
 #include "battle_pike.h"
 #include "battle_pyramid.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "fieldmap.h"
 #include "fishing.h"
 #include "follower_npc.h"
@@ -174,6 +175,8 @@ static void FeebasSeedRng(u16 seed)
 // NUM_LAND_MONS_ENCOUNTER_SLOTS
 u32 ChooseWildMonIndex_Land(void)
 {
+    ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1, 0);
+
     u8 wildMonIndex = 0;
     bool8 swap = FALSE;
     u8 rand = Random() % ENCOUNTER_CHANCE_LAND_MONS_TOTAL;
@@ -247,6 +250,8 @@ u8 GetLandEncounterSlotForMatchCall(void)
 // NUM_WATER_MONS_ENCOUNTER_SLOTS
 u32 ChooseWildMonIndex_Water(void)
 {
+    ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1, 0);
+
     u32 wildMonIndex = 0;
     bool8 swap = FALSE;
     u8 rand = Random() % ENCOUNTER_CHANCE_WATER_MONS_TOTAL;
@@ -293,6 +298,8 @@ u8 GetWaterEncounterSlotForMatchCall(void)
 // NUM_ROCK_SMASH_MONS_ENCOUNTER_SLOTS
 u32 ChooseWildMonIndex_Rocks(void)
 {
+    ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1, 0);
+
     u32 wildMonIndex = 0;
     bool8 swap = FALSE;
     u8 rand = Random() % ENCOUNTER_CHANCE_ROCK_SMASH_MONS_TOTAL;
@@ -320,6 +327,8 @@ u32 ChooseWildMonIndex_Rocks(void)
 // NUM_FISHING_MONS_ENCOUNTER_SLOTS
 static u32 ChooseWildMonIndex_Fishing(u8 rod)
 {
+    ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1, 0);
+
     u8 wildMonIndex = 0;
     bool8 swap = FALSE;
     u8 rand = Random() % max(max(ENCOUNTER_CHANCE_FISHING_MONS_OLD_ROD_TOTAL, ENCOUNTER_CHANCE_FISHING_MONS_GOOD_ROD_TOTAL),
@@ -371,6 +380,8 @@ static u32 ChooseWildMonIndex_Fishing(u8 rod)
 
 u8 ChooseWildMonLevel(const struct WildPokemon *wildPokemon, u8 wildMonIndex, enum WildPokemonArea area)
 {
+    ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1, 0);
+
     u8 min;
     u8 max;
     u8 range;
@@ -526,6 +537,8 @@ void CreateWildMon(enum Species species, u8 level)
 
 bool8 TryGenerateWildMon(const struct WildPokemonInfo *wildMonInfo, enum WildPokemonArea area, u8 flags)
 {
+    ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1, FALSE);
+
     u8 wildMonIndex = 0;
     u8 level;
 
@@ -584,6 +597,8 @@ bool8 TryGenerateWildMon(const struct WildPokemonInfo *wildMonInfo, enum WildPok
 
 static u16 GenerateFishingWildMon(const struct WildPokemonInfo *wildMonInfo, u8 rod)
 {
+    ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1, SPECIES_NONE);
+
     u8 wildMonIndex = ChooseWildMonIndex_Fishing(rod);
     enum Species wildMonSpecies = wildMonInfo->wildPokemon[wildMonIndex].species;
     u8 level = ChooseWildMonLevel(wildMonInfo->wildPokemon, wildMonIndex, WILD_AREA_FISHING);
@@ -604,6 +619,8 @@ static bool8 EncounterOddsCheck(u16 encounterRate)
 // Returns true if it will try to create a wild encounter.
 static bool8 WildEncounterCheck(u32 encounterRate, bool8 ignoreAbility)
 {
+    ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1, FALSE);
+
     encounterRate *= 16;
     if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_MACH_BIKE | PLAYER_AVATAR_FLAG_ACRO_BIKE))
         encounterRate = encounterRate * 80 / 100;
@@ -945,6 +962,8 @@ bool8 DoesCurrentMapHaveFishingMons(void)
 
 void FishingWildEncounter(u8 rod)
 {
+    ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1);
+
     enum Species species;
     u32 headerId;
     s16 x, y;
@@ -973,6 +992,8 @@ void FishingWildEncounter(u8 rod)
 
 u16 GetLocalWildMon(bool8 *isWaterMon)
 {
+    ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1, SPECIES_NONE);
+
     u32 headerId;
     enum TimeOfDay timeOfDay;
     const struct WildPokemonInfo *landMonsInfo;
@@ -1015,6 +1036,8 @@ u16 GetLocalWildMon(bool8 *isWaterMon)
 
 u16 GetLocalWaterMon(void)
 {
+    ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1, SPECIES_NONE);
+
     u32 headerId = GetCurrentMapWildMonHeaderId();
     enum TimeOfDay timeOfDay;
 
@@ -1069,6 +1092,8 @@ bool8 UpdateRepelCounter(void)
 
 bool8 IsWildLevelAllowedByRepel(u8 wildLevel)
 {
+    ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1, FALSE);
+
     u8 i;
 
     if (!REPEL_STEP_COUNT)

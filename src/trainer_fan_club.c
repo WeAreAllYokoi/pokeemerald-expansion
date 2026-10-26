@@ -1,6 +1,7 @@
 #include "global.h"
 #include "battle.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "event_scripts.h"
 #include "random.h"
 #include "string_util.h"
@@ -15,7 +16,9 @@ struct TrainerFanClub
     u8 fanFlags;
 };
 
-#define TRAINER_FAN_CLUB ((struct TrainerFanClub *)GetVarPointer(VAR_FANCLUB_FAN_COUNTER))
+_Static_assert(offsetof(struct TrainerFanClub, fanFlags) == 1, "Fan Club field payload must remain unchanged");
+_Static_assert(sizeof(struct TrainerFanClub) <= 2 * sizeof(u16), "Fan Club declared extent exceeds existing adjacent backing");
+#define TRAINER_FAN_CLUB ((struct TrainerFanClub *)ADMG_GetVarSpan(VAR_FANCLUB_FAN_COUNTER, (sizeof(struct TrainerFanClub) + sizeof(u16) - 1) / sizeof(u16)))
 
 #define GET_TRAINER_FAN_CLUB_FLAG(flag) (fanClub->fanFlags >> (flag) & 1)
 #define SET_TRAINER_FAN_CLUB_FLAG(flag) (fanClub->fanFlags |= 1 << (flag))
@@ -43,6 +46,12 @@ void Script_TryLoseFansFromPlayTimeAfterLinkBattle(void)
 
 static void TryLoseFansFromPlayTimeAfterLinkBattle(struct TrainerFanClub *fanClub)
 {
+    if (fanClub == NULL || gSaveBlock2Ptr == NULL)
+    {
+        ADMG_StateAccessRejected(VAR_FANCLUB_FAN_COUNTER, __func__);
+        return;
+    }
+
     if (DidPlayerGetFirstFans(fanClub))
     {
         TryLoseFansFromPlayTime(fanClub);
@@ -57,6 +66,12 @@ void Script_UpdateTrainerFanClubGameClear(void)
 
 static void UpdateTrainerFanClubGameClear(struct TrainerFanClub *fanClub)
 {
+    if (fanClub == NULL || gSaveBlock2Ptr == NULL)
+    {
+        ADMG_StateAccessRejected(VAR_FANCLUB_FAN_COUNTER, __func__);
+        return;
+    }
+
     if (!fanClub->gotInitialFans)
     {
         SetPlayerGotFirstFans(fanClub);
@@ -74,6 +89,14 @@ ALIGNED(4) const u8 sCounterIncrements[] = {2, 1, 2, 1};
 
 static u8 TryGainNewFanFromCounter(struct TrainerFanClub *fanClub, u8 a1)
 {
+    if (fanClub == NULL)
+    {
+        ADMG_StateAccessRejected(VAR_FANCLUB_FAN_COUNTER, __func__);
+        return 0;
+    }
+
+    if (a1 >= ARRAY_COUNT(sCounterIncrements))
+        return 0;
     if (VarGet(VAR_MAP_SCENE_SAFFRON_CITY_POKEMON_TRAINER_FAN_CLUB) == 2)
     {
         if (fanClub->timer + sCounterIncrements[a1] >= 20)
@@ -96,6 +119,12 @@ static u8 TryGainNewFanFromCounter(struct TrainerFanClub *fanClub, u8 a1)
 
 static u8 PlayerGainRandomTrainerFan(struct TrainerFanClub *fanClub)
 {
+    if (fanClub == NULL)
+    {
+        ADMG_StateAccessRejected(VAR_FANCLUB_FAN_COUNTER, __func__);
+        return 0;
+    }
+
     static const u8 sFanClubMemberIds[] = {
             FANCLUB_MEMBER2,
             FANCLUB_MEMBER4,
@@ -129,6 +158,12 @@ static u8 PlayerGainRandomTrainerFan(struct TrainerFanClub *fanClub)
 
 static u8 PlayerLoseRandomTrainerFan(struct TrainerFanClub *fanClub)
 {
+    if (fanClub == NULL)
+    {
+        ADMG_StateAccessRejected(VAR_FANCLUB_FAN_COUNTER, __func__);
+        return 0;
+    }
+
     static const u8 sFanClubMemberIds[] =
         {
             FANCLUB_MEMBER6,
@@ -173,6 +208,12 @@ u16 Script_GetNumFansOfPlayerInTrainerFanClub(void)
 
 static u16 GetNumFansOfPlayerInTrainerFanClub(struct TrainerFanClub *fanClub)
 {
+    if (fanClub == NULL)
+    {
+        ADMG_StateAccessRejected(VAR_FANCLUB_FAN_COUNTER, __func__);
+        return 0;
+    }
+
     u8 count = 0;
     u8 i;
 
@@ -192,6 +233,12 @@ void Script_TryLoseFansFromPlayTime(void)
 
 static void TryLoseFansFromPlayTime(struct TrainerFanClub *fanClub)
 {
+    if (fanClub == NULL || gSaveBlock2Ptr == NULL)
+    {
+        ADMG_StateAccessRejected(VAR_FANCLUB_FAN_COUNTER, __func__);
+        return;
+    }
+
     u8 i = 0;
     u16 timer;
 
@@ -226,11 +273,25 @@ bool16 Script_IsFanClubMemberFanOfPlayer(void)
 
 static bool16 IsFanClubMemberFanOfPlayer(struct TrainerFanClub *fanClub)
 {
+    if (fanClub == NULL)
+    {
+        ADMG_StateAccessRejected(VAR_FANCLUB_FAN_COUNTER, __func__);
+        return 0;
+    }
+
+    if (gSpecialVar_0x8004 >= NUM_TRAINER_FAN_CLUB_MEMBERS)
+        return FALSE;
     return GET_TRAINER_FAN_CLUB_FLAG(gSpecialVar_0x8004);
 }
 
 static void SetInitialFansOfPlayer(struct TrainerFanClub *fanClub)
 {
+    if (fanClub == NULL)
+    {
+        ADMG_StateAccessRejected(VAR_FANCLUB_FAN_COUNTER, __func__);
+        return;
+    }
+
     SET_TRAINER_FAN_CLUB_FLAG(FANCLUB_MEMBER1);
     SET_TRAINER_FAN_CLUB_FLAG(FANCLUB_MEMBER2);
     SET_TRAINER_FAN_CLUB_FLAG(FANCLUB_MEMBER3);
@@ -352,6 +413,12 @@ static void BufferFanClubTrainerName(u8 whichLinkTrainer, u8 whichNPCTrainer)
 
 static bool8 DidPlayerGetFirstFans(struct TrainerFanClub *fanClub)
 {
+    if (fanClub == NULL)
+    {
+        ADMG_StateAccessRejected(VAR_FANCLUB_FAN_COUNTER, __func__);
+        return 0;
+    }
+
     return fanClub->gotInitialFans;
 }
 
@@ -362,6 +429,12 @@ void Script_SetPlayerGotFirstFans(void)
 
 static void SetPlayerGotFirstFans(struct TrainerFanClub *fanClub)
 {
+    if (fanClub == NULL)
+    {
+        ADMG_StateAccessRejected(VAR_FANCLUB_FAN_COUNTER, __func__);
+        return;
+    }
+
     fanClub->gotInitialFans = TRUE;
 }
 

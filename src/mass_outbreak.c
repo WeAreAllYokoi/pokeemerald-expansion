@@ -1,5 +1,6 @@
 #include "global.h"
 #include "event_data.h"
+#include "admg_script.h"
 #include "main.h"
 #include "mass_outbreak.h"
 #include "overworld.h"
@@ -52,6 +53,16 @@ static const struct MassOutbreak sPokeOutbreakSpeciesList[OUTBREAK_COUNT] = {
     }
 };
 
+static const struct MassOutbreak *ADMG_GetStaticOutbreakEntry(u32 index)
+{
+    if (index >= ARRAY_COUNT(sPokeOutbreakSpeciesList))
+    {
+        MgbaPrintf(MGBA_LOG_WARN, "%s: invalid static outbreak index %lu", __func__, index);
+        return NULL;
+    }
+    return &sPokeOutbreakSpeciesList[index];
+}
+
 void ZeroMassOutbreak(void)
 {
     gSaveBlock1Ptr->outbreakPokemonSpecies = 0;
@@ -67,18 +78,23 @@ void ZeroMassOutbreak(void)
 
 struct MassOutbreak GetStaticOutbreak(enum MassOutbreakIndex outbreakIdx)
 {
-    return sPokeOutbreakSpeciesList[outbreakIdx];
+    const struct MassOutbreak *outbreak = ADMG_GetStaticOutbreakEntry(outbreakIdx);
+    return outbreak != NULL ? *outbreak : (struct MassOutbreak){0};
 }
 
 enum Species GetStaticOutbreakSpecies(enum MassOutbreakIndex outbreakIdx)
 {
-    return sPokeOutbreakSpeciesList[outbreakIdx].species;
+    const struct MassOutbreak *outbreak = ADMG_GetStaticOutbreakEntry(outbreakIdx);
+    return outbreak != NULL ? outbreak->species : SPECIES_NONE;
 }
 
 u8 *GetStaticOutbreakMapName(u8 *dest, enum MassOutbreakIndex outbreakIdx)
 {
-    u16 mapGroup = MAP_GROUP(sPokeOutbreakSpeciesList[outbreakIdx].location);
-    u16 mapNum = MAP_NUM(sPokeOutbreakSpeciesList[outbreakIdx].location);
+    const struct MassOutbreak *outbreak = ADMG_GetStaticOutbreakEntry(outbreakIdx);
+    if (outbreak == NULL || dest == NULL)
+        return dest;
+    u16 mapGroup = MAP_GROUP(outbreak->location);
+    u16 mapNum = MAP_NUM(outbreak->location);
     return GetMapName(dest, Overworld_GetMapHeaderByGroupAndId(mapGroup, mapNum)->regionMapSectionId, 0);
 }
 
@@ -107,7 +123,10 @@ void StartMassOutbreak(struct MassOutbreak outbreak)
 
 void StartStaticMassOutbreak(enum MassOutbreakIndex outbreakIdx)
 {
-    StartMassOutbreak(sPokeOutbreakSpeciesList[outbreakIdx]);
+    const struct MassOutbreak *outbreak = ADMG_GetStaticOutbreakEntry(outbreakIdx);
+    if (outbreak == NULL || gSaveBlock1Ptr == NULL)
+        return;
+    StartMassOutbreak(*outbreak);
 }
 
 void UpdateMassOutbreakDaysLeft(u16 days)
@@ -148,7 +167,8 @@ bool8 DoMassOutbreakEncounterTest(void)
 
 void ScrCmd_setstaticoutbreak(struct ScriptContext *ctx)
 {
-    enum MassOutbreakIndex outbreakIdx = VarGet(ScriptReadHalfword(ctx));
+    ADMG_SCRIPT_REQUIRE_BACKING(ctx, gSaveBlock1Ptr);
+    enum MassOutbreakIndex outbreakIdx = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
     bool32 noReplacement = ScriptReadByte(ctx);
 
     if (outbreakIdx == OUTBREAK_COUNT)
@@ -171,19 +191,22 @@ static u32 ReadMapFromContext(struct ScriptContext *ctx)
     u32 map = ScriptReadHalfword(ctx);
     if (map == MAP_UNDEFINED)
         return MAP_UNDEFINED;
-    return VarGet(map);
+    return ADMG_SCRIPT_VALUE(ctx, map, MAP_UNDEFINED);
 }
 
 void ScrCmd_setdynamicoutbreak(struct ScriptContext *ctx)
 {
-    enum Species species = VarGet(ScriptReadHalfword(ctx));
-    u32 level = VarGet(ScriptReadHalfword(ctx));
+    ADMG_SCRIPT_REQUIRE_BACKING(ctx, gSaveBlock1Ptr);
+    enum Species species = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
+    u32 level = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
     enum Move moves[MAX_MON_MOVES];
     for (u32 i = 0; i < MAX_MON_MOVES; i++)
-        moves[i] = VarGet(ScriptReadHalfword(ctx));
-    u32 probability = VarGet(ScriptReadHalfword(ctx));
-    u32 daysLeft = VarGet(ScriptReadHalfword(ctx));
+        moves[i] = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
+    u32 probability = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
+    u32 daysLeft = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
     u32 map = ReadMapFromContext(ctx);
+    if (ctx->scriptPtr == NULL)
+        return;
     bool32 noReplacement = ScriptReadByte(ctx);
 
     assertf(!IsMassOutbreakActive() || noReplacement == FALSE, "Trying to start a new outbreak while one is already in progress")
@@ -225,16 +248,19 @@ void ScrCmd_setdynamicoutbreak(struct ScriptContext *ctx)
 
 void ScrCmd_editoutbreak(struct ScriptContext *ctx)
 {
-    enum Species species = VarGet(ScriptReadHalfword(ctx));
-    u32 level = VarGet(ScriptReadHalfword(ctx));
+    ADMG_SCRIPT_REQUIRE_BACKING(ctx, gSaveBlock1Ptr);
+    enum Species species = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
+    u32 level = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
     enum Move moves[MAX_MON_MOVES];
     for (u32 i = 0; i < MAX_MON_MOVES; i++)
     {
-        moves[i] = VarGet(ScriptReadHalfword(ctx));
+        moves[i] = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
     }
-    u32 probability = VarGet(ScriptReadHalfword(ctx));
-    u32 daysLeft = VarGet(ScriptReadHalfword(ctx));
+    u32 probability = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
+    u32 daysLeft = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
     u32 map = ReadMapFromContext(ctx);
+    if (ctx->scriptPtr == NULL)
+        return;
 
     assertf(IsMassOutbreakActive(), "Trying to edit outbreak but none is active")
     {
@@ -288,12 +314,15 @@ void ScrCmd_editoutbreak(struct ScriptContext *ctx)
 
 void ScrCmd_checkhasactiveoutbreak(struct ScriptContext *ctx)
 {
+    ADMG_SCRIPT_REQUIRE_BACKING(ctx, gSaveBlock1Ptr);
     gSpecialVar_Result = IsMassOutbreakActive();
 }
 
 void ScrCmd_getmassoutbreakdata(struct ScriptContext *ctx)
 {
+    ADMG_SCRIPT_REQUIRE_BACKING(ctx, gSaveBlock1Ptr);
     u32 varId = ScriptReadHalfword(ctx);
+    (void)ADMG_SCRIPT_POINTER(ctx, varId);
     enum MassOutbreakData dataField = ScriptReadByte(ctx);
     u32 value = 0;
     switch (dataField)

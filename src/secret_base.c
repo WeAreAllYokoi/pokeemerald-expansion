@@ -4,6 +4,7 @@
 #include "battle_setup.h"
 #include "decoration.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "event_object_movement.h"
 #include "event_scripts.h"
 #include "field_camera.h"
@@ -418,6 +419,13 @@ static void SetSecretBaseWarpDestination(void)
 
 static void Task_EnterSecretBase(u8 taskId)
 {
+    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
+    {
+        ADMG_StateAccessRejected(*admg_base_index, "secret base index");
+        return;
+    }
+
     u16 secretBaseIdx;
 
     switch (gTasks[taskId].tState)
@@ -427,7 +435,7 @@ static void Task_EnterSecretBase(u8 taskId)
             gTasks[taskId].tState = 1;
         break;
     case 1:
-        secretBaseIdx = VarGet(VAR_CURRENT_SECRET_BASE);
+        secretBaseIdx = ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases));
         if (gSaveBlock1Ptr->secretBases[secretBaseIdx].numTimesEntered < 255)
             gSaveBlock1Ptr->secretBases[secretBaseIdx].numTimesEntered++;
 
@@ -517,6 +525,13 @@ bool8 CurMapIsSecretBase(void)
 
 void InitSecretBaseAppearance(bool8 hidePC)
 {
+    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
+    {
+        ADMG_StateAccessRejected(*admg_base_index, "secret base index");
+        return;
+    }
+
     u16 secretBaseIdx;
     s16 x, y = 0;
     u8 *decorations;
@@ -524,7 +539,7 @@ void InitSecretBaseAppearance(bool8 hidePC)
 
     if (CurMapIsSecretBase())
     {
-        secretBaseIdx = VarGet(VAR_CURRENT_SECRET_BASE);
+        secretBaseIdx = ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases));
         decorations = gSaveBlock1Ptr->secretBases[secretBaseIdx].decorations;
         decorPos = gSaveBlock1Ptr->secretBases[secretBaseIdx].decorationPositions;
         for (x = 0; x < DECOR_MAX_SECRET_BASE; x++)
@@ -550,6 +565,13 @@ void InitSecretBaseAppearance(bool8 hidePC)
 
 void InitSecretBaseDecorationSprites(void)
 {
+    if (gSaveBlock1Ptr == NULL || gMapHeader.events == NULL
+     || (gMapHeader.events->objectEventCount != 0 && gMapHeader.events->objectEvents == NULL))
+    {
+        ADMG_StateAccessRejected(0, __func__);
+        return;
+    }
+
     u8 i;
     u8 *decorations;
     u8 *decorationPositions;
@@ -568,7 +590,7 @@ void InitSecretBaseDecorationSprites(void)
     }
     else
     {
-        u16 secretBaseIdx = VarGet(VAR_CURRENT_SECRET_BASE);
+        u16 secretBaseIdx = ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases));
         decorations = gSaveBlock1Ptr->secretBases[secretBaseIdx].decorations;
         decorationPositions = gSaveBlock1Ptr->secretBases[secretBaseIdx].decorationPositions;
         numDecorations = DECOR_MAX_SECRET_BASE;
@@ -579,33 +601,52 @@ void InitSecretBaseDecorationSprites(void)
         if (decorations[i] == DECOR_NONE)
             continue;
 
+        if (decorations[i] > NUM_DECORATIONS)
+        {
+            ADMG_StateAccessRejected(decorations[i], "decoration index");
+            return;
+        }
         permission = gDecorations[decorations[i]].permission;
         category = gDecorations[decorations[i]].category;
         if (permission == DECORPERM_SPRITE)
         {
+            u16 decorationFlag;
+            if (!ADMG_TryGetIndexedFlagId(FLAG_DECORATION_1, gSpecialVar_0x8004,
+                    FLAG_DECORATION_14 - FLAG_DECORATION_1 + 1, 1, &decorationFlag))
+                return;
             for (objectEventId = 0; objectEventId < gMapHeader.events->objectEventCount; objectEventId++)
             {
-                if (gMapHeader.events->objectEvents[objectEventId].flagId == FLAG_DECORATION_1 + gSpecialVar_0x8004)
+                if (gMapHeader.events->objectEvents[objectEventId].flagId == decorationFlag)
                     break;
             }
 
             if (objectEventId == gMapHeader.events->objectEventCount)
                 continue;
 
+            u16 graphicsVar;
+            u32 graphicsId = gMapHeader.events->objectEvents[objectEventId].graphicsId;
+            if (graphicsId < OBJ_EVENT_GFX_VAR_0)
+            {
+                ADMG_StateAccessRejected(graphicsId, "decoration graphics binding");
+                return;
+            }
+            if (!ADMG_TryGetIndexedVarId(VAR_OBJ_GFX_ID_0, graphicsId - OBJ_EVENT_GFX_VAR_0, 16, 1, &graphicsVar))
+                return;
             gSpecialVar_0x8006 = decorationPositions[i] >> 4;
             gSpecialVar_0x8007 = decorationPositions[i] & 0xF;
             metatileBehavior = MapGridGetMetatileBehaviorAt(gSpecialVar_0x8006 + MAP_OFFSET, gSpecialVar_0x8007 + MAP_OFFSET);
             if (MetatileBehavior_HoldsSmallDecoration(metatileBehavior) == TRUE
              || MetatileBehavior_HoldsLargeDecoration(metatileBehavior) == TRUE)
             {
-                gSpecialVar_Result = VAR_OBJ_GFX_ID_0 + (gMapHeader.events->objectEvents[objectEventId].graphicsId - OBJ_EVENT_GFX_VAR_0);
-                VarSet(gSpecialVar_Result, gDecorations[decorations[i]].tiles[0]);
+                gSpecialVar_Result = graphicsVar;
+                if (!VarSet(gSpecialVar_Result, gDecorations[decorations[i]].tiles[0]))
+                    return;
                 gSpecialVar_Result = gMapHeader.events->objectEvents[objectEventId].localId;
-                FlagClear(FLAG_DECORATION_1 + gSpecialVar_0x8004);
+                FlagClear(decorationFlag);
                 TrySpawnObjectEvent(gSpecialVar_Result, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);
                 TryMoveObjectEventToMapCoords(gSpecialVar_Result, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, gSpecialVar_0x8006, gSpecialVar_0x8007);
                 TryOverrideObjectEventTemplateCoords(gSpecialVar_Result, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);
-                if (CurMapIsSecretBase() == TRUE && VarGet(VAR_CURRENT_SECRET_BASE) != 0)
+                if (CurMapIsSecretBase() == TRUE && ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases)) != 0)
                 {
                     if (category == DECORCAT_DOLL)
                     {
@@ -633,6 +674,13 @@ void InitSecretBaseDecorationSprites(void)
 
 void HideSecretBaseDecorationSprites(void)
 {
+    if (gSaveBlock1Ptr == NULL || gMapHeader.events == NULL
+     || (gMapHeader.events->objectEventCount != 0 && gMapHeader.events->objectEvents == NULL))
+    {
+        ADMG_StateAccessRejected(0, __func__);
+        return;
+    }
+
     u8 objectEventId;
     u16 flag;
 
@@ -652,7 +700,14 @@ void HideSecretBaseDecorationSprites(void)
 
 void SetSecretBaseOwnerGfxId(void)
 {
-    VarSet(VAR_OBJ_GFX_ID_F, sSecretBaseOwnerGfxIds[GetSecretBaseOwnerType(VarGet(VAR_CURRENT_SECRET_BASE))]);
+    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
+    {
+        ADMG_StateAccessRejected(*admg_base_index, "secret base index");
+        return;
+    }
+
+    VarSet(VAR_OBJ_GFX_ID_F, sSecretBaseOwnerGfxIds[GetSecretBaseOwnerType(ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases)))]);
 }
 
 void SetCurSecretBaseIdFromPosition(const struct MapPosition *position, const struct MapEvents *events)
@@ -733,15 +788,29 @@ static u8 *GetSecretBaseName(u8 *dest, u8 secretBaseIdx)
 
 u8 *GetSecretBaseMapName(u8 *dest)
 {
-    return GetSecretBaseName(dest, VarGet(VAR_CURRENT_SECRET_BASE));
+    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1, dest);
+    if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
+    {
+        ADMG_StateAccessRejected(*admg_base_index, "secret base index");
+        return dest;
+    }
+
+    return GetSecretBaseName(dest, ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases), dest));
 }
 
 void CopyCurSecretBaseOwnerName_StrVar1(void)
 {
+    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
+    {
+        ADMG_StateAccessRejected(*admg_base_index, "secret base index");
+        return;
+    }
+
     u8 secretBaseIdx;
     const u8 *name;
 
-    secretBaseIdx = VarGet(VAR_CURRENT_SECRET_BASE);
+    secretBaseIdx = ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases));
     name = gSaveBlock1Ptr->secretBases[secretBaseIdx].trainerName;
     *StringCopyN(gStringVar1, name, GetNameLength(name)) = EOS;
     ConvertInternationalString(gStringVar1, gSaveBlock1Ptr->secretBases[secretBaseIdx].language);
@@ -878,7 +947,14 @@ static u8 GetNumRegisteredSecretBases(void)
 
 void GetCurSecretBaseRegistrationValidity(void)
 {
-    if (IsSecretBaseRegistered(VarGet(VAR_CURRENT_SECRET_BASE)) == TRUE)
+    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
+    {
+        ADMG_StateAccessRejected(*admg_base_index, "secret base index");
+        return;
+    }
+
+    if (IsSecretBaseRegistered(ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases))) == TRUE)
         gSpecialVar_Result = 1;
     else if (GetNumRegisteredSecretBases() >= 10)
         gSpecialVar_Result = 2;
@@ -888,7 +964,14 @@ void GetCurSecretBaseRegistrationValidity(void)
 
 void ToggleCurSecretBaseRegistry(void)
 {
-    gSaveBlock1Ptr->secretBases[VarGet(VAR_CURRENT_SECRET_BASE)].registryStatus ^= 1;
+    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
+    {
+        ADMG_StateAccessRejected(*admg_base_index, "secret base index");
+        return;
+    }
+
+    gSaveBlock1Ptr->secretBases[ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases))].registryStatus ^= 1;
     FlagSet(FLAG_SECRET_BASE_REGISTRY_ENABLED);
 }
 
@@ -1110,7 +1193,14 @@ static void ReturnToMainRegistryMenu(u8 taskId)
 
 static void GoToSecretBasePCRegisterMenu(u8 taskId)
 {
-    if (VarGet(VAR_CURRENT_SECRET_BASE) == 0)
+    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
+    {
+        ADMG_StateAccessRejected(*admg_base_index, "secret base index");
+        return;
+    }
+
+    if (ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases)) == 0)
         ScriptContext_SetupScript(SecretBase_EventScript_PCCancel);
     else
         ScriptContext_SetupScript(SecretBase_EventScript_ShowRegisterMenu);
@@ -1136,7 +1226,14 @@ static u8 GetSecretBaseOwnerType(u8 secretBaseIdx)
 
 const u8 *GetSecretBaseTrainerLoseText(void)
 {
-    u8 ownerType = GetSecretBaseOwnerType(VarGet(VAR_CURRENT_SECRET_BASE));
+    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1, gText_EmptyString2);
+    if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
+    {
+        ADMG_StateAccessRejected(*admg_base_index, "secret base index");
+        return gText_EmptyString2;
+    }
+
+    u8 ownerType = GetSecretBaseOwnerType(ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases), gText_EmptyString2));
     if (ownerType == 0)
         return SecretBase_Text_Trainer0Defeated;
     else if (ownerType == 1)
@@ -1168,15 +1265,29 @@ void PrepSecretBaseBattleFlags(void)
 
 void SetBattledOwnerFromResult(void)
 {
-    gSaveBlock1Ptr->secretBases[VarGet(VAR_CURRENT_SECRET_BASE)].battledOwnerToday = gSpecialVar_Result;
+    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
+    {
+        ADMG_StateAccessRejected(*admg_base_index, "secret base index");
+        return;
+    }
+
+    gSaveBlock1Ptr->secretBases[ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases))].battledOwnerToday = gSpecialVar_Result;
 }
 
 void GetSecretBaseOwnerAndState(void)
 {
+    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
+    {
+        ADMG_StateAccessRejected(*admg_base_index, "secret base index");
+        return;
+    }
+
     u16 secretBaseIdx;
     u8 i;
 
-    secretBaseIdx = VarGet(VAR_CURRENT_SECRET_BASE);
+    secretBaseIdx = ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases));
     if (!FlagGet(FLAG_DAILY_SECRET_BASE))
     {
         for (i = 0; i < SECRET_BASES_COUNT; i++)
@@ -1196,6 +1307,13 @@ void GetSecretBaseOwnerAndState(void)
 
 void SecretBasePerStepCallback(u8 taskId)
 {
+    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
+    {
+        ADMG_StateAccessRejected(*admg_base_index, "secret base index");
+        return;
+    }
+
     s16 x;
     s16 y;
     u8 behavior;
@@ -1206,7 +1324,7 @@ void SecretBasePerStepCallback(u8 taskId)
     switch (tState)
     {
     case 0:
-        if (VarGet(VAR_CURRENT_SECRET_BASE))
+        if (ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases)))
             sInFriendSecretBase = TRUE;
         else
             sInFriendSecretBase = FALSE;
@@ -1805,11 +1923,18 @@ void ClearJapaneseSecretBases(struct SecretBase *bases)
 
 void InitSecretBaseVars(void)
 {
+    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
+    {
+        ADMG_StateAccessRejected(*admg_base_index, "secret base index");
+        return;
+    }
+
     VarSet(VAR_SECRET_BASE_STEP_COUNTER, 0);
     VarSet(VAR_SECRET_BASE_LAST_ITEM_USED, 0);
     VarSet(VAR_SECRET_BASE_LOW_TV_FLAGS, 0);
     VarSet(VAR_SECRET_BASE_HIGH_TV_FLAGS, 0);
-    if (VarGet(VAR_CURRENT_SECRET_BASE) != 0)
+    if (ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases)) != 0)
         VarSet(VAR_SECRET_BASE_IS_NOT_LOCAL, TRUE);
     else
         VarSet(VAR_SECRET_BASE_IS_NOT_LOCAL, FALSE);
@@ -1834,19 +1959,40 @@ void CheckLeftFriendsSecretBase(void)
 
 void CheckInteractedWithFriendsDollDecor(void)
 {
-    if (VarGet(VAR_CURRENT_SECRET_BASE) != 0)
+    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
+    {
+        ADMG_StateAccessRejected(*admg_base_index, "secret base index");
+        return;
+    }
+
+    if (ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases)) != 0)
         VarSet(VAR_SECRET_BASE_HIGH_TV_FLAGS, VarGet(VAR_SECRET_BASE_HIGH_TV_FLAGS) | SECRET_BASE_USED_DOLL);
 }
 
 void CheckInteractedWithFriendsCushionDecor(void)
 {
-    if (VarGet(VAR_CURRENT_SECRET_BASE) != 0)
+    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
+    {
+        ADMG_StateAccessRejected(*admg_base_index, "secret base index");
+        return;
+    }
+
+    if (ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases)) != 0)
         VarSet(VAR_SECRET_BASE_LOW_TV_FLAGS, VarGet(VAR_SECRET_BASE_LOW_TV_FLAGS) | SECRET_BASE_USED_CUSHION);
 }
 
 void DeclinedSecretBaseBattle(void)
 {
-    if (VarGet(VAR_CURRENT_SECRET_BASE) != 0)
+    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
+    {
+        ADMG_StateAccessRejected(*admg_base_index, "secret base index");
+        return;
+    }
+
+    if (ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases)) != 0)
     {
         VarSet(VAR_SECRET_BASE_LOW_TV_FLAGS, VarGet(VAR_SECRET_BASE_LOW_TV_FLAGS) & ~(SECRET_BASE_BATTLED_WON | SECRET_BASE_BATTLED_LOST | SECRET_BASE_DECLINED_BATTLE));
         VarSet(VAR_SECRET_BASE_HIGH_TV_FLAGS, VarGet(VAR_SECRET_BASE_HIGH_TV_FLAGS) & ~(SECRET_BASE_BATTLED_DRAW));
@@ -1856,7 +2002,14 @@ void DeclinedSecretBaseBattle(void)
 
 void WonSecretBaseBattle(void)
 {
-    if (VarGet(VAR_CURRENT_SECRET_BASE) != 0)
+    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
+    {
+        ADMG_StateAccessRejected(*admg_base_index, "secret base index");
+        return;
+    }
+
+    if (ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases)) != 0)
     {
         VarSet(VAR_SECRET_BASE_LOW_TV_FLAGS, VarGet(VAR_SECRET_BASE_LOW_TV_FLAGS) & ~(SECRET_BASE_BATTLED_WON | SECRET_BASE_BATTLED_LOST | SECRET_BASE_DECLINED_BATTLE));
         VarSet(VAR_SECRET_BASE_HIGH_TV_FLAGS, VarGet(VAR_SECRET_BASE_HIGH_TV_FLAGS) & ~(SECRET_BASE_BATTLED_DRAW));
@@ -1866,7 +2019,14 @@ void WonSecretBaseBattle(void)
 
 void LostSecretBaseBattle(void)
 {
-    if (VarGet(VAR_CURRENT_SECRET_BASE) != 0)
+    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
+    {
+        ADMG_StateAccessRejected(*admg_base_index, "secret base index");
+        return;
+    }
+
+    if (ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases)) != 0)
     {
         VarSet(VAR_SECRET_BASE_LOW_TV_FLAGS, VarGet(VAR_SECRET_BASE_LOW_TV_FLAGS) & ~(SECRET_BASE_BATTLED_WON | SECRET_BASE_BATTLED_LOST | SECRET_BASE_DECLINED_BATTLE));
         VarSet(VAR_SECRET_BASE_HIGH_TV_FLAGS, VarGet(VAR_SECRET_BASE_HIGH_TV_FLAGS) & ~(SECRET_BASE_BATTLED_DRAW));
@@ -1876,7 +2036,14 @@ void LostSecretBaseBattle(void)
 
 void DrewSecretBaseBattle(void)
 {
-    if (VarGet(VAR_CURRENT_SECRET_BASE) != 0)
+    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
+    {
+        ADMG_StateAccessRejected(*admg_base_index, "secret base index");
+        return;
+    }
+
+    if (ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases)) != 0)
     {
         VarSet(VAR_SECRET_BASE_LOW_TV_FLAGS, VarGet(VAR_SECRET_BASE_LOW_TV_FLAGS) & ~(SECRET_BASE_BATTLED_WON | SECRET_BASE_BATTLED_LOST | SECRET_BASE_DECLINED_BATTLE));
         VarSet(VAR_SECRET_BASE_HIGH_TV_FLAGS, VarGet(VAR_SECRET_BASE_HIGH_TV_FLAGS) & ~(SECRET_BASE_BATTLED_DRAW));
@@ -1886,6 +2053,13 @@ void DrewSecretBaseBattle(void)
 
 void CheckInteractedWithFriendsPosterDecor(void)
 {
+    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
+    {
+        ADMG_StateAccessRejected(*admg_base_index, "secret base index");
+        return;
+    }
+
     s16 x, y;
 
     GetXYCoordsOneStepInFrontOfPlayer(&x, &y);
@@ -1906,7 +2080,7 @@ void CheckInteractedWithFriendsPosterDecor(void)
     case METATILE_SecretBase_RedPoster:
     case METATILE_SecretBase_BluePoster:
     case METATILE_SecretBase_CutePoster:
-        if (VarGet(VAR_CURRENT_SECRET_BASE) != 0)
+        if (ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases)) != 0)
             VarSet(VAR_SECRET_BASE_LOW_TV_FLAGS, VarGet(VAR_SECRET_BASE_LOW_TV_FLAGS) | SECRET_BASE_USED_POSTER);
         break;
     }
@@ -1914,6 +2088,13 @@ void CheckInteractedWithFriendsPosterDecor(void)
 
 void CheckInteractedWithFriendsFurnitureBottom(void)
 {
+    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
+    {
+        ADMG_StateAccessRejected(*admg_base_index, "secret base index");
+        return;
+    }
+
     s16 x, y;
 
     GetXYCoordsOneStepInFrontOfPlayer(&x, &y);
@@ -1921,7 +2102,7 @@ void CheckInteractedWithFriendsFurnitureBottom(void)
     {
     case METATILE_SecretBase_GlassOrnament_Base1:
     case METATILE_SecretBase_GlassOrnament_Base2:
-        if (VarGet(VAR_CURRENT_SECRET_BASE) != 0)
+        if (ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases)) != 0)
             VarSet(VAR_SECRET_BASE_LOW_TV_FLAGS, VarGet(VAR_SECRET_BASE_LOW_TV_FLAGS) | SECRET_BASE_USED_GLASS_ORNAMENT);
         break;
     case METATILE_SecretBase_RedPlant_Base1:
@@ -1942,23 +2123,23 @@ void CheckInteractedWithFriendsFurnitureBottom(void)
     case METATILE_SecretBase_GorgeousPlant_BaseRight1:
     case METATILE_SecretBase_GorgeousPlant_BaseLeft2:
     case METATILE_SecretBase_GorgeousPlant_BaseRight2:
-        if (VarGet(VAR_CURRENT_SECRET_BASE) != 0)
+        if (ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases)) != 0)
             VarSet(VAR_SECRET_BASE_LOW_TV_FLAGS, VarGet(VAR_SECRET_BASE_LOW_TV_FLAGS) | SECRET_BASE_USED_PLANT);
         break;
     case METATILE_SecretBase_Fence_Horizontal:
     case METATILE_SecretBase_Fence_Vertical:
-        if (VarGet(VAR_CURRENT_SECRET_BASE) != 0)
+        if (ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases)) != 0)
             VarSet(VAR_SECRET_BASE_HIGH_TV_FLAGS, VarGet(VAR_SECRET_BASE_HIGH_TV_FLAGS) | SECRET_BASE_USED_FENCE);
         break;
     case METATILE_SecretBase_Tire_BottomLeft:
     case METATILE_SecretBase_Tire_BottomRight:
-        if (VarGet(VAR_CURRENT_SECRET_BASE) != 0)
+        if (ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases)) != 0)
             VarSet(VAR_SECRET_BASE_HIGH_TV_FLAGS, VarGet(VAR_SECRET_BASE_HIGH_TV_FLAGS) | SECRET_BASE_USED_TIRE);
         break;
     case METATILE_SecretBase_RedBrick_Bottom:
     case METATILE_SecretBase_YellowBrick_Bottom:
     case METATILE_SecretBase_BlueBrick_Bottom:
-        if (VarGet(VAR_CURRENT_SECRET_BASE) != 0)
+        if (ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases)) != 0)
             VarSet(VAR_SECRET_BASE_HIGH_TV_FLAGS, VarGet(VAR_SECRET_BASE_HIGH_TV_FLAGS) | SECRET_BASE_USED_BRICK);
         break;
     case METATILE_SecretBase_SmallDesk:
@@ -1984,7 +2165,7 @@ void CheckInteractedWithFriendsFurnitureBottom(void)
     case METATILE_SecretBase_PrettyDesk_BottomLeft:
     case METATILE_SecretBase_PrettyDesk_BottomMid:
     case METATILE_SecretBase_PrettyDesk_BottomRight:
-            if (VarGet(VAR_CURRENT_SECRET_BASE) != 0)
+            if (ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases)) != 0)
                 VarSet(VAR_SECRET_BASE_HIGH_TV_FLAGS, VarGet(VAR_SECRET_BASE_HIGH_TV_FLAGS) | SECRET_BASE_USED_DESK);
             break;
     }
@@ -1992,6 +2173,13 @@ void CheckInteractedWithFriendsFurnitureBottom(void)
 
 void CheckInteractedWithFriendsFurnitureMiddle(void)
 {
+    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
+    {
+        ADMG_StateAccessRejected(*admg_base_index, "secret base index");
+        return;
+    }
+
     s16 x, y;
 
     GetXYCoordsOneStepInFrontOfPlayer(&x, &y);
@@ -2008,7 +2196,7 @@ void CheckInteractedWithFriendsFurnitureMiddle(void)
     case METATILE_SecretBase_HardDesk_Center:
     case METATILE_SecretBase_PrettyDesk_TopMid:
     case METATILE_SecretBase_PrettyDesk_Center:
-            if (VarGet(VAR_CURRENT_SECRET_BASE) != 0)
+            if (ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases)) != 0)
                 VarSet(VAR_SECRET_BASE_HIGH_TV_FLAGS, VarGet(VAR_SECRET_BASE_HIGH_TV_FLAGS) | SECRET_BASE_USED_DESK);
             break;
     }
@@ -2016,6 +2204,13 @@ void CheckInteractedWithFriendsFurnitureMiddle(void)
 
 void CheckInteractedWithFriendsFurnitureTop(void)
 {
+    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
+    {
+        ADMG_StateAccessRejected(*admg_base_index, "secret base index");
+        return;
+    }
+
     s16 x, y;
 
     GetXYCoordsOneStepInFrontOfPlayer(&x, &y);
@@ -2043,18 +2238,18 @@ void CheckInteractedWithFriendsFurnitureTop(void)
     case METATILE_SecretBase_PrettyDesk_TopRight:
     case METATILE_SecretBase_PrettyDesk_MidLeft:
     case METATILE_SecretBase_PrettyDesk_MidRight:
-        if (VarGet(VAR_CURRENT_SECRET_BASE) != 0)
+        if (ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases)) != 0)
             VarSet(VAR_SECRET_BASE_HIGH_TV_FLAGS, VarGet(VAR_SECRET_BASE_HIGH_TV_FLAGS) | SECRET_BASE_USED_DESK);
         break;
     case METATILE_SecretBase_Tire_TopLeft:
     case METATILE_SecretBase_Tire_TopRight:
-        if (VarGet(VAR_CURRENT_SECRET_BASE) != 0)
+        if (ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases)) != 0)
             VarSet(VAR_SECRET_BASE_HIGH_TV_FLAGS, VarGet(VAR_SECRET_BASE_HIGH_TV_FLAGS) | SECRET_BASE_USED_TIRE);
         break;
     case METATILE_SecretBase_RedBrick_Top:
     case METATILE_SecretBase_YellowBrick_Top:
     case METATILE_SecretBase_BlueBrick_Top:
-            if (VarGet(VAR_CURRENT_SECRET_BASE) != 0)
+            if (ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases)) != 0)
                 VarSet(VAR_SECRET_BASE_HIGH_TV_FLAGS, VarGet(VAR_SECRET_BASE_HIGH_TV_FLAGS) | SECRET_BASE_USED_BRICK);
             break;
     }
@@ -2062,6 +2257,13 @@ void CheckInteractedWithFriendsFurnitureTop(void)
 
 void CheckInteractedWithFriendsSandOrnament(void)
 {
+    u16 *admg_base_index = ADMG_REQUIRE_VAR_SPAN(VAR_CURRENT_SECRET_BASE, 1);
+    if (*admg_base_index >= ARRAY_COUNT(gSaveBlock1Ptr->secretBases))
+    {
+        ADMG_StateAccessRejected(*admg_base_index, "secret base index");
+        return;
+    }
+
     s16 x, y;
 
     GetXYCoordsOneStepInFrontOfPlayer(&x, &y);
@@ -2069,7 +2271,7 @@ void CheckInteractedWithFriendsSandOrnament(void)
     {
     case METATILE_SecretBase_SandOrnament_Base1:
     case METATILE_SecretBase_SandOrnament_Base2:
-            if (VarGet(VAR_CURRENT_SECRET_BASE) != 0)
+            if (ADMG_VAR_INDEX(VAR_CURRENT_SECRET_BASE, ARRAY_COUNT(gSaveBlock1Ptr->secretBases)) != 0)
                 VarSet(VAR_SECRET_BASE_HIGH_TV_FLAGS, VarGet(VAR_SECRET_BASE_HIGH_TV_FLAGS) | SECRET_BASE_USED_SAND_ORNAMENT);
             break;
     }

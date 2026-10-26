@@ -842,3 +842,6 @@ const u32 gExperienceTables[][MAX_LEVEL + 1] =
         EXP_MEDIUM_FAST(100),
     }
 };
+
+/* Derive the extent from every retained row, including unnamed alternatives. */
+const u32 gADMG_ExperienceTableCount = ARRAY_COUNT(gExperienceTables);

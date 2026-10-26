@@ -1,15 +1,24 @@
 #include "global.h"
 #include "data.h"
 #include "event_data.h"
+#include "admg_state.h"
+#include "admg_trainer.h"
 #include "script.h"
 #include "constants/battle.h"
 
 enum DifficultyLevel GetCurrentDifficultyLevel(void)
 {
+    u16 value;
     if (!B_VAR_DIFFICULTY)
         return DIFFICULTY_NORMAL;
-
-    return VarGet(B_VAR_DIFFICULTY);
+    if (!ADMG_TryReadVar((u32)B_VAR_DIFFICULTY, &value, FALSE))
+        return DIFFICULTY_NORMAL;
+    if (value >= DIFFICULTY_COUNT)
+    {
+        ADMG_StateAccessRejected(value, __func__);
+        return DIFFICULTY_NORMAL;
+    }
+    return value;
 }
 
 void SetCurrentDifficultyLevel(enum DifficultyLevel desiredDifficulty)
@@ -26,29 +35,32 @@ void SetCurrentDifficultyLevel(enum DifficultyLevel desiredDifficulty)
 enum DifficultyLevel GetBattlePartnerDifficultyLevel(u16 partnerId)
 {
     enum DifficultyLevel difficulty = GetCurrentDifficultyLevel();
-
-    if (partnerId > TRAINER_PARTNER(PARTNER_NONE))
-        partnerId -= TRAINER_PARTNER(PARTNER_NONE);
-
-    if (difficulty == DIFFICULTY_NORMAL)
+    const struct Trainer *trainer;
+    u32 index;
+    if (partnerId < PARTNER_COUNT)
+        index = partnerId;
+    else if (IsPartnerTrainerId(partnerId))
+        index = GetPartnerIdFromTrainerId(partnerId);
+    else
+    {
+        ADMG_StateAccessRejected(partnerId, __func__);
         return DIFFICULTY_NORMAL;
-
-    if (gBattlePartners[difficulty][partnerId].party == NULL)
+    }
+    if (!ADMG_TryGetOwnedTrainer(ADMG_TRAINER_PARTNER, index, difficulty, &trainer))
         return DIFFICULTY_NORMAL;
-
+    if (difficulty == DIFFICULTY_NORMAL || trainer->party == NULL)
+        return DIFFICULTY_NORMAL;
     return difficulty;
 }
 
 enum DifficultyLevel GetTrainerDifficultyLevel(u16 trainerId)
 {
     enum DifficultyLevel difficulty = GetCurrentDifficultyLevel();
-
-    if (difficulty == DIFFICULTY_NORMAL)
+    const struct Trainer *trainer;
+    if (!ADMG_TryGetTrainerRow(trainerId, difficulty, &trainer))
         return DIFFICULTY_NORMAL;
-
-    if (gTrainers[difficulty][trainerId].party == NULL)
+    if (difficulty == DIFFICULTY_NORMAL || trainer->party == NULL)
         return DIFFICULTY_NORMAL;
-
     return difficulty;
 }
 

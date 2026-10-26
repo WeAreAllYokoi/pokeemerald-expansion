@@ -1,6 +1,7 @@
 #include "global.h"
 #include "script.h"
 #include "event_data.h"
+#include "admg_script.h"
 #include "field_screen_effect.h"
 #include "mystery_gift.h"
 #include "random.h"
@@ -85,6 +86,15 @@ void StopScript(struct ScriptContext *ctx)
     assertf(!FuncIsActiveTask(Task_WarpAndLoadMap), "Leaving script while a warp is in progress: try adding a waitstate");
     ctx->mode = SCRIPT_MODE_STOPPED;
     ctx->scriptPtr = NULL;
+}
+
+void ADMG_StopInvalidStateCommand(struct ScriptContext *ctx)
+{
+    if (ctx != NULL)
+    {
+        ctx->mode = SCRIPT_MODE_STOPPED;
+        ctx->scriptPtr = NULL;
+    }
 }
 
 bool8 RunScriptCommand(struct ScriptContext *ctx)
@@ -404,6 +414,7 @@ const u8 *MapHeaderCheckScriptTable(u8 tag)
     {
         u16 varIndex1;
         u16 varIndex2;
+        u16 value1, value2;
 
         // Read first var (or .2byte terminal value)
         varIndex1 = T1_READ_16(ptr);
@@ -416,7 +427,10 @@ const u8 *MapHeaderCheckScriptTable(u8 tag)
         ptr += 2;
 
         // Run map script if vars are equal
-        if (VarGet(varIndex1) == VarGet(varIndex2))
+        if (!ADMG_TryReadVar(varIndex1, &value1, TRUE)
+         || !ADMG_TryReadVar(varIndex2, &value2, TRUE))
+            return NULL;
+        if (value1 == value2)
         {
             const u8 *mapScript = T2_READ_PTR(ptr);
             if (!Script_HasNoEffect(mapScript))
@@ -705,7 +719,8 @@ void Script_RequestWriteVar_Internal(u32 varId)
         return;
 
     if ((!gMapHeader.writeSpecialVarIsEffect)
-     && (SPECIAL_VARS_START <= varId && varId <= SPECIAL_VARS_END))
+     && ((SPECIAL_VARS_START <= varId && varId <= SPECIAL_VARS_END)
+      || (ADMG_STATE_TEXT_COLOR_SCRATCH_FIRST <= varId && varId <= ADMG_STATE_TEXT_COLOR_SCRATCH_LAST)))
         return;
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 }

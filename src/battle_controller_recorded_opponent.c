@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_state.h"
 #include "battle.h"
 #include "battle_anim.h"
 #include "battle_controllers.h"
@@ -270,6 +271,9 @@ static void Intro_TryShinyAnimShowHealthbox(enum BattlerId battler)
 
 static void RecordedOpponentHandleDrawTrainerPic(enum BattlerId battler)
 {
+    if ((u32)battler >= MAX_BATTLERS_COUNT)
+    { ADMG_StateAccessRejected((u32)battler, __func__); return; }
+    u64 generation = ADMG_BeginStateAccessCheck();
     s16 xPos;
     enum TrainerPicID trainerPicId;
     enum BattlerPosition position = GetBattlerPosition(battler);
@@ -314,14 +318,20 @@ static void RecordedOpponentHandleDrawTrainerPic(enum BattlerId battler)
         xPos = 176;
         if (TRAINER_BATTLE_PARAM.opponentA == TRAINER_UNION_ROOM)
         {
+            if ((gBattleTypeFlags & BATTLE_TYPE_RECORDED_LINK) && gRecordedBattleMultiplayerId >= MAX_LINK_PLAYERS)
+            { ADMG_StateAccessRejected(gRecordedBattleMultiplayerId, __func__); return; }
             trainerPicId = GetUnionRoomTrainerPic();
         }
         else
         {
-            trainerPicId = PlayerGenderToFrontTrainerPicId(gLinkPlayers[gRecordedBattleMultiplayerId ^ BIT_SIDE].gender);
+            u32 multiplayerId = gRecordedBattleMultiplayerId ^ BIT_SIDE;
+            if (multiplayerId >= MAX_LINK_PLAYERS)
+            { ADMG_StateAccessRejected(multiplayerId, __func__); return; }
+            trainerPicId = PlayerGenderToFrontTrainerPicId(gLinkPlayers[multiplayerId].gender);
         }
     }
 
+    if (!ADMG_EndStateAccessCheck(generation)) return;
     BtlController_HandleDrawTrainerPic(battler, trainerPicId, TRUE, xPos, 40, -1);
 }
 

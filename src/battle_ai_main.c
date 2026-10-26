@@ -1,4 +1,6 @@
 #include "global.h"
+#include "admg_trainer_actor.h"
+#include "admg_state.h"
 #include "main.h"
 #include "malloc.h"
 #include "battle.h"
@@ -198,32 +200,41 @@ void BattleAI_SetupAIData(u8 defaultScoreMoves, enum BattlerId battler)
 
 void BattleAI_SetupItems(void)
 {
-    u8 *data = (u8 *)gBattleHistory;
-    u32 trainerId = TRAINER_BATTLE_PARAM.opponentA;
-    if (IsSpecialTrainer(trainerId))
-        trainerId = TRAINER_NONE;
-    const enum Item *items = GetTrainerItemsFromId(trainerId);
-
-    for (u32 i = 0; i < sizeof(struct BattleHistory); i++)
-        data[i] = 0;
-
-    // Items are allowed to use in ONLY trainer battles.
-    if ((gBattleTypeFlags & BATTLE_TYPE_TRAINER)
+    if (gBattleHistory == NULL)
+    { ADMG_StateAccessRejected(0, __func__); return; }
+    if (!ADMG_TryValidateBattleTrainerActors(gBattleTypeFlags, TRAINER_BATTLE_PARAM.opponentA,
+            TRAINER_BATTLE_PARAM.opponentB, gPartnerTrainerId)) return;
+    struct BattleHistory *history = gBattleHistory;
+    u32 battleFlags = gBattleTypeFlags;
+    u16 opponentA = TRAINER_BATTLE_PARAM.opponentA, opponentB = TRAINER_BATTLE_PARAM.opponentB;
+    u16 partner = gPartnerTrainerId;
+    /* Preserve the original eligibility predicate. Excluded modes must not
+     * interpret opaque network/facility words as ordinary trainer rows. */
+    bool32 usesItems = (gBattleTypeFlags & BATTLE_TYPE_TRAINER)
         && !(gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_SAFARI | BATTLE_TYPE_BATTLE_TOWER
-                               | BATTLE_TYPE_EREADER_TRAINER | BATTLE_TYPE_SECRET_BASE | BATTLE_TYPE_FRONTIER
-                               | BATTLE_TYPE_INGAME_PARTNER | BATTLE_TYPE_RECORDED_LINK)
-            )
-       )
+             | BATTLE_TYPE_EREADER_TRAINER | BATTLE_TYPE_SECRET_BASE | BATTLE_TYPE_FRONTIER
+             | BATTLE_TYPE_INGAME_PARTNER | BATTLE_TYPE_RECORDED_LINK));
+    enum Item admittedItems[MAX_TRAINER_ITEMS] = {0};
+    if (usesItems)
     {
-        for (u32 itemIndex = 0; itemIndex < MAX_TRAINER_ITEMS; itemIndex++)
-        {
-            if (items[itemIndex] != ITEM_NONE)
-            {
-                gBattleHistory->trainerItems[gBattleHistory->itemsNo] = items[itemIndex];
-                gBattleHistory->itemsNo++;
-            }
-        }
+        u64 generation = ADMG_BeginStateAccessCheck();
+        u32 trainerId = TRAINER_BATTLE_PARAM.opponentA;
+        if (IsSpecialTrainer(trainerId)) trainerId = TRAINER_NONE;
+        const enum Item *items = GetTrainerItemsFromId(trainerId);
+        if (items == NULL || !ADMG_EndStateAccessCheck(generation))
+        { if (items == NULL) ADMG_StateAccessRejected(trainerId, __func__); return; }
+        for (u32 item = 0; item < MAX_TRAINER_ITEMS; ++item) admittedItems[item] = items[item];
     }
+    if (gBattleHistory != history || gBattleTypeFlags != battleFlags
+     || TRAINER_BATTLE_PARAM.opponentA != opponentA || TRAINER_BATTLE_PARAM.opponentB != opponentB
+     || gPartnerTrainerId != partner)
+    { ADMG_StateAccessRejected(opponentA, __func__); return; }
+    u8 *data = (u8 *)history;
+    for (u32 byte = 0; byte < sizeof(struct BattleHistory); ++byte) data[byte] = 0;
+    if (usesItems)
+        for (u32 item = 0; item < MAX_TRAINER_ITEMS; ++item)
+            if (admittedItems[item] != ITEM_NONE)
+                gBattleHistory->trainerItems[gBattleHistory->itemsNo++] = admittedItems[item];
 }
 
 static u64 GetWildAiFlags(void)
@@ -250,6 +261,9 @@ static u64 GetWildAiFlags(void)
 
 static bool32 IsSmartBattle(void)
 {
+    if (gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK)
+     && !(gBattleTypeFlags & BATTLE_TYPE_TOWER_LINK_MULTI)) return FALSE;
+
     if (IsSpecialTrainer(TRAINER_BATTLE_PARAM.opponentA))
         return FALSE; // Don't set flags for link battle unless Battle Tower link multi mode
 
@@ -258,6 +272,9 @@ static bool32 IsSmartBattle(void)
 
 static u64 GetAiFlags(u16 trainerId, enum BattlerId battler)
 {
+    if ((u32)battler >= MAX_BATTLERS_COUNT)
+    { ADMG_StateAccessRejected((u32)battler, __func__); return 0; }
+
     u64 flags = 0;
 
     if (!IsSmartBattle())
@@ -307,23 +324,36 @@ static u64 GetAiFlags(u16 trainerId, enum BattlerId battler)
 
 void BattleAI_SetupFlags(void)
 {
+    if (gAiThinkingStruct == NULL)
+    { ADMG_StateAccessRejected(0, __func__); return; }
+    if (!ADMG_TryValidateBattleTrainerActors(gBattleTypeFlags, TRAINER_BATTLE_PARAM.opponentA,
+            TRAINER_BATTLE_PARAM.opponentB, gPartnerTrainerId)) return;
+    struct AiThinkingStruct *thinking = gAiThinkingStruct;
+    u32 battleFlags = gBattleTypeFlags;
+    u16 opponentA = TRAINER_BATTLE_PARAM.opponentA, opponentB = TRAINER_BATTLE_PARAM.opponentB;
+    u16 partner = gPartnerTrainerId;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    u64 admitted[MAX_BATTLERS_COUNT];
+    for (u32 battler = 0; battler < MAX_BATTLERS_COUNT; ++battler)
+        admitted[battler] = gAiThinkingStruct->aiFlags[battler];
+
     if (IsAiVsAiBattle())
-        gAiThinkingStruct->aiFlags[B_BATTLER_0] = GetAiFlags(gPartnerTrainerId, B_BATTLER_0);
+        admitted[B_BATTLER_0] = GetAiFlags(gPartnerTrainerId, B_BATTLER_0);
     else
-        gAiThinkingStruct->aiFlags[B_BATTLER_0] = 0; // player has no AI
+        admitted[B_BATTLER_0] = 0; // player has no AI
 
     if (DEBUG_OVERWORLD_MENU && gIsDebugBattle)
     {
-        gAiThinkingStruct->aiFlags[B_BATTLER_1] = gDebugAIFlags;
-        gAiThinkingStruct->aiFlags[B_BATTLER_3] = gDebugAIFlags;
-        return;
+        admitted[B_BATTLER_1] = gDebugAIFlags;
+        admitted[B_BATTLER_3] = gDebugAIFlags;
+        goto admg_publish;
     }
 
     if (IsWildMonSmart() && !(gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_TRAINER)))
     {
         // smart wild AI
-        gAiThinkingStruct->aiFlags[B_BATTLER_1] = GetAiFlags(0xFFFF, B_BATTLER_1);
-        gAiThinkingStruct->aiFlags[B_BATTLER_3] = GetAiFlags(0xFFFF, B_BATTLER_3);
+        admitted[B_BATTLER_1] = GetAiFlags(0xFFFF, B_BATTLER_1);
+        admitted[B_BATTLER_3] = GetAiFlags(0xFFFF, B_BATTLER_3);
 
         // The check is here because wild natural enemies are not symmetrical.
         if (WE_WILD_NATURAL_ENEMIES && IsDoubleBattle())
@@ -331,35 +361,44 @@ void BattleAI_SetupFlags(void)
             enum Species speciesLeft = GetMonData(&gParties[B_TRAINER_OPPONENT_A][0], MON_DATA_SPECIES);
             enum Species speciesRight = GetMonData(&gParties[B_TRAINER_OPPONENT_A][1], MON_DATA_SPECIES);
             if (IsNaturalEnemy(speciesLeft, speciesRight))
-                gAiThinkingStruct->aiFlags[B_BATTLER_1] |= AI_FLAG_ATTACKS_PARTNER;
+                admitted[B_BATTLER_1] |= AI_FLAG_ATTACKS_PARTNER;
             if (IsNaturalEnemy(speciesRight, speciesLeft))
-                gAiThinkingStruct->aiFlags[B_BATTLER_3] |= AI_FLAG_ATTACKS_PARTNER;
+                admitted[B_BATTLER_3] |= AI_FLAG_ATTACKS_PARTNER;
         }
     }
     else
     {
-        gAiThinkingStruct->aiFlags[B_BATTLER_1] = GetAiFlags(TRAINER_BATTLE_PARAM.opponentA, B_BATTLER_1);
+        admitted[B_BATTLER_1] = GetAiFlags(TRAINER_BATTLE_PARAM.opponentA, B_BATTLER_1);
         if ((TRAINER_BATTLE_PARAM.opponentB != 0) && (TRAINER_BATTLE_PARAM.opponentB != 0xFFFF))
-            gAiThinkingStruct->aiFlags[B_BATTLER_3] = GetAiFlags(TRAINER_BATTLE_PARAM.opponentB, B_BATTLER_3);
+            admitted[B_BATTLER_3] = GetAiFlags(TRAINER_BATTLE_PARAM.opponentB, B_BATTLER_3);
         else
-            gAiThinkingStruct->aiFlags[B_BATTLER_3] = gAiThinkingStruct->aiFlags[B_BATTLER_1];
+            admitted[B_BATTLER_3] = admitted[B_BATTLER_1];
     }
 
     if (gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER)
     {
-        gAiThinkingStruct->aiFlags[B_BATTLER_2] = GetAiFlags(gPartnerTrainerId, B_BATTLER_2);
+        admitted[B_BATTLER_2] = GetAiFlags(gPartnerTrainerId, B_BATTLER_2);
     }
     else if (IsDoubleBattle() && IsAiVsAiBattle())
     {
-        gAiThinkingStruct->aiFlags[B_BATTLER_2] = gAiThinkingStruct->aiFlags[B_BATTLER_0];
+        admitted[B_BATTLER_2] = admitted[B_BATTLER_0];
     }
     else // Assign ai flags for player for prediction
     {
         u64 aiFlags = GetAiFlags(TRAINER_BATTLE_PARAM.opponentA, B_BATTLER_1)
                     | GetAiFlags(TRAINER_BATTLE_PARAM.opponentB, B_BATTLER_3);
-        gAiThinkingStruct->aiFlags[B_BATTLER_2] = aiFlags;
-        gAiThinkingStruct->aiFlags[B_BATTLER_0] = aiFlags;
+        admitted[B_BATTLER_2] = aiFlags;
+        admitted[B_BATTLER_0] = aiFlags;
     }
+
+admg_publish:
+    if (!ADMG_EndStateAccessCheck(generation)) return;
+    if (gAiThinkingStruct != thinking || gBattleTypeFlags != battleFlags
+     || TRAINER_BATTLE_PARAM.opponentA != opponentA || TRAINER_BATTLE_PARAM.opponentB != opponentB
+     || gPartnerTrainerId != partner)
+    { ADMG_StateAccessRejected(opponentA, __func__); return; }
+    for (u32 battler = 0; battler < MAX_BATTLERS_COUNT; ++battler)
+        gAiThinkingStruct->aiFlags[battler] = admitted[battler];
 }
 
 bool32 BattlerChooseNonMoveAction(void)

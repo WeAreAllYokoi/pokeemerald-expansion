@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_state.h"
 #include "battle_setup.h"
 #include "data.h"
 #include "event_data.h"
@@ -262,10 +263,7 @@ static u32 LoopedTask_BuildMatchCallList(s32 taskState)
 
 bool32 IsRematchEntryRegistered(int rematchIndex)
 {
-    if (rematchIndex < REMATCH_TABLE_ENTRIES)
-        return FlagGet(TRAINER_REGISTERED_FLAGS_START + rematchIndex);
-
-    return FALSE;
+    return TrainerIsMatchCallRegistered(rematchIndex);
 }
 
 int IsMatchCallListInitFinished(void)
@@ -335,11 +333,15 @@ bool32 ShouldDrawRematchPokeballIcon(int index)
 enum TrainerPicID GetMatchCallTrainerPic(int index)
 {
     int headerId;
+    u64 generation = ADMG_BeginStateAccessCheck();
     struct Pokenav_MatchCallMenu *state = GetSubstructPtr(POKENAV_SUBSTRUCT_MATCH_CALL_MAIN);
     if (!state->matchCallEntries[index].isSpecialTrainer)
     {
         index = GetTrainerIdxByRematchIdx(state->matchCallEntries[index].headerId);
-        return GetTrainerPicFromId(index);
+        if (!ADMG_EndStateAccessCheck(generation)) return TRAINER_PIC_NONE;
+        enum TrainerPicID picture = GetTrainerPicFromId(index);
+        if (!ADMG_EndStateAccessCheck(generation)) return TRAINER_PIC_NONE;
+        return picture;
     }
 
     headerId = state->matchCallEntries[index].headerId;
@@ -347,7 +349,10 @@ enum TrainerPicID GetMatchCallTrainerPic(int index)
     if (index != REMATCH_TABLE_ENTRIES)
     {
         index = GetTrainerIdxByRematchIdx(index);
-        return GetTrainerPicFromId(index);
+        if (!ADMG_EndStateAccessCheck(generation)) return TRAINER_PIC_NONE;
+        enum TrainerPicID picture = GetTrainerPicFromId(index);
+        if (!ADMG_EndStateAccessCheck(generation)) return TRAINER_PIC_NONE;
+        return picture;
     }
 
     index = MatchCall_GetOverrideFacilityClass(headerId);
@@ -361,11 +366,18 @@ const u8 *GetMatchCallMessageText(int index, bool8 *newRematchRequest)
     if (!Overworld_MapTypeAllowsTeleportAndFly(gMapHeader.mapType))
         return gText_CallCantBeMadeHere;
 
+    u64 generation = ADMG_BeginStateAccessCheck();
     if (!state->matchCallEntries[index].isSpecialTrainer)
-        *newRematchRequest = SelectMatchCallMessage(GetTrainerIdxByRematchIdx(state->matchCallEntries[index].headerId), gStringVar4);
+    {
+        u32 trainerId = GetTrainerIdxByRematchIdx(state->matchCallEntries[index].headerId);
+        if (!ADMG_EndStateAccessCheck(generation)) return gText_CallCantBeMadeHere;
+        *newRematchRequest = SelectMatchCallMessage(trainerId, gStringVar4);
+    }
     else
         MatchCall_GetMessage(state->matchCallEntries[index].headerId, gStringVar4);
 
+    if (!ADMG_EndStateAccessCheck(generation))
+    { *newRematchRequest = FALSE; return gText_CallCantBeMadeHere; }
     return gStringVar4;
 }
 
@@ -404,21 +416,24 @@ u16 GetMatchCallOptionId(int optionId)
 
 void BufferMatchCallNameAndDesc(struct PokenavMatchCallEntry *matchCallEntry, u8 *str)
 {
-    const u8 *trainerName;
-    const u8 *className;
+    const u8 *trainerName = NULL;
+    const u8 *className = NULL;
+    u64 generation = ADMG_BeginStateAccessCheck();
     if (!matchCallEntry->isSpecialTrainer)
     {
         int index = GetTrainerIdxByRematchIdx(matchCallEntry->headerId);
-        const struct Trainer *trainer = GetTrainerStructFromId(index);
-        enum TrainerClassID class = trainer->trainerClass;
-        className = gTrainerClasses[class].name;
-        trainerName = trainer->trainerName;
+        if (ADMG_EndStateAccessCheck(generation))
+        {
+            className = GetTrainerClassNameFromId(index);
+            trainerName = GetTrainerNameFromId(index);
+        }
     }
     else
     {
         MatchCall_GetNameAndDesc(matchCallEntry->headerId, &className, &trainerName);
     }
 
+    if (!ADMG_EndStateAccessCheck(generation)) className = trainerName = NULL;
     if (className && trainerName)
     {
         u8 *str2 = GetStringClearToWidth(str, FONT_NARROW, className, 69);

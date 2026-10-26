@@ -1,3 +1,4 @@
+#include "constants/admg_state_ids.h"
 #include "constants/global.h"
 #include "constants/event_bg.h"
 #include "constants/event_object_movement.h"
@@ -20,3 +21,5 @@
 	.section .rodata
 
 	.include "data/maps/events.inc"
+
+	.include "data/maps/admg_aux_events.inc"

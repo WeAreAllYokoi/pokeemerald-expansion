@@ -1,4 +1,6 @@
 #include "global.h"
+#include "admg_trainer_actor.h"
+#include "admg_state.h"
 #include "battle.h"
 #include "battle_anim.h"
 #include "battle_arena.h"
@@ -1869,88 +1871,125 @@ static void PlayerHandleLoadMonSprite(enum BattlerId battler)
 
 enum TrainerPicID LinkPlayerGetTrainerPicId(u32 multiplayerId)
 {
+    if (multiplayerId >= MAX_LINK_PLAYERS)
+    { ADMG_StateAccessRejected(multiplayerId, __func__); return TRAINER_PIC_NONE; }
+    u64 generation = ADMG_BeginStateAccessCheck();
     u8 gender = gLinkPlayers[multiplayerId].gender;
     enum GameVersion version = gLinkPlayers[multiplayerId].version & 0xFF;
-
-    return GetPlayerTrainerPic(gender, version);
+    enum TrainerPicID picture = GetPlayerTrainerPic(gender, version);
+    if (!ADMG_EndStateAccessCheck(generation)) return TRAINER_PIC_NONE;
+    if (gender != gLinkPlayers[multiplayerId].gender
+        || version != (gLinkPlayers[multiplayerId].version & 0xFF)
+        || (u32)picture >= TRAINER_PIC_COUNT)
+    { ADMG_StateAccessRejected(multiplayerId, __func__); return TRAINER_PIC_NONE; }
+    return picture;
 }
 
 static enum TrainerPicID PlayerGetTrainerBackPicId(void)
 {
-    enum TrainerPicID trainerPicId;
-
-    if (gBattleTypeFlags & BATTLE_TYPE_LINK)
-        trainerPicId = LinkPlayerGetTrainerPicId(GetMultiplayerId());
+    u64 generation = ADMG_BeginStateAccessCheck();
+    u32 flags = gBattleTypeFlags;
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    u32 gender = 0;
+    enum TrainerPicID picture;
+    if (flags & BATTLE_TYPE_LINK)
+    {
+        u32 player = GetMultiplayerId();
+        if (!ADMG_EndStateAccessCheck(generation)) return TRAINER_PIC_NONE;
+        picture = LinkPlayerGetTrainerPicId(player);
+    }
     else
-        trainerPicId = GetPlayerTrainerPic(gSaveBlock2Ptr->playerGender, GAME_VERSION);
-
-    return trainerPicId;
+    {
+        if (save == NULL)
+        { ADMG_StateAccessRejected(0, __func__); return TRAINER_PIC_NONE; }
+        gender = save->playerGender;
+        picture = GetPlayerTrainerPic(gender, GAME_VERSION);
+    }
+    if (!ADMG_EndStateAccessCheck(generation)) return TRAINER_PIC_NONE;
+    if (gBattleTypeFlags != flags || (!(flags & BATTLE_TYPE_LINK)
+        && (gSaveBlock2Ptr != save || save->playerGender != gender))
+        || (u32)picture >= TRAINER_PIC_COUNT)
+    { ADMG_StateAccessRejected((u32)picture, __func__); return TRAINER_PIC_NONE; }
+    return picture;
 }
 
 // In emerald it's possible to have a tag battle in the battle frontier facilities with AI
 // which use the front sprite for both the player and the partner as opposed to any other battles (including the one with Steven)
 // that use an animated back pic.
+static bool8 ADMG_TryGetPlayerControllerPicture(enum BattlerId battler, bool8 draw,
+    enum TrainerPicID *picture, bool32 *front, s16 *x, s16 *y)
+{
+    if ((u32)battler >= MAX_BATTLERS_COUNT)
+    { ADMG_StateAccessRejected((u32)battler, __func__); return FALSE; }
+    u64 generation = ADMG_BeginStateAccessCheck();
+    u32 flags = gBattleTypeFlags;
+    u16 partner = gPartnerTrainerId;
+    bool8 partnerUsed = draw && (flags & BATTLE_TYPE_INGAME_PARTNER);
+    bool8 useFront = FALSE;
+    if (partnerUsed)
+    {
+        if (!ADMG_IsPartnerPictureIdentity(partner, IsAiVsAiBattle()))
+        { ADMG_StateAccessRejected(partner, __func__); return FALSE; }
+        useFront = !IsPartnerTrainerId(partner);
+    }
+    bool8 saveUsed = useFront || (!(flags & BATTLE_TYPE_LINK) && !(draw && TESTING));
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    if (saveUsed && save == NULL)
+    { ADMG_StateAccessRejected(0, __func__); return FALSE; }
+    u32 gender = saveUsed ? save->playerGender : 0;
+    enum TrainerPicID pic = draw && TESTING ? TRAINER_PIC_BRENDAN : PlayerGetTrainerBackPicId();
+    if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+    if ((u32)pic >= TRAINER_PIC_COUNT)
+    { ADMG_StateAccessRejected((u32)pic, __func__); return FALSE; }
+    s16 xpos = 80, ypos = 0;
+    u32 position = 0;
+    bool8 positionUsed = draw && !TESTING && (flags & BATTLE_TYPE_MULTI);
+    if (positionUsed)
+    {
+        position = GetBattlerPosition(battler);
+        if (position >= MAX_BATTLERS_COUNT)
+        { ADMG_StateAccessRejected(position, __func__); return FALSE; }
+    }
+    if (draw)
+    {
+        if (TESTING)
+        {
+            xpos = flags & BATTLE_TYPE_INGAME_PARTNER ? 32 : 80;
+            ypos = (8 - GetTrainerBackPicCoords(pic)->size) * 4 + 80;
+        }
+        else if (flags & BATTLE_TYPE_MULTI)
+        {
+            xpos = (position & BIT_FLANK) != B_FLANK_LEFT ? 90 : 32;
+            if (useFront) { xpos = 90; ypos = 80; }
+            else ypos = (8 - GetTrainerBackPicCoords(pic)->size) * 4 + 80;
+        }
+        else ypos = (8 - GetTrainerBackPicCoords(pic)->size) * 4 + 80;
+        if (useFront) pic = PlayerGenderToFrontTrainerPicId(gender);
+    }
+    if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+    if (gBattleTypeFlags != flags || (partnerUsed && gPartnerTrainerId != partner)
+        || (saveUsed && (gSaveBlock2Ptr != save || save->playerGender != gender))
+        || (positionUsed && GetBattlerPosition(battler) != position))
+    { ADMG_StateAccessRejected(partner, __func__); return FALSE; }
+    if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+    if ((u32)pic >= TRAINER_PIC_COUNT)
+    { ADMG_StateAccessRejected((u32)pic, __func__); return FALSE; }
+    *picture = pic; *front = useFront; *x = xpos; *y = ypos;
+    return TRUE;
+}
+
 static void PlayerHandleDrawTrainerPic(enum BattlerId battler)
 {
-    bool32 isFrontPic;
-    s16 xPos, yPos;
-    enum TrainerPicID trainerPicId;
-
-    if (TESTING)
-    {
-        trainerPicId = TRAINER_PIC_BRENDAN;
-        if (gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER)
-            xPos = 32;
-        else
-            xPos = 80;
-        yPos = (8 - GetTrainerBackPicCoords(trainerPicId)->size) * 4 + 80;
-    }
-    else
-    {
-        trainerPicId = PlayerGetTrainerBackPicId();
-
-        if (gBattleTypeFlags & BATTLE_TYPE_MULTI)
-        {
-            if ((GetBattlerPosition(battler) & BIT_FLANK) != B_FLANK_LEFT) // Second mon, on the right.
-                xPos = 90;
-            else // First mon, on the left.
-                xPos = 32;
-
-            if (gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER && gPartnerTrainerId < TRAINER_PARTNER(PARTNER_NONE))
-            {
-                xPos = 90;
-                yPos = 80;
-            }
-            else
-            {
-                yPos = (8 - GetTrainerBackPicCoords(trainerPicId)->size) * 4 + 80;
-            }
-        }
-        else
-        {
-            xPos = 80;
-            yPos = (8 - GetTrainerBackPicCoords(trainerPicId)->size) * 4 + 80;
-        }
-    }
-
-    // Use front pic table for any tag battles unless your partner is Steven or a custom partner.
-    if (gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER && gPartnerTrainerId < TRAINER_PARTNER(PARTNER_NONE))
-    {
-        trainerPicId = PlayerGenderToFrontTrainerPicId(gSaveBlock2Ptr->playerGender);
-        isFrontPic = TRUE;
-    }
-    else // Use back pic in all the other usual circumstances.
-    {
-        isFrontPic = FALSE;
-    }
-
-    BtlController_HandleDrawTrainerPic(battler, trainerPicId, isFrontPic, xPos, yPos, -1);
+    enum TrainerPicID picture; bool32 front; s16 x, y;
+    if (!ADMG_TryGetPlayerControllerPicture(battler, TRUE, &picture, &front, &x, &y)) return;
+    BtlController_HandleDrawTrainerPic(battler, picture, front, x, y, -1);
 }
 
 static void PlayerHandleTrainerSlide(enum BattlerId battler)
 {
-    enum TrainerPicID trainerPicId = PlayerGetTrainerBackPicId();
-    BtlController_HandleTrainerSlide(battler, trainerPicId);
+    enum TrainerPicID picture; bool32 front; s16 x, y;
+    if (!ADMG_TryGetPlayerControllerPicture(battler, FALSE, &picture, &front, &x, &y)) return;
+    BtlController_HandleTrainerSlide(battler, picture);
 }
 
 static void PlayerHandleTrainerSlideBack(enum BattlerId battler)
@@ -2268,9 +2307,13 @@ static void PlayerHandleOneReturnValue_Duplicate(enum BattlerId battler)
 
 static void PlayerHandleIntroTrainerBallThrow(enum BattlerId battler)
 {
-    enum TrainerPicID trainerPicID = PlayerGetTrainerBackPicId();
-    const u16 *trainerPal = GetTrainerBackPicPalette(trainerPicID);
-    BtlController_HandleIntroTrainerBallThrow(battler, 0xD6F8, trainerPal, 31, Intro_TryShinyAnimShowHealthbox);
+    enum TrainerPicID picture; bool32 front; s16 x, y;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    if (!ADMG_TryGetPlayerControllerPicture(battler, FALSE, &picture, &front, &x, &y)) return;
+    const u16 *palette = GetTrainerBackPicPalette(picture);
+    if (!ADMG_EndStateAccessCheck(generation)) return;
+    if (palette == NULL) { ADMG_StateAccessRejected((u32)picture, __func__); return; }
+    BtlController_HandleIntroTrainerBallThrow(battler, 0xD6F8, palette, 31, Intro_TryShinyAnimShowHealthbox);
 }
 
 static void PlayerHandleDrawPartyStatusSummary(enum BattlerId battler)
@@ -2287,7 +2330,12 @@ static void PlayerHandleEndBounceEffect(enum BattlerId battler)
 
 static void PlayerHandleLinkStandbyMsg(enum BattlerId battler)
 {
+    if ((u32)battler >= MAX_BATTLERS_COUNT || gBattleResources == NULL )
+    { ADMG_StateAccessRejected((u32)battler, __func__); return; }
+    u64 generation = ADMG_BeginStateAccessCheck();
+
     RecordedBattle_RecordAllBattlerData(&gBattleResources->bufferA[battler][2]);
+    if (!ADMG_EndStateAccessCheck(generation)) return;
     switch (gBattleResources->bufferA[battler][1])
     {
     case LINK_STANDBY_MSG_STOP_BOUNCE:
@@ -2324,7 +2372,12 @@ static void PlayerHandleResetActionMoveSelection(enum BattlerId battler)
 
 static void PlayerHandleEndLinkBattle(enum BattlerId battler)
 {
+    if ((u32)battler >= MAX_BATTLERS_COUNT || gBattleResources == NULL || gSaveBlock2Ptr == NULL )
+    { ADMG_StateAccessRejected((u32)battler, __func__); return; }
+    u64 generation = ADMG_BeginStateAccessCheck();
+
     RecordedBattle_RecordAllBattlerData(&gBattleResources->bufferA[battler][4]);
+    if (!ADMG_EndStateAccessCheck(generation)) return;
     gBattleOutcome = gBattleResources->bufferA[battler][1];
     gSaveBlock2Ptr->frontier.disableRecordBattle = gBattleResources->bufferA[battler][2];
     FadeOutMapMusic(5);

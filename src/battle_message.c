@@ -1,4 +1,6 @@
 #include "global.h"
+#include "admg_trainer_actor.h"
+#include "admg_state.h"
 #include "battle.h"
 #include "battle_anim.h"
 #include "battle_ai_record.h"
@@ -2424,6 +2426,14 @@ static const u8 sRecordedBattleTextSpeeds[] = {8, 4, 1, 0};
 
 void BufferStringBattle(enum StringID stringID, enum BattlerId battler)
 {
+    gDisplayedStringBattle[0] = EOS;
+    if ((u32)battler >= MAX_BATTLERS_COUNT || (u32)stringID >= STRINGID_COUNT
+        || (stringID >= STRINGID_TABLE_START && gBattleStringsTable[stringID] == NULL)
+        || gBattleResources == NULL || gBattleStruct == NULL
+        || !ADMG_TryValidateBattleTrainerActors(gBattleTypeFlags, TRAINER_BATTLE_PARAM.opponentA,
+            TRAINER_BATTLE_PARAM.opponentB, gPartnerTrainerId))
+    { ADMG_StateAccessRejected((u32)battler, __func__); return; }
+
     s32 i;
     const u8 *stringPtr = NULL;
 
@@ -2821,6 +2831,7 @@ u32 BattleStringExpandPlaceholdersToDisplayedString(const u8 *src)
 #ifndef NDEBUG
     u32 j, strWidth;
     u32 dstID = BattleStringExpandPlaceholders(src, gDisplayedStringBattle, sizeof(gDisplayedStringBattle));
+    if (dstID == 0) return 0;
     for (j = 1;; j++)
     {
         strWidth = GetStringLineWidth(0, gDisplayedStringBattle, 0, j, sizeof(gDisplayedStringBattle));
@@ -2863,8 +2874,11 @@ static const u8 *TryGetStatusString(u8 *src)
     return NULL;
 }
 
+static bool8 ADMG_BattleTextBattler(u32 battler);
+
 static void GetBattlerNick(enum BattlerId battler, u8 *dst)
 {
+    if (dst == NULL || !ADMG_BattleTextBattler((u32)battler)) return;
     struct Pokemon *illusionMon = GetIllusionMonPtr(battler);
     struct Pokemon *mon = GetBattlerMon(battler);
 
@@ -2873,6 +2887,46 @@ static void GetBattlerNick(enum BattlerId battler, u8 *dst)
     GetMonData(mon, MON_DATA_NICKNAME, dst);
     StringGet_Nickname(dst);
 }
+
+/* All appends reserve the final EOS. A rejected expansion is empty, never
+ * a truncated control sequence or a partially formatted battle message. */
+static bool8 ADMG_BattleTextPut(u8 *dst, u32 size, u32 *length, u8 value)
+{
+    if (size == 0 || *length >= size - 1) return FALSE;
+    dst[(*length)++] = value;
+    return TRUE;
+}
+
+static bool8 ADMG_BattleTextAppend(u8 *dst, u32 size, u32 *length, const u8 *src)
+{
+    if (src == NULL) return FALSE;
+    while (*src != EOS)
+    {
+        if (!ADMG_BattleTextPut(dst, size, length, *src == CHAR_SPACE ? CHAR_NBSP : *src)) return FALSE;
+        src++;
+    }
+    return TRUE;
+}
+
+static const u8 *ADMG_BattleLinkName(s32 player)
+{
+    if ((u32)player >= MAX_LINK_PLAYERS)
+    { ADMG_StateAccessRejected((u32)player, __func__); return sText_EmptyString4; }
+    if (!DoesStringProperlyTerminate(gLinkPlayers[player].name, sizeof(gLinkPlayers[player].name)))
+    { ADMG_StateAccessRejected((u32)player, __func__); return sText_EmptyString4; }
+    return gLinkPlayers[player].name;
+}
+
+static bool8 ADMG_BattleTextBattler(u32 battler)
+{
+    if (battler < MAX_BATTLERS_COUNT && (u32)GetBattlerPosition(battler) < MAX_BATTLERS_COUNT) return TRUE;
+    ADMG_StateAccessRejected(battler, __func__);
+    return FALSE;
+}
+
+#define ADMG_BATTLE_TEXT_PUT(value) do { \
+    if (!ADMG_BattleTextPut(dst, dstSize, &dstID, (value))) goto ADMG_reject; \
+} while (0)
 
 #define HANDLE_NICKNAME_STRING_CASE(battler)                            \
     if (!IsOnPlayerSide(battler))                                       \
@@ -2883,8 +2937,7 @@ static void GetBattlerNick(enum BattlerId battler, u8 *dst)
             toCpy = sText_WildPkmnPrefix;                               \
         while (*toCpy != EOS)                                           \
         {                                                               \
-            dst[dstID] = *toCpy;                                        \
-            dstID++;                                                    \
+            ADMG_BATTLE_TEXT_PUT(*toCpy);                                                    \
             toCpy++;                                                    \
         }                                                               \
     }                                                                   \
@@ -2900,20 +2953,61 @@ static void GetBattlerNick(enum BattlerId battler, u8 *dst)
             toCpy = sText_WildPkmnPrefixLower;                          \
         while (*toCpy != EOS)                                           \
         {                                                               \
-            dst[dstID] = *toCpy;                                        \
-            dstID++;                                                    \
+            ADMG_BATTLE_TEXT_PUT(*toCpy);                                                    \
             toCpy++;                                                    \
         }                                                               \
     }                                                                   \
     GetBattlerNick(battler, text);                                      \
     toCpy = text;
 
+bool8 ADMG_TryGetBattleRefereeString(u32 id, const u8 **text)
+{
+    if (text == NULL || id >= ARRAY_COUNT(gRefereeStringsTable) || gRefereeStringsTable[id] == NULL)
+    { ADMG_StateAccessRejected(id, __func__); return FALSE; }
+    *text = gRefereeStringsTable[id];
+    return TRUE;
+}
+
+static const u8 *ADMG_BattleClassName(u32 trainerClass)
+{
+    if (trainerClass >= TRAINER_CLASS_COUNT)
+    { ADMG_StateAccessRejected(trainerClass, __func__); return sText_EmptyString4; }
+    if (!DoesStringProperlyTerminate(gTrainerClasses[trainerClass].name, sizeof(gTrainerClasses[trainerClass].name)))
+    { ADMG_StateAccessRejected(trainerClass, __func__); return sText_EmptyString4; }
+    return gTrainerClasses[trainerClass].name;
+}
+
+/* Keep the failure channel separate from a getter's legacy zero fallback. */
+#define ADMG_BATTLE_CLASS_NAME(expression) \
+    ({ u64 generation = ADMG_BeginStateAccessCheck(); \
+       u32 trainerClass = (expression); \
+       ADMG_EndStateAccessCheck(generation) ? ADMG_BattleClassName(trainerClass) : sText_EmptyString4; })
+
+static bool8 ADMG_BattleNameActorValid(u32 trainerId)
+{
+    struct ADMG_TrainerActorRef actor;
+    u32 domain = gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK | BATTLE_TYPE_TOWER_LINK_MULTI)
+        ? ADMG_ACTOR_NETWORK : gBattleTypeFlags & (BATTLE_TYPE_FRONTIER | BATTLE_TYPE_TRAINER_HILL)
+        ? ADMG_ACTOR_FACILITY : ADMG_ACTOR_CONTENT;
+    if ((gBattleTypeFlags & BATTLE_TYPE_EREADER_TRAINER)
+     && ADMG_IsBattleFacilityActor(gBattleTypeFlags, ADMG_ACTOR_OPPONENT, trainerId, ADMG_ACTOR_EREADER))
+        return TRUE;
+    return ADMG_TryClassifyTrainerActor(trainerId, domain, ADMG_ACTOR_OPPONENT, &actor);
+}
+
 static const u8 *BattleStringGetOpponentNameByTrainerId(u16 trainerId, u8 *text, u8 multiplayerId, enum BattlerId battler)
 {
+    if ((u32)battler >= MAX_BATTLERS_COUNT)
+    { ADMG_StateAccessRejected((u32)battler, __func__); return sText_EmptyString4; }
+    if (!ADMG_BattleNameActorValid(trainerId)) return sText_EmptyString4;
+    u64 generation = ADMG_BeginStateAccessCheck();
+
     const u8 *toCpy = NULL;
 
     if (gBattleTypeFlags & BATTLE_TYPE_SECRET_BASE)
     {
+        if (text == NULL || gBattleResources == NULL || gBattleResources->secretBase == NULL)
+        { ADMG_StateAccessRejected(trainerId, __func__); return sText_EmptyString4; }
         u32 i;
         for (i = 0; i < ARRAY_COUNT(gBattleResources->secretBase->trainerName); i++)
             text[i] = gBattleResources->secretBase->trainerName[i];
@@ -2923,49 +3017,69 @@ static const u8 *BattleStringGetOpponentNameByTrainerId(u16 trainerId, u8 *text,
     }
     else if (trainerId == TRAINER_UNION_ROOM)
     {
-        toCpy = gLinkPlayers[multiplayerId ^ BIT_SIDE].name;
+        if (multiplayerId >= MAX_LINK_PLAYERS)
+        { ADMG_StateAccessRejected(multiplayerId, __func__); return sText_EmptyString4; }
+        toCpy = ADMG_BattleLinkName(multiplayerId ^ BIT_SIDE);
     }
-    else if (trainerId == TRAINER_LINK_OPPONENT)
+    else if (trainerId == TRAINER_LINK_OPPONENT
+          || (gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK)
+              && !(gBattleTypeFlags & BATTLE_TYPE_TOWER_LINK_MULTI)))
     {
-        if (gBattleTypeFlags & BATTLE_TYPE_MULTI)
-            toCpy = gLinkPlayers[GetBattlerMultiplayerId(battler)].name;
-        else
-            toCpy = gLinkPlayers[GetBattlerMultiplayerId(battler) & BIT_SIDE].name;
+        s32 player = GetBattlerMultiplayerId(battler);
+        if ((u32)player >= MAX_LINK_PLAYERS)
+        { ADMG_StateAccessRejected(player, __func__); return sText_EmptyString4; }
+        toCpy = ADMG_BattleLinkName(gBattleTypeFlags & BATTLE_TYPE_MULTI ? player : player & BIT_SIDE);
     }
-    else if (trainerId == TRAINER_FRONTIER_BRAIN)
+    else if (trainerId == TRAINER_FRONTIER_BRAIN && (gBattleTypeFlags & BATTLE_TYPE_FRONTIER))
     {
+        if (text == NULL) { ADMG_StateAccessRejected(0, __func__); return sText_EmptyString4; }
         CopyFrontierBrainTrainerName(text);
         toCpy = text;
     }
     else if (gBattleTypeFlags & BATTLE_TYPE_FRONTIER)
     {
+        if (text == NULL) { ADMG_StateAccessRejected(0, __func__); return sText_EmptyString4; }
         GetFrontierTrainerName(text, trainerId);
         toCpy = text;
     }
     else if (gBattleTypeFlags & BATTLE_TYPE_TRAINER_TOWER && gMapHeader.regionMapSectionId == MAPSEC_TRAINER_TOWER_2)
     {
+        if (text == NULL) { ADMG_StateAccessRejected(0, __func__); return sText_EmptyString4; }
         GetTrainerTowerOpponentName(text);
         toCpy = text;
     }
     else if (gBattleTypeFlags & BATTLE_TYPE_TRAINER_HILL)
     {
+        if (text == NULL) { ADMG_StateAccessRejected(0, __func__); return sText_EmptyString4; }
         GetTrainerHillTrainerName(text, trainerId);
         toCpy = text;
     }
     else if (gBattleTypeFlags & BATTLE_TYPE_EREADER_TRAINER)
     {
+        if (text == NULL) { ADMG_StateAccessRejected(0, __func__); return sText_EmptyString4; }
         GetEreaderTrainerName(text);
         toCpy = text;
     }
     else
     {
-        enum TrainerClassID trainerClass = GetTrainerClassFromId(TRAINER_BATTLE_PARAM.opponentA);
+        enum TrainerClassID trainerClass = GetTrainerClassFromId(trainerId);
 
         if (trainerClass == TRAINER_CLASS_RIVAL_EARLY_FRLG || trainerClass == TRAINER_CLASS_RIVAL_LATE_FRLG || trainerClass == TRAINER_CLASS_CHAMPION_FRLG)
+        {
+            if (gSaveBlock2Ptr == NULL || (IS_FRLG && gSaveBlock1Ptr == NULL))
+            { ADMG_StateAccessRejected(trainerId, __func__); return sText_EmptyString4; }
+#if IS_FRLG
+            if (!DoesStringProperlyTerminate(gSaveBlock1Ptr->rivalName, sizeof(gSaveBlock1Ptr->rivalName)))
+            { ADMG_StateAccessRejected(trainerId, __func__); return sText_EmptyString4; }
+#endif
             toCpy = GetExpandedPlaceholder(PLACEHOLDER_ID_RIVAL);
+        }
         else
             toCpy = GetTrainerNameFromId(trainerId);
     }
+
+    if (!ADMG_EndStateAccessCheck(generation)) return sText_EmptyString4;
+    if (toCpy == NULL) { ADMG_StateAccessRejected(trainerId, __func__); return sText_EmptyString4; }
 
     assertf(DoesStringProperlyTerminate(toCpy, TRAINER_NAME_LENGTH + 1),"Opponent needs a valid name")
     {
@@ -2977,6 +3091,9 @@ static const u8 *BattleStringGetOpponentNameByTrainerId(u16 trainerId, u8 *text,
 
 static const u8 *BattleStringGetOpponentName(u8 *text, u8 multiplayerId, enum BattlerId battler)
 {
+    if ((u32)battler >= MAX_BATTLERS_COUNT)
+    { ADMG_StateAccessRejected((u32)battler, __func__); return sText_EmptyString4; }
+
     const u8 *toCpy = NULL;
 
     switch (GetBattlerPosition(battler))
@@ -2991,7 +3108,8 @@ static const u8 *BattleStringGetOpponentName(u8 *text, u8 multiplayerId, enum Ba
             toCpy = BattleStringGetOpponentNameByTrainerId(TRAINER_BATTLE_PARAM.opponentA, text, multiplayerId, battler);
         break;
     default:
-        break;
+        ADMG_StateAccessRejected((u32)battler, __func__);
+        return sText_EmptyString4;
     }
 
     return toCpy;
@@ -2999,45 +3117,68 @@ static const u8 *BattleStringGetOpponentName(u8 *text, u8 multiplayerId, enum Ba
 
 static const u8 *BattleStringGetPlayerName(u8 *text, enum BattlerId battler)
 {
+    u64 generation = ADMG_BeginStateAccessCheck();
+
+    if ((u32)battler >= MAX_BATTLERS_COUNT)
+    { ADMG_StateAccessRejected((u32)battler, __func__); return sText_EmptyString4; }
+
     const u8 *toCpy = NULL;
 
     switch (GetBattlerPosition(battler))
     {
     case B_POSITION_PLAYER_LEFT:
         if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
-            toCpy = gLinkPlayers[0].name;
+            toCpy = ADMG_BattleLinkName(0);
         else
-            toCpy = gSaveBlock2Ptr->playerName;
+            {
+                if (gSaveBlock2Ptr == NULL) { ADMG_StateAccessRejected(0, __func__); return sText_EmptyString4; }
+                if (!DoesStringProperlyTerminate(gSaveBlock2Ptr->playerName, sizeof(gSaveBlock2Ptr->playerName)))
+                { ADMG_StateAccessRejected((u32)battler, __func__); return sText_EmptyString4; }
+                toCpy = gSaveBlock2Ptr->playerName;
+            }
         break;
     case B_POSITION_PLAYER_RIGHT:
         if (((gBattleTypeFlags & BATTLE_TYPE_RECORDED) && !(gBattleTypeFlags & (BATTLE_TYPE_MULTI | BATTLE_TYPE_INGAME_PARTNER)))
             || gTestRunnerEnabled)
         {
-            toCpy = gLinkPlayers[0].name;
+            toCpy = ADMG_BattleLinkName(0);
         }
         else if ((gBattleTypeFlags & BATTLE_TYPE_LINK) && gBattleTypeFlags & (BATTLE_TYPE_RECORDED | BATTLE_TYPE_MULTI))
         {
-            toCpy = gLinkPlayers[2].name;
+            toCpy = ADMG_BattleLinkName(2);
         }
         else if (gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER)
         {
+            if (text == NULL) { ADMG_StateAccessRejected(0, __func__); return sText_EmptyString4; }
             GetFrontierTrainerName(text, gPartnerTrainerId);
             toCpy = text;
         }
         else
         {
-            toCpy = gSaveBlock2Ptr->playerName;
+            {
+                if (gSaveBlock2Ptr == NULL) { ADMG_StateAccessRejected(0, __func__); return sText_EmptyString4; }
+                if (!DoesStringProperlyTerminate(gSaveBlock2Ptr->playerName, sizeof(gSaveBlock2Ptr->playerName)))
+                { ADMG_StateAccessRejected((u32)battler, __func__); return sText_EmptyString4; }
+                toCpy = gSaveBlock2Ptr->playerName;
+            }
         }
         break;
     default:
-        break;
+        ADMG_StateAccessRejected((u32)battler, __func__);
+        return sText_EmptyString4;
     }
 
+    if (!ADMG_EndStateAccessCheck(generation)) return sText_EmptyString4;
+    if (toCpy == NULL || !DoesStringProperlyTerminate(toCpy, TRAINER_NAME_LENGTH + 1))
+    { ADMG_StateAccessRejected((u32)battler, __func__); return sText_EmptyString4; }
     return toCpy;
 }
 
 static const u8 *BattleStringGetTrainerName(u8 *text, u8 multiplayerId, enum BattlerId battler)
 {
+    if ((u32)battler >= MAX_BATTLERS_COUNT)
+    { ADMG_StateAccessRejected((u32)battler, __func__); return sText_EmptyString4; }
+
     if (IsOnPlayerSide(battler))
         return BattleStringGetPlayerName(text, battler);
     else
@@ -3046,26 +3187,28 @@ static const u8 *BattleStringGetTrainerName(u8 *text, u8 multiplayerId, enum Bat
 
 static const u8 *BattleStringGetOpponentClassByTrainerId(u16 trainerId)
 {
+    if (!ADMG_BattleNameActorValid(trainerId)) return sText_EmptyString4;
+
     const u8 *toCpy;
 
     if (gBattleTypeFlags & BATTLE_TYPE_SECRET_BASE)
-        toCpy = gTrainerClasses[GetSecretBaseTrainerClass()].name;
+        toCpy = ADMG_BATTLE_CLASS_NAME(GetSecretBaseTrainerClass());
     else if (trainerId == TRAINER_UNION_ROOM)
-        toCpy = gTrainerClasses[GetUnionRoomTrainerClass()].name;
-    else if (trainerId == TRAINER_FRONTIER_BRAIN)
-        toCpy = gTrainerClasses[GetFrontierBrainTrainerClass()].name;
+        toCpy = ADMG_BATTLE_CLASS_NAME(GetUnionRoomTrainerClass());
+    else if (trainerId == TRAINER_FRONTIER_BRAIN && (gBattleTypeFlags & BATTLE_TYPE_FRONTIER))
+        toCpy = ADMG_BATTLE_CLASS_NAME(GetFrontierBrainTrainerClass());
     else if (gBattleTypeFlags & BATTLE_TYPE_FRONTIER)
-        toCpy = gTrainerClasses[GetFrontierOpponentClass(trainerId)].name;
+        toCpy = ADMG_BATTLE_CLASS_NAME(GetFrontierOpponentClass(trainerId));
     else if (gBattleTypeFlags & BATTLE_TYPE_TRAINER_TOWER && gMapHeader.regionMapSectionId == MAPSEC_TRAINER_TOWER_2)
-        toCpy = gTrainerClasses[GetTrainerTowerOpponentClass()].name;
+        toCpy = ADMG_BATTLE_CLASS_NAME(GetTrainerTowerOpponentClass());
     else if (gBattleTypeFlags & BATTLE_TYPE_TRAINER_HILL)
-        toCpy = gTrainerClasses[GetTrainerHillOpponentClass(trainerId)].name;
+        toCpy = ADMG_BATTLE_CLASS_NAME(GetTrainerHillOpponentClass(trainerId));
     else if (gBattleTypeFlags & BATTLE_TYPE_EREADER_TRAINER)
-        toCpy = gTrainerClasses[GetEreaderTrainerClassId()].name;
-    else if (trainerId == TRAINER_LINK_OPPONENT)
-        toCpy = gTrainerClasses[TRAINER_NONE].name;
+        toCpy = ADMG_BATTLE_CLASS_NAME(GetEreaderTrainerClassId());
+    else if (trainerId == TRAINER_LINK_OPPONENT || (gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK) && !(gBattleTypeFlags & BATTLE_TYPE_TOWER_LINK_MULTI)))
+        toCpy = ADMG_BATTLE_CLASS_NAME(TRAINER_NONE);
     else
-        toCpy = gTrainerClasses[GetTrainerClassFromId(trainerId)].name;
+        toCpy = ADMG_BATTLE_CLASS_NAME(GetTrainerClassFromId(trainerId));
 
     return toCpy;
 }
@@ -3076,6 +3219,15 @@ STATIC_ASSERT(BERRY_NAME_LENGTH + ARRAY_COUNT(sText_BerrySuffix) <= ITEM_NAME_LE
 
 u32 BattleStringExpandPlaceholders(const u8 *src, u8 *dst, u32 dstSize)
 {
+    if (dst != NULL && dstSize != 0) dst[0] = EOS;
+    if (src == NULL || dst == NULL || dstSize == 0)
+    { ADMG_StateAccessRejected(dstSize, __func__); return 0; }
+    dst[0] = EOS;
+    struct ADMG_BattleTrainerActors actors;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    if (!ADMG_TryCaptureBattleTrainerActors(gBattleTypeFlags, TRAINER_BATTLE_PARAM.opponentA,
+            TRAINER_BATTLE_PARAM.opponentB, gPartnerTrainerId, &actors)) return 0;
+
     u32 dstID = 0; // if they used dstID, why not use srcID as well?
     const u8 *toCpy = NULL;
     u8 text[max(max(max(32, TRAINER_NAME_LENGTH + 1), POKEMON_NAME_LENGTH + 1), ITEM_NAME_LENGTH)];
@@ -3091,25 +3243,26 @@ u32 BattleStringExpandPlaceholders(const u8 *src, u8 *dst, u32 dstSize)
     // Clear destination first
     while (dstID < dstSize)
     {
-        dst[dstID] = EOS;
-        dstID++;
+        dst[dstID++] = EOS;
     }
 
     dstID = 0;
     while (*src != EOS)
     {
         toCpy = NULL;
+        textStart = text;
+        text[0] = EOS;
 
         if (*src == PLACEHOLDER_BEGIN)
         {
             src++;
-            u32 classLength = 0;
-            u32 nameLength = 0;
+            if (*src == EOS) goto ADMG_reject;
             const u8 *classString;
-            const u8 *nameString;
             switch (*src)
             {
             case B_TXT_BUFF1:
+                if (gBattleTextBuff1[0] != B_BUFF_PLACEHOLDER_BEGIN
+                    && !DoesStringProperlyTerminate(gBattleTextBuff1, sizeof(gBattleTextBuff1))) goto ADMG_reject;
                 if (gBattleTextBuff1[0] == B_BUFF_PLACEHOLDER_BEGIN)
                 {
                     ExpandBattleTextBuffPlaceholders(gBattleTextBuff1, gStringVar1);
@@ -3123,6 +3276,8 @@ u32 BattleStringExpandPlaceholders(const u8 *src, u8 *dst, u32 dstSize)
                 }
                 break;
             case B_TXT_BUFF2:
+                if (gBattleTextBuff2[0] != B_BUFF_PLACEHOLDER_BEGIN
+                    && !DoesStringProperlyTerminate(gBattleTextBuff2, sizeof(gBattleTextBuff2))) goto ADMG_reject;
                 if (gBattleTextBuff2[0] == B_BUFF_PLACEHOLDER_BEGIN)
                 {
                     ExpandBattleTextBuffPlaceholders(gBattleTextBuff2, gStringVar2);
@@ -3134,6 +3289,8 @@ u32 BattleStringExpandPlaceholders(const u8 *src, u8 *dst, u32 dstSize)
                 }
                 break;
             case B_TXT_BUFF3:
+                if (gBattleTextBuff3[0] != B_BUFF_PLACEHOLDER_BEGIN
+                    && !DoesStringProperlyTerminate(gBattleTextBuff3, sizeof(gBattleTextBuff3))) goto ADMG_reject;
                 if (gBattleTextBuff3[0] == B_BUFF_PLACEHOLDER_BEGIN)
                 {
                     ExpandBattleTextBuffPlaceholders(gBattleTextBuff3, gStringVar3);
@@ -3145,12 +3302,15 @@ u32 BattleStringExpandPlaceholders(const u8 *src, u8 *dst, u32 dstSize)
                 }
                 break;
             case B_TXT_COPY_VAR_1:
+                if (!DoesStringProperlyTerminate(gStringVar1, sizeof(gStringVar1))) goto ADMG_reject;
                 toCpy = gStringVar1;
                 break;
             case B_TXT_COPY_VAR_2:
+                if (!DoesStringProperlyTerminate(gStringVar2, sizeof(gStringVar2))) goto ADMG_reject;
                 toCpy = gStringVar2;
                 break;
             case B_TXT_COPY_VAR_3:
+                if (!DoesStringProperlyTerminate(gStringVar3, sizeof(gStringVar3))) goto ADMG_reject;
                 toCpy = gStringVar3;
                 break;
             case B_TXT_PLAYER_MON1_NAME: // first player poke name
@@ -3188,42 +3348,57 @@ u32 BattleStringExpandPlaceholders(const u8 *src, u8 *dst, u32 dstSize)
             case B_TXT_ATK_NAME_WITH_PREFIX_MON1: // Unused, to change into sth else.
                 break;
             case B_TXT_ATK_PARTNER_NAME: // attacker partner name
+                if (!ADMG_BattleTextBattler((u32)gBattlerAttacker)) goto ADMG_reject;
                 GetBattlerNick(GetPartnerBattler(gBattlerAttacker), text);
                 toCpy = text;
                 break;
             case B_TXT_ATK_NAME_WITH_PREFIX: // attacker name with prefix
+                if (!ADMG_BattleTextBattler((u32)gBattlerAttacker)) goto ADMG_reject;
                 HANDLE_NICKNAME_STRING_CASE(gBattlerAttacker)
                 break;
             case B_TXT_DEF_NAME_WITH_PREFIX: // target name with prefix
+                if (!ADMG_BattleTextBattler((u32)gBattlerTarget)) goto ADMG_reject;
                 HANDLE_NICKNAME_STRING_CASE(gBattlerTarget)
                 break;
             case B_TXT_DEF_NAME: // target name
+                if (!ADMG_BattleTextBattler((u32)gBattlerTarget)) goto ADMG_reject;
                 GetBattlerNick(gBattlerTarget, text);
                 toCpy = text;
                 break;
             case B_TXT_DEF_PARTNER_NAME: // partner target name
+                if (!ADMG_BattleTextBattler((u32)gBattlerTarget)) goto ADMG_reject;
                 GetBattlerNick(GetPartnerBattler(gBattlerTarget), text);
                 toCpy = text;
                 break;
             case B_TXT_EFF_NAME_WITH_PREFIX: // effect battler name with prefix
+                if (!ADMG_BattleTextBattler((u32)gEffectBattler)) goto ADMG_reject;
                 HANDLE_NICKNAME_STRING_CASE(gEffectBattler)
                 break;
             case B_TXT_SCR_ACTIVE_NAME_WITH_PREFIX: // scripting active battler name with prefix
+                if (!ADMG_BattleTextBattler((u32)gBattleScripting.battler)) goto ADMG_reject;
                 HANDLE_NICKNAME_STRING_CASE(gBattleScripting.battler)
                 break;
             case B_TXT_CURRENT_MOVE: // current move name
+                if (gBattleMsgDataPtr == NULL || gBattleStruct == NULL) goto ADMG_reject;
                 if (gBattleMsgDataPtr->currentMove >= MOVES_COUNT
                  && !IsZMove(gBattleMsgDataPtr->currentMove)
                  && !IsMaxMove(gBattleMsgDataPtr->currentMove))
+                {
+                    if ((u32)gBattleStruct->stringMoveType >= NUMBER_OF_MON_TYPES) goto ADMG_reject;
                     toCpy = gTypesInfo[gBattleStruct->stringMoveType].generic;
+                }
                 else
                     toCpy = GetMoveName(gBattleMsgDataPtr->currentMove);
                 break;
             case B_TXT_LAST_MOVE: // originally used move name
+                if (gBattleMsgDataPtr == NULL || gBattleStruct == NULL) goto ADMG_reject;
                 if (gBattleMsgDataPtr->originallyUsedMove >= MOVES_COUNT
                  && !IsZMove(gBattleMsgDataPtr->currentMove)
                  && !IsMaxMove(gBattleMsgDataPtr->currentMove))
+                {
+                    if ((u32)gBattleStruct->stringMoveType >= NUMBER_OF_MON_TYPES) goto ADMG_reject;
                     toCpy = gTypesInfo[gBattleStruct->stringMoveType].generic;
+                }
                 else
                     toCpy = GetMoveName(gBattleMsgDataPtr->originallyUsedMove);
                 break;
@@ -3232,6 +3407,8 @@ u32 BattleStringExpandPlaceholders(const u8 *src, u8 *dst, u32 dstSize)
                 {
                     if (gLastUsedItem == ITEM_ENIGMA_BERRY_E_READER)
                     {
+                        if ((u32)gPotentialItemEffectBattler >= MAX_BATTLERS_COUNT
+                            || ((gBattleTypeFlags & BATTLE_TYPE_MULTI) && gBattleScripting.multiplayerId >= MAX_LINK_PLAYERS)) goto ADMG_reject;
                         if (!(gBattleTypeFlags & BATTLE_TYPE_MULTI))
                         {
                             if ((gBattleScripting.multiplayerId != 0 && (gPotentialItemEffectBattler & BIT_SIDE))
@@ -3273,18 +3450,27 @@ u32 BattleStringExpandPlaceholders(const u8 *src, u8 *dst, u32 dstSize)
                 }
                 break;
             case B_TXT_LAST_ABILITY: // last used ability
+                if ((u32)gLastUsedAbility >= ABILITIES_COUNT) goto ADMG_reject;
                 toCpy = gAbilitiesInfo[gLastUsedAbility].name;
                 break;
             case B_TXT_ATK_ABILITY: // attacker ability
+                if (!ADMG_BattleTextBattler((u32)gBattlerAttacker)) goto ADMG_reject;
+                if ((u32)sBattlerAbilities[gBattlerAttacker] >= ABILITIES_COUNT) goto ADMG_reject;
                 toCpy = gAbilitiesInfo[sBattlerAbilities[gBattlerAttacker]].name;
                 break;
             case B_TXT_DEF_ABILITY: // target ability
+                if (!ADMG_BattleTextBattler((u32)gBattlerTarget)) goto ADMG_reject;
+                if ((u32)sBattlerAbilities[gBattlerTarget] >= ABILITIES_COUNT) goto ADMG_reject;
                 toCpy = gAbilitiesInfo[sBattlerAbilities[gBattlerTarget]].name;
                 break;
             case B_TXT_SCR_ACTIVE_ABILITY: // scripting active ability
+                if (!ADMG_BattleTextBattler((u32)gBattleScripting.battler)) goto ADMG_reject;
+                if ((u32)sBattlerAbilities[gBattleScripting.battler] >= ABILITIES_COUNT) goto ADMG_reject;
                 toCpy = gAbilitiesInfo[sBattlerAbilities[gBattleScripting.battler]].name;
                 break;
             case B_TXT_EFF_ABILITY: // effect battler ability
+                if (!ADMG_BattleTextBattler((u32)gEffectBattler)) goto ADMG_reject;
+                if ((u32)sBattlerAbilities[gEffectBattler] >= ABILITIES_COUNT) goto ADMG_reject;
                 toCpy = gAbilitiesInfo[sBattlerAbilities[gEffectBattler]].name;
                 break;
             case B_TXT_TRAINER1_CLASS: // trainer class name
@@ -3294,40 +3480,33 @@ u32 BattleStringExpandPlaceholders(const u8 *src, u8 *dst, u32 dstSize)
                 toCpy = BattleStringGetOpponentNameByTrainerId(TRAINER_BATTLE_PARAM.opponentA, text, multiplayerId, GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT));
                 break;
             case B_TXT_TRAINER1_NAME_WITH_CLASS: // trainer1 name with trainer class
-                toCpy = textStart;
                 classString = BattleStringGetOpponentClassByTrainerId(TRAINER_BATTLE_PARAM.opponentA);
-                while (classString[classLength] != EOS)
-                {
-                    textStart[classLength] = classString[classLength];
-                    classLength++;
-                }
-                textStart[classLength] = CHAR_SPACE;
-                textStart += classLength + 1;
-                nameString = BattleStringGetOpponentNameByTrainerId(TRAINER_BATTLE_PARAM.opponentA, textStart, multiplayerId, GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT));
-                if (nameString != textStart)
-                {
-                    while (nameString[nameLength] != EOS)
-                    {
-                        textStart[nameLength] = nameString[nameLength];
-                        nameLength++;
-                    }
-                    textStart[nameLength] = EOS;
-                }
+                if (!ADMG_BattleTextAppend(dst, dstSize, &dstID, classString)) goto ADMG_reject;
+                ADMG_BATTLE_TEXT_PUT(CHAR_NBSP);
+                toCpy = BattleStringGetOpponentNameByTrainerId(TRAINER_BATTLE_PARAM.opponentA, text, multiplayerId, GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT));
                 break;
             case B_TXT_LINK_PLAYER_NAME: // link player name
-                toCpy = gLinkPlayers[multiplayerId].name;
+                if (multiplayerId >= MAX_LINK_PLAYERS) goto ADMG_reject;
+                toCpy = ADMG_BattleLinkName(multiplayerId);
                 break;
             case B_TXT_LINK_PARTNER_NAME: // link partner name
-                toCpy = gLinkPlayers[GetBattlerMultiplayerId(GetPartnerPosition(gLinkPlayers[multiplayerId].id))].name;
+                if (multiplayerId >= MAX_LINK_PLAYERS) goto ADMG_reject;
+                if (!ADMG_BattleTextBattler(gLinkPlayers[multiplayerId].id)) goto ADMG_reject;
+                toCpy = ADMG_BattleLinkName(GetBattlerMultiplayerId(GetPartnerPosition(gLinkPlayers[multiplayerId].id)));
                 break;
             case B_TXT_LINK_OPPONENT1_NAME: // link opponent 1 name
-                toCpy = gLinkPlayers[GetBattlerMultiplayerId(GetBattlerLeftFoe(gLinkPlayers[multiplayerId].id))].name;
+                if (multiplayerId >= MAX_LINK_PLAYERS) goto ADMG_reject;
+                if (!ADMG_BattleTextBattler(gLinkPlayers[multiplayerId].id)) goto ADMG_reject;
+                toCpy = ADMG_BattleLinkName(GetBattlerMultiplayerId(GetBattlerLeftFoe(gLinkPlayers[multiplayerId].id)));
                 break;
             case B_TXT_LINK_OPPONENT2_NAME: // link opponent 2 name
-                toCpy = gLinkPlayers[GetBattlerMultiplayerId(GetBattlerRightFoe(gLinkPlayers[multiplayerId].id))].name;
+                if (multiplayerId >= MAX_LINK_PLAYERS) goto ADMG_reject;
+                if (!ADMG_BattleTextBattler(gLinkPlayers[multiplayerId].id)) goto ADMG_reject;
+                toCpy = ADMG_BattleLinkName(GetBattlerMultiplayerId(GetBattlerRightFoe(gLinkPlayers[multiplayerId].id)));
                 break;
             case B_TXT_LINK_SCR_TRAINER_NAME: // link scripting active name
-                toCpy = gLinkPlayers[GetBattlerMultiplayerId(gBattleScripting.battler)].name;
+                if (!ADMG_BattleTextBattler(gBattleScripting.battler)) goto ADMG_reject;
+                toCpy = ADMG_BattleLinkName(GetBattlerMultiplayerId(gBattleScripting.battler));
                 break;
             case B_TXT_PLAYER_NAME: // player name
                 toCpy = BattleStringGetPlayerName(text, GetBattlerAtPosition(B_POSITION_PLAYER_LEFT));
@@ -3375,6 +3554,7 @@ u32 BattleStringExpandPlaceholders(const u8 *src, u8 *dst, u32 dstSize)
                 }
                 break;
             case B_TXT_26: // ?
+                if (!ADMG_BattleTextBattler((u32)gBattleScripting.battler)) goto ADMG_reject;
                 if (!IsOnPlayerSide(gBattleScripting.battler))
                 {
                     if (gBattleTypeFlags & BATTLE_TYPE_TRAINER)
@@ -3383,11 +3563,11 @@ u32 BattleStringExpandPlaceholders(const u8 *src, u8 *dst, u32 dstSize)
                         toCpy = sText_WildPkmnPrefix;
                     while (*toCpy != EOS)
                     {
-                        dst[dstID] = *toCpy;
-                        dstID++;
+                        ADMG_BATTLE_TEXT_PUT(*toCpy);
                         toCpy++;
                     }
                 }
+                if (gBattleStruct == NULL || gBattleStruct->scriptPartyIdx >= PARTY_SIZE) goto ADMG_reject;
                 GetMonData(&GetBattlerParty(gBattleScripting.battler)[gBattleStruct->scriptPartyIdx], MON_DATA_NICKNAME, text);
                 StringGet_Nickname(text);
                 toCpy = text;
@@ -3399,36 +3579,42 @@ u32 BattleStringExpandPlaceholders(const u8 *src, u8 *dst, u32 dstSize)
                     toCpy = sText_Someones;
                 break;
             case B_TXT_ATK_PREFIX2:
+                if (!ADMG_BattleTextBattler((u32)gBattlerAttacker)) goto ADMG_reject;
                 if (IsOnPlayerSide(gBattlerAttacker))
                     toCpy = sText_AllyPkmnPrefix2;
                 else
                     toCpy = sText_FoePkmnPrefix3;
                 break;
             case B_TXT_DEF_PREFIX2:
+                if (!ADMG_BattleTextBattler((u32)gBattlerTarget)) goto ADMG_reject;
                 if (IsOnPlayerSide(gBattlerTarget))
                     toCpy = sText_AllyPkmnPrefix2;
                 else
                     toCpy = sText_FoePkmnPrefix3;
                 break;
             case B_TXT_ATK_PREFIX1:
+                if (!ADMG_BattleTextBattler((u32)gBattlerAttacker)) goto ADMG_reject;
                 if (IsOnPlayerSide(gBattlerAttacker))
                     toCpy = sText_AllyPkmnPrefix;
                 else
                     toCpy = sText_FoePkmnPrefix2;
                 break;
             case B_TXT_DEF_PREFIX1:
+                if (!ADMG_BattleTextBattler((u32)gBattlerTarget)) goto ADMG_reject;
                 if (IsOnPlayerSide(gBattlerTarget))
                     toCpy = sText_AllyPkmnPrefix;
                 else
                     toCpy = sText_FoePkmnPrefix2;
                 break;
             case B_TXT_ATK_PREFIX3:
+                if (!ADMG_BattleTextBattler((u32)gBattlerAttacker)) goto ADMG_reject;
                 if (IsOnPlayerSide(gBattlerAttacker))
                     toCpy = sText_AllyPkmnPrefix3;
                 else
                     toCpy = sText_FoePkmnPrefix4;
                 break;
             case B_TXT_DEF_PREFIX3:
+                if (!ADMG_BattleTextBattler((u32)gBattlerTarget)) goto ADMG_reject;
                 if (IsOnPlayerSide(gBattlerTarget))
                     toCpy = sText_AllyPkmnPrefix3;
                 else
@@ -3441,25 +3627,10 @@ u32 BattleStringExpandPlaceholders(const u8 *src, u8 *dst, u32 dstSize)
                 toCpy = BattleStringGetOpponentNameByTrainerId(TRAINER_BATTLE_PARAM.opponentB, text, multiplayerId, GetBattlerAtPosition(B_POSITION_OPPONENT_RIGHT));
                 break;
             case B_TXT_TRAINER2_NAME_WITH_CLASS:
-                toCpy = textStart;
                 classString = BattleStringGetOpponentClassByTrainerId(TRAINER_BATTLE_PARAM.opponentB);
-                while (classString[classLength] != EOS)
-                {
-                    textStart[classLength] = classString[classLength];
-                    classLength++;
-                }
-                textStart[classLength] = CHAR_SPACE;
-                textStart += classLength + 1;
-                nameString = BattleStringGetOpponentNameByTrainerId(TRAINER_BATTLE_PARAM.opponentB, textStart, multiplayerId, GetBattlerAtPosition(B_POSITION_OPPONENT_RIGHT));
-                if (nameString != textStart)
-                {
-                    while (nameString[nameLength] != EOS)
-                    {
-                        textStart[nameLength] = nameString[nameLength];
-                        nameLength++;
-                    }
-                    textStart[nameLength] = EOS;
-                }
+                if (!ADMG_BattleTextAppend(dst, dstSize, &dstID, classString)) goto ADMG_reject;
+                ADMG_BATTLE_TEXT_PUT(CHAR_NBSP);
+                toCpy = BattleStringGetOpponentNameByTrainerId(TRAINER_BATTLE_PARAM.opponentB, text, multiplayerId, GetBattlerAtPosition(B_POSITION_OPPONENT_RIGHT));
                 break;
             case B_TXT_TRAINER2_LOSE_TEXT:
                 if (gBattleTypeFlags & BATTLE_TYPE_FRONTIER)
@@ -3500,41 +3671,28 @@ u32 BattleStringExpandPlaceholders(const u8 *src, u8 *dst, u32 dstSize)
                 }
                 break;
             case B_TXT_PARTNER_CLASS:
-                toCpy = gTrainerClasses[GetFrontierOpponentClass(gPartnerTrainerId)].name;
+                toCpy = ADMG_BATTLE_CLASS_NAME(GetFrontierOpponentClass(gPartnerTrainerId));
                 break;
             case B_TXT_PARTNER_NAME:
                 toCpy = BattleStringGetPlayerName(text, GetBattlerAtPosition(B_POSITION_PLAYER_RIGHT));
                 break;
             case B_TXT_PARTNER_NAME_WITH_CLASS:
-                toCpy = textStart;
-                classString = gTrainerClasses[GetFrontierOpponentClass(gPartnerTrainerId)].name;
-                while (classString[classLength] != EOS)
-                {
-                    textStart[classLength] = classString[classLength];
-                    classLength++;
-                }
-                textStart[classLength] = CHAR_SPACE;
-                textStart += classLength + 1;
-                nameString = BattleStringGetPlayerName(textStart, GetBattlerAtPosition(B_POSITION_PLAYER_RIGHT));
-                if (nameString != textStart)
-                {
-                    while (nameString[nameLength] != EOS)
-                    {
-                        textStart[nameLength] = nameString[nameLength];
-                        nameLength++;
-                    }
-                    textStart[nameLength] = EOS;
-                }
+                classString = ADMG_BATTLE_CLASS_NAME(GetFrontierOpponentClass(gPartnerTrainerId));
+                if (!ADMG_BattleTextAppend(dst, dstSize, &dstID, classString)) goto ADMG_reject;
+                ADMG_BATTLE_TEXT_PUT(CHAR_NBSP);
+                toCpy = BattleStringGetPlayerName(text, GetBattlerAtPosition(B_POSITION_PLAYER_RIGHT));
                 break;
             case B_TXT_ATK_TRAINER_NAME:
+                if (!ADMG_BattleTextBattler((u32)gBattlerAttacker)) goto ADMG_reject;
                 toCpy = BattleStringGetTrainerName(text, multiplayerId, gBattlerAttacker);
                 break;
             case B_TXT_ATK_TRAINER_CLASS:
+                if (!ADMG_BattleTextBattler((u32)gBattlerAttacker)) goto ADMG_reject;
                 switch (GetBattlerPosition(gBattlerAttacker))
                 {
                 case B_POSITION_PLAYER_RIGHT:
                     if (gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER)
-                        toCpy = gTrainerClasses[GetFrontierOpponentClass(gPartnerTrainerId)].name;
+                        toCpy = ADMG_BATTLE_CLASS_NAME(GetFrontierOpponentClass(gPartnerTrainerId));
                     break;
                 case B_POSITION_OPPONENT_LEFT:
                     toCpy = BattleStringGetOpponentClassByTrainerId(TRAINER_BATTLE_PARAM.opponentA);
@@ -3550,6 +3708,7 @@ u32 BattleStringExpandPlaceholders(const u8 *src, u8 *dst, u32 dstSize)
                 }
                 break;
             case B_TXT_ATK_TRAINER_NAME_WITH_CLASS:
+                if (!ADMG_BattleTextBattler((u32)gBattlerAttacker)) goto ADMG_reject;
                 toCpy = textStart;
                 if (gBattleTypeFlags & BATTLE_TYPE_CATCH_TUTORIAL)
                 {
@@ -3569,7 +3728,7 @@ u32 BattleStringExpandPlaceholders(const u8 *src, u8 *dst, u32 dstSize)
                     {
                     case B_POSITION_PLAYER_RIGHT:
                         if (gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER)
-                            classString = gTrainerClasses[GetFrontierOpponentClass(gPartnerTrainerId)].name;
+                            classString = ADMG_BATTLE_CLASS_NAME(GetFrontierOpponentClass(gPartnerTrainerId));
                         break;
                     case B_POSITION_OPPONENT_LEFT:
                         classString = BattleStringGetOpponentClassByTrainerId(TRAINER_BATTLE_PARAM.opponentA);
@@ -3583,86 +3742,79 @@ u32 BattleStringExpandPlaceholders(const u8 *src, u8 *dst, u32 dstSize)
                     default:
                         break;
                     }
-                    classLength = 0;
-                    nameLength = 0;
-                    while (classString[classLength] != EOS)
-                    {
-                        textStart[classLength] = classString[classLength];
-                        classLength++;
-                    }
-                    textStart[classLength] = CHAR_SPACE;
-                    textStart += 1 + classLength;
-                    nameString = BattleStringGetTrainerName(textStart, multiplayerId, gBattlerAttacker);
-                    if (nameString != textStart)
-                    {
-                        while (nameString[nameLength] != EOS)
-                        {
-                            textStart[nameLength] = nameString[nameLength];
-                            nameLength++;
-                        }
-                        textStart[nameLength] = EOS;
-                    }
+                    if (!ADMG_BattleTextAppend(dst, dstSize, &dstID, classString)) goto ADMG_reject;
+                    ADMG_BATTLE_TEXT_PUT(CHAR_NBSP);
+                    toCpy = BattleStringGetTrainerName(text, multiplayerId, gBattlerAttacker);
                 }
                 break;
             case B_TXT_ATK_TEAM1:
+                if (!ADMG_BattleTextBattler((u32)gBattlerAttacker)) goto ADMG_reject;
                 if (IsOnPlayerSide(gBattlerAttacker))
                     toCpy = sText_Your1;
                 else
                     toCpy = sText_Opposing1;
                 break;
             case B_TXT_ATK_TEAM2:
+                if (!ADMG_BattleTextBattler((u32)gBattlerAttacker)) goto ADMG_reject;
                 if (IsOnPlayerSide(gBattlerAttacker))
                     toCpy = sText_Your2;
                 else
                     toCpy = sText_Opposing2;
                 break;
             case B_TXT_DEF_TEAM1:
+                if (!ADMG_BattleTextBattler((u32)gBattlerTarget)) goto ADMG_reject;
                 if (IsOnPlayerSide(gBattlerTarget))
                     toCpy = sText_Your1;
                 else
                     toCpy = sText_Opposing1;
                 break;
             case B_TXT_DEF_TEAM2:
+                if (!ADMG_BattleTextBattler((u32)gBattlerTarget)) goto ADMG_reject;
                 if (IsOnPlayerSide(gBattlerTarget))
                     toCpy = sText_Your2;
                 else
                     toCpy = sText_Opposing2;
                 break;
             case B_TXT_EFF_TEAM1:
+                if (!ADMG_BattleTextBattler((u32)gEffectBattler)) goto ADMG_reject;
                 if (IsOnPlayerSide(gEffectBattler))
                     toCpy = sText_Your1;
                 else
                     toCpy = sText_Opposing1;
                 break;
             case B_TXT_EFF_TEAM2:
+                if (!ADMG_BattleTextBattler((u32)gEffectBattler)) goto ADMG_reject;
                 if (IsOnPlayerSide(gEffectBattler))
                     toCpy = sText_Your2;
                 else
                     toCpy = sText_Opposing2;
                 break;
             case B_TXT_ATK_NAME_WITH_PREFIX2:
+                if (!ADMG_BattleTextBattler((u32)gBattlerAttacker)) goto ADMG_reject;
                 HANDLE_NICKNAME_STRING_LOWERCASE(gBattlerAttacker)
                 break;
             case B_TXT_DEF_NAME_WITH_PREFIX2:
+                if (!ADMG_BattleTextBattler((u32)gBattlerTarget)) goto ADMG_reject;
                 HANDLE_NICKNAME_STRING_LOWERCASE(gBattlerTarget)
                 break;
             case B_TXT_EFF_NAME_WITH_PREFIX2:
+                if (!ADMG_BattleTextBattler((u32)gEffectBattler)) goto ADMG_reject;
                 HANDLE_NICKNAME_STRING_LOWERCASE(gEffectBattler)
                 break;
             case B_TXT_SCR_ACTIVE_NAME_WITH_PREFIX2:
+                if (!ADMG_BattleTextBattler((u32)gBattleScripting.battler)) goto ADMG_reject;
                 HANDLE_NICKNAME_STRING_LOWERCASE(gBattleScripting.battler)
                 break;
             }
 
+            if (!ADMG_EndStateAccessCheck(generation)
+                || !ADMG_BattleTrainerActorsCurrent(&actors, gBattleTypeFlags, TRAINER_BATTLE_PARAM.opponentA,
+                    TRAINER_BATTLE_PARAM.opponentB, gPartnerTrainerId)) goto ADMG_reject;
             if (toCpy != NULL)
             {
                 while (*toCpy != EOS)
                 {
-                    if (*toCpy == CHAR_SPACE)
-                        dst[dstID] = CHAR_NBSP;
-                    else
-                        dst[dstID] = *toCpy;
-                    dstID++;
+                    ADMG_BATTLE_TEXT_PUT(*toCpy == CHAR_SPACE ? CHAR_NBSP : *toCpy);
                     toCpy++;
                 }
             }
@@ -3670,26 +3822,30 @@ u32 BattleStringExpandPlaceholders(const u8 *src, u8 *dst, u32 dstSize)
             if (*src == B_TXT_TRAINER1_LOSE_TEXT || *src == B_TXT_TRAINER2_LOSE_TEXT
                 || *src == B_TXT_TRAINER1_WIN_TEXT || *src == B_TXT_TRAINER2_WIN_TEXT)
             {
-                dst[dstID] = EXT_CTRL_CODE_BEGIN;
-                dstID++;
-                dst[dstID] = EXT_CTRL_CODE_PAUSE_UNTIL_PRESS;
-                dstID++;
+                ADMG_BATTLE_TEXT_PUT(EXT_CTRL_CODE_BEGIN);
+                ADMG_BATTLE_TEXT_PUT(EXT_CTRL_CODE_PAUSE_UNTIL_PRESS);
             }
         }
         else
         {
-            dst[dstID] = *src;
-            dstID++;
+            ADMG_BATTLE_TEXT_PUT(*src);
         }
         src++;
     }
 
-    dst[dstID] = *src;
-    dstID++;
+    if (!ADMG_EndStateAccessCheck(generation)
+        || !ADMG_BattleTrainerActorsCurrent(&actors, gBattleTypeFlags, TRAINER_BATTLE_PARAM.opponentA,
+            TRAINER_BATTLE_PARAM.opponentB, gPartnerTrainerId)) goto ADMG_reject;
+    dst[dstID++] = EOS;
 
     BreakStringAutomatic(dst, BATTLE_MSG_MAX_WIDTH, BATTLE_MSG_MAX_LINES, fontId, SHOW_SCROLL_PROMPT);
 
     return dstID;
+
+ADMG_reject:
+    dst[0] = EOS;
+    ADMG_StateAccessRejected(dstSize, __func__);
+    return 0;
 }
 
 static void IllusionNickHack(enum BattlerId battler, u32 partyId, u8 *dst)
@@ -3714,8 +3870,110 @@ static void IllusionNickHack(enum BattlerId battler, u32 partyId, u8 *dst)
         GetMonData(mon, MON_DATA_NICKNAME, dst);
 }
 
+
+/* The original pointer-only entry remains the hook used by every caller.
+ * Infer exact remaining extents for project-owned buffers, including the
+ * existing Z-move interior destinations. Other native callers retain their
+ * original contract: a complete token stream and adequate writable output.
+ * A future wide public argument bridge must supply/validate external extents. */
+static u32 ADMG_BattleTextExtent(const u8 *pointer)
+{
+    const struct { const u8 *base; u32 size; } buffers[] = {
+        {gBattleTextBuff1, sizeof(gBattleTextBuff1)},
+        {gBattleTextBuff2, sizeof(gBattleTextBuff2)},
+        {gBattleTextBuff3, sizeof(gBattleTextBuff3)},
+        {gStringVar1, sizeof(gStringVar1)}, {gStringVar2, sizeof(gStringVar2)},
+        {gStringVar3, sizeof(gStringVar3)}, {gStringVar4, sizeof(gStringVar4)},
+        {gDisplayedStringBattle, sizeof(gDisplayedStringBattle)},
+    };
+    for (u32 i = 0; i < ARRAY_COUNT(buffers); i++)
+    {
+        u32 offset = (u32)pointer - (u32)buffers[i].base;
+        if (offset < buffers[i].size) return buffers[i].size - offset;
+    }
+    return UINT_MAX;
+}
+
+static bool8 ADMG_BattleBufferAppend(u8 *dst, u32 size, u32 *length, u64 generation, const u8 *src)
+{
+    if (!ADMG_EndStateAccessCheck(generation) || src == NULL) return FALSE;
+    while (*src != EOS)
+    {
+        if (!ADMG_BattleTextPut(dst, size, length, *src)) return FALSE;
+        src++;
+    }
+    dst[*length] = EOS;
+    return TRUE;
+}
+
+static bool8 ADMG_BattleBufferOperands(const u8 *src, u32 size)
+{
+    u32 pos = 1;
+    while (pos < size && src[pos] != B_BUFF_EOS)
+    {
+        u32 step;
+        switch (src[pos])
+        {
+        case B_BUFF_TYPE: case B_BUFF_STAT: case B_BUFF_NEGATIVE_FLAVOR: step = 2; break;
+        case B_BUFF_STRING: case B_BUFF_MOVE: case B_BUFF_SPECIES: case B_BUFF_ABILITY:
+        case B_BUFF_ITEM: case B_BUFF_MON_NICK: case B_BUFF_MON_NICK_WITH_PREFIX:
+        case B_BUFF_MON_NICK_WITH_PREFIX_LOWER: step = 3; break;
+        case B_BUFF_NUMBER:
+            if (size - pos < 3) return FALSE;
+            if ((src[pos + 1] != 1 && src[pos + 1] != 2 && src[pos + 1] != 4)
+                || src[pos + 2] == 0 || src[pos + 2] > 10) return FALSE;
+            step = src[pos + 1] + 3;
+            break;
+        default: return FALSE;
+        }
+        if (step > size - pos) return FALSE;
+        u32 operand = step == 2 ? src[pos + 1] : T1_READ_16(&src[pos + 1]);
+        switch (src[pos])
+        {
+        case B_BUFF_STRING:
+            if (operand >= STRINGID_COUNT || gBattleStringsTable[operand] == NULL) return FALSE;
+            break;
+        case B_BUFF_MOVE: if (operand >= MOVES_COUNT_ALL) return FALSE; break;
+        case B_BUFF_TYPE: if (operand >= NUMBER_OF_MON_TYPES) return FALSE; break;
+        case B_BUFF_STAT: if (operand >= ARRAY_COUNT(gStatNamesTable)) return FALSE; break;
+        case B_BUFF_SPECIES: if (operand >= NUM_SPECIES) return FALSE; break;
+        case B_BUFF_NEGATIVE_FLAVOR: if (operand >= ARRAY_COUNT(gPokeblockWasTooXStringTable)) return FALSE; break;
+        case B_BUFF_ABILITY: if (operand >= ABILITIES_COUNT) return FALSE; break;
+        case B_BUFF_ITEM:
+            if (operand >= ITEMS_COUNT) return FALSE;
+            if (operand == ITEM_ENIGMA_BERRY_E_READER && (gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK)))
+            {
+                if ((u32)gPotentialItemEffectBattler >= MAX_BATTLERS_COUNT
+                    || gBattleScripting.multiplayerId >= MAX_LINK_PLAYERS) return FALSE;
+                if (!DoesStringProperlyTerminate(gEnigmaBerries[gPotentialItemEffectBattler].name,
+                    sizeof(gEnigmaBerries[gPotentialItemEffectBattler].name))) return FALSE;
+            }
+            break;
+        case B_BUFF_MON_NICK: case B_BUFF_MON_NICK_WITH_PREFIX: case B_BUFF_MON_NICK_WITH_PREFIX_LOWER:
+            if (!ADMG_BattleTextBattler(src[pos + 1]) || src[pos + 2] >= PARTY_SIZE) return FALSE;
+            break;
+        }
+        pos += step;
+    }
+    return pos < size && src[pos] == B_BUFF_EOS;
+}
+
 void ExpandBattleTextBuffPlaceholders(const u8 *src, u8 *dst)
 {
+    if (dst != NULL) dst[0] = EOS;
+    if (src == NULL || dst == NULL)
+    { ADMG_StateAccessRejected(0, __func__); return; }
+    u32 srcSize = ADMG_BattleTextExtent(src);
+    u32 dstSize = ADMG_BattleTextExtent(dst);
+    struct ADMG_BattleTrainerActors actors;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    if (!ADMG_TryCaptureBattleTrainerActors(gBattleTypeFlags, TRAINER_BATTLE_PARAM.opponentA,
+            TRAINER_BATTLE_PARAM.opponentB, gPartnerTrainerId, &actors)
+        || !ADMG_BattleBufferOperands(src, srcSize))
+    { ADMG_StateAccessRejected(srcSize, __func__); return; }
+    u32 length = 0;
+    u8 savedIllusionHack = gBattleScripting.illusionNickHack;
+    u8 output[max(32, max(ITEM_NAME_LENGTH, POKEMON_NAME_LENGTH + 1))];
     u32 srcID = 1;
     u32 value = 0;
     u8 nickname[POKEMON_NAME_LENGTH + 1];
@@ -3724,11 +3982,14 @@ void ExpandBattleTextBuffPlaceholders(const u8 *src, u8 *dst)
     *dst = EOS;
     while (src[srcID] != B_BUFF_EOS)
     {
+        output[0] = EOS;
+        if (!ADMG_BattleBufferOperands(src, srcSize)) goto ADMG_reject;
+        nickname[0] = EOS;
         switch (src[srcID])
         {
         case B_BUFF_STRING: // battle string
             hword = T1_READ_16(&src[srcID + 1]);
-            StringAppend(dst, gBattleStringsTable[hword]);
+            do { if (!ADMG_BattleBufferAppend(dst, dstSize, &length, generation, gBattleStringsTable[hword])) goto ADMG_reject; } while (0);
             srcID += 3;
             break;
         case B_BUFF_NUMBER: // int to string
@@ -3744,15 +4005,17 @@ void ExpandBattleTextBuffPlaceholders(const u8 *src, u8 *dst)
                 value = T1_READ_32(&src[srcID + 3]);
                 break;
             }
-            ConvertIntToDecimalStringN(dst, value, STR_CONV_MODE_LEFT_ALIGN, src[srcID + 2]);
+            ConvertIntToDecimalStringN(output, value, STR_CONV_MODE_LEFT_ALIGN, src[srcID + 2]);
+            length = 0;
+            if (!ADMG_BattleBufferAppend(dst, dstSize, &length, generation, output)) goto ADMG_reject;
             srcID += src[srcID + 1] + 3;
             break;
         case B_BUFF_MOVE: // move name
-            StringAppend(dst, GetMoveName(T1_READ_16(&src[srcID + 1])));
+            do { if (!ADMG_BattleBufferAppend(dst, dstSize, &length, generation, GetMoveName(T1_READ_16(&src[srcID + 1])))) goto ADMG_reject; } while (0);
             srcID += 3;
             break;
         case B_BUFF_TYPE: // type name
-            StringAppend(dst, gTypesInfo[src[srcID + 1]].name);
+            do { if (!ADMG_BattleBufferAppend(dst, dstSize, &length, generation, gTypesInfo[src[srcID + 1]].name)) goto ADMG_reject; } while (0);
             srcID += 2;
             break;
         case B_BUFF_MON_NICK_WITH_PREFIX: // poke nick with prefix
@@ -3762,55 +4025,59 @@ void ExpandBattleTextBuffPlaceholders(const u8 *src, u8 *dst)
                 if (src[srcID] == B_BUFF_MON_NICK_WITH_PREFIX_LOWER)
                 {
                     if (gBattleTypeFlags & BATTLE_TYPE_TRAINER)
-                        StringAppend(dst, sText_FoePkmnPrefixLower);
+                        do { if (!ADMG_BattleBufferAppend(dst, dstSize, &length, generation, sText_FoePkmnPrefixLower)) goto ADMG_reject; } while (0);
                     else
-                        StringAppend(dst, sText_WildPkmnPrefixLower);
+                        do { if (!ADMG_BattleBufferAppend(dst, dstSize, &length, generation, sText_WildPkmnPrefixLower)) goto ADMG_reject; } while (0);
                 }
                 else
                 {
                     if (gBattleTypeFlags & BATTLE_TYPE_TRAINER)
-                        StringAppend(dst, sText_FoePkmnPrefix);
+                        do { if (!ADMG_BattleBufferAppend(dst, dstSize, &length, generation, sText_FoePkmnPrefix)) goto ADMG_reject; } while (0);
                     else
-                        StringAppend(dst, sText_WildPkmnPrefix);
+                        do { if (!ADMG_BattleBufferAppend(dst, dstSize, &length, generation, sText_WildPkmnPrefix)) goto ADMG_reject; } while (0);
                 }
             }
             GetMonData(&GetBattlerParty(src[srcID + 1])[src[srcID + 2]], MON_DATA_NICKNAME, nickname);
             StringGet_Nickname(nickname);
-            StringAppend(dst, nickname);
+            do { if (!ADMG_BattleBufferAppend(dst, dstSize, &length, generation, nickname)) goto ADMG_reject; } while (0);
             srcID += 3;
             break;
         case B_BUFF_STAT: // stats
-            StringAppend(dst, gStatNamesTable[src[srcID + 1]]);
+            do { if (!ADMG_BattleBufferAppend(dst, dstSize, &length, generation, gStatNamesTable[src[srcID + 1]])) goto ADMG_reject; } while (0);
             srcID += 2;
             break;
         case B_BUFF_SPECIES: // species name
-            StringCopy(dst, GetSpeciesName(T1_READ_16(&src[srcID + 1])));
+            length = 0;
+            if (!ADMG_BattleBufferAppend(dst, dstSize, &length, generation, GetSpeciesName(T1_READ_16(&src[srcID + 1])))) goto ADMG_reject;
             srcID += 3;
             break;
         case B_BUFF_MON_NICK: // poke nick without prefix
             if (src[srcID + 2] == gBattlerPartyIndexes[src[srcID + 1]])
             {
-                GetBattlerNick(src[srcID + 1], dst);
+                GetBattlerNick(src[srcID + 1], output);
             }
             else if (gBattleScripting.illusionNickHack) // for STRINGID_ENEMYABOUTTOSWITCHPKMN
             {
                 gBattleScripting.illusionNickHack = 0;
-                IllusionNickHack(src[srcID + 1], src[srcID + 2], dst);
-                StringGet_Nickname(dst);
+                IllusionNickHack(src[srcID + 1], src[srcID + 2], output);
+                StringGet_Nickname(output);
             }
             else
             {
-                GetMonData(&GetBattlerParty(src[srcID + 1])[src[srcID + 2]], MON_DATA_NICKNAME, dst);
-                StringGet_Nickname(dst);
+                GetMonData(&GetBattlerParty(src[srcID + 1])[src[srcID + 2]], MON_DATA_NICKNAME, output);
+                StringGet_Nickname(output);
             }
+            length = 0;
+            if (!ADMG_EndStateAccessCheck(generation)
+                || !ADMG_BattleBufferAppend(dst, dstSize, &length, generation, output)) goto ADMG_reject;
             srcID += 3;
             break;
         case B_BUFF_NEGATIVE_FLAVOR: // flavor table
-            StringAppend(dst, gPokeblockWasTooXStringTable[src[srcID + 1]]);
+            do { if (!ADMG_BattleBufferAppend(dst, dstSize, &length, generation, gPokeblockWasTooXStringTable[src[srcID + 1]])) goto ADMG_reject; } while (0);
             srcID += 2;
             break;
         case B_BUFF_ABILITY: // ability names
-            StringAppend(dst, gAbilitiesInfo[T1_READ_16(&src[srcID + 1])].name);
+            do { if (!ADMG_BattleBufferAppend(dst, dstSize, &length, generation, gAbilitiesInfo[T1_READ_16(&src[srcID + 1])].name)) goto ADMG_reject; } while (0);
             srcID += 3;
             break;
         case B_BUFF_ITEM: // item name
@@ -3821,27 +4088,42 @@ void ExpandBattleTextBuffPlaceholders(const u8 *src, u8 *dst)
                 {
                     if (gLinkPlayers[gBattleScripting.multiplayerId].id == gPotentialItemEffectBattler)
                     {
-                        StringCopy(dst, gEnigmaBerries[gPotentialItemEffectBattler].name);
-                        StringAppend(dst, sText_BerrySuffix);
+                        length = 0;
+            if (!ADMG_BattleBufferAppend(dst, dstSize, &length, generation, gEnigmaBerries[gPotentialItemEffectBattler].name)) goto ADMG_reject;
+                        do { if (!ADMG_BattleBufferAppend(dst, dstSize, &length, generation, sText_BerrySuffix)) goto ADMG_reject; } while (0);
                     }
                     else
                     {
-                        StringAppend(dst, sText_EnigmaBerry);
+                        do { if (!ADMG_BattleBufferAppend(dst, dstSize, &length, generation, sText_EnigmaBerry)) goto ADMG_reject; } while (0);
                     }
                 }
                 else
                 {
-                    CopyItemName(hword, dst);
+                    CopyItemName(hword, output);
+                    length = 0;
+                    if (!ADMG_EndStateAccessCheck(generation)
+                        || !ADMG_BattleBufferAppend(dst, dstSize, &length, generation, output)) goto ADMG_reject;
                 }
             }
             else
             {
-                CopyItemName(hword, dst);
+                CopyItemName(hword, output);
+                    length = 0;
+                    if (!ADMG_EndStateAccessCheck(generation)
+                        || !ADMG_BattleBufferAppend(dst, dstSize, &length, generation, output)) goto ADMG_reject;
             }
             srcID += 3;
             break;
         }
+        if (!ADMG_EndStateAccessCheck(generation)
+            || !ADMG_BattleTrainerActorsCurrent(&actors, gBattleTypeFlags, TRAINER_BATTLE_PARAM.opponentA,
+                TRAINER_BATTLE_PARAM.opponentB, gPartnerTrainerId)) goto ADMG_reject;
     }
+    return;
+ADMG_reject:
+    dst[0] = EOS;
+    gBattleScripting.illusionNickHack = savedIllusionHack;
+    ADMG_StateAccessRejected(srcID, __func__);
 }
 
 void BattlePutTextOnWindow(const u8 *text, u8 windowId)

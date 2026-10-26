@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_state.h"
 #include "battle.h"
 #include "battle_anim.h"
 #include "battle_controllers.h"
@@ -132,6 +133,9 @@ void LinkPartnerBufferExecCompleted(enum BattlerId battler)
 
 static void LinkPartnerHandleDrawTrainerPic(enum BattlerId battler)
 {
+    if ((u32)battler >= MAX_BATTLERS_COUNT)
+    { ADMG_StateAccessRejected((u32)battler, __func__); return; }
+    u64 generation = ADMG_BeginStateAccessCheck();
     s16 xPos;
     enum TrainerPicID trainerPicId;
 
@@ -148,6 +152,7 @@ static void LinkPartnerHandleDrawTrainerPic(enum BattlerId battler)
     }
 
     trainerPicId = LinkPlayerGetTrainerPicId(GetBattlerMultiplayerId(battler));
+    if (!ADMG_EndStateAccessCheck(generation)) return;
     BtlController_HandleDrawTrainerPic(battler, trainerPicId, FALSE,
                                        xPos, 80 + 4 * (8 - GetTrainerBackPicCoords(trainerPicId)->size),
                                        -1);
@@ -160,7 +165,11 @@ static void LinkPartnerHandleTrainerSlideBack(enum BattlerId battler)
 
 static void LinkPartnerHandleIntroTrainerBallThrow(enum BattlerId battler)
 {
+    if ((u32)battler >= MAX_BATTLERS_COUNT)
+    { ADMG_StateAccessRejected((u32)battler, __func__); return; }
+    u64 generation = ADMG_BeginStateAccessCheck();
     enum TrainerPicID trainerPicId = LinkPlayerGetTrainerPicId(GetBattlerMultiplayerId(battler));
+    if (!ADMG_EndStateAccessCheck(generation)) return;
     const u16 *trainerPal = GetTrainerBackPicPalette(trainerPicId);
     // Link partner uses the same intro sequence as the player partner.
     BtlController_HandleIntroTrainerBallThrow(battler, 0xD6F9, trainerPal, 24, Controller_PlayerPartnerShowIntroHealthbox);
@@ -173,13 +182,23 @@ static void LinkPartnerHandleDrawPartyStatusSummary(enum BattlerId battler)
 
 static void LinkPartnerHandleLinkStandbyMsg(enum BattlerId battler)
 {
+    if ((u32)battler >= MAX_BATTLERS_COUNT || gBattleResources == NULL )
+    { ADMG_StateAccessRejected((u32)battler, __func__); return; }
+    u64 generation = ADMG_BeginStateAccessCheck();
+
     RecordedBattle_RecordAllBattlerData(&gBattleResources->bufferA[battler][2]);
+    if (!ADMG_EndStateAccessCheck(generation)) return;
     BtlController_Complete(battler);
 }
 
 static void LinkPartnerHandleEndLinkBattle(enum BattlerId battler)
 {
+    if ((u32)battler >= MAX_BATTLERS_COUNT || gBattleResources == NULL || gSaveBlock2Ptr == NULL )
+    { ADMG_StateAccessRejected((u32)battler, __func__); return; }
+    u64 generation = ADMG_BeginStateAccessCheck();
+
     RecordedBattle_RecordAllBattlerData(&gBattleResources->bufferA[battler][4]);
+    if (!ADMG_EndStateAccessCheck(generation)) return;
     gBattleOutcome = gBattleResources->bufferA[battler][1];
     gSaveBlock2Ptr->frontier.disableRecordBattle = gBattleResources->bufferA[battler][2];
     FadeOutMapMusic(5);

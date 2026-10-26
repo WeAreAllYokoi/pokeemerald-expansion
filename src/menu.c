@@ -4,6 +4,7 @@
 #include "decompress.h"
 #include "dma3.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "field_name_box.h"
 #include "field_weather.h"
 #include "gpu_regs.h"
@@ -1823,6 +1824,9 @@ void BlitMenuInfoIcon(u8 windowId, u8 iconId, u16 x, u16 y)
 
 void BufferSaveMenuText(u8 textId, u8 *dest, u8 color)
 {
+    if (textId == SAVE_MENU_BADGES)
+        ADMG_REQUIRE_FLAG_RANGE(FLAG_BADGE01_GET, NUM_BADGES, 1);
+
     s32 curFlag;
     s32 flagCount;
     u8 *endOfString;

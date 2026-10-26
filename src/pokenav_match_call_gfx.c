@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_state.h"
 #include "bg.h"
 #include "data.h"
 #include "decompress.h"
@@ -1242,7 +1243,9 @@ static struct Sprite *CreateTrainerPicSprite(void)
 static void LoadCheckPageTrainerPic(struct Pokenav_MatchCallGfx *gfx)
 {
     u16 cursor;
+    u64 generation = ADMG_BeginStateAccessCheck();
     enum TrainerPicID trainerPic = GetMatchCallTrainerPic(PokenavList_GetSelectedIndex());
+    if (!ADMG_EndStateAccessCheck(generation)) return;
     if (trainerPic >= 0)
     {
         DecompressDataWithHeaderWram(GetTrainerFrontPicData(trainerPic), gfx->trainerPicGfx);

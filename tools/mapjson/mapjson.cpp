@@ -34,6 +34,11 @@ using json11::Json;
 #include <filesystem>
 
 string version;
+Json admg_state_catalog;
+string admg_state_catalog_path;
+bool retain_all_regions = false;
+string map_count_output;
+string heal_locations_output = "src/data/heal_locations.admg.json";
 // System directory separator
 string sep;
 
@@ -243,6 +248,37 @@ string generate_map_connections_text(Json map_data) {
     return text.str();
 }
 
+// Only typed event state fields use the owner-qualified catalogue. Region data,
+// trainer IDs, weather, comparison values and other resource fields are untouched.
+string admg_state_operand(const Json &map_data, const Json &event, const string &field, const string &kind) {
+    string operand = json_to_string(event, field);
+    string region = json_to_string(map_data, "region", true);
+    if (region.empty()) region = "REGION_HOENN";
+    if (region != "REGION_HOENN" && region != "REGION_KANTO")
+        FATAL_ERROR("Unknown state source owner for map %s.\n", json_to_string(map_data, "name").c_str());
+    if (region != "REGION_KANTO" || admg_state_catalog.is_null()) return operand;
+    string map_name = json_to_string(map_data, "name");
+    if (admg_state_catalog["map_owners"][map_name]["owner"].string_value() != "kanto")
+        FATAL_ERROR("State catalogue owner mismatch for %s.\n", map_name.c_str());
+    if (operand == "0") return operand; // Immediate/optional zero keeps its meaning.
+    string table = operand.rfind("FLAG_", 0) == 0 ? "flags" : "vars";
+    string replacement = admg_state_catalog[table][operand]["generated"].string_value();
+    if (replacement.empty() || (kind == "flag" && table != "flags"))
+        FATAL_ERROR("Unclassified %s operand %s in %s.\n", kind.c_str(), operand.c_str(), map_name.c_str());
+    return replacement;
+}
+
+string admg_object_trainer_type(const Json &map_data, const Json &event) {
+    // The existing boulder ABI uses trainer_type as a state flag for the floor
+    // below (GetBoulderRevealFlagByLocalIdAndMap); actual trainer types stay intact.
+    if (json_to_string(event, "graphics_id") == "OBJ_EVENT_GFX_PUSHABLE_BOULDER") {
+        string value = json_to_string(event, "trainer_type");
+        if (value == "TRAINER_TYPE_NONE") return value; // Existing optional zero.
+        return admg_state_operand(map_data, event, "trainer_type", "flag");
+    }
+    return json_to_string(event, "trainer_type");
+}
+
 string generate_map_events_text(Json map_data) {
     if (map_data.object_items().find("shared_events_map") != map_data.object_items().end())
         return string("\n");
@@ -272,10 +308,10 @@ string generate_map_events_text(Json map_data) {
                      << json_to_string(obj_event, "movement_type") << ", "
                      << json_to_string(obj_event, "movement_range_x") << ", "
                      << json_to_string(obj_event, "movement_range_y") << ", "
-                     << json_to_string(obj_event, "trainer_type") << ", "
+                     << admg_object_trainer_type(map_data, obj_event) << ", "
                      << json_to_string(obj_event, "trainer_sight_or_berry_tree_id") << ", "
                      << json_to_string(obj_event, "script") << ", "
-                     << json_to_string(obj_event, "flag") << "\n";
+                     << admg_state_operand(map_data, obj_event, "flag", "flag") << "\n";
             } else if (type == "clone") {
                 text << "\tclone_event " << i + 1 << ", "
                      << json_to_string(obj_event, "graphics_id") << ", "
@@ -318,7 +354,7 @@ string generate_map_events_text(Json map_data) {
                      << json_to_string(coord_event, "x") << ", "
                      << json_to_string(coord_event, "y") << ", "
                      << json_to_string(coord_event, "elevation") << ", "
-                     << json_to_string(coord_event, "var") << ", "
+                     << admg_state_operand(map_data, coord_event, "var", "var") << ", "
                      << json_to_string(coord_event, "var_value") << ", "
                      << json_to_string(coord_event, "script") << "\n";
             }
@@ -364,7 +400,7 @@ string generate_map_events_text(Json map_data) {
                      << json_to_string(bg_event, "y") << ", "
                      << json_to_string(bg_event, "elevation") << ", "
                      << json_to_string(bg_event, "item") << ", "
-                     << json_to_string(bg_event, "flag") << ", "
+                     << admg_state_operand(map_data, bg_event, "flag", "flag") << ", "
                      << quantity << ", "
                      << underfoot << "\n";
             }
@@ -690,7 +726,7 @@ string generate_map_constants_text(string groups_filepath, Json groups_data, vec
         mapCountText << map_count_vec[i] << ", ";            //DEBUG
     }                                                        //DEBUG
     mapCountText << "0};\n";                                 //DEBUG
-    write_text_file(file_dir + ".." + s + ".." + s + "src" + s + "data" + s + "map_group_count.h", mapCountText.str());
+    write_text_file(map_count_output.empty() ? file_dir + ".." + s + ".." + s + "src" + s + "data" + s + "map_group_count.h" : map_count_output, mapCountText.str());
 
     return text.str();
 }
@@ -720,7 +756,7 @@ void clean_heal_locations(vector<string> &valid_map_ids)
         }
     }
 
-    write_text_file("src/data/heal_locations.json", new_json.str());
+    write_text_file(heal_locations_output, new_json.str());
 }
 
 // Output paths are directories with trailing path separators
@@ -750,8 +786,8 @@ void process_groups(string groups_filepath, vector<string> &map_filepaths, strin
         }
         string map_name = json_to_string(map_data, "name");
 
-        if ((version == "emerald" && region != "REGION_HOENN")
-         || (version == "firered" && region != "REGION_KANTO")) {
+        if (!retain_all_regions && ((version == "emerald" && region != "REGION_HOENN")
+         || (version == "firered" && region != "REGION_KANTO"))) {
             invalid_maps.push_back(map_name);
         }
     }
@@ -780,8 +816,11 @@ string generate_layout_headers_text(Json layouts_data) {
 
     for (auto &layout : layouts_data["layouts"].array_items()) {
         if (layout == Json::object()) continue;
-        if (!std::filesystem::exists(json_to_string(layout, "border_filepath")))
+        if (!std::filesystem::exists(json_to_string(layout, "border_filepath"))) {
+            if (retain_all_regions)
+                FATAL_ERROR("Missing required layout border: %s\n", json_to_string(layout, "border_filepath").c_str());
             continue;
+        }
         string layout_version = json_to_string(layout, "layout_version", true);
 
         if (layout_version.empty()) {
@@ -790,8 +829,8 @@ string generate_layout_headers_text(Json layouts_data) {
             else if (version == "firered")
                 layout_version = "frlg";
         }
-        if ((version == "emerald" && layout_version != "emerald")
-         || (version == "firered" && layout_version != "frlg"))
+        if (!retain_all_regions && ((version == "emerald" && layout_version != "emerald")
+         || (version == "firered" && layout_version != "frlg")))
             continue;
         string layoutName = json_to_string(layout, "name");
         string border_label = layoutName + "_Border";
@@ -839,8 +878,11 @@ string generate_layouts_table_text(Json layouts_data) {
          << json_to_string(layouts_data, "layouts_table_label") << "::\n";
 
     for (auto &layout : layouts_data["layouts"].array_items()) {
-        if (!std::filesystem::exists(json_to_string(layout, "border_filepath")))
+        if (!std::filesystem::exists(json_to_string(layout, "border_filepath"))) {
+            if (retain_all_regions)
+                FATAL_ERROR("Missing required layout border: %s\n", json_to_string(layout, "border_filepath").c_str());
             continue;
+        }
         string layout_version = json_to_string(layout, "layout_version", true);
         if (layout_version.empty()) {
             if (version == "emerald")
@@ -848,7 +890,7 @@ string generate_layouts_table_text(Json layouts_data) {
             else if (version == "firered")
                 layout_version = "frlg";
         }
-        if ((version == "emerald" && layout_version != "emerald") || (version == "firered" && layout_version != "frlg")) {
+        if (!retain_all_regions && ((version == "emerald" && layout_version != "emerald") || (version == "firered" && layout_version != "frlg"))) {
             text << "\t.4byte NULL\n";
         } else {
             string layout_name = json_to_string(layout, "name", true);
@@ -885,8 +927,11 @@ string generate_layouts_constants_text(Json layouts_data) {
 
     int i = 1;
     for (auto &layout : layouts_data["layouts"].array_items()) {
-        if (!std::filesystem::exists(json_to_string(layout, "border_filepath")))
+        if (!std::filesystem::exists(json_to_string(layout, "border_filepath"))) {
+            if (retain_all_regions)
+                FATAL_ERROR("Missing required layout border: %s\n", json_to_string(layout, "border_filepath").c_str());
             continue;
+        }
         if (layout != Json::object())
         {
             text << "#define " << json_to_string(layout, "id") << " " << i << "\n";
@@ -937,6 +982,26 @@ void process_layouts(string layouts_filepath, string output_asm, string output_c
 }
 
 int main(int argc, char *argv[]) {
+    // Optional integration arguments are removed before the legacy positional parser.
+    vector<char *> positional;
+    for (int i = 0; i < argc; ++i) {
+        string arg(argv[i]);
+        if (arg == "--content-regions=all") retain_all_regions = true;
+        else if (arg == "--content-regions=selected") retain_all_regions = false;
+        else if (arg.rfind("--state-catalog=", 0) == 0) admg_state_catalog_path = arg.substr(16);
+        else if (arg.rfind("--map-count-output=", 0) == 0) map_count_output = arg.substr(19);
+        else if (arg.rfind("--heal-output=", 0) == 0) heal_locations_output = arg.substr(14);
+        else if (arg.rfind("--", 0) == 0) FATAL_ERROR("Unknown option: %s\n", arg.c_str());
+        else positional.push_back(argv[i]);
+    }
+    if (!admg_state_catalog_path.empty()) {
+        string error;
+        admg_state_catalog = Json::parse(read_text_file(admg_state_catalog_path), error);
+        if (!error.empty() || admg_state_catalog["format"].string_value() != "admg101-state-operands")
+            FATAL_ERROR("Invalid state catalogue %s.\n", admg_state_catalog_path.c_str());
+    }
+    argc = positional.size();
+    argv = positional.data();
     if (argc < 3)
         FATAL_ERROR("USAGE: mapjson <mode> <game-version> [options]\n");
 

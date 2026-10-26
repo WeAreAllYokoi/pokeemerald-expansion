@@ -1,5 +1,6 @@
 #include "global.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "field_move.h"
 #include "fldeff.h"
 #include "fldeff_misc.h"
@@ -8,6 +9,16 @@
 #include "constants/field_move.h"
 #include "constants/moves.h"
 #include "constants/party_menu.h"
+
+const struct FieldMoveInfo *FieldMove_GetInfo(enum FieldMove fieldMove)
+{
+    if ((u32)fieldMove >= FIELD_MOVES_COUNT)
+    {
+        ADMG_StateAccessRejected((u32)fieldMove, __func__);
+        return NULL;
+    }
+    return &gFieldMoveInfo[fieldMove];
+}
 
 static bool32 IsAlwaysFalse(enum FieldMove fieldMove)
 {
@@ -21,7 +32,14 @@ static bool32 IsAlwaysTrue(enum FieldMove fieldMove)
 
 static bool32 HasBadgeForFieldMove(enum FieldMove fieldMove)
 {
-    return FlagGet(gFieldMoveInfo[fieldMove].arg + FLAG_BADGE01_GET);
+    const struct FieldMoveInfo *info = FieldMove_GetInfo(fieldMove);
+    u16 flagId;
+    bool8 unlocked;
+    if (info == NULL
+     || !ADMG_TryGetIndexedFlagId(FLAG_BADGE01_GET, info->arg, NUM_BADGES, 1, &flagId)
+     || !ADMG_TryReadFlag(flagId, &unlocked))
+        return FALSE;
+    return unlocked;
 }
 
 const struct FieldMoveUnlock gFieldMoveUnlocks[FIELD_MOVE_UNLOCK_COUNT] =

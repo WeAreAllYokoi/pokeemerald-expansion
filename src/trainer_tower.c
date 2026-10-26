@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_state.h"
 #include "battle.h"
 #include "battle_main.h"
 #include "battle_setup.h"
@@ -57,6 +58,16 @@ struct TrainerEncounterMusicPairs
     u8 facilityClass;
     u8 musicId;
 };
+
+/* Borrowed only during the synchronous named party call; never persisted. */
+struct ADMG_TrainerTowerPartyInput
+{
+    u16 trainerIdx;
+    u32 floorIdx;
+    u64 generation;
+};
+static const struct ADMG_TrainerTowerPartyInput *sADMG_TrainerTowerPartyInput;
+static bool8 ADMG_TryReadTrainerTowerPartyInput(struct ADMG_TrainerTowerPartyInput *input, bool8 needsOpponent);
 
 static EWRAM_DATA struct TrainerTowerState * sTrainerTowerState = NULL;
 static EWRAM_DATA struct TrainerTowerOpponent * sTrainerTowerOpponent = NULL;
@@ -360,19 +371,47 @@ void CallTrainerTowerFunc(void)
     FreeTrainerTowerDataStruct();
 }
 
+static bool8 ADMG_TrainerTowerOpponentReady(bool8 needsClass)
+{
+    if (sTrainerTowerOpponent == NULL
+        || (needsClass && sTrainerTowerOpponent->facilityClass >= FACILITY_CLASSES_COUNT))
+    { ADMG_StateAccessRejected(sTrainerTowerOpponent == NULL ? 0 : sTrainerTowerOpponent->facilityClass, __func__); return FALSE; }
+    return TRUE;
+}
+
 u8 GetTrainerTowerOpponentClass(void)
 {
+    if (!ADMG_TrainerTowerOpponentReady(TRUE)) return 0;
+
     return gFacilityClassToTrainerClass[sTrainerTowerOpponent->facilityClass];
 }
 
 void GetTrainerTowerOpponentName(u8 *dest)
 {
+    if (dest == NULL) { ADMG_StateAccessRejected(0, __func__); return; }
+    if (!ADMG_TrainerTowerOpponentReady(FALSE)) return;
+
     StringCopyN(dest, sTrainerTowerOpponent->name, 11);
 }
 
 u8 GetTrainerTowerTrainerFrontSpriteId(void)
 {
+    if (!ADMG_TrainerTowerOpponentReady(TRUE)) return 0;
+
     return gFacilityClassToPicIndex[sTrainerTowerOpponent->facilityClass];
+}
+
+static bool8 ADMG_TryTrainerTowerLocalRow(u32 trainerId, bool8 second,
+    struct TrainerTowerTrainer **trainer)
+{
+    if (trainer == NULL || sTrainerTowerState == NULL
+        || sTrainerTowerState->floorIdx >= ARRAY_COUNT(sTrainerTowerState->data.floors))
+    { ADMG_StateAccessRejected(trainerId, __func__); return FALSE; }
+    if (trainerId >= ARRAY_COUNT(CURR_FLOOR.trainers)
+        || (second && trainerId + 1 >= ARRAY_COUNT(CURR_FLOOR.trainers)))
+    { ADMG_StateAccessRejected(trainerId, __func__); return FALSE; }
+    *trainer = &CURR_FLOOR.trainers[trainerId];
+    return TRUE;
 }
 
 void InitTrainerTowerBattleStruct(void)
@@ -380,9 +419,25 @@ void InitTrainerTowerBattleStruct(void)
     u16 trainerId;
     int i;
 
+    /* Native setup narrows this map-derived coordinate into its local field. */
+    u32 floorIdx = gMapHeader.mapLayoutId - LAYOUT_TRAINER_TOWER_1F;
+    if (floorIdx >= MAX_TRAINER_TOWER_FLOORS)
+    { ADMG_StateAccessRejected(floorIdx, __func__); return; }
+    u64 generation = ADMG_BeginStateAccessCheck();
     SetUpTrainerTowerDataStruct();
-    sTrainerTowerOpponent = AllocZeroed(sizeof(*sTrainerTowerOpponent));
+
     trainerId = VarGet(VAR_TEMP_1);
+    struct TrainerTowerTrainer *trainer;
+    if (!ADMG_EndStateAccessCheck(generation)) { FreeTrainerTowerDataStruct(); return; }
+    if (!ADMG_TryTrainerTowerLocalRow(trainerId, FALSE, &trainer))
+    { FreeTrainerTowerDataStruct(); return; }
+    if (CURR_FLOOR.challengeType == CHALLENGE_TYPE_DOUBLE
+        && !ADMG_TryTrainerTowerLocalRow(trainerId, TRUE, &trainer))
+    { FreeTrainerTowerDataStruct(); return; }
+    if (trainer->facilityClass >= FACILITY_CLASSES_COUNT)
+    { ADMG_StateAccessRejected(trainer->facilityClass, __func__); FreeTrainerTowerDataStruct(); return; }
+    sTrainerTowerOpponent = AllocZeroed(sizeof(*sTrainerTowerOpponent));
+
     StringCopyN(sTrainerTowerOpponent->name, CURR_FLOOR.trainers[trainerId].name, 11);
 
     for (i = 0; i < 6; i++)
@@ -413,7 +468,12 @@ void FreeTrainerTowerBattleStruct(void)
 
 void GetTrainerTowerOpponentWinText(u8 *dest, u8 opponentIdx)
 {
+    if (dest == NULL) { ADMG_StateAccessRejected(0, __func__); return; }
+    if (!ADMG_TrainerTowerOpponentReady(FALSE)) return;
+
+    u64 generation = ADMG_BeginStateAccessCheck();
     VarSet(VAR_TEMP_3, opponentIdx);
+    if (!ADMG_EndStateAccessCheck(generation)) return;
     TrainerTowerGetOpponentTextColor(sTrainerTowerOpponent->battleType, sTrainerTowerOpponent->facilityClass);
     if (opponentIdx == 0)
         TT_ConvertEasyChatMessageToString(sTrainerTowerOpponent->speechWin, dest);
@@ -423,7 +483,12 @@ void GetTrainerTowerOpponentWinText(u8 *dest, u8 opponentIdx)
 
 void GetTrainerTowerOpponentLoseText(u8 *dest, u8 opponentIdx)
 {
+    if (dest == NULL) { ADMG_StateAccessRejected(0, __func__); return; }
+    if (!ADMG_TrainerTowerOpponentReady(FALSE)) return;
+
+    u64 generation = ADMG_BeginStateAccessCheck();
     VarSet(VAR_TEMP_3, opponentIdx);
+    if (!ADMG_EndStateAccessCheck(generation)) return;
     TrainerTowerGetOpponentTextColor(sTrainerTowerOpponent->battleType, sTrainerTowerOpponent->facilityClass);
     if (opponentIdx == 0)
         TT_ConvertEasyChatMessageToString(sTrainerTowerOpponent->speechLose, dest);
@@ -576,6 +641,8 @@ static void BufferTowerOpponentSpeech(void)
 {
     u16 trainerId = gSpecialVar_0x8006;
     u8 facilityClass;
+    struct TrainerTowerTrainer *trainer;
+    if (!ADMG_TryTrainerTowerLocalRow(trainerId, FALSE, &trainer)) return;
     u8 challengeType = CURR_FLOOR.challengeType;
 
     if (challengeType != CHALLENGE_TYPE_DOUBLE)
@@ -656,6 +723,13 @@ static void Task_DoTrainerTowerBattle(u8 taskId)
 
 static void DoTrainerTowerBattle(void)
 {
+    struct ADMG_TrainerTowerPartyInput input;
+    if (!ADMG_TryReadTrainerTowerPartyInput(&input, TRUE)) return;
+    const struct ADMG_TrainerTowerPartyInput *previousInput = sADMG_TrainerTowerPartyInput;
+    u32 previousFlags = gBattleTypeFlags;
+    u16 previousOpponent = TRAINER_BATTLE_PARAM.opponentA;
+    sADMG_TrainerTowerPartyInput = &input;
+
     gBattleTypeFlags = BATTLE_TYPE_TRAINER | BATTLE_TYPE_TRAINER_TOWER;
 
     if (CURR_FLOOR.challengeType == CHALLENGE_TYPE_DOUBLE)
@@ -663,6 +737,13 @@ static void DoTrainerTowerBattle(void)
 
     TRAINER_BATTLE_PARAM.opponentA = 0;
     BuildEnemyParty();
+    sADMG_TrainerTowerPartyInput = previousInput;
+    if (!ADMG_EndStateAccessCheck(input.generation))
+    {
+        gBattleTypeFlags = previousFlags;
+        TRAINER_BATTLE_PARAM.opponentA = previousOpponent;
+        return;
+    }
     CreateTask(Task_DoTrainerTowerBattle, 1);
     PlayMapChosenOrBattleBGM(0);
     BattleTransition_StartOnField(GetSpecialBattleTransition(B_TRANSITION_GROUP_TRAINER_HILL));
@@ -919,8 +1000,13 @@ static void ShouldWarpToCounter(void)
 static void PlayTrainerTowerEncounterMusic(void)
 {
     s32 i;
+    u64 generation = ADMG_BeginStateAccessCheck();
     u16 idx = VarGet(VAR_TEMP_1);
+    struct TrainerTowerTrainer *trainer;
+    if (!ADMG_EndStateAccessCheck(generation) || !ADMG_TryTrainerTowerLocalRow(idx, FALSE, &trainer)) return;
     u8 facilityClass = CURR_FLOOR.trainers[idx].facilityClass;
+    if (facilityClass >= FACILITY_CLASSES_COUNT)
+    { ADMG_StateAccessRejected(facilityClass, __func__); return; }
 
     for (i = 0; i < ARRAY_COUNT(sTrainerEncounterMusicLUT); i++)
     {
@@ -946,18 +1032,76 @@ static void HasSpokenToOwner(void)
 #endif //FREE_TRAINER_TOWER
 }
 
+static bool8 ADMG_TryTrainerTowerPartyIndices(u32 floorIdx, u32 trainerIdx)
+{
+    if (sTrainerTowerState == NULL || floorIdx >= ARRAY_COUNT(sSingleBattleChallengeMonIdxs)
+        || sTrainerTowerState->floorIdx >= ARRAY_COUNT(sTrainerTowerState->data.floors))
+    { ADMG_StateAccessRejected(floorIdx, __func__); return FALSE; }
+    u32 count = 2;
+    if (CURR_FLOOR.challengeType != CHALLENGE_TYPE_DOUBLE
+        && trainerIdx >= ARRAY_COUNT(CURR_FLOOR.trainers))
+    { ADMG_StateAccessRejected(trainerIdx, __func__); return FALSE; }
+    if (CURR_FLOOR.challengeType == CHALLENGE_TYPE_KNOCKOUT) count = 1;
+    for (u32 i = 0; i < count; ++i)
+    {
+        u32 monIdx;
+        if (CURR_FLOOR.challengeType == CHALLENGE_TYPE_DOUBLE)
+            monIdx = sDoubleBattleChallengeMonIdxs[floorIdx][i];
+        else if (CURR_FLOOR.challengeType == CHALLENGE_TYPE_KNOCKOUT)
+            monIdx = sKnockoutChallengeMonIdxs[floorIdx][trainerIdx];
+        else
+            monIdx = sSingleBattleChallengeMonIdxs[floorIdx][i];
+        if (monIdx >= ARRAY_COUNT(CURR_FLOOR.trainers[0].mons))
+        { ADMG_StateAccessRejected(monIdx, __func__); return FALSE; }
+    }
+    return TRUE;
+}
+
+static bool8 ADMG_TryReadTrainerTowerPartyInput(struct ADMG_TrainerTowerPartyInput *input, bool8 needsOpponent)
+{
+    input->generation = ADMG_BeginStateAccessCheck();
+    input->trainerIdx = VarGet(VAR_TEMP_1);
+#if FREE_TRAINER_TOWER == FALSE && IS_FRLG
+    input->floorIdx = TRAINER_TOWER.floorsCleared;
+#else
+    input->floorIdx = gMapHeader.mapLayoutId - LAYOUT_TRAINER_TOWER_1F;
+#endif //FREE_TRAINER_TOWER
+    if (!ADMG_EndStateAccessCheck(input->generation)
+        || !ADMG_TryTrainerTowerPartyIndices(input->floorIdx, input->trainerIdx)) return FALSE;
+    if (needsOpponent)
+    {
+        /* This live temp-var is also consumed by the later native initializer. */
+        u32 floorIdx = gMapHeader.mapLayoutId - LAYOUT_TRAINER_TOWER_1F;
+        if (floorIdx >= MAX_TRAINER_TOWER_FLOORS)
+        { ADMG_StateAccessRejected(floorIdx, __func__); return FALSE; }
+        struct TrainerTowerTrainer *trainer;
+        if (!ADMG_TryTrainerTowerLocalRow(input->trainerIdx,
+            CURR_FLOOR.challengeType == CHALLENGE_TYPE_DOUBLE, &trainer)) return FALSE;
+        if (trainer->facilityClass >= FACILITY_CLASSES_COUNT)
+        { ADMG_StateAccessRejected(trainer->facilityClass, __func__); return FALSE; }
+    }
+    return TRUE;
+}
+
 static void BuildEnemyParty(void)
 {
-    u16 trainerIdx = VarGet(VAR_TEMP_1);
-    s32 level = GetPartyMaxLevel();
-#if FREE_TRAINER_TOWER == FALSE && IS_FRLG
-    u8 floorIdx = TRAINER_TOWER.floorsCleared;
-#else
-    u8 floorIdx = gMapHeader.mapLayoutId - LAYOUT_TRAINER_TOWER_1F;
-#endif //FREE_TRAINER_TOWER
+    struct ADMG_TrainerTowerPartyInput local;
+    const struct ADMG_TrainerTowerPartyInput *input = sADMG_TrainerTowerPartyInput;
+    if (input == NULL)
+    {
+        if (!ADMG_TryReadTrainerTowerPartyInput(&local, FALSE)) return;
+        input = &local;
+    }
+    u64 generation = input->generation;
+    u16 trainerIdx = input->trainerIdx;
+    u32 floorIdx = input->floorIdx;
+    s32 level;
     s32 i;
     u8 monIdx;
 
+    if (!ADMG_EndStateAccessCheck(generation) || !ADMG_TryTrainerTowerPartyIndices(floorIdx, trainerIdx)) return;
+    level = GetPartyMaxLevel();
+    if (!ADMG_EndStateAccessCheck(generation)) return;
     ZeroEnemyPartyMons();
 
     switch (CURR_FLOOR.challengeType)

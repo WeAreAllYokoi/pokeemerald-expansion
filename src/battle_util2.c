@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_state.h"
 #include "battle.h"
 #include "battle_anim.h"
 #include "battle_controllers.h"
@@ -34,10 +35,14 @@ void CloseMainBattleScreen(void)
 
 void AllocateBattleResources(void)
 {
+    u64 generation = ADMG_BeginStateAccessCheck();
+
     if (gBattleTypeFlags & BATTLE_TYPE_TRAINER_TOWER && gMapHeader.regionMapSectionId == MAPSEC_TRAINER_TOWER_2)
         InitTrainerTowerBattleStruct();
     else if (gBattleTypeFlags & BATTLE_TYPE_TRAINER_HILL)
         InitTrainerHillBattleStruct();
+
+    if (!ADMG_EndStateAccessCheck(generation)) return;
 
     gBattleStruct = AllocZeroed(sizeof(*gBattleStruct));
     gAiBattleData = AllocZeroed(sizeof(*gAiBattleData));

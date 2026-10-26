@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_state.h"
 #include "event_data.h"
 #include "battle_setup.h"
 #include "overworld.h"
@@ -159,8 +160,13 @@ static void SetPalaceOpponent(void)
 
 static void BufferOpponentIntroSpeech(void)
 {
+    const struct BattleFrontierTrainer *trainer;
+
     if (TRAINER_BATTLE_PARAM.opponentA < FRONTIER_TRAINERS_COUNT)
-        FrontierSpeechToString(gFacilityTrainers[TRAINER_BATTLE_PARAM.opponentA].speechBefore);
+        {
+            if (!ADMG_TryGetActiveFacilityTrainerRow(TRAINER_BATTLE_PARAM.opponentA, &trainer)) return;
+            FrontierSpeechToString(trainer->speechBefore);
+        }
 }
 
 static void IncrementPalaceStreak(void)

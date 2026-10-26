@@ -1,6 +1,7 @@
 #include "global.h"
 #include "bike.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "event_object_movement.h"
 #include "fieldmap.h"
 #include "rotating_gate.h"
@@ -637,10 +638,33 @@ static s32 GetCurrentMapRotatingGatePuzzleType(void)
     return PUZZLE_NONE;
 }
 
+static u8 *ADMG_RotatingGateState(void)
+{
+    if (sRotatingGate_PuzzleConfig == NULL || sRotatingGate_PuzzleCount == 0
+     || sRotatingGate_PuzzleCount > MAX_GATES)
+        return NULL;
+    return (u8 *)ADMG_GetVarSpan(VAR_TEMP_0, (sRotatingGate_PuzzleCount + 1) / 2);
+}
+
+static s32 RotatingGate_GetGateOrientation(u8 gateId);
+static bool8 ADMG_TryReadGateOrientation(u8 gateId, u8 *orientation)
+{
+    s32 value;
+    if (orientation == NULL || gateId >= sRotatingGate_PuzzleCount)
+        return FALSE;
+    value = RotatingGate_GetGateOrientation(gateId);
+    if (value < 0 || value >= GATE_ORIENTATION_MAX)
+        return FALSE;
+    *orientation = value;
+    return TRUE;
+}
+
 static void RotatingGate_ResetAllGateOrientations(void)
 {
     s32 i;
-    u8 *ptr = (u8 *)GetVarPointer(VAR_TEMP_0);
+    u8 *ptr = ADMG_RotatingGateState();
+    if (ptr == NULL)
+        return;
 
     for (i = 0; i < sRotatingGate_PuzzleCount; i++)
         ptr[i] = sRotatingGate_PuzzleConfig[i].orientation;
@@ -648,17 +672,33 @@ static void RotatingGate_ResetAllGateOrientations(void)
 
 static s32 RotatingGate_GetGateOrientation(u8 gateId)
 {
-    return ((u8 *)GetVarPointer(VAR_TEMP_0))[gateId];
+    u8 *ptr = ADMG_RotatingGateState();
+    if (ptr == NULL || gateId >= sRotatingGate_PuzzleCount
+     || sRotatingGate_PuzzleConfig[gateId].shape >= ARRAY_COUNT(sRotatingGate_ArmLayout)
+     || ptr[gateId] >= GATE_ORIENTATION_MAX)
+    {
+        ADMG_StateAccessRejected(gateId, __func__);
+        return -1;
+    }
+    return ptr[gateId];
 }
 
 static void RotatingGate_SetGateOrientation(u8 gateId, u8 orientation)
 {
-    ((u8 *)GetVarPointer(VAR_TEMP_0))[gateId] = orientation;
+    u8 *ptr = ADMG_RotatingGateState();
+    if (ptr == NULL || gateId >= sRotatingGate_PuzzleCount || orientation >= GATE_ORIENTATION_MAX)
+    {
+        ADMG_StateAccessRejected(gateId, __func__);
+        return;
+    }
+    ptr[gateId] = orientation;
 }
 
 static void RotatingGate_RotateInDirection(u8 gateId, u32 rotationDirection)
 {
-    u8 orientation = RotatingGate_GetGateOrientation(gateId);
+    u8 orientation;
+    if (!ADMG_TryReadGateOrientation(gateId, &orientation))
+        return;
 
     if (rotationDirection == ROTATE_ANTICLOCKWISE)
     {
@@ -725,6 +765,10 @@ static void RotatingGate_CreateGatesWithinViewport(s16 deltaX, s16 deltaY)
 
 static u8 RotatingGate_CreateGate(u8 gateId, s16 deltaX, s16 deltaY)
 {
+    u8 orientation;
+    if (!ADMG_TryReadGateOrientation(gateId, &orientation))
+        return MAX_SPRITES;
+
     struct Sprite *sprite;
     struct SpriteTemplate template;
     u8 spriteId;
@@ -753,7 +797,7 @@ static u8 RotatingGate_CreateGate(u8 gateId, s16 deltaX, s16 deltaY)
 
     GetMapCoordsFromSpritePos(x + deltaX, y + deltaY, &sprite->x, &sprite->y);
     RotatingGate_HideGatesOutsideViewport(sprite);
-    StartSpriteAffineAnim(sprite, RotatingGate_GetGateOrientation(gateId));
+    StartSpriteAffineAnim(sprite, orientation);
 
     return spriteId;
 }
@@ -861,7 +905,8 @@ static s32 RotatingGate_CanRotate(u8 gateId, s32 rotationDirection)
     else
         return FALSE;
 
-    orientation = RotatingGate_GetGateOrientation(gateId);
+    if (!ADMG_TryReadGateOrientation(gateId, &orientation))
+        return FALSE;
 
     shape = sRotatingGate_PuzzleConfig[gateId].shape;
     x = sRotatingGate_PuzzleConfig[gateId].x + MAP_OFFSET;
@@ -896,18 +941,24 @@ static s32 RotatingGate_HasArm(u8 gateId, u8 armInfo)
     s32 arm = armInfo / 2;
     s32 isLongArm = armInfo % 2;
 
-    s8 armOrientation = (arm - RotatingGate_GetGateOrientation(gateId) + 4) % 4;
+    u8 orientation;
+    if (armInfo >= 2 * (GATE_ARM_WEST + 1) || !ADMG_TryReadGateOrientation(gateId, &orientation))
+        return 0;
+    s8 armOrientation = (arm - orientation + 4) % 4;
     s32 shape = sRotatingGate_PuzzleConfig[gateId].shape;
     return sRotatingGate_ArmLayout[shape][armOrientation * 2 + isLongArm];
 }
 
 static void RotatingGate_TriggerRotationAnimation(u8 gateId, s32 rotationDirection)
 {
+    u8 orientation;
+    if (!ADMG_TryReadGateOrientation(gateId, &orientation))
+        return;
     if (sRotatingGate_GateSpriteIds[gateId] != MAX_SPRITES)
     {
         struct Sprite *sprite = &gSprites[sRotatingGate_GateSpriteIds[gateId]];
         sprite->data[1] = rotationDirection;
-        sprite->data[2] = RotatingGate_GetGateOrientation(gateId);
+        sprite->data[2] = orientation;
     }
 }
 

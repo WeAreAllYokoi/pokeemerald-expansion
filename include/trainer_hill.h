@@ -1,6 +1,12 @@
 #ifndef GUARD_TRAINER_HILL_H
 #define GUARD_TRAINER_HILL_H
 
+#include "admg_native.h"
+
+/* Internal native admission/bit ownership; no public mod API or save layout. */
+ADMG_NATIVE_ENTRY bool8 ADMG_TryAdmitHillParty(u32 identifier, u32 target);
+ADMG_NATIVE_ENTRY bool8 ADMG_TryGetHillTrainerFlagMask(u32 actorA, u32 actorB, bool8 second, u8 *mask);
+
 #define DUMMY_HILL_MON { .nickname = __("$$$$$$$$$$$") }
 
 struct TrainerHillTrainer

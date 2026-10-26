@@ -6,6 +6,8 @@
 void CallBattlePyramidFunction(void);
 u16 LocalIdToPyramidTrainerId(u8 localId);
 bool8 GetBattlePyramidTrainerFlag(u8 eventId);
+/* Internal admission only; no marking or persistent layout. */
+bool8 ADMG_TryAdmitPyramidTrainerMarking(bool8 two);
 void MarkApproachingPyramidTrainersAsBattled(void);
 void GenerateBattlePyramidWildMon(enum Species forceSpecies);
 u8 GetPyramidRunMultiplier(void);

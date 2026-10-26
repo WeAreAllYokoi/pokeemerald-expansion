@@ -329,6 +329,8 @@ void BtlController_EmitTrainerSlideBack(enum BattlerId battler, u32 bufferId);
 void BtlController_EmitFaintAnimation(enum BattlerId battler, u32 bufferId);
 void BtlController_EmitBallThrowAnim(enum BattlerId battler, u32 bufferId, u8 caseId);
 void BtlController_EmitMoveAnimation(enum BattlerId battler, u32 bufferId, enum Move move, u8 turnOfMove, u16 movePower, s32 dmg, u8 friendship, u8 multihit);
+/* Internal game-source admission; not a platform or public mod API. */
+bool8 ADMG_TryAdmitBattlePrint(enum BattlerId battler, u32 bufferId, enum StringID stringID, bool8 indexedMove, const char *operation);
 void BtlController_EmitPrintString(enum BattlerId battler, u32 bufferId, enum StringID stringId);
 void BtlController_EmitPrintSelectionString(enum BattlerId battler, u32 bufferId, enum StringID stringId);
 void BtlController_EmitChooseAction(enum BattlerId battler, u32 bufferId, u8 action, enum Item itemId);

@@ -8,6 +8,7 @@
 #include "faraway_island.h"
 #include "follower_npc.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "event_object_movement.h"
 #include "event_scripts.h"
 #include "fieldmap.h"
@@ -456,12 +457,15 @@ static const u8 *GetInteractedBackgroundEventScript(struct MapPosition *position
     case BG_EVENT_HIDDEN_ITEM:
         if (bgEvent->bgUnion.hiddenItem.underfoot == TRUE)
             return NULL;
-        gSpecialVar_0x8004 = bgEvent->bgUnion.hiddenItem.hiddenItemId + FLAG_HIDDEN_ITEMS_START;
-        gSpecialVar_0x8005 = bgEvent->bgUnion.hiddenItem.item;
-        gSpecialVar_0x8009 = bgEvent->bgUnion.hiddenItem.quantity;
-        if (FlagGet(gSpecialVar_0x8004) == TRUE)
-            return NULL;
-        return EventScript_HiddenItemScript;
+        {
+            bool8 collected;
+            if (!ADMG_ReadHiddenItemFlag(bgEvent->bgUnion.hiddenItem.hiddenItemId, &collected) || collected)
+                return NULL;
+            gSpecialVar_0x8004 = bgEvent->bgUnion.hiddenItem.hiddenItemId + FLAG_HIDDEN_ITEMS_START;
+            gSpecialVar_0x8005 = bgEvent->bgUnion.hiddenItem.item;
+            gSpecialVar_0x8009 = bgEvent->bgUnion.hiddenItem.quantity;
+            return EventScript_HiddenItemScript;
+        }
     case BG_EVENT_SECRET_BASE:
         if (direction == DIR_NORTH)
         {
@@ -833,7 +837,7 @@ static void UNUSED ClearFriendshipStepCounter(void)
 
 static void UpdateFriendshipStepCounter(void)
 {
-    u16 *ptr = GetVarPointer(VAR_FRIENDSHIP_STEP_COUNTER);
+    u16 *ptr = ADMG_REQUIRE_VAR_SPAN(VAR_FRIENDSHIP_STEP_COUNTER, 1);
     int i;
 
     (*ptr)++;
@@ -867,7 +871,7 @@ static bool8 UpdatePoisonStepCounter(void)
 
     if (gMapHeader.mapType != MAP_TYPE_SECRET_BASE)
     {
-        ptr = GetVarPointer(VAR_POISON_STEP_COUNTER);
+        ptr = ADMG_REQUIRE_VAR_SPAN(VAR_POISON_STEP_COUNTER, 1, FALSE);
         (*ptr)++;
         (*ptr) %= 4;
         if (*ptr == 0)
@@ -1147,12 +1151,11 @@ static s8 GetWarpEventAtPosition(struct MapHeader *mapHeader, u16 x, u16 y, u8 e
 
 static bool32 ShouldTriggerScriptRun(const struct CoordEvent *coordEvent)
 {
-    u16 *varPtr = GetVarPointer(coordEvent->trigger);
-    // Treat non Vars as flags
-    if (varPtr == NULL)
-        return (FlagGet(coordEvent->trigger) == coordEvent->index);
-    else
-        return (*varPtr == coordEvent->index);
+    u16 value;
+    bool8 flag;
+    if (coordEvent->trigger >= VARS_START)
+        return ADMG_TryReadVar(coordEvent->trigger, &value, FALSE) && value == coordEvent->index;
+    return ADMG_TryReadFlag(coordEvent->trigger, &flag) && flag == coordEvent->index;
 }
 
 static const u8 *TryRunCoordEventScript(const struct CoordEvent *coordEvent)
@@ -1398,16 +1401,30 @@ u16 GetBoulderRevealFlagByLocalIdAndMap(u8 localId, u8 mapNum, u8 mapGroup)
 {
     // Pushable boulder object events store the flag to reveal the boulder
     // on the floor below in their trainer type field.
-    return GetObjectEventTemplateByLocalIdAndMap(localId, mapNum, mapGroup)->trainerType;
+    const struct ObjectEventTemplate *template = GetObjectEventTemplateByLocalIdAndMap(localId, mapNum, mapGroup);
+    if (template == NULL)
+    {
+        ADMG_StateAccessRejected(localId, __func__);
+        return 0xFFFF;
+    }
+    return template->trainerType;
 }
 
 void HandleBoulderFallThroughHole(struct ObjectEvent * object)
 {
+    if (object == NULL || gSaveBlock1Ptr == NULL)
+        return;
     if (MapGridGetMetatileBehaviorAt(object->currentCoords.x, object->currentCoords.y) == MB_MT_PYRE_HOLE)
     {
+        u16 revealFlag = GetBoulderRevealFlagByLocalIdAndMap(object->localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);
+        if (!ADMG_IsFlagIdValid(revealFlag))
+        {
+            ADMG_StateAccessRejected(revealFlag, __func__);
+            return;
+        }
         PlaySE(SE_FALL);
         RemoveObjectEventByLocalIdAndMap(object->localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);
-        FlagClear(GetBoulderRevealFlagByLocalIdAndMap(object->localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup));
+        FlagClear(revealFlag);
     }
 }
 

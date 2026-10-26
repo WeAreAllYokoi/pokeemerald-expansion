@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_trainer.h"
 #include "battle.h"
 #include "battle_anim.h"
 #include "battle_anim_scripts.h"
@@ -35,6 +36,7 @@
 #include "battle_ai_record.h"
 #include "battle_ai_util.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "link.h"
 #include "malloc.h"
 #include "berry.h"
@@ -1260,12 +1262,18 @@ static bool32 Ai_AttackerMovesLast(enum BattlerId battlerAtk)
 
 void PrepareStringBattleWithWait(enum StringID stringId, enum BattlerId battler)
 {
-    PrepareStringBattle(stringId, battler);
+    {
+        u64 printGeneration = ADMG_BeginStateAccessCheck();
+        PrepareStringBattle(stringId, battler);
+        if (!ADMG_EndStateAccessCheck(printGeneration)) return;
+    }
     gBattleCommunication[MSG_DISPLAY] = MSG_DISPLAY_WAIT;
 }
 
 void PrepareStringBattle(enum StringID stringId, enum BattlerId battler)
 {
+    if (!ADMG_TryAdmitBattlePrint(battler, B_COMM_TO_CONTROLLER, stringId, TRUE, __func__)) return;
+    u64 slideGeneration = ADMG_BeginStateAccessCheck();
     switch (stringId)
     {
     case STRINGID_ITDOESNTAFFECT:
@@ -1276,7 +1284,12 @@ void PrepareStringBattle(enum StringID stringId, enum BattlerId battler)
         break;
     }
 
-    BtlController_EmitPrintString(battler, B_COMM_TO_CONTROLLER, stringId);
+    if (!ADMG_EndStateAccessCheck(slideGeneration)) return;
+    {
+        u64 printGeneration = ADMG_BeginStateAccessCheck();
+        BtlController_EmitPrintString(battler, B_COMM_TO_CONTROLLER, stringId);
+        if (!ADMG_EndStateAccessCheck(printGeneration)) return;
+    }
     MarkBattlerForControllerExec(battler);
 }
 
@@ -9062,6 +9075,11 @@ uq4_12_t GetBadgeBoostModifier(void)
 
 bool32 ShouldGetStatBadgeBoost(u16 badgeFlag, enum BattlerId battler)
 {
+    if ((u32)battler >= MAX_BATTLERS_COUNT || !ADMG_IsFlagIdValid(badgeFlag))
+    {
+        ADMG_StateAccessRejected((u32)battler >= MAX_BATTLERS_COUNT ? battler : badgeFlag, __func__);
+        return FALSE;
+    }
     if (GetConfig(B_BADGE_BOOST) <= GEN_3 && badgeFlag != 0)
     {
         if (gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_EREADER_TRAINER | BATTLE_TYPE_RECORDED_LINK | BATTLE_TYPE_FRONTIER))
@@ -9938,7 +9956,9 @@ bool32 AreMultiPartiesFullTeams(void)
         return FALSE;
     }
 #else
-    enum DifficultyLevel difficulty = GetCurrentDifficultyLevel();
+    const struct Trainer *first, *second;
+    u64 generation;
+    enum DifficultyLevel difficulty;
 
     if (B_MULTI_HALF_TEAMS)
     {
@@ -9953,9 +9973,18 @@ bool32 AreMultiPartiesFullTeams(void)
     }
 
     if (TRAINER_BATTLE_PARAM.opponentA == TRAINER_LINK_OPPONENT
-     || gBattleTypeFlags & BATTLE_TYPE_TOWER_LINK_MULTI
-     || (gTrainers[difficulty][TRAINER_BATTLE_PARAM.opponentA].multiTeamSize == MULTI_TEAM_SIZE_HALF)
-     || (gTrainers[difficulty][TRAINER_BATTLE_PARAM.opponentB].multiTeamSize == MULTI_TEAM_SIZE_HALF))
+     || gBattleTypeFlags & BATTLE_TYPE_TOWER_LINK_MULTI)
+    {
+        gSpecialVar_Result = FALSE;
+        return FALSE;
+    }
+    generation = ADMG_BeginStateAccessCheck();
+    difficulty = GetCurrentDifficultyLevel();
+    if (!ADMG_EndStateAccessCheck(generation)
+     || !ADMG_TryGetTrainerRow(TRAINER_BATTLE_PARAM.opponentA, difficulty, &first)
+     || !ADMG_TryGetTrainerRow(TRAINER_BATTLE_PARAM.opponentB, difficulty, &second))
+        return FALSE;
+    if (first->multiTeamSize == MULTI_TEAM_SIZE_HALF || second->multiTeamSize == MULTI_TEAM_SIZE_HALF)
     {
         gSpecialVar_Result = FALSE;
         return FALSE;

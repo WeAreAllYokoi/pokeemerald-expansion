@@ -1,4 +1,6 @@
 #include "global.h"
+#include "admg_state.h"
+#include "admg_trainer_actor.h"
 #include "battle_pyramid.h"
 #include "battle_pyramid_bag.h"
 #include "event_data.h"
@@ -80,6 +82,7 @@ static void SeedPyramidFloor(void);
 static void SetPickupItem(void);
 static void HidePyramidItem(void);
 static void SetPyramidFacilityTrainers(void);
+static bool8 ADMG_TryGetPyramidLocalSlot(u32 localId, u32 *slot);
 static void ShowPostBattleHintText(void);
 static void UpdatePyramidWinStreak(void);
 static void GetCurrentBattlePyramidLocation(void);
@@ -780,6 +783,18 @@ static const u8 *const *const *const sPostBattleTexts[] =
     sPostBattleHintTexts6,
 };
 
+/* Derived from the native pointer hierarchy; no resources or dispatch IDs
+ * are removed or reassigned. Re-run the integration recipe after table edits. */
+static const u32 sADMG_PostBattleTextCounts[ARRAY_COUNT(sPostBattleTexts)][HINT_REMAINING_TRAINERS + 1] =
+{
+    {ARRAY_COUNT(sExitDirectionHintTexts1), ARRAY_COUNT(sRemainingItemsHintTexts1), ARRAY_COUNT(sRemainingTrainersHintTexts1)},
+    {ARRAY_COUNT(sExitDirectionHintTexts2), ARRAY_COUNT(sRemainingItemsHintTexts2), ARRAY_COUNT(sRemainingTrainersHintTexts2)},
+    {ARRAY_COUNT(sExitDirectionHintTexts3), ARRAY_COUNT(sRemainingItemsHintTexts3), ARRAY_COUNT(sRemainingTrainersHintTexts3)},
+    {ARRAY_COUNT(sExitDirectionHintTexts4), ARRAY_COUNT(sRemainingItemsHintTexts4), ARRAY_COUNT(sRemainingTrainersHintTexts4)},
+    {ARRAY_COUNT(sExitDirectionHintTexts5), ARRAY_COUNT(sRemainingItemsHintTexts5), ARRAY_COUNT(sRemainingTrainersHintTexts5)},
+    {ARRAY_COUNT(sExitDirectionHintTexts6), ARRAY_COUNT(sRemainingItemsHintTexts6), ARRAY_COUNT(sRemainingTrainersHintTexts6)},
+};
+
 static const u8 sHintTextTypes[] =
 {
     HINT_EXIT_SHORT_REMAINING_TRAINERS,
@@ -1052,21 +1067,33 @@ static void ShowPostBattleHintText(void)
     u8 id;
     int textGroup = 0;
     int textIndex = 0;
-    struct ObjectEventTemplate *events = gSaveBlock1Ptr->objectEventTemplates;
-    u16 trainerId = LocalIdToPyramidTrainerId(gObjectEvents[gSelectedObjectEvent].localId);
+    if (gSaveBlock1Ptr == NULL || gSaveBlock2Ptr == NULL || gSelectedObjectEvent >= OBJECT_EVENTS_COUNT)
+    { ADMG_StateAccessRejected(gSelectedObjectEvent, __func__); return; }
+    u32 slot;
+    u8 selected = gSelectedObjectEvent;
+    u8 localId = gObjectEvents[selected].localId;
+    if (!ADMG_TryGetPyramidLocalSlot(localId, &slot) || slot >= ARRAY_COUNT(sHintTextTypes)) return;
+    struct SaveBlock1 *save1 = gSaveBlock1Ptr;
+    struct SaveBlock2 *save2 = gSaveBlock2Ptr;
+    const struct BattleFrontierTrainer *table = gFacilityTrainers;
+    struct ObjectEventTemplate *events = save1->objectEventTemplates;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    u16 trainerId = LocalIdToPyramidTrainerId(localId);
+    const struct BattleFrontierTrainer *trainer;
+    if (!ADMG_EndStateAccessCheck(generation) || !ADMG_TryGetActiveFacilityTrainerRow(trainerId, &trainer)) return;
 
     for (i = 0; i < ARRAY_COUNT(sTrainerTextGroups); i++)
     {
-        if (sTrainerTextGroups[i][0] == gFacilityTrainers[trainerId].facilityClass)
+        if (sTrainerTextGroups[i][0] == trainer->facilityClass)
         {
             textGroup = sTrainerTextGroups[i][1];
             break;
         }
     }
 
-    hintType = sHintTextTypes[gObjectEvents[gSelectedObjectEvent].localId - 1];
+    hintType = sHintTextTypes[slot];
     i = 0;
-    while (!i)
+    for (u32 steps = 0; !i && steps < 2; steps++)
     {
         switch (hintType)
         {
@@ -1083,7 +1110,11 @@ static void ShowPostBattleHintText(void)
             i = 1;
             break;
         case HINT_REMAINING_TRAINERS:
+            if (save2->frontier.curChallengeBattleNum >= ARRAY_COUNT(sFloorTemplateOffsets))
+            { ADMG_StateAccessRejected(save2->frontier.curChallengeBattleNum, __func__); return; }
             id = GetPyramidFloorTemplateId();
+            if (id >= ARRAY_COUNT(sPyramidFloorTemplates))
+            { ADMG_StateAccessRejected(id, __func__); return; }
             textIndex = sPyramidFloorTemplates[id].numTrainers;
             for (i = 0; i < MAX_PYRAMID_TRAINERS; i++)
             {
@@ -1110,9 +1141,23 @@ static void ShowPostBattleHintText(void)
         case HINT_EXIT_FAR_REMAINING_ITEMS:
             GetPostBattleDirectionHintTextIndex(&hintType, 24, HINT_REMAINING_ITEMS);
             break;
+        default:
+            ADMG_StateAccessRejected(hintType, __func__);
+            return;
         }
+        if (!ADMG_EndStateAccessCheck(generation)) return;
     }
-    ShowFieldMessage(sPostBattleTexts[textGroup][hintType][textIndex]);
+    if (!i || (u32)textGroup >= ARRAY_COUNT(sPostBattleTexts)
+        || (u32)hintType >= ARRAY_COUNT(sADMG_PostBattleTextCounts[0])
+        || (u32)textIndex >= sADMG_PostBattleTextCounts[textGroup][hintType])
+    { ADMG_StateAccessRejected(textIndex, __func__); return; }
+    if (gSaveBlock1Ptr != save1 || gSaveBlock2Ptr != save2 || gFacilityTrainers != table
+        || gSelectedObjectEvent != selected || gObjectEvents[selected].localId != localId
+        || save2->frontier.trainerIds[slot] != trainerId)
+    { ADMG_StateAccessRejected(trainerId, __func__); return; }
+    const u8 *message = sPostBattleTexts[textGroup][hintType][textIndex];
+    if (message == NULL) { ADMG_StateAccessRejected(textIndex, __func__); return; }
+    ShowFieldMessage(message);
 }
 
 static void UpdatePyramidWinStreak(void)
@@ -1244,6 +1289,12 @@ static void RestorePyramidPlayerParty(void)
 
 static u8 GetPostBattleDirectionHintTextIndex(int *hintType, u8 minDistanceForExitHint, u8 defaultHintType)
 {
+    if (hintType == NULL || gSelectedObjectEvent >= OBJECT_EVENTS_COUNT
+        || gBackupMapLayout.map == NULL || gBackupMapLayout.width < MAP_OFFSET + 32
+        || gBackupMapLayout.height < MAP_OFFSET + 32
+        || gBackupMapLayout.width > MAX_MAP_DATA_SIZE
+        || gBackupMapLayout.height > MAX_MAP_DATA_SIZE / gBackupMapLayout.width)
+    { ADMG_StateAccessRejected(gSelectedObjectEvent, __func__); return 0; }
     int x, y;
     u8 textIndex = 0;
     u16 *map = gBackupMapLayout.map;
@@ -1314,34 +1365,144 @@ static u8 GetPostBattleDirectionHintTextIndex(int *hintType, u8 minDistanceForEx
                 return textIndex;
             }
         }
-        map += MAP_OFFSET_W + 32; // HINT: x == 32.
+        map += gBackupMapLayout.width; // Preserve the native 32 by 32 scan at the actual validated stride.
     }
 
+    ADMG_StateAccessRejected(METATILE_BattlePyramid_Exit, __func__);
     return textIndex;
+}
+
+/* Native Pyramid local IDs are one based. Trainer zero remains a valid
+ * facility row; rejection is carried separately from that legacy return value. */
+static bool8 ADMG_TryGetPyramidLocalSlot(u32 localId, u32 *slot)
+{
+    if (gSaveBlock2Ptr == NULL || slot == NULL || localId == 0
+        || localId > MAX_PYRAMID_TRAINERS
+        || localId > ARRAY_COUNT(gSaveBlock2Ptr->frontier.trainerIds))
+    { ADMG_StateAccessRejected(localId, __func__); return FALSE; }
+    *slot = localId - 1;
+    return TRUE;
 }
 
 u16 LocalIdToPyramidTrainerId(u8 localId)
 {
-    return gSaveBlock2Ptr->frontier.trainerIds[localId - 1];
+    u32 slot;
+    const struct BattleFrontierTrainer *trainer;
+    if (!ADMG_TryGetPyramidLocalSlot(localId, &slot)) return 0;
+    u16 identity = gSaveBlock2Ptr->frontier.trainerIds[slot];
+    if (!ADMG_TryGetActiveFacilityTrainerRow(identity, &trainer)) return 0;
+    return identity;
 }
 
 bool8 GetBattlePyramidTrainerFlag(u8 eventId)
 {
-    return gSaveBlock2Ptr->frontier.pyramidTrainerFlags & ((1u << gObjectEvents[eventId].localId) - 1);
+    if ((u32)eventId >= OBJECT_EVENTS_COUNT)
+    { ADMG_StateAccessRejected((u32)eventId, __func__); return FALSE; }
+    u32 slot;
+    u32 localId = gObjectEvents[eventId].localId;
+    if (!ADMG_TryGetPyramidLocalSlot(localId, &slot)) return FALSE;
+    /* Preserve the original cumulative mask, not a single-bit reinterpretation. */
+    return gSaveBlock2Ptr->frontier.pyramidTrainerFlags & ((1u << localId) - 1);
+}
+
+/* Ephemeral marking operands; this has no saved representation. */
+struct ADMG_PyramidMarkingInput
+{
+    struct SaveBlock1 *save1;
+    struct SaveBlock2 *save2;
+    u16 lastTalked;
+    u8 objectA, objectB, localA, localB, approachB;
+    bool8 two;
+    u32 originalTwoFlag;
+};
+
+static bool8 ADMG_PyramidMarkingCurrent(const struct ADMG_PyramidMarkingInput *input, u8 selected)
+{
+    if (gSaveBlock1Ptr != input->save1 || gSaveBlock2Ptr != input->save2
+        || gSelectedObjectEvent != selected || gSpecialVar_LastTalked != input->lastTalked
+        || (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS) != input->originalTwoFlag
+        || gObjectEvents[input->objectA].localId != input->localA
+        || (input->two && (gObjectEvents[input->objectB].localId != input->localB
+            || gApproachingTrainers[1].objectEventId != input->approachB)))
+    { ADMG_StateAccessRejected(selected, __func__); return FALSE; }
+    return TRUE;
+}
+
+static bool8 ADMG_TryCapturePyramidMarking(bool8 two, u32 a, u32 b, struct ADMG_PyramidMarkingInput *input)
+{
+    if (input == NULL || gSaveBlock1Ptr == NULL || gSaveBlock2Ptr == NULL
+        || gSelectedObjectEvent >= OBJECT_EVENTS_COUNT || gSpecialVar_LastTalked == 0
+        || gSpecialVar_LastTalked > ARRAY_COUNT(gSaveBlock1Ptr->objectEventTemplates))
+    { ADMG_StateAccessRejected(gSpecialVar_LastTalked, __func__); return FALSE; }
+    input->save1 = gSaveBlock1Ptr; input->save2 = gSaveBlock2Ptr;
+    input->lastTalked = gSpecialVar_LastTalked;
+    input->objectA = gSelectedObjectEvent; input->objectB = input->objectA;
+    input->localA = gObjectEvents[input->objectA].localId; input->localB = input->localA;
+    input->originalTwoFlag = gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS;
+    input->two = two != FALSE;
+    input->approachB = gApproachingTrainers[1].objectEventId;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    struct ADMG_TrainerActorRef actor;
+    if (!ADMG_TryClassifyTrainerActor(a, ADMG_ACTOR_FACILITY, ADMG_ACTOR_OPPONENT, &actor)
+        || (two && !ADMG_TryClassifyTrainerActor(b, ADMG_ACTOR_FACILITY, ADMG_ACTOR_OPPONENT, &actor))
+        || !ADMG_EndStateAccessCheck(generation)) return FALSE;
+    if (two)
+    {
+        u8 objectB = GetChosenApproachingTrainerObjectEventId(1);
+        if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+        if (objectB >= OBJECT_EVENTS_COUNT)
+        { ADMG_StateAccessRejected(objectB, __func__); return FALSE; }
+        input->objectB = objectB; input->localB = gObjectEvents[objectB].localId;
+    }
+    return ADMG_PyramidMarkingCurrent(input, input->objectA);
+}
+
+bool8 ADMG_TryAdmitPyramidTrainerMarking(bool8 two)
+{
+    struct ADMG_PyramidMarkingInput input;
+    u16 a = TRAINER_BATTLE_PARAM.opponentA, b = TRAINER_BATTLE_PARAM.opponentB;
+    if (!ADMG_TryCapturePyramidMarking(two, a, b, &input)) return FALSE;
+    if (TRAINER_BATTLE_PARAM.opponentA != a || (two && TRAINER_BATTLE_PARAM.opponentB != b))
+    { ADMG_StateAccessRejected(a, __func__); return FALSE; }
+    return TRUE;
 }
 
 void MarkApproachingPyramidTrainersAsBattled(void)
 {
-    MarkPyramidTrainerAsBattled(TRAINER_BATTLE_PARAM.opponentA);
-    if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS)
+    u16 a = TRAINER_BATTLE_PARAM.opponentA, b = TRAINER_BATTLE_PARAM.opponentB;
+    struct ADMG_PyramidMarkingInput input;
+    if (!ADMG_TryCapturePyramidMarking((gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS) != 0, a, b, &input)) return;
+    typeof(input.save2->frontier.pyramidTrainerFlags) flags = input.save2->frontier.pyramidTrainerFlags;
+    u8 movementA = gObjectEvents[input.objectA].movementType;
+    u8 movementB = gObjectEvents[input.objectB].movementType;
+    typeof(gObjectEvents[0].initialCoords) coordsA = gObjectEvents[input.objectA].initialCoords;
+    typeof(gObjectEvents[0].initialCoords) coordsB = gObjectEvents[input.objectB].initialCoords;
+    u8 templateMovement = input.save1->objectEventTemplates[input.lastTalked - 1].movementType;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    MarkPyramidTrainerAsBattled(a);
+    if (!ADMG_EndStateAccessCheck(generation) || !ADMG_PyramidMarkingCurrent(&input, input.objectA)) goto ADMG_reject;
+    if (TRAINER_BATTLE_PARAM.opponentA != a || (input.two && TRAINER_BATTLE_PARAM.opponentB != b))
+    { ADMG_StateAccessRejected(a, __func__); goto ADMG_reject; }
+    if (input.two)
     {
-        gSelectedObjectEvent = GetChosenApproachingTrainerObjectEventId(1);
-        MarkPyramidTrainerAsBattled(TRAINER_BATTLE_PARAM.opponentB);
+        gSelectedObjectEvent = input.objectB;
+        MarkPyramidTrainerAsBattled(b);
+        if (!ADMG_EndStateAccessCheck(generation) || !ADMG_PyramidMarkingCurrent(&input, input.objectB)) goto ADMG_reject;
     }
+    if (TRAINER_BATTLE_PARAM.opponentA == a && (!input.two || TRAINER_BATTLE_PARAM.opponentB == b)) return;
+    ADMG_StateAccessRejected(a, __func__);
+ADMG_reject:
+    input.save2->frontier.pyramidTrainerFlags = flags;
+    input.save1->objectEventTemplates[input.lastTalked - 1].movementType = templateMovement;
+    gObjectEvents[input.objectA].movementType = movementA; gObjectEvents[input.objectA].initialCoords = coordsA;
+    gObjectEvents[input.objectB].movementType = movementB; gObjectEvents[input.objectB].initialCoords = coordsB;
+    gSelectedObjectEvent = input.objectA;
 }
 
 static void MarkPyramidTrainerAsBattled(u16 trainerId)
 {
+    struct ADMG_PyramidMarkingInput input;
+    if (!ADMG_TryCapturePyramidMarking(FALSE, trainerId, 0, &input)) return;
     int i;
 
     for (i = 0; i < MAX_PYRAMID_TRAINERS; i++)
@@ -1684,16 +1845,25 @@ void SoftResetInBattlePyramid(void)
 
 void CopyPyramidTrainerSpeechBefore(u16 trainerId)
 {
-    FrontierSpeechToString(gFacilityTrainers[trainerId].speechBefore);
+    const struct BattleFrontierTrainer *trainer;
+    if (!ADMG_TryGetActiveFacilityTrainerRow(trainerId, &trainer)) return;
+
+    FrontierSpeechToString(trainer->speechBefore);
 }
 
 u8 GetTrainerEncounterMusicIdInBattlePyramid(u16 trainerId)
 {
+    const struct BattleFrontierTrainer *trainer;
+    if (!ADMG_TryGetActiveFacilityTrainerRow(trainerId, &trainer)) return TRAINER_ENCOUNTER_MUSIC_MALE;
+    u32 facilityClass = trainer->facilityClass;
+    if (facilityClass >= FACILITY_CLASSES_COUNT)
+    { ADMG_StateAccessRejected(facilityClass, __func__); return TRAINER_ENCOUNTER_MUSIC_MALE; }
+
     int i;
 
     for (i = 0; i < ARRAY_COUNT(sTrainerClassEncounterMusic); i++)
     {
-        if (sTrainerClassEncounterMusic[i].trainerClass == gFacilityClassToTrainerClass[gFacilityTrainers[trainerId].facilityClass])
+        if (sTrainerClassEncounterMusic[i].trainerClass == gFacilityClassToTrainerClass[facilityClass])
             return sTrainerClassEncounterMusic[i].trainerEncounterMusic;
     }
     return TRAINER_ENCOUNTER_MUSIC_MALE;
@@ -1706,37 +1876,49 @@ static void UNUSED BattlePyramidRetireChallenge(void)
 
 static u16 GetUniqueTrainerId(u8 objectEventId)
 {
-    int i;
-    u16 trainerId;
-    enum FrontierLevelMode lvlMode = gSaveBlock2Ptr->frontier.lvlMode;
-    u32 challengeNum = gSaveBlock2Ptr->frontier.pyramidWinStreaks[lvlMode] / FRONTIER_STAGES_PER_CHALLENGE;
-    u32 floor = gSaveBlock2Ptr->frontier.curChallengeBattleNum;
-    if (floor == FRONTIER_STAGES_PER_CHALLENGE)
+    if (gSaveBlock2Ptr == NULL || objectEventId >= MAX_PYRAMID_TRAINERS
+        || objectEventId >= ARRAY_COUNT(gSaveBlock2Ptr->frontier.trainerIds)
+        || (u32)gSaveBlock2Ptr->frontier.lvlMode >= ARRAY_COUNT(gSaveBlock2Ptr->frontier.pyramidWinStreaks))
+    { ADMG_StateAccessRejected(objectEventId, __func__); return 0xFFFF; }
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    enum FrontierLevelMode level = save->frontier.lvlMode;
+    u32 streak = save->frontier.pyramidWinStreaks[level];
+    u32 challenge = streak / FRONTIER_STAGES_PER_CHALLENGE;
+    u32 floor = save->frontier.curChallengeBattleNum;
+    u16 previous[MAX_PYRAMID_TRAINERS];
+    for (u32 i = 0; i < objectEventId; i++) previous[i] = save->frontier.trainerIds[i];
+    /* Preserve the original native argument narrowing and floor-seven rule. */
+    u8 nativeChallenge = challenge + (floor == FRONTIER_STAGES_PER_CHALLENGE);
+    u16 first, last;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    if (!ADMG_TryGetFrontierTrainerIdRange(nativeChallenge, floor, &first, &last)
+        || !ADMG_EndStateAccessCheck(generation)) return 0xFFFF;
+    u32 unavailable = 0;
+    for (u32 i = 0; i < objectEventId; i++)
     {
-        do
-        {
-            trainerId = GetRandomScaledFrontierTrainerId(challengeNum + 1, floor);
-            for (i = 0; i < objectEventId; i++)
-            {
-                if (gSaveBlock2Ptr->frontier.trainerIds[i] == trainerId)
-                    break;
-            }
-        } while (i != objectEventId);
+        if (previous[i] < first || previous[i] > last) continue;
+        u32 j;
+        for (j = 0; j < i; j++) if (previous[j] == previous[i]) break;
+        if (j == i) unavailable++;
     }
-    else
+    if (first > last || (u32)last - first + 1 <= unavailable)
+    { ADMG_StateAccessRejected(objectEventId, __func__); return 0xFFFF; }
+    for (;;)
     {
-        do
-        {
-            trainerId = GetRandomScaledFrontierTrainerId(challengeNum, floor);
-            for (i = 0; i < objectEventId; i++)
-            {
-                if (gSaveBlock2Ptr->frontier.trainerIds[i] == trainerId)
-                    break;
-            }
-        } while (i != objectEventId);
+        u16 trainerId = GetRandomScaledFrontierTrainerId(nativeChallenge, floor);
+        if (!ADMG_EndStateAccessCheck(generation)) return 0xFFFF;
+        if (gSaveBlock2Ptr != save || save->frontier.lvlMode != level
+            || save->frontier.pyramidWinStreaks[level] != streak || save->frontier.curChallengeBattleNum != floor)
+        { ADMG_StateAccessRejected(objectEventId, __func__); return 0xFFFF; }
+        for (u32 i = 0; i < objectEventId; i++)
+            if (save->frontier.trainerIds[i] != previous[i])
+            { ADMG_StateAccessRejected(i, __func__); return 0xFFFF; }
+        const struct BattleFrontierTrainer *trainer;
+        if (!ADMG_TryGetFacilityTrainerRowFromTable(gBattleFrontierTrainers, FRONTIER_TRAINERS_COUNT, trainerId, &trainer)) return 0xFFFF;
+        u32 i;
+        for (i = 0; i < objectEventId; i++) if (previous[i] == trainerId) break;
+        if (i == objectEventId) return trainerId;
     }
-
-    return trainerId;
 }
 
 void GenerateBattlePyramidFloorLayout(u16 *backupMapData, bool8 setPlayerPosition)
@@ -1791,8 +1973,53 @@ void GenerateBattlePyramidFloorLayout(u16 *backupMapData, bool8 setPlayerPositio
     Free(floorLayoutOffsets);
 }
 
+/* Transient placement context only; no save or serialization layout change. */
+struct ADMG_PyramidPlacementContext
+{
+    struct SaveBlock1 *save1;
+    struct SaveBlock2 *save2;
+    u32 level, floor, streak;
+    u16 randoms[4];
+};
+
+static bool8 ADMG_TryGetPyramidPlacementContext(struct ADMG_PyramidPlacementContext *context)
+{
+    if (context == NULL || gSaveBlock1Ptr == NULL || gSaveBlock2Ptr == NULL
+        || (u32)gSaveBlock2Ptr->frontier.lvlMode >= ARRAY_COUNT(gSaveBlock2Ptr->frontier.pyramidWinStreaks)
+        || gSaveBlock2Ptr->frontier.curChallengeBattleNum >= ARRAY_COUNT(sFloorTemplateOffsets))
+    { ADMG_StateAccessRejected(0, __func__); return FALSE; }
+    context->save1 = gSaveBlock1Ptr;
+    context->save2 = gSaveBlock2Ptr;
+    context->level = gSaveBlock2Ptr->frontier.lvlMode;
+    context->floor = gSaveBlock2Ptr->frontier.curChallengeBattleNum;
+    context->streak = gSaveBlock2Ptr->frontier.pyramidWinStreaks[context->level];
+    for (u32 i = 0; i < ARRAY_COUNT(context->randoms); i++) context->randoms[i] = gSaveBlock2Ptr->frontier.pyramidRandoms[i];
+    return TRUE;
+}
+
+static bool8 ADMG_PyramidPlacementContextCurrent(const struct ADMG_PyramidPlacementContext *context)
+{
+    if (gSaveBlock1Ptr != context->save1 || gSaveBlock2Ptr != context->save2
+        || context->save2->frontier.lvlMode != context->level
+        || context->save2->frontier.curChallengeBattleNum != context->floor
+        || context->save2->frontier.pyramidWinStreaks[context->level] != context->streak)
+    { ADMG_StateAccessRejected(context->floor, __func__); return FALSE; }
+    for (u32 i = 0; i < ARRAY_COUNT(context->randoms); i++)
+        if (context->save2->frontier.pyramidRandoms[i] != context->randoms[i])
+        { ADMG_StateAccessRejected(i, __func__); return FALSE; }
+    return TRUE;
+}
+
 void LoadBattlePyramidObjectEventTemplates(void)
 {
+    struct ADMG_PyramidPlacementContext context;
+    if (!ADMG_TryGetPyramidPlacementContext(&context)) return;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    struct ObjectEventTemplate previousEvents[ARRAY_COUNT(context.save1->objectEventTemplates)];
+    _Static_assert(MAX_PYRAMID_TRAINERS <= ARRAY_COUNT(context.save2->frontier.trainerIds), "native Pyramid trainer slots must fit their existing array");
+    u16 previousTrainers[MAX_PYRAMID_TRAINERS];
+    memcpy(previousEvents, context.save1->objectEventTemplates, sizeof(previousEvents));
+    memcpy(previousTrainers, context.save2->frontier.trainerIds, sizeof(previousTrainers));
     int i;
     u8 id;
     u8 entranceSquareId, exitSquareId;
@@ -1801,7 +2028,11 @@ void LoadBattlePyramidObjectEventTemplates(void)
         gSaveBlock2Ptr->frontier.trainerIds[i] = 0xFFFF;
 
     id = GetPyramidFloorTemplateId();
+    if (!ADMG_EndStateAccessCheck(generation) || !ADMG_PyramidPlacementContextCurrent(&context)) goto ADMG_reject;
     GetPyramidEntranceAndExitSquareIds(&entranceSquareId, &exitSquareId);
+    if (!ADMG_EndStateAccessCheck(generation) || !ADMG_PyramidPlacementContextCurrent(&context)) goto ADMG_reject;
+    if (id >= ARRAY_COUNT(sPyramidFloorTemplates) || entranceSquareId >= NUM_PYRAMID_FLOOR_SQUARES || exitSquareId >= NUM_PYRAMID_FLOOR_SQUARES)
+    { ADMG_StateAccessRejected(id, __func__); goto ADMG_reject; }
     CpuFill32(0, gSaveBlock1Ptr->objectEventTemplates, sizeof(gSaveBlock1Ptr->objectEventTemplates));
     for (i = 0; i < 2; i++)
     {
@@ -1833,8 +2064,16 @@ void LoadBattlePyramidObjectEventTemplates(void)
             if (SetPyramidObjectPositionsNearSquare(i, exitSquareId))
                 SetPyramidObjectPositionsUniformly(i);
             break;
+        default:
+            ADMG_StateAccessRejected(objectPositionsType, __func__);
+            goto ADMG_reject;
         }
+        if (!ADMG_EndStateAccessCheck(generation) || !ADMG_PyramidPlacementContextCurrent(&context)) goto ADMG_reject;
     }
+    return;
+ADMG_reject:
+    memcpy(context.save1->objectEventTemplates, previousEvents, sizeof(previousEvents));
+    memcpy(context.save2->frontier.trainerIds, previousTrainers, sizeof(previousTrainers));
 }
 
 void LoadBattlePyramidFloorObjectEventScripts(void)
@@ -1865,15 +2104,24 @@ static void GetPyramidEntranceAndExitSquareIds(u8 *entranceSquareId, u8 *exitSqu
 
 static void SetPyramidObjectPositionsUniformly(u8 objType)
 {
+    struct ADMG_PyramidPlacementContext context;
+    if (!ADMG_TryGetPyramidPlacementContext(&context)) return;
+    if ((objType != OBJ_TRAINERS && objType != OBJ_ITEMS))
+    { ADMG_StateAccessRejected(objType, __func__); return; }
+    u64 generation = ADMG_BeginStateAccessCheck();
     int i;
     int numObjects;
     int objectStartIndex;
     int squareId;
     u32 bits = 0;
     u8 id = GetPyramidFloorTemplateId();
+    if (!ADMG_EndStateAccessCheck(generation) || !ADMG_PyramidPlacementContextCurrent(&context)) return;
+    if (id >= ARRAY_COUNT(sPyramidFloorTemplates)) { ADMG_StateAccessRejected(id, __func__); return; }
     u8 *floorLayoutOffsets = AllocZeroed(NUM_PYRAMID_FLOOR_SQUARES);
+    if (floorLayoutOffsets == NULL) { ADMG_StateAccessRejected(NUM_PYRAMID_FLOOR_SQUARES, __func__); return; }
 
     GetPyramidFloorLayoutOffsets(floorLayoutOffsets);
+    if (!ADMG_EndStateAccessCheck(generation) || !ADMG_PyramidPlacementContextCurrent(&context)) goto ADMG_reject;
     squareId = gSaveBlock2Ptr->frontier.pyramidRandoms[2] % NUM_PYRAMID_FLOOR_SQUARES;
     if (objType == OBJ_TRAINERS)
     {
@@ -1888,6 +2136,7 @@ static void SetPyramidObjectPositionsUniformly(u8 objType)
 
     for (i = 0; i < numObjects; i++)
     {
+        if (!ADMG_EndStateAccessCheck(generation) || !ADMG_PyramidPlacementContextCurrent(&context)) goto ADMG_reject;
         do
         {
             do
@@ -1916,12 +2165,22 @@ static void SetPyramidObjectPositionsUniformly(u8 objType)
 
         } while (!(bits & 4) && TrySetPyramidObjectEventPositionInSquare(objType, floorLayoutOffsets, squareId, objectStartIndex + i));
         bits &= 1;
+        if (!ADMG_EndStateAccessCheck(generation) || !ADMG_PyramidPlacementContextCurrent(&context)) goto ADMG_reject;
     }
     Free(floorLayoutOffsets);
+    return;
+ADMG_reject:
+    Free(floorLayoutOffsets);
+    return;
 }
 
 static bool8 SetPyramidObjectPositionsInAndNearSquare(u8 objType, u8 squareId)
 {
+    struct ADMG_PyramidPlacementContext context;
+    if (!ADMG_TryGetPyramidPlacementContext(&context)) return FALSE;
+    if ((objType != OBJ_TRAINERS && objType != OBJ_ITEMS) || squareId >= ARRAY_COUNT(sBorderedSquareIds))
+    { ADMG_StateAccessRejected(objType, __func__); return FALSE; }
+    u64 generation = ADMG_BeginStateAccessCheck();
     int i;
     int objectStartIndex;
     int borderedIndex = 0;
@@ -1929,9 +2188,13 @@ static bool8 SetPyramidObjectPositionsInAndNearSquare(u8 objType, u8 squareId)
     int numPlacedObjects = 0;
     int numObjects;
     u8 id = GetPyramidFloorTemplateId();
+    if (!ADMG_EndStateAccessCheck(generation) || !ADMG_PyramidPlacementContextCurrent(&context)) return FALSE;
+    if (id >= ARRAY_COUNT(sPyramidFloorTemplates)) { ADMG_StateAccessRejected(id, __func__); return FALSE; }
     u8 *floorLayoutOffsets = AllocZeroed(NUM_PYRAMID_FLOOR_SQUARES);
+    if (floorLayoutOffsets == NULL) { ADMG_StateAccessRejected(NUM_PYRAMID_FLOOR_SQUARES, __func__); return FALSE; }
 
     GetPyramidFloorLayoutOffsets(floorLayoutOffsets);
+    if (!ADMG_EndStateAccessCheck(generation) || !ADMG_PyramidPlacementContextCurrent(&context)) goto ADMG_reject;
     if (objType == OBJ_TRAINERS)
     {
         numObjects = sPyramidFloorTemplates[id].numTrainers;
@@ -1945,6 +2208,7 @@ static bool8 SetPyramidObjectPositionsInAndNearSquare(u8 objType, u8 squareId)
 
     for (i = 0; i < numObjects; i++)
     {
+        if (!ADMG_EndStateAccessCheck(generation) || !ADMG_PyramidPlacementContextCurrent(&context)) goto ADMG_reject;
         if (r7 == 0)
         {
             if (TrySetPyramidObjectEventPositionInSquare(objType, floorLayoutOffsets, squareId, objectStartIndex + i))
@@ -1959,7 +2223,7 @@ static bool8 SetPyramidObjectPositionsInAndNearSquare(u8 objType, u8 squareId)
                 do
                 {
                     borderedIndex++;
-                    if (sBorderedSquareIds[squareId][borderedIndex] == 0xFF || borderedIndex >= 4)
+                    if (borderedIndex >= ARRAY_COUNT(sBorderedSquareIds[0]) || sBorderedSquareIds[squareId][borderedIndex] == 0xFF)
                         borderedIndex = 0;
                     r7 += 2;
                 } while (r7 >> 1 != 4 && TrySetPyramidObjectEventPositionInSquare(objType, floorLayoutOffsets, sBorderedSquareIds[squareId][borderedIndex], objectStartIndex + i));
@@ -1968,7 +2232,7 @@ static bool8 SetPyramidObjectPositionsInAndNearSquare(u8 objType, u8 squareId)
             else
             {
                 borderedIndex++;
-                if (sBorderedSquareIds[squareId][borderedIndex] == 0xFF || borderedIndex >= 4)
+                if (borderedIndex >= ARRAY_COUNT(sBorderedSquareIds[0]) || sBorderedSquareIds[squareId][borderedIndex] == 0xFF)
                     borderedIndex = 0;
                 numPlacedObjects++;
             }
@@ -1978,16 +2242,25 @@ static bool8 SetPyramidObjectPositionsInAndNearSquare(u8 objType, u8 squareId)
             break;
 
         r7 &= 1;
+        if (!ADMG_EndStateAccessCheck(generation) || !ADMG_PyramidPlacementContextCurrent(&context)) goto ADMG_reject;
     }
     #ifdef BUGFIX
     Free(floorLayoutOffsets);
     #endif
 
     return (numObjects / 2) > numPlacedObjects;
+ADMG_reject:
+    Free(floorLayoutOffsets);
+    return FALSE;
 }
 
 static bool8 SetPyramidObjectPositionsNearSquare(u8 objType, u8 squareId)
 {
+    struct ADMG_PyramidPlacementContext context;
+    if (!ADMG_TryGetPyramidPlacementContext(&context)) return FALSE;
+    if ((objType != OBJ_TRAINERS && objType != OBJ_ITEMS) || squareId >= ARRAY_COUNT(sBorderedSquareIds))
+    { ADMG_StateAccessRejected(objType, __func__); return FALSE; }
+    u64 generation = ADMG_BeginStateAccessCheck();
     int i;
     int objectStartIndex;
     int borderOffset = 0;
@@ -1995,9 +2268,13 @@ static bool8 SetPyramidObjectPositionsNearSquare(u8 objType, u8 squareId)
     int r8 = 0;
     int numObjects;
     u8 id = GetPyramidFloorTemplateId();
+    if (!ADMG_EndStateAccessCheck(generation) || !ADMG_PyramidPlacementContextCurrent(&context)) return FALSE;
+    if (id >= ARRAY_COUNT(sPyramidFloorTemplates)) { ADMG_StateAccessRejected(id, __func__); return FALSE; }
     u8 *floorLayoutOffsets = AllocZeroed(NUM_PYRAMID_FLOOR_SQUARES);
+    if (floorLayoutOffsets == NULL) { ADMG_StateAccessRejected(NUM_PYRAMID_FLOOR_SQUARES, __func__); return FALSE; }
 
     GetPyramidFloorLayoutOffsets(floorLayoutOffsets);
+    if (!ADMG_EndStateAccessCheck(generation) || !ADMG_PyramidPlacementContextCurrent(&context)) goto ADMG_reject;
     if (objType == OBJ_TRAINERS)
     {
         numObjects = sPyramidFloorTemplates[id].numTrainers;
@@ -2011,12 +2288,13 @@ static bool8 SetPyramidObjectPositionsNearSquare(u8 objType, u8 squareId)
 
     for (i = 0; i < numObjects; i++)
     {
+        if (!ADMG_EndStateAccessCheck(generation) || !ADMG_PyramidPlacementContextCurrent(&context)) goto ADMG_reject;
         if (TrySetPyramidObjectEventPositionInSquare(objType, floorLayoutOffsets, sBorderedSquareIds[squareId][borderOffset], objectStartIndex + i))
         {
             do
             {
                 borderOffset++;
-                if (sBorderedSquareIds[squareId][borderOffset] == 0xFF || borderOffset >= 4)
+                if (borderOffset >= ARRAY_COUNT(sBorderedSquareIds[0]) || sBorderedSquareIds[squareId][borderOffset] == 0xFF)
                     borderOffset = 0;
                 r8++;
             } while (r8 != 4 && TrySetPyramidObjectEventPositionInSquare(objType, floorLayoutOffsets, sBorderedSquareIds[squareId][borderOffset], objectStartIndex + i));
@@ -2025,23 +2303,32 @@ static bool8 SetPyramidObjectPositionsNearSquare(u8 objType, u8 squareId)
         else
         {
             borderOffset++;
-            if (sBorderedSquareIds[squareId][borderOffset] == 0xFF || borderOffset >= 4)
+            if (borderOffset >= ARRAY_COUNT(sBorderedSquareIds[0]) || sBorderedSquareIds[squareId][borderOffset] == 0xFF)
                 borderOffset = 0;
             numPlacedObjects++;
         }
 
         if (r8 == 4)
             break;
+        if (!ADMG_EndStateAccessCheck(generation) || !ADMG_PyramidPlacementContextCurrent(&context)) goto ADMG_reject;
     }
     #ifdef BUGFIX
     Free(floorLayoutOffsets);
     #endif
 
     return (numObjects / 2) > numPlacedObjects;
+ADMG_reject:
+    Free(floorLayoutOffsets);
+    return FALSE;
 }
 
 static bool8 TrySetPyramidObjectEventPositionInSquare(u8 objType, u8 *floorLayoutOffsets, u8 squareId, u8 objectEventId)
 {
+    if (gSaveBlock1Ptr == NULL || gSaveBlock2Ptr == NULL || floorLayoutOffsets == NULL
+        || squareId >= NUM_PYRAMID_FLOOR_SQUARES || objectEventId >= ARRAY_COUNT(gSaveBlock1Ptr->objectEventTemplates)
+        || (objType != OBJ_TRAINERS && objType != OBJ_ITEMS)
+        || (objType == OBJ_TRAINERS && objectEventId >= MAX_PYRAMID_TRAINERS))
+    { ADMG_StateAccessRejected(objectEventId, __func__); return FALSE; }
     int x, y;
 
     if (gSaveBlock2Ptr->frontier.pyramidRandoms[0] & 1)
@@ -2072,11 +2359,23 @@ static bool8 TrySetPyramidObjectEventPositionInSquare(u8 objType, u8 *floorLayou
 
 static bool8 TrySetPyramidObjectEventPositionAtCoords(u8 objType, u8 x, u8 y, u8 *floorLayoutOffsets, u8 squareId, u8 objectEventId)
 {
+    if (gSaveBlock1Ptr == NULL || floorLayoutOffsets == NULL
+        || squareId >= NUM_PYRAMID_FLOOR_SQUARES || objectEventId >= ARRAY_COUNT(gSaveBlock1Ptr->objectEventTemplates)
+        || x >= 8 || y >= 8 || (objType != OBJ_TRAINERS && objType != OBJ_ITEMS))
+    { ADMG_StateAccessRejected(objectEventId, __func__); return FALSE; }
+    struct SaveBlock1 *save1 = gSaveBlock1Ptr;
+    struct SaveBlock2 *save2 = gSaveBlock2Ptr;
+    u64 generation = ADMG_BeginStateAccessCheck();
     int i, j;
     const struct MapHeader *mapHeader;
     struct ObjectEventTemplate *floorEvents = gSaveBlock1Ptr->objectEventTemplates;
 
     mapHeader = Overworld_GetMapHeaderByGroupAndId(MAP_GROUP(MAP_BATTLE_PYRAMID_SQUARE01), floorLayoutOffsets[squareId] + MAP_NUM(MAP_BATTLE_PYRAMID_SQUARE01));
+    if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+    if (gSaveBlock1Ptr != save1 || mapHeader == NULL
+        || mapHeader->events == NULL
+        || (mapHeader->events->objectEventCount != 0 && mapHeader->events->objectEvents == NULL))
+    { ADMG_StateAccessRejected(squareId, __func__); return FALSE; }
     for (i = 0; i < mapHeader->events->objectEventCount; i++)
     {
         if (mapHeader->events->objectEvents[i].x != x || mapHeader->events->objectEvents[i].y != y)
@@ -2097,16 +2396,24 @@ static bool8 TrySetPyramidObjectEventPositionAtCoords(u8 objType, u8 x, u8 y, u8
 
         if (j == objectEventId)
         {
-            floorEvents[objectEventId] = mapHeader->events->objectEvents[i];
-            floorEvents[objectEventId].x += (squareId % 4) * 8;
-            floorEvents[objectEventId].y += (squareId / 4) * 8;
-            floorEvents[objectEventId].localId = objectEventId + 1;
-            if (floorEvents[objectEventId].graphicsId != OBJ_EVENT_GFX_ITEM_BALL)
+            struct ObjectEventTemplate candidate = mapHeader->events->objectEvents[i];
+            candidate.x += (squareId % 4) * 8;
+            candidate.y += (squareId / 4) * 8;
+            candidate.localId = objectEventId + 1;
+            u16 trainerId = 0xFFFF;
+            bool8 isTrainer = candidate.graphicsId != OBJ_EVENT_GFX_ITEM_BALL;
+            if (isTrainer)
             {
-                i = GetUniqueTrainerId(objectEventId);
-                floorEvents[objectEventId].graphicsId = GetBattleFacilityTrainerGfxId(i);
-                gSaveBlock2Ptr->frontier.trainerIds[objectEventId] = i;
+                trainerId = GetUniqueTrainerId(objectEventId);
+                if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+                candidate.graphicsId = GetBattleFacilityTrainerGfxId(trainerId);
+                if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
             }
+            if (gSaveBlock1Ptr != save1 || (isTrainer && gSaveBlock2Ptr != save2))
+            { ADMG_StateAccessRejected(objectEventId, __func__); return FALSE; }
+            floorEvents[objectEventId] = candidate;
+            if (isTrainer)
+                save2->frontier.trainerIds[objectEventId] = trainerId;
             return FALSE;
         }
     }

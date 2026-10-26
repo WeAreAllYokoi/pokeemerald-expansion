@@ -108,8 +108,11 @@
 	.if \flag < FLAG_HIDDEN_ITEMS_START
 	.error "Hidden Item flag \flag is too small. Must be >= FLAG_HIDDEN_ITEMS_START."
 	.endif
-	.if \item >= (1 << 12)
-	.error "quantity \quantity too large"
+	.if (\flag - FLAG_HIDDEN_ITEMS_START) >= (1 << 13)
+	.error "Hidden Item flag offset exceeds the 13-bit field."
+	.endif
+	.if \item < 0 || \item >= (1 << 11)
+	.error "Hidden Item item exceeds the 11-bit field."
 	.endif
 	.if \quantity >= (1 << 7)
 	.error "quantity \quantity too large"

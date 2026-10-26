@@ -10,3 +10,7 @@ AUTO_GEN_TARGETS += src/data/debug_trainers.h
 
 %.h: %.party $(TRAINERPROC)
 	$(CPP) $(CPPFLAGS) -traditional-cpp - < $< | $(TRAINERPROC) -o $@ -i $< -
+
+# Only native array designators use native indices. Copy Pool remains a reference.
+src/data/trainers_frlg.h: src/data/trainers_frlg.party $(TRAINERPROC) include/constants/admg_trainer_ids.h
+	$(CPP) $(CPPFLAGS) -traditional-cpp - < $< | $(TRAINERPROC) -p ADMG_KANTO_INDEX_ -o $@ -i $< -

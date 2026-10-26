@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_state.h"
 #include "main.h"
 #include "battle_special.h"
 #include "battle.h"
@@ -152,7 +153,11 @@ static void UNUSED FillEReaderTrainerWithPlayerData(void)
 u8 GetEreaderTrainerFrontSpriteId(void)
 {
 #if FREE_BATTLE_TOWER_E_READER == FALSE
-    return gFacilityClassToPicIndex[gSaveBlock2Ptr->frontier.ereaderTrainer.facilityClass];
+    u32 facilityClass = gSaveBlock2Ptr->frontier.ereaderTrainer.facilityClass;
+    /* Card records are checksummed, not range-checked. */
+    if (facilityClass >= FACILITY_CLASSES_COUNT)
+    { ADMG_StateAccessRejected(facilityClass, __func__); return TRAINER_PIC_NONE; }
+    return gFacilityClassToPicIndex[facilityClass];
 #else
     return 0;
 #endif //FREE_BATTLE_TOWER_E_READER
@@ -161,7 +166,11 @@ u8 GetEreaderTrainerFrontSpriteId(void)
 enum TrainerClassID GetEreaderTrainerClassId(void)
 {
 #if FREE_BATTLE_TOWER_E_READER == FALSE
-    return gFacilityClassToTrainerClass[gSaveBlock2Ptr->frontier.ereaderTrainer.facilityClass];
+    u32 facilityClass = gSaveBlock2Ptr->frontier.ereaderTrainer.facilityClass;
+    /* Card records are checksummed, not range-checked. */
+    if (facilityClass >= FACILITY_CLASSES_COUNT)
+    { ADMG_StateAccessRejected(facilityClass, __func__); return 0; }
+    return gFacilityClassToTrainerClass[facilityClass];
 #else
     return 0;
 #endif //FREE_BATTLE_TOWER_E_READER

@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_trainer_actor.h"
 #include "battle.h"
 #include "battle_hold_effects.h"
 #include "battle_message.h"
@@ -37,6 +38,7 @@
 #include "m4a.h"
 #include "mail.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "pokemon_storage_system.h"
 #include "task.h"
 #include "naming_screen.h"
@@ -1033,7 +1035,11 @@ static void Cmd_printattackstring(void)
     if (gBattleControllerExecFlags)
         return;
 
-    PrepareStringBattle(STRINGID_USEDMOVE, gBattlerAttacker);
+    {
+        u64 printGeneration = ADMG_BeginStateAccessCheck();
+        PrepareStringBattle(STRINGID_USEDMOVE, gBattlerAttacker);
+        if (!ADMG_EndStateAccessCheck(printGeneration)) return;
+    }
     gBattleCommunication[MSG_DISPLAY] = MSG_DISPLAY_CONTINUE;
     if (gBattleMoveEffects[GetMoveEffect(gCurrentMove)].twoTurnEffect
      && !gBattleMons[gBattlerAttacker].volatiles.multipleTurns)
@@ -1047,6 +1053,9 @@ static void Cmd_printselectionstringfromtable(void)
 {
     CMD_ARGS(const u16 *ptr);
 
+    if ((u32)gBattlerAttacker >= MAX_BATTLERS_COUNT)
+    { ADMG_StateAccessRejected((u32)gBattlerAttacker, __func__); return; }
+
     assertf(gSelectionBattleScripts[gBattlerAttacker] != NULL, "wrong use of printselectionstringfromtable");
 
     if (gBattleControllerExecFlags == 0)
@@ -1054,7 +1063,11 @@ static void Cmd_printselectionstringfromtable(void)
         const u16 *ptr = cmd->ptr;
         ptr += gBattleCommunication[MULTISTRING_CHOOSER];
 
+        {
+        u64 printGeneration = ADMG_BeginStateAccessCheck();
         BtlController_EmitPrintSelectionString(gBattlerAttacker, B_COMM_TO_CONTROLLER, *ptr);
+        if (!ADMG_EndStateAccessCheck(printGeneration)) return;
+    }
         MarkBattlerForControllerExec(gBattlerAttacker);
 
         gBattlescriptCurrInstr = cmd->nextInstr;
@@ -1265,9 +1278,17 @@ static void Cmd_critmessage(void)
         if (gSpecialStatuses[gBattlerTarget].criticalHit && !IsBattlerUnaffectedByMove(gBattlerTarget))
         {
             if (IsDoubleSpreadMove())
-                PrepareStringBattleWithWait(STRINGID_CRITICALHITONDEF, gBattlerTarget);
+                {
+        u64 printGeneration = ADMG_BeginStateAccessCheck();
+        PrepareStringBattleWithWait(STRINGID_CRITICALHITONDEF, gBattlerTarget);
+        if (!ADMG_EndStateAccessCheck(printGeneration)) return;
+    }
             else
-                PrepareStringBattleWithWait(STRINGID_CRITICALHIT, gBattlerAttacker);
+                {
+        u64 printGeneration = ADMG_BeginStateAccessCheck();
+        PrepareStringBattleWithWait(STRINGID_CRITICALHIT, gBattlerAttacker);
+        if (!ADMG_EndStateAccessCheck(printGeneration)) return;
+    }
 
             TryInitializeTrainerSlideEnemyLandsFirstCriticalHit(gBattlerTarget);
             TryInitializeTrainerSlidePlayerLandsFirstCriticalHit(gBattlerTarget);
@@ -1466,7 +1487,11 @@ static void Cmd_resultmessage(void)
         }
     }
     if (stringId)
+        {
+        u64 printGeneration = ADMG_BeginStateAccessCheck();
         PrepareStringBattle(stringId, gBattlerAttacker);
+        if (!ADMG_EndStateAccessCheck(printGeneration)) return;
+    }
     else
         gBattleCommunication[MSG_DISPLAY] = MSG_DISPLAY_CONTINUE;
 
@@ -1482,7 +1507,11 @@ static void Cmd_printstring(void)
         u16 id = (cmd->id == 0 ? gBattleScripting.savedStringId : cmd->id);
 
         gBattlescriptCurrInstr = cmd->nextInstr;
+        {
+        u64 printGeneration = ADMG_BeginStateAccessCheck();
         PrepareStringBattleWithWait(id, gBattlerAttacker);
+        if (!ADMG_EndStateAccessCheck(printGeneration)) return;
+    }
     }
 }
 
@@ -1490,9 +1519,16 @@ static void Cmd_printselectionstring(void)
 {
     CMD_ARGS(u16 id);
 
+    if ((u32)gBattlerAttacker >= MAX_BATTLERS_COUNT)
+    { ADMG_StateAccessRejected((u32)gBattlerAttacker, __func__); return; }
+
     assertf(gSelectionBattleScripts[gBattlerAttacker] != NULL, "wrong use of printselectionstring");
 
-    BtlController_EmitPrintSelectionString(gBattlerAttacker, B_COMM_TO_CONTROLLER, cmd->id);
+    {
+        u64 printGeneration = ADMG_BeginStateAccessCheck();
+        BtlController_EmitPrintSelectionString(gBattlerAttacker, B_COMM_TO_CONTROLLER, cmd->id);
+        if (!ADMG_EndStateAccessCheck(printGeneration)) return;
+    }
     MarkBattlerForControllerExec(gBattlerAttacker);
 
     gBattlescriptCurrInstr = cmd->nextInstr;
@@ -1533,7 +1569,11 @@ static void Cmd_printfromtable(void)
         const u16 *ptr = cmd->ptr;
         ptr += gBattleCommunication[MULTISTRING_CHOOSER];
         gBattlescriptCurrInstr = cmd->nextInstr;
+        {
+        u64 printGeneration = ADMG_BeginStateAccessCheck();
         PrepareStringBattleWithWait(*ptr, gBattlerAttacker);
+        if (!ADMG_EndStateAccessCheck(printGeneration)) return;
+    }
     }
 }
 
@@ -2330,12 +2370,20 @@ static void Cmd_getexp(void)
 
                     if (wasSentOut || holdEffect == HOLD_EFFECT_EXP_SHARE)
                     {
-                        PrepareStringBattle(STRINGID_PKMNGAINEDEXP, 0);
+                        {
+        u64 printGeneration = ADMG_BeginStateAccessCheck();
+        PrepareStringBattle(STRINGID_PKMNGAINEDEXP, 0);
+        if (!ADMG_EndStateAccessCheck(printGeneration)) return;
+    }
                     }
                     else if (IsGen6ExpShareEnabled() && !gBattleStruct->teamGotExpMsgPrinted) // Print 'the rest of your team got exp' message once, when all of the sent-in mons were given experience
                     {
                         gLastUsedItem = ITEM_EXP_SHARE;
-                        PrepareStringBattle(STRINGID_TEAMGAINEDEXP, 0);
+                        {
+        u64 printGeneration = ADMG_BeginStateAccessCheck();
+        PrepareStringBattle(STRINGID_TEAMGAINEDEXP, 0);
+        if (!ADMG_EndStateAccessCheck(printGeneration)) return;
+    }
                         gBattleStruct->teamGotExpMsgPrinted = TRUE;
                     }
 
@@ -3905,7 +3953,11 @@ static void Cmd_yesnoboxlearnmove(void)
                 enum Move move = GetMonData(&gParties[B_TRAINER_PLAYER][gBattleStruct->expGetterMonId], MON_DATA_MOVE1 + movePosition);
                 if (CannotForgetMove(move))
                 {
-                    PrepareStringBattle(STRINGID_HMMOVESCANTBEFORGOTTEN, GetBattlerAtPosition(B_POSITION_PLAYER_LEFT));
+                    {
+        u64 printGeneration = ADMG_BeginStateAccessCheck();
+        PrepareStringBattle(STRINGID_HMMOVESCANTBEFORGOTTEN, GetBattlerAtPosition(B_POSITION_PLAYER_LEFT));
+        if (!ADMG_EndStateAccessCheck(printGeneration)) return;
+    }
                     gBattleScripting.learnMoveState = 6;
                 }
                 else
@@ -4018,28 +4070,49 @@ static void Cmd_hitanimation(void)
 
 static u32 GetTrainerMoneyToGive(u16 trainerId)
 {
+    if (gBattleStruct == NULL)
+    { ADMG_StateAccessRejected(trainerId, __func__); return 0; }
+    struct BattleStruct *battle = gBattleStruct;
+    u32 flags = gBattleTypeFlags;
+    u32 multiplier = battle->moneyMultiplier;
+    struct ADMG_TrainerActorRef actor;
+    if (!ADMG_TryClassifyTrainerActor(trainerId, ADMG_ACTOR_CONTENT, ADMG_ACTOR_OPPONENT, &actor)) return 0;
+    if (actor.kind == ADMG_ACTOR_LINK || actor.kind == ADMG_ACTOR_UNION_ROOM)
+    { ADMG_StateAccessRejected(trainerId, __func__); return 0; }
+
     u32 lastMonLevel = 0;
     u32 moneyReward;
     u8 trainerMoney = 0;
 
     if (trainerId == TRAINER_SECRET_BASE)
     {
-        moneyReward = 20 * gBattleResources->secretBase->party.levels[0] * gBattleStruct->moneyMultiplier;
+        if (gBattleResources == NULL || gBattleResources->secretBase == NULL)
+        { ADMG_StateAccessRejected(trainerId, __func__); return 0; }
+        moneyReward = 20 * gBattleResources->secretBase->party.levels[0] * multiplier;
     }
     else
     {
-        const struct TrainerMon *party = GetTrainerPartyFromId(trainerId);
+        const struct Trainer *trainer;
+        if (!ADMG_TryGetTrainerStruct(trainerId, &trainer)) return 0;
+        const struct TrainerMon *party = trainer->party;
+        if (gBattleStruct != battle || gBattleTypeFlags != flags)
+        { ADMG_StateAccessRejected(trainerId, __func__); return 0; }
         if (party == NULL)
             return 20;
-        lastMonLevel = party[GetTrainerPartySizeFromId(trainerId) - 1].lvl;
-        trainerMoney = gTrainerClasses[GetTrainerClassFromId(trainerId)].money ?: 5;
+        u32 partySize = trainer->partySize;
+        if (partySize == 0) { ADMG_StateAccessRejected(partySize, __func__); return 0; }
+        u32 trainerClass = trainer->trainerClass;
+        if (trainerClass >= TRAINER_CLASS_COUNT)
+        { ADMG_StateAccessRejected(trainerClass, __func__); return 0; }
+        lastMonLevel = party[partySize - 1].lvl;
+        trainerMoney = gTrainerClasses[trainerClass].money ?: 5;
 
         if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS)
-            moneyReward = 4 * lastMonLevel * gBattleStruct->moneyMultiplier * trainerMoney;
+            moneyReward = 4 * lastMonLevel * multiplier * trainerMoney;
         else if (IsDoubleBattle())
-            moneyReward = 4 * lastMonLevel * gBattleStruct->moneyMultiplier * 2 * trainerMoney;
+            moneyReward = 4 * lastMonLevel * multiplier * 2 * trainerMoney;
         else
-            moneyReward = 4 * lastMonLevel * gBattleStruct->moneyMultiplier * trainerMoney;
+            moneyReward = 4 * lastMonLevel * multiplier * trainerMoney;
     }
 
     return moneyReward;
@@ -4047,17 +4120,50 @@ static u32 GetTrainerMoneyToGive(u16 trainerId)
 
 static void Cmd_getmoneyreward(void)
 {
+    if (gBattlescriptCurrInstr == NULL)
+    { ADMG_StateAccessRejected(0, __func__); return; }
     CMD_ARGS();
+
+    if (gSaveBlock1Ptr == NULL || gSaveBlock2Ptr == NULL)
+    {
+        ADMG_StateAccessRejected(FLAG_BADGE01_GET, __func__);
+        return;
+    }
+    if (gBattleOutcome != B_OUTCOME_WON && B_WHITEOUT_MONEY > GEN_3)
+    {
+        for (u32 i = 0; i < ARRAY_COUNT(gBadgeFlags); ++i)
+        {
+            if (!ADMG_IsFlagIdValid(gBadgeFlags[i]))
+            {
+                ADMG_StateAccessRejected(gBadgeFlags[i], __func__);
+                return;
+            }
+        }
+    }
 
     u32 money;
     u8 sPartyLevel = 1;
 
     if (gBattleOutcome == B_OUTCOME_WON)
     {
-        money = GetTrainerMoneyToGive(TRAINER_BATTLE_PARAM.opponentA);
-        if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS)
-            money += GetTrainerMoneyToGive(TRAINER_BATTLE_PARAM.opponentB);
-        AddMoney(&gSaveBlock1Ptr->money, money);
+        struct SaveBlock1 *save = gSaveBlock1Ptr;
+        struct SaveBlock2 *save2 = gSaveBlock2Ptr;
+        struct BattleStruct *battle = gBattleStruct;
+        u32 flags = gBattleTypeFlags;
+        u16 opponentA = TRAINER_BATTLE_PARAM.opponentA, opponentB = TRAINER_BATTLE_PARAM.opponentB;
+        u64 generation = ADMG_BeginStateAccessCheck();
+        money = GetTrainerMoneyToGive(opponentA);
+        if (!ADMG_EndStateAccessCheck(generation)) return;
+        if (flags & BATTLE_TYPE_TWO_OPPONENTS)
+        {
+            generation = ADMG_BeginStateAccessCheck();
+            money += GetTrainerMoneyToGive(opponentB);
+            if (!ADMG_EndStateAccessCheck(generation)) return;
+        }
+        if (gSaveBlock1Ptr != save || gSaveBlock2Ptr != save2 || gBattleStruct != battle || gBattleTypeFlags != flags
+         || TRAINER_BATTLE_PARAM.opponentA != opponentA || TRAINER_BATTLE_PARAM.opponentB != opponentB)
+        { ADMG_StateAccessRejected(opponentA, __func__); return; }
+        AddMoney(&save->money, money);
     }
     else
     {
@@ -8065,6 +8171,7 @@ static u32 ComputeCaptureOdds(u32 wildMonBattler, u32 playerBattler)
 
     if (ball.guaranteedCapture)
         return CAPTURE_GUARANTEED;
+    ADMG_REQUIRE_FLAG_RANGE(FLAG_BADGE01_GET, NUM_BADGES, 1, 0);
     struct BattlePokemon *battleMon = &gBattleMons[wildMonBattler];
     u32 odds = (battleMon->maxHP * 3 -  battleMon->hp * 2);
     s32 catchRate;
@@ -8161,8 +8268,21 @@ static u32 ComputeBallShakeOdds(u32 odds)
     return odds;
 }
 
+static bool32 ADMG_ValidateCaptureBadgeState(u32 wildMonBattler, u32 playerBattler)
+{
+    struct BallData ball;
+    ComputeBallData(wildMonBattler, playerBattler, &ball);
+    if (ball.guaranteedCapture)
+        return TRUE;
+    ADMG_REQUIRE_FLAG_RANGE(FLAG_BADGE01_GET, NUM_BADGES, 1, FALSE);
+    return TRUE;
+}
+
 static void SetBallThrowShakes(void)
 {
+    if (!ADMG_ValidateCaptureBadgeState(gBattlerTarget, gBattlerAttacker))
+        return;
+
     gBallToDisplay = gLastThrownBall = gLastUsedItem;
 
     u32 odds = ComputeCaptureOdds(gBattlerTarget, gBattlerAttacker);
@@ -8236,7 +8356,12 @@ static void Cmd_handleballthrow(void)
     if (gBattleControllerExecFlags)
         return;
 
-    gBattlerTarget = GetCatchingBattler();
+    enum BattlerId catchingBattler = GetCatchingBattler();
+    if (!(gBattleTypeFlags & (BATTLE_TYPE_GHOST | BATTLE_TYPE_TRAINER | BATTLE_TYPE_CATCH_TUTORIAL))
+        && !ADMG_ValidateCaptureBadgeState(catchingBattler, gBattlerAttacker))
+        return;
+
+    gBattlerTarget = catchingBattler;
 
     if (gBattleTypeFlags & BATTLE_TYPE_GHOST)
     {
@@ -8275,7 +8400,11 @@ static void Cmd_givecaughtmon(void)
     case GIVECAUGHTMON_CHECK_PARTY_SIZE:
         if (CalculatePlayerPartyCount() == PARTY_SIZE && B_CATCH_SWAP_INTO_PARTY >= GEN_7)
         {
-            PrepareStringBattleWithWait(STRINGID_SENDCAUGHTMONPARTYORBOX, gBattlerAttacker);
+            {
+        u64 printGeneration = ADMG_BeginStateAccessCheck();
+        PrepareStringBattleWithWait(STRINGID_SENDCAUGHTMONPARTYORBOX, gBattlerAttacker);
+        if (!ADMG_EndStateAccessCheck(printGeneration)) return;
+    }
             gBattleCommunication[MULTIUSE_STATE] = GIVECAUGHTMON_ASK_ADD_TO_PARTY;
         }
         else
@@ -8482,7 +8611,7 @@ static void Cmd_displaydexinfo(void)
         break;
     case 3:
         InitBattleBgsVideo();
-        LoadBattleTextboxAndBackground();
+        { u64 background = ADMG_BeginStateAccessCheck(); LoadBattleTextboxAndBackground(); if (!ADMG_EndStateAccessCheck(background)) return; }
         gBattle_BG3_X = 256;
         gBattleCommunication[0]++;
         break;
@@ -10729,9 +10858,25 @@ void BS_EraseArenaRefTextBox(void)
 
 void BS_ArenaJudgmentString(void)
 {
+    if (gBattlescriptCurrInstr == NULL)
+    { ADMG_StateAccessRejected(0, __func__); return; }
     NATIVE_ARGS(u8 id);
-    BattleStringExpandPlaceholdersToDisplayedString(gRefereeStringsTable[cmd->id]);
+    const u8 *script = gBattlescriptCurrInstr;
+    const u8 *text;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    if (!ADMG_TryGetBattleRefereeString(cmd->id, &text)) return;
+    if (BattleStringExpandPlaceholdersToDisplayedString(text) == 0
+        || !ADMG_EndStateAccessCheck(generation) || gBattlescriptCurrInstr != script)
+    {
+        if (ADMG_EndStateAccessCheck(generation)) ADMG_StateAccessRejected(cmd->id, __func__);
+        return;
+    }
     BattlePutTextOnWindow(gDisplayedStringBattle, ARENA_WIN_JUDGMENT_TEXT);
+    if (!ADMG_EndStateAccessCheck(generation) || gBattlescriptCurrInstr != script)
+    {
+        if (ADMG_EndStateAccessCheck(generation)) ADMG_StateAccessRejected(cmd->id, __func__);
+        return;
+    }
     gBattlescriptCurrInstr = cmd->nextInstr;
 }
 
@@ -11385,10 +11530,18 @@ void BS_TryBestow(void)
 void BS_HandleTrainerSlideMsg(void)
 {
     NATIVE_ARGS(u8 battler, u8 case_);
+    u64 battlerGeneration = ADMG_BeginStateAccessCheck();
     enum BattlerId battler = GetBattlerForBattleScript(cmd->battler);
+    if (!ADMG_EndStateAccessCheck(battlerGeneration)) return;
+    if ((u32)battler >= MAX_BATTLERS_COUNT)
+    { ADMG_StateAccessRejected((u32)battler, __func__); return; }
     if (cmd->case_ == PRINT_SLIDE_MESSAGE)
     {
+        {
+        u64 printGeneration = ADMG_BeginStateAccessCheck();
         BtlController_EmitPrintString(battler, B_COMM_TO_CONTROLLER, STRINGID_TRAINERSLIDE);
+        if (!ADMG_EndStateAccessCheck(printGeneration)) return;
+    }
         MarkBattlerForControllerExec(battler);
     }
     else if (cmd->case_ == RESTORE_BATTLER_SLIDE_CONTROL)
@@ -11811,17 +11964,29 @@ void BS_TryToClearPrimalWeather(void)
     if (gBattleWeather & B_WEATHER_SUN_PRIMAL && !shouldNotClear)
     {
         gBattleWeather &= ~B_WEATHER_SUN_PRIMAL;
+        {
+        u64 printGeneration = ADMG_BeginStateAccessCheck();
         PrepareStringBattleWithWait(STRINGID_EXTREMESUNLIGHTFADED, gBattlerAttacker);
+        if (!ADMG_EndStateAccessCheck(printGeneration)) return;
+    }
     }
     else if (gBattleWeather & B_WEATHER_RAIN_PRIMAL && !shouldNotClear)
     {
         gBattleWeather &= ~B_WEATHER_RAIN_PRIMAL;
+        {
+        u64 printGeneration = ADMG_BeginStateAccessCheck();
         PrepareStringBattleWithWait(STRINGID_HEAVYRAINLIFTED, gBattlerAttacker);
+        if (!ADMG_EndStateAccessCheck(printGeneration)) return;
+    }
     }
     else if (gBattleWeather & B_WEATHER_STRONG_WINDS && !shouldNotClear)
     {
         gBattleWeather &= ~B_WEATHER_STRONG_WINDS;
+        {
+        u64 printGeneration = ADMG_BeginStateAccessCheck();
         PrepareStringBattleWithWait(STRINGID_STRONGWINDSDISSIPATED, gBattlerAttacker);
+        if (!ADMG_EndStateAccessCheck(printGeneration)) return;
+    }
     }
     gBattlescriptCurrInstr = cmd->nextInstr;
 }

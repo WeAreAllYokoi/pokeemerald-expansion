@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_trainer_actor.h"
 #include "battle.h"
 #include "battle_anim.h"
 #include "battle_bg.h"
@@ -892,6 +893,29 @@ static void LoadBattleEnvironmentEntryGfx(u16 environment)
     DecompressDataWithHeaderVram(gBattleEnvironmentInfo[environment].entry.tilemap, (void *)BG_SCREEN_ADDR(28));
 }
 
+static bool8 ADMG_TryGetTrainerBackgroundOverride(u8 *environment, bool8 *hasOverride)
+{
+    *hasOverride = FALSE;
+    /* All ten native Secret Base classes select neither override. This loader
+     * also runs after FreeBattleResources in evolution; it must not acquire
+     * a dependency on a destroyed battle-only provider. Keep debug queries. */
+    if ((gBattleTypeFlags & BATTLE_TYPE_SECRET_BASE) && !gIsDebugBattle)
+        return TRUE;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    struct ADMG_TrainerActorRef actor;
+    if (!ADMG_TryClassifyTrainerActor(TRAINER_BATTLE_PARAM.opponentA,
+        ADMG_ACTOR_CONTENT, ADMG_ACTOR_OPPONENT, &actor)) return FALSE;
+    enum TrainerClassID trainerClass = GetTrainerClassFromId(TRAINER_BATTLE_PARAM.opponentA);
+    if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+    if (trainerClass == TRAINER_CLASS_LEADER)
+    { *environment = BATTLE_ENVIRONMENT_LEADER; *hasOverride = TRUE; }
+    else if (trainerClass == TRAINER_CLASS_CHAMPION)
+    { *environment = BATTLE_ENVIRONMENT_CHAMPION; *hasOverride = TRUE; }
+    return TRUE;
+}
+
+static u8 GetBattleEnvironmentOverride(void) __attribute__((used, noipa));
+
 static u8 GetBattleEnvironmentOverride(void)
 {
     u8 battleScene = GetCurrentMapBattleScene();
@@ -920,11 +944,10 @@ static u8 GetBattleEnvironmentOverride(void)
     }
     else if (gBattleTypeFlags & BATTLE_TYPE_TRAINER)
     {
-        u32 trainerClass = GetTrainerClassFromId(TRAINER_BATTLE_PARAM.opponentA);
-        if (trainerClass == TRAINER_CLASS_LEADER)
-            return BATTLE_ENVIRONMENT_LEADER;
-        else if (trainerClass == TRAINER_CLASS_CHAMPION)
-            return BATTLE_ENVIRONMENT_CHAMPION;
+        u8 environment;
+        bool8 hasOverride;
+        if (!ADMG_TryGetTrainerBackgroundOverride(&environment, &hasOverride)) return gBattleEnvironment;
+        if (hasOverride) return environment;
     }
 
     if (battleScene == MAP_BATTLE_SCENE_NORMAL)
@@ -985,9 +1008,20 @@ void LoadBattleMenuWindowGfx(void)
     }
 }
 
+static bool8 ADMG_TryGetBattleBackgroundEnvironment(u8 *environment)
+{
+    u64 generation = ADMG_BeginStateAccessCheck();
+    u8 selected = GetBattleEnvironmentOverride();
+    if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+    *environment = selected;
+    return TRUE;
+}
+
 void DrawMainBattleBackground(void)
 {
-    LoadBattleEnvironmentGfx(GetBattleEnvironmentOverride());
+    u8 environment;
+    if (!ADMG_TryGetBattleBackgroundEnvironment(&environment)) return;
+    LoadBattleEnvironmentGfx(environment);
 }
 
 void LoadBattleTextboxAndBackground(void)
@@ -1303,16 +1337,18 @@ void DrawBattleEntryBackground(void)
     }
     else if (gBattleTypeFlags & BATTLE_TYPE_LEGENDARY)
     {
-        LoadBattleEnvironmentEntryGfx(GetBattleEnvironmentOverride());
+        { u8 selected; if (!ADMG_TryGetBattleBackgroundEnvironment(&selected)) return; LoadBattleEnvironmentEntryGfx(selected); }
     }
     else
     {
         if (gBattleTypeFlags & BATTLE_TYPE_TRAINER)
         {
-            enum TrainerClassID trainerClass = GetTrainerClassFromId(TRAINER_BATTLE_PARAM.opponentA);
-            if (trainerClass == TRAINER_CLASS_LEADER || trainerClass == TRAINER_CLASS_CHAMPION)
+            u8 environment;
+            bool8 hasOverride;
+            if (!ADMG_TryGetTrainerBackgroundOverride(&environment, &hasOverride)) return;
+            if (hasOverride)
             {
-                LoadBattleEnvironmentEntryGfx(GetBattleEnvironmentOverride());
+                { u8 selected; if (!ADMG_TryGetBattleBackgroundEnvironment(&selected)) return; LoadBattleEnvironmentEntryGfx(selected); }
                 return;
             }
         }
@@ -1324,6 +1360,11 @@ void DrawBattleEntryBackground(void)
 bool8 LoadChosenBattleElement(u8 caseId)
 {
     bool8 ret = FALSE;
+    u8 environment = 0;
+    /* Existing native callers request only 0/1. Retain callable 3/4/5 without
+     * imposing actor prerequisites on textbox/menu/default cases. */
+    if (caseId >= 3 && caseId <= 5
+        && !ADMG_TryGetBattleBackgroundEnvironment(&environment)) return FALSE;
 
     switch (caseId)
     {
@@ -1338,13 +1379,13 @@ bool8 LoadChosenBattleElement(u8 caseId)
         LoadPalette(gBattleTextboxPalette, BG_PLTT_ID(0), 2 * PLTT_SIZE_4BPP);
         break;
     case 3:
-        DecompressDataWithHeaderVram(gBattleEnvironmentInfo[GetBattleEnvironmentOverride()].background.tileset, (void *)(BG_CHAR_ADDR(2)));
+        DecompressDataWithHeaderVram(gBattleEnvironmentInfo[environment].background.tileset, (void *)(BG_CHAR_ADDR(2)));
         break;
     case 4:
-        DecompressDataWithHeaderVram(gBattleEnvironmentInfo[GetBattleEnvironmentOverride()].background.tilemap, (void *)(BG_SCREEN_ADDR(26)));
+        DecompressDataWithHeaderVram(gBattleEnvironmentInfo[environment].background.tilemap, (void *)(BG_SCREEN_ADDR(26)));
         break;
     case 5:
-        LoadPalette(gBattleEnvironmentInfo[GetBattleEnvironmentOverride()].palette, BG_PLTT_ID(2), 3 * PLTT_SIZE_4BPP);
+        LoadPalette(gBattleEnvironmentInfo[environment].palette, BG_PLTT_ID(2), 3 * PLTT_SIZE_4BPP);
         break;
     case 6:
         LoadBattleMenuWindowGfx();

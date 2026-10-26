@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_state.h"
 #include "main.h"
 #include "bike.h"
 #include "event_data.h"
@@ -1699,7 +1700,12 @@ void SetPlayerAvatarExtraStateTransition(u16 graphicsId, u8 transitionFlag)
 
 void InitPlayerAvatar(s16 x, s16 y, enum Direction direction, enum Gender gender)
 {
-    struct ObjectEventTemplate playerObjEventTemplate;
+    if (gSaveBlock1Ptr == NULL || (u32)gender >= GENDER_COUNT)
+    {
+        ADMG_StateAccessRejected(gender, __func__);
+        return;
+    }
+    struct ObjectEventTemplate playerObjEventTemplate = {0};
     u8 objectEventId;
     struct ObjectEvent *objectEvent;
 
@@ -1716,6 +1722,11 @@ void InitPlayerAvatar(s16 x, s16 y, enum Direction direction, enum Gender gender
     playerObjEventTemplate.script = NULL;
     playerObjEventTemplate.flagId = 0;
     objectEventId = SpawnSpecialObjectEvent(&playerObjEventTemplate);
+    if (objectEventId >= OBJECT_EVENTS_COUNT)
+    {
+        ADMG_StateAccessRejected(objectEventId, __func__);
+        return;
+    }
     objectEvent = &gObjectEvents[objectEventId];
     objectEvent->isPlayer = TRUE;
     objectEvent->warpArrowSpriteId = CreateWarpArrowSprite();

@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_state.h"
 #include "battle.h"
 #include "battle_anim.h"
 #include "battle_anim_scripts.h"
@@ -1746,7 +1747,7 @@ static void Task_FadeToBg(u8 taskId)
         s16 bgId = gTasks[taskId].tBackgroundId;
 
         if (bgId == -1)
-            LoadDefaultBg();
+            { u64 background = ADMG_BeginStateAccessCheck(); LoadDefaultBg(); if (!ADMG_EndStateAccessCheck(background)) return; }
         else
             LoadMoveBg(bgId);
 

@@ -2,6 +2,7 @@
 #include "util.h"
 #include "main.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "easy_chat.h"
 #include "script.h"
 #include "battle_special.h"
@@ -322,15 +323,18 @@ static const u16 sReceivedGiftFlags[] =
 
 bool32 IsSavedWonderCardGiftNotReceived(void)
 {
-    u16 value = GetWonderCardFlagID();
+    u16 value;
+    if (gSaveBlock1Ptr == NULL)
+    {
+        ADMG_StateAccessRejected(0, __func__);
+        return FALSE;
+    }
+    value = GetWonderCardFlagID();
     if (!IsWonderCardFlagIDInValidRange(value))
         return FALSE;
 
-    // If flag is set, player has received gift from this card
-    if (FlagGet(sReceivedGiftFlags[value - WONDER_CARD_FLAG_OFFSET]) == TRUE)
-        return FALSE;
-
-    return TRUE;
+    // An unreadable flag cannot mean that the gift remains available.
+    return ADMG_IsFlagClear(sReceivedGiftFlags[value - WONDER_CARD_FLAG_OFFSET]);
 }
 
 static int GetNumStampsInMetadata(const struct WonderCardMetadata *data, int size)

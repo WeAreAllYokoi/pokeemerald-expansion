@@ -7,6 +7,7 @@
 #include "decompress.h"
 #include "dexnav.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "event_object_movement.h"
 #include "event_scripts.h"
 #include "field_effect.h"
@@ -2468,16 +2469,44 @@ static void Task_DexNavMain(u8 taskId)
 /////////////////////////
 bool32 TryFindHiddenPokemon(void)
 {
-    u16 *stepPtr = GetVarPointer(DN_VAR_STEP_COUNTER);
+    ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1, FALSE);
 
-    if (DEXNAV_ENABLED == 0
-            || sDexNavSearchDataPtr == NULL
-            || !FlagGet(DN_FLAG_DETECTOR_MODE)
-            || FlagGet(DN_FLAG_SEARCHING)
-            || GetFlashLevel() > 0)
+    u32 stepId = DN_VAR_STEP_COUNTER;
+    u16 *stepPtr = stepId <= 0xFFFF ? GetVarPointer((u16)stepId) : NULL;
+    bool8 detectorMode, searching;
+    // Zero remains an unbound default. Nonzero IDs must own counter storage.
+    if (stepId != 0 && stepPtr == NULL)
+    {
+        ADMG_StateAccessRejected(stepId, __func__);
+        return FALSE;
+    }
+
+    if (DEXNAV_ENABLED == 0 || sDexNavSearchDataPtr == NULL)
     {
         if (stepPtr != NULL)
             (*stepPtr) = 0;
+        return FALSE;
+    }
+    if (!ADMG_TryReadFlag(DN_FLAG_DETECTOR_MODE, &detectorMode))
+        return FALSE;
+    if (!detectorMode)
+    {
+        if (stepPtr != NULL)
+            (*stepPtr) = 0;
+        return FALSE;
+    }
+    if (!ADMG_TryReadFlag(DN_FLAG_SEARCHING, &searching))
+        return FALSE;
+    if (searching || GetFlashLevel() > 0)
+    {
+        if (stepPtr != NULL)
+            (*stepPtr) = 0;
+        return FALSE;
+    }
+
+    if (stepPtr == NULL)
+    {
+        ADMG_StateAccessRejected(DN_VAR_STEP_COUNTER, __func__);
         return FALSE;
     }
 

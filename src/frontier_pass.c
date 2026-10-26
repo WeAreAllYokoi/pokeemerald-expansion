@@ -4,6 +4,7 @@
 #include "trainer_card.h"
 #include "battle_anim.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "recorded_battle.h"
 #include "malloc.h"
 #include "sprite.h"
@@ -602,6 +603,13 @@ static u32 AllocateFrontierPassData(MainCallback callback)
     if (sPassData != NULL)
         return ERR_ALREADY_DONE;
 
+    ADMG_REQUIRE_FLAG_RANGE(FLAG_SYS_TOWER_SILVER, NUM_FRONTIER_FACILITIES, 2, ERR_ALLOC_FAILED);
+    ADMG_REQUIRE_FLAG_RANGE(FLAG_SYS_TOWER_GOLD, NUM_FRONTIER_FACILITIES, 2, ERR_ALLOC_FAILED);
+    if (gSaveBlock2Ptr == NULL)
+    {
+        ADMG_StateAccessRejected(VARS_START, "frontier pass save owner");
+        return ERR_ALLOC_FAILED;
+    }
     sPassData = AllocZeroed(sizeof(*sPassData));
     if (sPassData == NULL)
         return ERR_ALLOC_FAILED;

@@ -1,0 +1,64 @@
+{
+  "format": "admg101-s3-b-source-ownership",
+  "format_version": 1,
+  "source_commit": "c5f026363afda6dd56225bebb2f2d2cdcd9d84f0",
+  "semantic_registry_sha256": "eac424d020bd880746336b361bfe0c8bf39f433b3d903f8151b883bb9a4b101b",
+  "status": "APPROVED_BOUNDED_SOURCE_GENERATION",
+  "runtime_consumption": "build-time source ownership only; never current runtime map",
+  "map_rules": {
+    "authority": "pinned map.json region field and existing map-group registration",
+    "REGION_HOENN": "hoenn",
+    "REGION_KANTO": "kanto",
+    "missing_region": "hoenn_under_preserved_emerald_generator_default",
+    "unknown_region": "fail_review",
+    "shared_events_map": "use_provider_source_owner; validate cross-owner sharing explicitly",
+    "infer_from_filename_suffix": false,
+    "alter_map_or_group_ids": false
+  },
+  "mixed_script_rules": [
+    {
+      "file": "data/scripts/new_game.inc",
+      "from_label": "EventScript_ResetAllMapFlagsFrlg",
+      "through": "end_of_file",
+      "owner": "kanto",
+      "automatic_invocation": false
+    },
+    {
+      "file": "data/scripts/new_game.inc",
+      "from_label": "EventScript_ResetAllMapFlags",
+      "until_label": "EventScript_ResetAllMapFlagsFrlg",
+      "owner": "hoenn"
+    },
+    {
+      "file": "data/scripts/obtain_item.inc",
+      "from_label": "EventScript_RestorePrevTextColor",
+      "until_label": "Std_PutItemAway",
+      "owner": "engine",
+      "state_policy": "approved_independent_transient_text_scratch"
+    }
+  ],
+  "common_source_rules": {
+    "default": "preserve_original_engine_or_hoenn_operands",
+    "field_control_avatar_opened_start_menu": "preserve_ordinary_zero_no_op",
+    "owner_dependent_services": "explicit_S3-D_dependency; do_not_infer_current_map",
+    "regional_literals": "qualify_only_after_semantic_owner_reconciliation",
+    "deferred_context": "S3-D_gate",
+    "zero_bindings": "preserve_presence_predicates_and_existing_dispatch"
+  },
+  "operand_rules": {
+    "rewrite_only_typed_state_operand_positions": true,
+    "preserve_immediates_and_zero_sentinels": true,
+    "preserve_weather_and_comparison_values": true,
+    "trainer_operands": "S3-C_gate",
+    "unclassified_source_or_operand": "explicit_review_failure; never_guessed_or_dropped",
+    "polymorphic_object_field": "Pushable boulder trainer_type is the documented reveal flag; ordinary trainer_type values remain unchanged"
+  },
+  "consumer_reconciliation": {
+    "scope": "all pinned tracked source paths, including inactive, shared, macro, testing, and indirect references",
+    "pointer_uses": "trace aliases, dereferences, casts, contiguous spans, and callee use",
+    "dynamic_reads": "validate before Boolean interpretation, indexing, progression checks, or side effects",
+    "dynamic_writes": "validate all identifiers before any dependent side effect or partial output write",
+    "qualification": "inventory alone is not safety verification"
+  },
+  "mod_persistence": "separate native platform requirement; no GBA save-sector allocation"
+}

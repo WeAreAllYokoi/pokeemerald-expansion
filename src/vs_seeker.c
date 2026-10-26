@@ -1,9 +1,16 @@
 #include "global.h"
+#include "main.h"
+#include "admg_rematch_response.h"
+#include "admg_rematch_movement.h"
+#include "admg_rematch_battle.h"
+#include "admg_rematch.h"
+#include "admg_trainer.h"
 #include "task.h"
 #include "event_object_movement.h"
 #include "item_use.h"
 #include "event_scripts.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "script.h"
 #include "event_object_lock.h"
 #include "field_specials.h"
@@ -64,18 +71,34 @@ struct VsSeekerTrainerInfo
     u8 objectEventId;
     s16 xCoord;
     s16 yCoord;
-    u8 graphicsId;
+    u16 graphicsId;
+    u8 templateIndex;
 };
 
 struct VsSeekerStruct
 {
-    struct VsSeekerTrainerInfo trainerInfo[OBJECT_EVENTS_COUNT];
-    u8 trainerIdxArray[OBJECT_EVENTS_COUNT];
-    u8 runningBehaviourEtcArray[OBJECT_EVENTS_COUNT];
+    struct VsSeekerTrainerInfo trainerInfo[OBJECT_EVENT_TEMPLATES_COUNT];
+    u16 trainerIdxArray[OBJECT_EVENT_TEMPLATES_COUNT];
+    u8 runningBehaviourEtcArray[OBJECT_EVENT_TEMPLATES_COUNT];
     u8 numRematchableTrainers;
+    u8 trainerCount;
+    bool8 native, nativeFailed;
+    u8 taskId;
+    u32 ticket;
+    struct ADMG_RematchContext nativeContext;
+    struct ADMG_RematchActor nativeActors[ADMG_REMATCH_COHORT_COUNT];
+    u64 nativeYes;
 };
 
 #define END_TRAINER_INFO 0xFF
+
+static bool8 InitVsSeekerField(u32, const struct ADMG_RematchContext *);
+static bool8 NativeVsSeekerTaskCurrent(u32);
+static u8 NativeVsSeekerCanUse(void);
+static u8 NativeVsSeekerGetResponse(void);
+static bool8 NativeVsSeekerStartIdleMovements(void);
+
+static bool8 NativeRematchResetObjectsValid(void);
 // static declarations
 static EWRAM_DATA struct VsSeekerStruct *sVsSeeker = NULL;
 
@@ -85,7 +108,7 @@ static void Task_ResetObjectsRematchWantedState(u8 taskId);
 static void ResetMovementOfRematchableTrainers(void);
 static void Task_VsSeekerFrameCountdown(u8 taskId);
 static void Task_VsSeeker_PlaySoundAndGetResponseCode(u8 taskId);
-static void GatherNearbyTrainerInfo(void);
+static bool8 GatherNearbyTrainerInfo(void);
 static void Task_VsSeeker_ShowResponseToPlayer(u8 taskId);
 static bool8 CanUseVsSeeker(void);
 static u8 GetVsSeekerResponseInArea(void);
@@ -188,7 +211,7 @@ u16 VsSeekerConvertLocalIdToTableId(u16 localId)
     u32 localIdIndex = 0;
     u32 trainerId = 0;
 
-    for (localIdIndex = 0; localIdIndex < OBJECT_EVENTS_COUNT ; localIdIndex++)
+    for (localIdIndex = 0; sVsSeeker != NULL && localIdIndex < sVsSeeker->trainerCount ; localIdIndex++)
     {
         if (sVsSeeker->trainerInfo[localIdIndex].localId == localId)
         {
@@ -201,6 +224,8 @@ u16 VsSeekerConvertLocalIdToTableId(u16 localId)
 
 void VsSeekerResetObjectMovementAfterChargeComplete(void)
 {
+    (void)ADMG_TryResetNativeRematchTemplateMovements();
+
     struct ObjectEventTemplate * templates = gSaveBlock1Ptr->objectEventTemplates;
     u32 i;
     u32 movementType;
@@ -266,6 +291,8 @@ bool8 UpdateVsSeekerStepCounter(void)
 
 void MapResetTrainerRematches(u16 mapGroup, u16 mapNum)
 {
+    (void)ADMG_TryResetNativeRematchMap();
+
     if (!I_VS_SEEKER_CHARGING) return;
 
     FlagClear(I_VS_SEEKER_CHARGING);
@@ -317,39 +344,16 @@ static void VsSeekerResetChargingStepCounter(void)
 
 void Task_InitVsSeekerAndCheckForTrainersOnScreen(u8 taskId)
 {
-    u32 i;
-    u32 respval;
-
     if (!I_VS_SEEKER_CHARGING) return;
-
-    for (i = 0; i < 16; i++)
-        gTasks[taskId].data[i] = 0;
-
-    sVsSeeker = AllocZeroed(sizeof(struct VsSeekerStruct));
-    GatherNearbyTrainerInfo();
-    respval = CanUseVsSeeker();
-    if (respval == VSSEEKER_NOT_CHARGED)
-    {
-        Free(sVsSeeker);
-        DisplayItemMessageOnField(taskId, VSSeeker_Text_BatteryNotChargedNeedXSteps, Task_ItemUse_CloseMessageBoxAndReturnToField_VsSeeker);
-    }
-    else if (respval == VSSEEKER_NO_ONE_IN_RANGE)
-    {
-        Free(sVsSeeker);
-        DisplayItemMessageOnField(taskId, VSSeeker_Text_NoTrainersWithinRange, Task_ItemUse_CloseMessageBoxAndReturnToField_VsSeeker);
-    }
-    else if (respval == VSSEEKER_CAN_USE)
-    {
-        FieldEffectStart(FLDEFF_USE_VS_SEEKER);
-        gTasks[taskId].func = Task_VsSeekerFrameCountdown;
-        gTasks[taskId].tCountdown = 15;
-    }
+    (void)InitVsSeekerField(taskId, NULL);
 }
 
 
 
 static void Task_VsSeekerFrameCountdown(u8 taskId)
 {
+    if (!NativeVsSeekerTaskCurrent(taskId)) return;
+
     if (--gTasks[taskId].tCountdown == 0)
     {
         gTasks[taskId].func = Task_VsSeeker_PlaySoundAndGetResponseCode;
@@ -359,6 +363,8 @@ static void Task_VsSeekerFrameCountdown(u8 taskId)
 
 static void Task_VsSeeker_PlaySoundAndGetResponseCode(u8 taskId)
 {
+    if (!NativeVsSeekerTaskCurrent(taskId)) return;
+
     s16 * data = gTasks[taskId].data;
 
     if (tNumBeeps != 2 && --tBeepDelay == 0)
@@ -370,8 +376,14 @@ static void Task_VsSeeker_PlaySoundAndGetResponseCode(u8 taskId)
 
     if (!FieldEffectActiveListContains(FLDEFF_USE_VS_SEEKER))
     {
-        VsSeekerResetInBagStepCounter();
+        if (sVsSeeker->native)
+        {
+            if (!ADMG_TryResetNativeBagCharge(&sVsSeeker->nativeContext))
+            {sVsSeeker->nativeFailed = TRUE; (void)NativeVsSeekerTaskCurrent(taskId); return;}
+        }
+        else VsSeekerResetInBagStepCounter();
         tResponseCode = GetVsSeekerResponseInArea();
+        if (!NativeVsSeekerTaskCurrent(taskId)) return;
         ScriptMovement_StartObjectMovementScript(LOCALID_PLAYER, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, sMovementScript_Wait48);
         gTasks[taskId].func = Task_VsSeeker_ShowResponseToPlayer;
     }
@@ -379,6 +391,8 @@ static void Task_VsSeeker_PlaySoundAndGetResponseCode(u8 taskId)
 
 static void Task_VsSeeker_ShowResponseToPlayer(u8 taskId)
 {
+    if (!NativeVsSeekerTaskCurrent(taskId)) return;
+
     if (!ScriptMovement_IsObjectMovementFinished(LOCALID_PLAYER, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup))
         return;
 
@@ -390,13 +404,14 @@ static void Task_VsSeeker_ShowResponseToPlayer(u8 taskId)
     {
         if (gTasks[taskId].tResponseCode == VSSEEKER_RESPONSE_FOUND_REMATCHES)
             StartAllRespondantIdleMovements();
+        if (!NativeVsSeekerTaskCurrent(taskId)) return;
 
         ClearDialogWindowAndFrame(0, TRUE);
         ScriptUnfreezeObjectEvents();
         UnlockPlayerFieldControls();
         DestroyTask(taskId);
     }
-    Free(sVsSeeker);
+    Free(sVsSeeker); sVsSeeker = NULL;
 }
 
 #undef tCountdown
@@ -404,35 +419,75 @@ static void Task_VsSeeker_ShowResponseToPlayer(u8 taskId)
 #undef tNumBeeps
 #undef tResponseCode
 
-static void GatherNearbyTrainerInfo(void)
+static bool8 GatherNearbyTrainerInfo(void)
 {
-    struct ObjectEventTemplate *templates = gSaveBlock1Ptr->objectEventTemplates;
-    u8 objectEventId = 0;
-    u8 vsSeekerObjectIdx = 0;
-    s32 objectEventIdx;
-
-    for (objectEventIdx = 0; objectEventIdx < gMapHeader.events->objectEventCount; objectEventIdx++)
+    const struct ObjectEventTemplate *declared;
+    struct ADMG_TrainerRef ref;
+    u8 objectEventId;
+    u32 i;
+    s16 playerX, playerY;
+    if (sVsSeeker == NULL || gSaveBlock1Ptr == NULL || gMapHeader.events == NULL
+     || gMapHeader.events->objectEventCount > OBJECT_EVENT_TEMPLATES_COUNT)
+    { ADMG_StateAccessRejected(0, __func__); return FALSE; }
+    sVsSeeker->trainerCount = 0;
+    PlayerGetDestCoords(&playerX, &playerY);
+    playerX -= MAP_OFFSET; playerY -= MAP_OFFSET;
+    for (i = 0; i < gMapHeader.events->objectEventCount; ++i)
     {
-        u16 trainerIdx = GetTrainerFlagFromScript(templates[objectEventIdx].script);
-        if (trainerIdx == TRAINER_NONE && (!I_SHOW_NO_ID_TRAINER || templates[objectEventIdx].trainerType == TRAINER_TYPE_NONE))
+        const struct ObjectEventTemplate *saved = &gSaveBlock1Ptr->objectEventTemplates[i];
+        if (!ADMG_TryGetDeclaredObjectTemplate((u32)gSaveBlock1Ptr->location.mapGroup,
+                (u32)gSaveBlock1Ptr->location.mapNum, saved->localId, &declared))
+            return FALSE;
+        if (sVsSeeker->native
+         && declared->trainerType != TRAINER_TYPE_NORMAL && declared->trainerType != TRAINER_TYPE_BURIED)
             continue;
-        if (trainerIdx == TRAINER_NONE && templates[objectEventIdx].trainerType != TRAINER_TYPE_NONE)
-            DebugPrintf("Object event with local id %d is not TRAINER_TYPE_NONE but doesn't have a visible trainerID", templates[objectEventIdx].localId);
-        sVsSeeker->trainerInfo[vsSeekerObjectIdx].script = templates[objectEventIdx].script;
-        sVsSeeker->trainerInfo[vsSeekerObjectIdx].trainerIdx = trainerIdx;
-        sVsSeeker->trainerInfo[vsSeekerObjectIdx].localId = templates[objectEventIdx].localId;
-        TryGetObjectEventIdByLocalIdAndMap(templates[objectEventIdx].localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, &objectEventId);
-        sVsSeeker->trainerInfo[vsSeekerObjectIdx].objectEventId = objectEventId;
-        sVsSeeker->trainerInfo[vsSeekerObjectIdx].xCoord = gObjectEvents[objectEventId].currentCoords.x - MAP_OFFSET;
-        sVsSeeker->trainerInfo[vsSeekerObjectIdx].yCoord = gObjectEvents[objectEventId].currentCoords.y - MAP_OFFSET;
-        sVsSeeker->trainerInfo[vsSeekerObjectIdx].graphicsId = templates[objectEventIdx].graphicsId;
-        vsSeekerObjectIdx++;
+        u16 trainerIdx = GetTrainerFlagFromScript(declared->script);
+        if (sVsSeeker->native)
+        {
+            if (!ADMG_TryResolveTrainer(trainerIdx, &ref)) return FALSE;
+            if (ref.owner != ADMG_TRAINER_KANTO) continue;
+            if (saved->localId == 0 || saved->localId >= ADMG_NATIVE_READINESS_COUNT)
+            { ADMG_StateAccessRejected(saved->localId, __func__); return FALSE; }
+        }
+        else
+        {
+            if (trainerIdx == TRAINER_NONE && (!I_SHOW_NO_ID_TRAINER || declared->trainerType == TRAINER_TYPE_NONE))
+                continue;
+            if (trainerIdx == TRAINER_NONE && declared->trainerType != TRAINER_TYPE_NONE)
+                DebugPrintf("Object event with local id %d is not TRAINER_TYPE_NONE but doesn't have a visible trainerID", saved->localId);
+        }
+        struct VsSeekerTrainerInfo *info = &sVsSeeker->trainerInfo[sVsSeeker->trainerCount];
+        info->script = declared->script; info->trainerIdx = trainerIdx; info->localId = saved->localId;
+        info->templateIndex = i;
+        info->graphicsId = saved->kind == OBJ_KIND_CLONE ? declared->graphicsId : saved->graphicsId;
+        objectEventId = OBJECT_EVENTS_COUNT;
+        if (TryGetObjectEventIdByLocalIdAndMap(saved->localId, gSaveBlock1Ptr->location.mapNum,
+                gSaveBlock1Ptr->location.mapGroup, &objectEventId) || !ObjectEventIdIsSane(objectEventId))
+            objectEventId = OBJECT_EVENTS_COUNT;
+        info->objectEventId = objectEventId;
+        info->xCoord = saved->x; info->yCoord = saved->y;
+        if (objectEventId < OBJECT_EVENTS_COUNT)
+        {
+            info->xCoord = gObjectEvents[objectEventId].currentCoords.x - MAP_OFFSET;
+            info->yCoord = gObjectEvents[objectEventId].currentCoords.y - MAP_OFFSET;
+        }
+        if (sVsSeeker->native)
+        {
+            struct ADMG_RematchActor *actor = &sVsSeeker->nativeActors[sVsSeeker->trainerCount];
+            actor->trainerId = trainerIdx; actor->localId = saved->localId; actor->objectId = objectEventId;
+            actor->visible = objectEventId < OBJECT_EVENTS_COUNT
+                && playerX - 7 <= info->xCoord && playerX + 7 >= info->xCoord
+                && playerY - 5 <= info->yCoord && playerY + 5 >= info->yCoord;
+        }
+        ++sVsSeeker->trainerCount;
     }
-    sVsSeeker->trainerInfo[vsSeekerObjectIdx].localId = END_TRAINER_INFO;
+    return TRUE;
 }
 
 static u8 CanUseVsSeeker(void)
 {
+    if (sVsSeeker != NULL && sVsSeeker->native) return NativeVsSeekerCanUse();
+
 #if FREE_MATCH_CALL == FALSE
     u8 vsSeekerChargeSteps = gSaveBlock1Ptr->trainerRematchStepCounter;
 
@@ -451,12 +506,14 @@ static u8 CanUseVsSeeker(void)
 
 static u8 GetVsSeekerResponseInArea(void)
 {
+    if (sVsSeeker != NULL && sVsSeeker->native) return NativeVsSeekerGetResponse();
+
 #if FREE_MATCH_CALL == FALSE
     u32 trainerIdx, rematchTrainerIdx;
     s32 vsSeekerIdx = 0;
     bool32 trainerHasNotYetBeenFought = FALSE;
     bool32 trainerWantsRematch = FALSE;
-    for (vsSeekerIdx = 0; sVsSeeker->trainerInfo[vsSeekerIdx].localId != END_TRAINER_INFO; vsSeekerIdx++)
+    for (vsSeekerIdx = 0; vsSeekerIdx < sVsSeeker->trainerCount; vsSeekerIdx++)
     {
         if (!IsTrainerVisibleOnScreen(&sVsSeeker->trainerInfo[vsSeekerIdx]))
             continue;
@@ -557,7 +614,10 @@ static u32 GetGameProgressFlags()
 
     for (i = 0; i < maxGameProgressFlags; i++)
     {
-        if (FlagGet(gameProgressFlags[i]))
+        bool8 reached;
+        if (!ADMG_TryReadFlag(gameProgressFlags[i], &reached))
+            return 0;
+        if (reached)
             numGameProgressFlags++;
     }
 
@@ -566,8 +626,22 @@ static u32 GetGameProgressFlags()
 
 u16 GetRematchTrainerIdVSSeeker(u16 trainerId)
 {
+    struct ADMG_TrainerRef ref;
+    u16 selected;
+    if (!ADMG_TryResolveTrainer(trainerId, &ref))
+        return 0;
+    if (ref.owner == ADMG_TRAINER_KANTO)
+        return ADMG_TryGetNativeRematchTrainer(trainerId, &selected) ? selected : 0;
+    if (ref.owner != ADMG_TRAINER_HOENN)
+    {
+        ADMG_StateAccessRejected(trainerId, __func__);
+        return 0;
+    }
+    u64 generation = ADMG_BeginStateAccessCheck();
     u32 tableId = FirstBattleTrainerIdToRematchTableId(gRematchTable, trainerId);
     u32 rematchTrainerIdx = GetGameProgressFlags();
+    if (!ADMG_EndStateAccessCheck(generation))
+        return 0;
 
     if (!I_VS_SEEKER_CHARGING)
         return 0;
@@ -578,7 +652,7 @@ u16 GetRematchTrainerIdVSSeeker(u16 trainerId)
     if (tableId >= REMATCH_SPECIAL_TRAINER_START)
         return GetCurrentGymLeaderRematchLevel();
 
-    while (!HasTrainerBeenFought(gRematchTable[tableId].trainerIds[rematchTrainerIdx-1]))
+    while (rematchTrainerIdx != 0 && !HasTrainerBeenFought(gRematchTable[tableId].trainerIds[rematchTrainerIdx-1]))
     {
         if (rematchTrainerIdx== 0)
             break;
@@ -599,11 +673,12 @@ bool32 IsVsSeekerEnabled(void)
 
 static bool8 ObjectEventIdIsSane(u8 objectEventId)
 {
-    struct ObjectEvent *objectEvent = &gObjectEvents[objectEventId];
-
-    if (objectEvent->active && gMapHeader.events->objectEventCount >= objectEvent->localId && gSprites[objectEvent->spriteId].data[0] == objectEventId)
-        return TRUE;
-    return FALSE;
+    if (objectEventId >= OBJECT_EVENTS_COUNT || gSaveBlock1Ptr == NULL) return FALSE;
+    const struct ObjectEvent *object = &gObjectEvents[objectEventId];
+    return object->active && object->spriteId < MAX_SPRITES
+        && gSprites[object->spriteId].data[0] == objectEventId
+        && object->mapGroup == gSaveBlock1Ptr->location.mapGroup
+        && object->mapNum == gSaveBlock1Ptr->location.mapNum;
 }
 
 static u8 GetRandomFaceDirectionMovementType()
@@ -732,22 +807,12 @@ static u8 GetResponseMovementTypeFromTrainerGraphicsId(u8 graphicsId)
 
 static u16 GetTrainerFlagFromScript(const u8 *script)
 {
-    // The trainer flag is located 3 bytes (command + flags + localIdA) from the script pointer, assuming the trainerbattle command is first in the script.
-    // Because scripts are unaligned, and because the ARM processor requires shorts to be 16-bit aligned, this function needs to perform explicit bitwise operations to get the correct flag.
-    u16 trainerFlag = TRAINER_NONE;
-    struct ScriptContext *ctx = AllocZeroed(sizeof(struct ScriptContext));
-    if (script[0] == SCR_OP_TRAINERBATTLE)
-    {
-        ctx->scriptPtr = script + 3;
-        trainerFlag = ScriptPeekHalfword(ctx);
-    }
-    else if (Script_MatchesCallNative(script, NativeVsSeekerRematchId, TRUE))
-    {
-        ctx->scriptPtr = script + 5;
-        trainerFlag = ScriptPeekHalfword(ctx);
-    }
-    Free(ctx);
-    return trainerFlag;
+    if (script == NULL) return TRAINER_NONE;
+    const u8 *operand;
+    if (script[0] == SCR_OP_TRAINERBATTLE) operand = script + 3;
+    else if (Script_MatchesCallNative(script, NativeVsSeekerRematchId, TRUE)) operand = script + 5;
+    else return TRAINER_NONE;
+    return operand[0] | (operand[1] << 8);
 }
 
 static void ClearAllTrainerRematchStates(void)
@@ -786,7 +851,7 @@ static bool32 HasFightableTrainers(void)
 {
     u32 i;
 
-    for (i = 0; sVsSeeker->trainerInfo[i].localId != END_TRAINER_INFO; i++)
+    for (i = 0; i < sVsSeeker->trainerCount; i++)
     {
         if (IsTrainerVisibleOnScreen(&sVsSeeker->trainerInfo[i]))
         {
@@ -816,6 +881,12 @@ void NativeVsSeekerRematchId(struct ScriptContext *ctx)
 
 static void StartAllRespondantIdleMovements(void)
 {
+    if (sVsSeeker != NULL && sVsSeeker->native)
+    {
+        if (!NativeVsSeekerStartIdleMovements()) sVsSeeker->nativeFailed = TRUE;
+        return;
+    }
+
 #if FREE_MATCH_CALL == FALSE
     s32 i;
     s32 j;
@@ -834,4 +905,478 @@ static void StartAllRespondantIdleMovements(void)
         gSaveBlock1Ptr->trainerRematches[VsSeekerConvertLocalIdToTableId(sVsSeeker->trainerInfo[j].localId)] = GetRematchTrainerIdVSSeeker(sVsSeeker->trainerInfo[j].trainerIdx);
     }
 #endif //FREE_MATCH_CALL
+}
+
+/* Explicit original native provider. Ordinary item dispatch remains unchanged. */
+static EWRAM_DATA u32 sNativeVsSeekerTicket = 0;
+
+static bool8 NativeVsSeekerTaskOwned(u32 taskId)
+{
+    if (sVsSeeker == NULL || !sVsSeeker->native || taskId >= NUM_TASKS
+     || sVsSeeker->taskId != taskId || !gTasks[taskId].isActive)
+        return FALSE;
+    u32 ticket = (u16)gTasks[taskId].data[14] | ((u32)(u16)gTasks[taskId].data[15] << 16);
+    return ticket == sVsSeeker->ticket
+        && (gTasks[taskId].func == Task_VsSeekerFrameCountdown
+         || gTasks[taskId].func == Task_VsSeeker_PlaySoundAndGetResponseCode
+         || gTasks[taskId].func == Task_VsSeeker_ShowResponseToPlayer);
+}
+
+static bool8 NativeVsSeekerTaskCurrent(u32 taskId)
+{
+    if (taskId >= NUM_TASKS || sVsSeeker == NULL || !gTasks[taskId].isActive
+     || sVsSeeker->taskId != taskId)
+    {ADMG_StateAccessRejected(taskId, __func__); return FALSE;}
+    if (!sVsSeeker->native) return TRUE;
+    if (NativeVsSeekerTaskOwned(taskId) && !sVsSeeker->nativeFailed
+     && ADMG_IsNativeRematchContextCurrent(&sVsSeeker->nativeContext))
+        return TRUE;
+    ADMG_StateAccessRejected(taskId, __func__);
+    /* Never destroy an unrelated reused task or alter the new map's objects. */
+    if (NativeVsSeekerTaskOwned(taskId)) DestroyTask(taskId);
+    Free(sVsSeeker); sVsSeeker = NULL;
+    return FALSE;
+}
+
+static bool8 NativeVsSeekerActorCurrent(u32 index)
+{
+    if (sVsSeeker == NULL || !sVsSeeker->native
+     || sVsSeeker->trainerCount > ADMG_REMATCH_COHORT_COUNT
+     || index >= sVsSeeker->trainerCount
+     || gSaveBlock1Ptr == NULL || gMapHeader.events == NULL
+     || gMapHeader.events->objectEventCount > OBJECT_EVENT_TEMPLATES_COUNT
+     || !ADMG_IsNativeRematchContextCurrent(&sVsSeeker->nativeContext))
+        return FALSE;
+    const struct VsSeekerTrainerInfo *info = &sVsSeeker->trainerInfo[index];
+    const struct ADMG_RematchActor *actor = &sVsSeeker->nativeActors[index];
+    if (info->objectEventId > ADMG_REMATCH_NO_OBJECT || actor->trainerId != info->trainerIdx
+     || actor->localId != info->localId || actor->objectId != info->objectEventId
+     || info->templateIndex >= gMapHeader.events->objectEventCount
+     || gSaveBlock1Ptr->objectEventTemplates[info->templateIndex].localId != info->localId
+     || actor->visible > TRUE || (actor->visible && info->objectEventId == ADMG_REMATCH_NO_OBJECT))
+        return FALSE;
+    u16 current;
+    if (!ADMG_TryGetNativeRematchNpcTrainer(sVsSeeker->nativeContext.mapGroup,
+            sVsSeeker->nativeContext.mapNum, info->localId, &current) || current != info->trainerIdx)
+        return FALSE;
+    if (info->objectEventId < OBJECT_EVENTS_COUNT
+     && (!ObjectEventIdIsSane(info->objectEventId)
+      || gObjectEvents[info->objectEventId].localId != info->localId
+      || gObjectEvents[info->objectEventId].graphicsId != info->graphicsId))
+        return FALSE;
+    return TRUE;
+}
+
+static bool8 NativeVsSeekerRosterCurrent(void)
+{
+    if (sVsSeeker == NULL || !sVsSeeker->native || sVsSeeker->trainerCount > ADMG_REMATCH_COHORT_COUNT
+     || !ADMG_IsNativeRematchContextCurrent(&sVsSeeker->nativeContext)) return FALSE;
+    for (u32 i = 0; i < sVsSeeker->trainerCount; ++i)
+        if (!NativeVsSeekerActorCurrent(i)) return FALSE;
+    return TRUE;
+}
+
+static bool8 NativeVsSeekerHasFightableTrainers(void)
+{
+    if (!NativeVsSeekerRosterCurrent()) {sVsSeeker->nativeFailed = TRUE; return FALSE;}
+    for (u32 i = 0; i < sVsSeeker->trainerCount; ++i)
+    {
+        u16 flag, family;
+        u8 position;
+        bool8 fought;
+        if (!sVsSeeker->nativeActors[i].visible) continue;
+        if (!ADMG_TryGetTrainerDefeatFlagId(sVsSeeker->trainerInfo[i].trainerIdx, &flag)
+         || !ADMG_TryReadFlag(flag, &fought)) {sVsSeeker->nativeFailed = TRUE; return FALSE;}
+        if (!fought) return TRUE;
+        u64 generation = ADMG_BeginStateAccessCheck();
+        bool8 found = ADMG_TryGetNativeRematchProgress(sVsSeeker->trainerInfo[i].trainerIdx, &family, &position);
+        if (!ADMG_EndStateAccessCheck(generation)) {sVsSeeker->nativeFailed = TRUE; return FALSE;}
+        if (found && position != 0) return TRUE;
+    }
+    return FALSE;
+}
+
+static u8 NativeVsSeekerCanUse(void)
+{
+    u16 counter;
+    if (!ADMG_TryReadNativeVsSeekerCounter(&sVsSeeker->nativeContext, &counter))
+    {sVsSeeker->nativeFailed = TRUE; return VSSEEKER_NO_ONE_IN_RANGE;}
+    if ((counter & 0xFF) == VSSEEKER_RECHARGE_STEPS)
+        return NativeVsSeekerHasFightableTrainers() ? VSSEEKER_CAN_USE : VSSEEKER_NO_ONE_IN_RANGE;
+    ConvertIntToDecimalStringN(gStringVar1, VSSEEKER_RECHARGE_STEPS - (counter & 0xFF), STR_CONV_MODE_LEFT_ALIGN, 3);
+    return VSSEEKER_NOT_CHARGED;
+}
+
+static bool8 NativeVsSeekerStartMovement(u32 index, const u8 *script)
+{
+    if (!NativeVsSeekerActorCurrent(index)
+     || !sVsSeeker->nativeActors[index].visible) return FALSE;
+    const struct VsSeekerTrainerInfo *info = &sVsSeeker->trainerInfo[index];
+    UnfreezeObjectEvent(&gObjectEvents[info->objectEventId]);
+    return ScriptMovement_StartObjectMovementScript(info->localId, sVsSeeker->nativeContext.mapNum,
+                sVsSeeker->nativeContext.mapGroup, script) == FALSE;
+}
+
+static u8 NativeVsSeekerGetResponse(void)
+{
+    bool8 unfought = FALSE, wants = FALSE;
+    if (!NativeVsSeekerRosterCurrent()) goto failed;
+    sVsSeeker->numRematchableTrainers = 0; sVsSeeker->nativeYes = 0;
+    for (u32 i = 0; i < sVsSeeker->trainerCount; ++i)
+    {
+        u32 response;
+        u8 position, movement;
+        if (!ADMG_TryGetNativeRematchResponse(&sVsSeeker->nativeContext, sVsSeeker->nativeActors,
+                sVsSeeker->trainerCount, i, sVsSeeker->nativeYes, &response, &position)) goto failed;
+        if (response == ADMG_REMATCH_INVISIBLE) continue;
+        if (response == ADMG_REMATCH_UNFOUGHT)
+        {
+            if (!NativeVsSeekerStartMovement(i, sMovementScript_TrainerUnfought)) goto failed;
+            unfought = TRUE;
+        }
+        else if (response == ADMG_REMATCH_NO)
+        {
+            if (!NativeVsSeekerStartMovement(i, sMovementScript_TrainerNoRematch)) goto failed;
+        }
+        else
+        {
+            if (!ADMG_TryGetNativeRematchMovement(sVsSeeker->trainerInfo[i].graphicsId, &movement)
+             || !NativeVsSeekerActorCurrent(i)) goto failed;
+            /* Original native readiness is visible before the response
+             * movement; grouped idle writes remain a separate later effect. */
+            if (!ADMG_TryWriteNativeReadiness(&sVsSeeker->nativeContext,
+                    sVsSeeker->trainerInfo[i].localId, position)) goto failed;
+            ShiftStillObjectEventCoords(&gObjectEvents[sVsSeeker->trainerInfo[i].objectEventId]);
+            if (!NativeVsSeekerStartMovement(i, sMovementScript_TrainerRematch)) goto failed;
+            sVsSeeker->trainerIdxArray[sVsSeeker->numRematchableTrainers] = sVsSeeker->trainerInfo[i].trainerIdx;
+            sVsSeeker->runningBehaviourEtcArray[sVsSeeker->numRematchableTrainers++] = movement;
+            sVsSeeker->nativeYes |= (u64)1 << i;
+            wants = TRUE;
+        }
+    }
+    if (wants)
+    {
+        PlaySE(SE_PIN);
+        if (!ADMG_TryBeginNativeReadiness(&sVsSeeker->nativeContext)) goto failed;
+        return VSSEEKER_RESPONSE_FOUND_REMATCHES;
+    }
+    return unfought ? VSSEEKER_RESPONSE_UNFOUGHT_TRAINERS : VSSEEKER_RESPONSE_NO_RESPONSE;
+failed:
+    if (sVsSeeker != NULL) sVsSeeker->nativeFailed = TRUE;
+    ADMG_StateAccessRejected(0, __func__);
+    return VSSEEKER_RESPONSE_NO_RESPONSE;
+}
+
+static bool8 NativeVsSeekerStartIdleMovements(void)
+{
+    if (!NativeVsSeekerRosterCurrent() || sVsSeeker->numRematchableTrainers > sVsSeeker->trainerCount) return FALSE;
+    /* Preflight every affected template, including unloaded duplicates, before
+     * the first movement/readiness effect. No arbitrary graphics are dropped. */
+    for (u32 j = 0; j < sVsSeeker->trainerCount; ++j)
+    {
+        for (u32 i = 0; i < sVsSeeker->numRematchableTrainers; ++i)
+        {
+            if (sVsSeeker->trainerInfo[j].trainerIdx != sVsSeeker->trainerIdxArray[i]) continue;
+            u8 movement;
+            if (!ADMG_TryGetNativeRematchMovement(sVsSeeker->trainerInfo[j].graphicsId, &movement)
+             || !NativeVsSeekerActorCurrent(j)) return FALSE;
+            break;
+        }
+    }
+    for (u32 i = 0; i < sVsSeeker->numRematchableTrainers; ++i)
+    {
+        for (u32 j = 0; j < sVsSeeker->trainerCount; ++j)
+        {
+            const struct VsSeekerTrainerInfo *info = &sVsSeeker->trainerInfo[j];
+            if (info->trainerIdx != sVsSeeker->trainerIdxArray[i]) continue;
+            u8 position, movement = sVsSeeker->runningBehaviourEtcArray[i];
+            u16 family;
+            if (!ADMG_TryGetNativeRematchProgress(info->trainerIdx, &family, &position)
+             || !NativeVsSeekerActorCurrent(j)) return FALSE;
+            if (info->objectEventId < OBJECT_EVENTS_COUNT)
+                SetTrainerMovementType(&gObjectEvents[info->objectEventId], movement);
+            gSaveBlock1Ptr->objectEventTemplates[info->templateIndex].movementType = movement;
+            if (!ADMG_TryWriteNativeReadiness(&sVsSeeker->nativeContext, info->localId, position)) return FALSE;
+        }
+    }
+    return TRUE;
+}
+
+static bool8 InitVsSeekerField(u32 taskId, const struct ADMG_RematchContext *nativeContext)
+{
+    if (taskId >= NUM_TASKS || !gTasks[taskId].isActive || sVsSeeker != NULL
+     || gSaveBlock1Ptr == NULL || gMapHeader.events == NULL
+     || gMapHeader.events->objectEventCount > OBJECT_EVENT_TEMPLATES_COUNT
+     || (nativeContext != NULL && (!ADMG_IsNativeRematchContextCurrent(nativeContext) || sNativeVsSeekerTicket == 0xFFFFFFFF)))
+    {ADMG_StateAccessRejected(taskId, __func__); return FALSE;}
+    sVsSeeker = AllocZeroed(sizeof(struct VsSeekerStruct));
+    if (sVsSeeker == NULL) {ADMG_StateAccessRejected(taskId, __func__); return FALSE;}
+    sVsSeeker->native = nativeContext != NULL; sVsSeeker->taskId = taskId;
+    if (nativeContext != NULL) {sVsSeeker->nativeContext = *nativeContext; sVsSeeker->ticket = ++sNativeVsSeekerTicket;}
+    if (!GatherNearbyTrainerInfo()) {Free(sVsSeeker); sVsSeeker = NULL; return FALSE;}
+    u32 response = CanUseVsSeeker();
+    if (sVsSeeker->nativeFailed) {Free(sVsSeeker); sVsSeeker = NULL; return FALSE;}
+    for (u32 i = 0; i < NUM_TASK_DATA; ++i) gTasks[taskId].data[i] = 0;
+    if (response == VSSEEKER_NOT_CHARGED || response == VSSEEKER_NO_ONE_IN_RANGE)
+    {
+        Free(sVsSeeker); sVsSeeker = NULL;
+        DisplayItemMessageOnField(taskId, response == VSSEEKER_NOT_CHARGED
+            ? VSSeeker_Text_BatteryNotChargedNeedXSteps : VSSeeker_Text_NoTrainersWithinRange,
+            Task_ItemUse_CloseMessageBoxAndReturnToField_VsSeeker);
+    }
+    else
+    {
+        if (nativeContext != NULL)
+        {
+            gTasks[taskId].data[14] = (u16)sVsSeeker->ticket;
+            gTasks[taskId].data[15] = (u16)(sVsSeeker->ticket >> 16);
+        }
+        FieldEffectStart(FLDEFF_USE_VS_SEEKER);
+        gTasks[taskId].func = Task_VsSeekerFrameCountdown;
+        gTasks[taskId].data[0] = 15;
+    }
+    return TRUE;
+}
+
+ADMG_NATIVE_ENTRY bool8 ADMG_TryClearNativeRematchFamilyMovement(u32 trainerId)
+{
+    struct ADMG_RematchContext context;
+    u32 talked;
+    u16 family;
+    u8 position;
+    u8 objectIds[OBJECT_EVENT_TEMPLATES_COUNT];
+    bool8 matches[OBJECT_EVENT_TEMPLATES_COUNT] = {FALSE};
+    if (!ADMG_TryGetNativeBattleNpc(trainerId, &context, &talked)) return FALSE;
+    if (gSaveBlock1Ptr == NULL || gMapHeader.events == NULL
+     || gMapHeader.events->objectEventCount > OBJECT_EVENT_TEMPLATES_COUNT
+     || !ADMG_TryFindNativeRematch(trainerId, FALSE, &family, &position)) return FALSE;
+    /* Preflight the complete family before RNG or movement/state effects. */
+    for (u32 i = 0; i < gMapHeader.events->objectEventCount; ++i)
+    {
+        const struct ObjectEventTemplate *declared;
+        struct ADMG_TrainerRef ref;
+        struct ObjectEventTemplate *saved = &gSaveBlock1Ptr->objectEventTemplates[i];
+        if (!ADMG_TryGetDeclaredObjectTemplate(context.mapGroup, context.mapNum, saved->localId, &declared)) return FALSE;
+        if (declared->trainerType != TRAINER_TYPE_NORMAL && declared->trainerType != TRAINER_TYPE_BURIED) continue;
+        u16 id = GetTrainerFlagFromScript(declared->script), npcFamily;
+        if (!ADMG_TryResolveTrainer(id, &ref)) return FALSE;
+        if (ref.owner != ADMG_TRAINER_KANTO) continue;
+        u64 generation = ADMG_BeginStateAccessCheck();
+        bool8 found = ADMG_TryFindNativeRematch(id, FALSE, &npcFamily, &position);
+        if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+        if (!found || npcFamily != family) continue;
+        u8 ready, objectId = OBJECT_EVENTS_COUNT;
+        if (!ADMG_TryReadNativeReadiness(&context, saved->localId, &ready)) return FALSE;
+        matches[i] = TRUE;
+        if (TryGetObjectEventIdByLocalIdAndMap(saved->localId, context.mapNum, context.mapGroup, &objectId)
+         || objectId >= OBJECT_EVENTS_COUNT || !gObjectEvents[objectId].active
+         || gObjectEvents[objectId].localId != saved->localId
+         || gObjectEvents[objectId].mapGroup != context.mapGroup
+         || gObjectEvents[objectId].mapNum != context.mapNum) objectId = OBJECT_EVENTS_COUNT;
+        if (objectId < OBJECT_EVENTS_COUNT)
+        {
+            struct ObjectEvent *object = &gObjectEvents[objectId];
+            if (object->facingDirection >= ARRAY_COUNT(sFaceDirectionMovementTypeByFacingDirection))
+            {ADMG_StateAccessRejected(object->facingDirection, __func__); return FALSE;}
+            /* Battle sprites reuse the same pool. Their data is never an
+             * overworld sprite binding merely because the old ID is retained. */
+            if (!gMain.inBattle)
+            {
+                if (object->spriteId >= MAX_SPRITES
+                 || !ADMG_IsNativeRematchSpritePair(object, &gSprites[object->spriteId])) return FALSE;
+                if (gSprites[object->spriteId].anims == gADMG_NativeRematchAnimations)
+                {
+                    const struct ADMG_NativeRematchGraphics *graphics;
+                    if (!ADMG_TryGetNativeRematchGraphics(object->graphicsId, &graphics)
+                     || gSprites[object->spriteId].images != graphics->images) return FALSE;
+                }
+            }
+        }
+        objectIds[i] = objectId;
+    }
+    for (u32 i = 0; i < gMapHeader.events->objectEventCount; ++i)
+    {
+        if (!matches[i]) continue;
+        if (!ADMG_IsNativeRematchContextCurrent(&context)) return FALSE;
+        /* The original consumes this random direction even though the value
+         * is discarded. Do not collapse repeated identities or RNG calls. */
+        (void)GetRandomFaceDirectionMovementType();
+        if (!ADMG_IsNativeRematchContextCurrent(&context)) return FALSE;
+        struct ObjectEventTemplate *saved = &gSaveBlock1Ptr->objectEventTemplates[i];
+        u8 objectId = objectIds[i];
+        if (objectId < OBJECT_EVENTS_COUNT)
+        {
+            struct ObjectEvent *object = &gObjectEvents[objectId];
+            if (!object->active || object->localId != saved->localId
+             || object->mapGroup != context.mapGroup || object->mapNum != context.mapNum
+             || object->facingDirection >= ARRAY_COUNT(sFaceDirectionMovementTypeByFacingDirection)) return FALSE;
+            TryOverrideTemplateCoordsForObjectEvent(object, sFaceDirectionMovementTypeByFacingDirection[object->facingDirection]);
+            if (!ADMG_IsNativeRematchContextCurrent(&context)
+             || !ADMG_TryWriteNativeReadiness(&context, saved->localId, 0)) return FALSE;
+            object->movementType = gSelectedObjectEvent == objectId
+                ? sFaceDirectionMovementTypeByFacingDirection[object->facingDirection] : MOVEMENT_TYPE_FACE_DOWN;
+            if (!gMain.inBattle && (object->spriteId >= MAX_SPRITES
+             || !ADMG_TryRestoreNativeRematchSprite(object, &gSprites[object->spriteId]))) return FALSE;
+        }
+        else
+        {
+            /* All three native idle markers have the original south-facing
+             * binding. Ordinary unloaded template defaults remain untouched. */
+            if (ADMG_IsNativeRematchMovement(saved->movementType)) saved->movementType = MOVEMENT_TYPE_FACE_DOWN;
+            if (!ADMG_TryWriteNativeReadiness(&context, saved->localId, 0)) return FALSE;
+        }
+    }
+    return TRUE;
+}
+
+ADMG_NATIVE_ENTRY bool8 ADMG_TryInitNativeVsSeeker(u32 taskId)
+{
+    struct ADMG_RematchContext context;
+    if (taskId >= NUM_TASKS || !gTasks[taskId].isActive || sVsSeeker != NULL)
+    {ADMG_StateAccessRejected(taskId, __func__); return FALSE;}
+    if (!ADMG_TryCaptureNativeRematchContext(&context)) return FALSE;
+    return InitVsSeekerField(taskId, &context);
+}
+
+ADMG_NATIVE_ENTRY void ADMG_CancelNativeVsSeeker(void)
+{
+    if (sVsSeeker == NULL || !sVsSeeker->native) return;
+    if (NativeVsSeekerTaskOwned(sVsSeeker->taskId)) DestroyTask(sVsSeeker->taskId);
+    Free(sVsSeeker); sVsSeeker = NULL;
+}
+
+ADMG_NATIVE_ENTRY void ADMG_InitializeNativeRematchGameState(void)
+{
+    ADMG_CancelNativeVsSeeker();
+    ADMG_DiscardNativeBattleAssociation();
+    ADMG_InitNativeRematchState();
+}
+
+ADMG_NATIVE_ENTRY void ADMG_PrepareNativeRematchContinue(void)
+{
+    ADMG_CancelNativeVsSeeker();
+    ADMG_DiscardNativeBattleAssociation();
+    (void)ADMG_TryPrepareNativeRematchRestore();
+}
+
+static bool8 NativeRematchResetObjectValid(u32 objectId)
+{
+    if (objectId >= OBJECT_EVENTS_COUNT) return FALSE;
+    struct ObjectEvent *object = &gObjectEvents[objectId];
+    if (!object->active) return TRUE;
+    if (gMain.inBattle || object->spriteId >= MAX_SPRITES
+     || !ADMG_IsNativeRematchSpritePair(object, &gSprites[object->spriteId])) return FALSE;
+    struct Sprite *sprite = &gSprites[object->spriteId];
+    if (sprite->anims == gADMG_NativeRematchAnimations)
+    {
+        const struct ADMG_NativeRematchGraphics *graphics;
+        if (!ADMG_TryGetNativeRematchGraphics(object->graphicsId, &graphics)
+         || sprite->images != graphics->images) return FALSE;
+    }
+    return TRUE;
+}
+
+static bool8 NativeRematchResetObjectsValid(void)
+{
+    for (u32 i = 0; i < OBJECT_EVENTS_COUNT; ++i)
+        if (ADMG_IsNativeRematchMovement(gObjectEvents[i].movementType)
+         && !NativeRematchResetObjectValid(i)) return FALSE;
+    return TRUE;
+}
+
+/* Reset operations retire their old scene before the next named RNG effect.
+ * Epoch, allocation ticket and map/object containers identify that scene. */
+static bool8 NativeRematchResetSceneCurrent(const struct SaveBlock1 *save,
+    const struct MapEvents *events, u32 group, u32 number, u64 epoch, u32 ticket, bool8 bound)
+{
+    return gSaveBlock1Ptr == save && save != NULL && gMapHeader.events == events
+        && (u32)save->location.mapGroup == group && (u32)save->location.mapNum == number
+        && ADMG_GetNativeRematchEpoch() == epoch && sNativeVsSeekerTicket == ticket
+        && ADMG_HasNativeRematchContext() == bound && !ADMG_IsNativeRematchRestorePending();
+}
+
+ADMG_NATIVE_ENTRY bool8 ADMG_TryResetNativeRematchObjectMovements(void)
+{
+    if (gSaveBlock1Ptr == NULL || ADMG_IsNativeRematchRestorePending()
+     || !NativeRematchResetObjectsValid()) return FALSE;
+    const struct SaveBlock1 *save = gSaveBlock1Ptr;
+    const struct MapEvents *events = gMapHeader.events;
+    u32 group = (u32)save->location.mapGroup, number = (u32)save->location.mapNum;
+    u64 epoch = ADMG_GetNativeRematchEpoch();
+    u32 ticket = sNativeVsSeekerTicket;
+    bool8 bound = ADMG_HasNativeRematchContext();
+    for (u32 i = 0; i < OBJECT_EVENTS_COUNT; ++i)
+    {
+        struct ObjectEvent *object = &gObjectEvents[i];
+        if (!ADMG_IsNativeRematchMovement(object->movementType)) continue;
+        u8 movement = GetRandomFaceDirectionMovementType();
+        if (!NativeRematchResetSceneCurrent(save, events, group, number, epoch, ticket, bound)
+         || !NativeRematchResetObjectValid(i)) return FALSE;
+        /* Original RNG consumption includes inactive native movement slots. */
+        if (!object->active) continue;
+        struct Sprite *sprite = &gSprites[object->spriteId];
+        sprite->x2 = sprite->y2 = 0;
+        SetTrainerMovementType(object, movement);
+    }
+    return TRUE;
+}
+
+ADMG_NATIVE_ENTRY bool8 ADMG_TryResetNativeRematchTemplateMovements(void)
+{
+    bool8 matches[OBJECT_EVENT_TEMPLATES_COUNT] = {FALSE};
+    u8 objectIds[OBJECT_EVENT_TEMPLATES_COUNT];
+    if (gSaveBlock1Ptr == NULL || gMapHeader.events == NULL
+     || gMapHeader.events->objectEventCount > OBJECT_EVENT_TEMPLATES_COUNT
+     || gMain.inBattle || ADMG_IsNativeRematchRestorePending()) return FALSE;
+    const struct SaveBlock1 *save = gSaveBlock1Ptr;
+    const struct MapEvents *events = gMapHeader.events;
+    u32 group = (u32)save->location.mapGroup, number = (u32)save->location.mapNum;
+    u64 epoch = ADMG_GetNativeRematchEpoch();
+    u32 ticket = sNativeVsSeekerTicket;
+    bool8 bound = ADMG_HasNativeRematchContext();
+    for (u32 i = 0; i < events->objectEventCount; ++i)
+    {
+        const struct ObjectEventTemplate *declared;
+        const struct ObjectEventTemplate *saved = &save->objectEventTemplates[i];
+        if (!ADMG_IsNativeRematchMovement(saved->movementType)) continue;
+        if (!ADMG_TryGetDeclaredObjectTemplate(group, number, saved->localId, &declared)) return FALSE;
+        if (declared->trainerType != TRAINER_TYPE_NORMAL && declared->trainerType != TRAINER_TYPE_BURIED) continue;
+        u8 objectId = OBJECT_EVENTS_COUNT;
+        if (TryGetObjectEventIdByLocalIdAndMap(saved->localId, number, group, &objectId)) objectId = OBJECT_EVENTS_COUNT;
+        if (objectId < OBJECT_EVENTS_COUNT)
+        {
+            const struct ObjectEvent *object = &gObjectEvents[objectId];
+            if (object->localId != saved->localId || object->mapGroup != group || object->mapNum != number
+             || !NativeRematchResetObjectValid(objectId)) return FALSE;
+        }
+        else if (objectId != OBJECT_EVENTS_COUNT) return FALSE;
+        matches[i] = TRUE; objectIds[i] = objectId;
+    }
+    for (u32 i = 0; i < events->objectEventCount; ++i)
+    {
+        if (!matches[i]) continue;
+        u8 movement = GetRandomFaceDirectionMovementType();
+        if (!NativeRematchResetSceneCurrent(save, events, group, number, epoch, ticket, bound)) return FALSE;
+        u8 objectId = objectIds[i];
+        struct ObjectEventTemplate *saved = &gSaveBlock1Ptr->objectEventTemplates[i];
+        if (objectId < OBJECT_EVENTS_COUNT)
+        {
+            struct ObjectEvent *object = &gObjectEvents[objectId];
+            if (object->localId != saved->localId || !NativeRematchResetObjectValid(objectId)) return FALSE;
+            if (object->active) SetTrainerMovementType(object, movement);
+        }
+        /* Original saved template reset occurs even when its actor is unloaded. */
+        saved->movementType = movement;
+    }
+    return TRUE;
+}
+
+ADMG_NATIVE_ENTRY bool8 ADMG_TryResetNativeRematchMap(void)
+{
+    if (!ADMG_HasNativeRematchContext()) return !ADMG_IsNativeRematchRestorePending();
+    if (!NativeRematchResetObjectsValid()) return FALSE;
+    ADMG_CancelNativeVsSeeker();
+    ADMG_DiscardNativeBattleAssociation();
+    if (!ADMG_TryResetNativeRematches()) return FALSE;
+    return ADMG_TryResetNativeRematchObjectMovements();
 }

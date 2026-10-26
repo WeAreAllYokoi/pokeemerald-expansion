@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_rematch_state.h"
 #include "overworld.h"
 #include "battle_pyramid.h"
 #include "battle_setup.h"
@@ -565,12 +566,24 @@ void LoadObjEventTemplatesFromHeader(void)
 
 void LoadSaveblockObjEventScripts(void)
 {
-    const struct ObjectEventTemplate *mapHeaderObjTemplates = gMapHeader.events->objectEvents;
-    struct ObjectEventTemplate *savObjTemplates = gSaveBlock1Ptr->objectEventTemplates;
-    s32 i;
-
-    for (i = 0; i < OBJECT_EVENT_TEMPLATES_COUNT; i++)
-        savObjTemplates[i].script = mapHeaderObjTemplates[i].script;
+    const u8 *scripts[OBJECT_EVENT_TEMPLATES_COUNT];
+    if (gSaveBlock1Ptr == NULL || gMapHeader.events == NULL
+     || gMapHeader.events->objectEventCount > OBJECT_EVENT_TEMPLATES_COUNT)
+    { ADMG_StateAccessRejected(0, __func__); return; }
+    u32 count = gMapHeader.events->objectEventCount;
+    /* Resolve the entire declared category before copying any pointer. The
+     * old fixed-capacity read ran beyond short map arrays and copied unresolved
+     * clone declarations. Saved script addresses are never an identity input. */
+    for (u32 i = 0; i < count; ++i)
+    {
+        const struct ObjectEventTemplate *declared;
+        if (!ADMG_TryGetDeclaredObjectTemplate((u32)gSaveBlock1Ptr->location.mapGroup,
+                (u32)gSaveBlock1Ptr->location.mapNum,
+                gSaveBlock1Ptr->objectEventTemplates[i].localId, &declared)) return;
+        scripts[i] = declared->script;
+    }
+    for (u32 i = 0; i < count; ++i)
+        gSaveBlock1Ptr->objectEventTemplates[i].script = scripts[i];
 }
 
 static struct ObjectEventTemplate *GetObjectEventTemplate(u8 localId)
@@ -890,7 +903,7 @@ void LoadMapFromCameraTransition(u8 mapGroup, u8 mapNum)
     TryUpdateRandomTrainerRematches(mapGroup, mapNum);
 #endif //FREE_MATCH_CALL
 
-    if (I_VS_SEEKER_CHARGING != 0)
+    if (I_VS_SEEKER_CHARGING != 0 || ADMG_HasNativeRematchContext())
         MapResetTrainerRematches(mapGroup, mapNum);
 
     DoTimeBasedEvents();
@@ -957,7 +970,7 @@ static void LoadMapFromWarp(bool32 a1)
     TryUpdateRandomTrainerRematches(gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum);
 #endif //FREE_MATCH_CALL
 
-    if (I_VS_SEEKER_CHARGING != 0)
+    if (I_VS_SEEKER_CHARGING != 0 || ADMG_HasNativeRematchContext())
          MapResetTrainerRematches(gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum);
 
     if (a1 != TRUE)
@@ -2114,6 +2127,8 @@ static void FieldCB_FadeTryShowMapPopup(void)
 
 void CB2_ContinueSavedGame(void)
 {
+    ADMG_PrepareNativeRematchContinue();
+
     u8 trainerHillMapId;
 
     FieldClearVBlankHBlankCallbacks();

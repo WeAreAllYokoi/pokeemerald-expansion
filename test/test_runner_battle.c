@@ -7,6 +7,7 @@
 #include "battle_gimmick.h"
 #include "battle_z_move.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "fieldmap.h"
 #include "item_menu.h"
 #include "main.h"
@@ -2351,6 +2352,7 @@ const struct TestRunner gBattleTestRunner =
 void SetFlagForTest(u32 sourceLine, u16 flagId)
 {
     INVALID_IF(DATA.flagId != 0, "FLAG can only be set once per test");
+    INVALID_IF(!ADMG_IsFlagIdValid(flagId), "Invalid or unavailable FLAG identifier: %u", flagId);
     DATA.flagId = flagId;
     FlagSet(flagId);
 }
@@ -2358,6 +2360,7 @@ void SetFlagForTest(u32 sourceLine, u16 flagId)
 void SetVarForTest(u32 sourceLine, u16 varId, u16 value)
 {
     INVALID_IF(DATA.varId != 0, "VAR can only be set once per test");
+    INVALID_IF(varId != 0 && GetVarPointer(varId) == NULL, "Invalid or unavailable VAR identifier: %u", varId);
     DATA.varId = varId;
     VarSet(varId, value);
 }
@@ -2388,6 +2391,11 @@ void ClearFlagAfterTest(void)
 {
     if (DATA.flagId != 0)
     {
+        if (!ADMG_IsFlagIdValid(DATA.flagId))
+        {
+            ADMG_StateAccessRejected(DATA.flagId, __func__);
+            return;
+        }
         FlagClear(DATA.flagId);
         DATA.flagId = 0;
     }
@@ -2397,6 +2405,11 @@ void ClearVarAfterTest(void)
 {
     if (DATA.varId != 0)
     {
+        if (GetVarPointer(DATA.varId) == NULL)
+        {
+            ADMG_StateAccessRejected(DATA.varId, __func__);
+            return;
+        }
         VarSet(DATA.varId, 0);
         DATA.varId = 0;
     }

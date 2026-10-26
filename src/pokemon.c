@@ -1,4 +1,7 @@
 #include "global.h"
+#include "admg_trainer_actor.h"
+#include "admg_state.h"
+#include "admg_trainer.h"
 #include "malloc.h"
 #include "apprentice.h"
 #include "battle.h"
@@ -16,6 +19,7 @@
 #include "daycare.h"
 #include "dexnav.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "event_object_movement.h"
 #include "evolution_scene.h"
 #include "field_player_avatar.h"
@@ -868,6 +872,8 @@ void CreateMonWithIVs(struct Pokemon *mon, enum Species species, u8 level, u32 p
 
 bool32 ComputePlayerShinyOdds(u32 personality, u32 value)
 {
+    ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1, FALSE);
+
     if (FlagGet(P_FLAG_FORCE_NO_SHINY))
         return FALSE;
 
@@ -4790,15 +4796,22 @@ s32 GetBattlerMultiplayerId(u16 id)
 
 u8 GetTrainerEncounterMusicId(u16 trainerOpponentId)
 {
-    u32 sanitizedTrainerId = SanitizeTrainerId(trainerOpponentId);
-    enum DifficultyLevel difficulty = GetTrainerDifficultyLevel(sanitizedTrainerId);
-
+    const struct Trainer *trainer;
+    u64 generation;
+    u16 sanitizedTrainerId;
+    enum DifficultyLevel difficulty;
     if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
         return GetTrainerEncounterMusicIdInBattlePyramid(trainerOpponentId);
-    else if (InTrainerHillChallenge())
+    if (InTrainerHillChallenge())
         return GetTrainerEncounterMusicIdInTrainerHill(trainerOpponentId);
-    else
-        return gTrainers[difficulty][sanitizedTrainerId].encounterMusic;
+    if (!ADMG_TryValidateOrdinaryTrainerOperands(trainerOpponentId, TRAINER_NONE)) return 0;
+    generation = ADMG_BeginStateAccessCheck();
+    sanitizedTrainerId = SanitizeTrainerId(trainerOpponentId);
+    difficulty = GetTrainerDifficultyLevel(sanitizedTrainerId);
+    if (!ADMG_EndStateAccessCheck(generation)
+     || !ADMG_TryGetTrainerRow(sanitizedTrainerId, difficulty, &trainer))
+        return 0;
+    return trainer->encounterMusic;
 }
 
 u16 ModifyStatByNature(u8 nature, u16 stat, enum Stat statIndex)
@@ -5106,8 +5119,23 @@ u16 GetBattleBGM(void)
             trainerClass = GetFrontierOpponentClass(TRAINER_BATTLE_PARAM.opponentA);
         else if (gBattleTypeFlags & BATTLE_TYPE_TRAINER_HILL)
             trainerClass = TRAINER_CLASS_EXPERT;
+        else if (gBattleTypeFlags & BATTLE_TYPE_SECRET_BASE)
+        {
+            if (gBattleResources == NULL || gBattleResources->secretBase == NULL)
+            { ADMG_StateAccessRejected(TRAINER_BATTLE_PARAM.opponentA, __func__); return 0; }
+            trainerClass = GetSecretBaseTrainerClass();
+        }
         else
+        {
+            struct ADMG_TrainerActorRef actor;
+            /* The e-Reader special battle keeps the original class query. */
+            if (!((gBattleTypeFlags & BATTLE_TYPE_EREADER_TRAINER)
+                  && ADMG_IsBattleFacilityActor(gBattleTypeFlags, ADMG_ACTOR_OPPONENT,
+                      TRAINER_BATTLE_PARAM.opponentA, ADMG_ACTOR_EREADER))
+             && !ADMG_TryClassifyTrainerActor(TRAINER_BATTLE_PARAM.opponentA,
+                ADMG_ACTOR_CONTENT, ADMG_ACTOR_OPPONENT, &actor)) return 0;
             trainerClass = GetTrainerClassFromId(TRAINER_BATTLE_PARAM.opponentA);
+        }
 
         switch (trainerClass)
         {
@@ -5162,19 +5190,22 @@ u16 GetBattleBGM(void)
 
 void PlayBattleBGM(void)
 {
+    u64 generation = ADMG_BeginStateAccessCheck();
+    u16 song = GetBattleBGM();
+    if (!ADMG_EndStateAccessCheck(generation)) return;
     ResetMapMusic();
     m4aMPlayAllStop();
-    PlayBGM(GetBattleBGM());
+    PlayBGM(song);
 }
 
 void PlayMapChosenOrBattleBGM(u16 songId)
 {
+    u64 generation = ADMG_BeginStateAccessCheck();
+    u16 song = songId ? songId : GetBattleBGM();
+    if (!ADMG_EndStateAccessCheck(generation)) return;
     ResetMapMusic();
     m4aMPlayAllStop();
-    if (songId)
-        PlayNewMapMusic(songId);
-    else
-        PlayNewMapMusic(GetBattleBGM());
+    PlayNewMapMusic(song);
 }
 
 // Identical to PlayMapChosenOrBattleBGM, but uses a task instead
@@ -5193,10 +5224,10 @@ void CreateTask_PlayMapChosenOrBattleBGM(u16 songId)
 
 static void Task_PlayMapChosenOrBattleBGM(u8 taskId)
 {
-    if (gTasks[taskId].tSongId)
-        PlayNewMapMusic(gTasks[taskId].tSongId);
-    else
-        PlayNewMapMusic(GetBattleBGM());
+    u64 generation = ADMG_BeginStateAccessCheck();
+    u16 song = gTasks[taskId].tSongId ? gTasks[taskId].tSongId : GetBattleBGM();
+    if (!ADMG_EndStateAccessCheck(generation)) return;
+    PlayNewMapMusic(song);
     DestroyTask(taskId);
 }
 
@@ -5450,13 +5481,20 @@ const u8 *GetTrainerPartnerName(void)
 {
     if (gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER)
     {
+        u64 generation = ADMG_BeginStateAccessCheck();
         GetFrontierTrainerName(gStringVar1, gPartnerTrainerId);
+        if (!ADMG_EndStateAccessCheck(generation)) return gText_EmptyString2;
         return gStringVar1;
     }
     else
     {
         u8 id = GetMultiplayerId();
-        return gLinkPlayers[GetBattlerMultiplayerId(gLinkPlayers[id].id ^ 2)].name;
+        if (id >= MAX_LINK_PLAYERS || gLinkPlayers[id].id >= MAX_BATTLERS_COUNT)
+        { ADMG_StateAccessRejected(id, __func__); return gText_EmptyString2; }
+        s32 partner = GetBattlerMultiplayerId(gLinkPlayers[id].id ^ 2);
+        if ((u32)partner >= MAX_LINK_PLAYERS)
+        { ADMG_StateAccessRejected(partner, __func__); return gText_EmptyString2; }
+        return gLinkPlayers[partner].name;
     }
 }
 

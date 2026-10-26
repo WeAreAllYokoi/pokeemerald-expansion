@@ -1,6 +1,9 @@
 #ifndef GUARD_DATA_H
 #define GUARD_DATA_H
 
+#include "admg_trainer.h"
+#include "admg_state.h"
+
 #include "constants/moves.h"
 #include "constants/trainers.h"
 #include "constants/battle.h"
@@ -218,6 +221,12 @@ extern const union AnimCmd *const gAnims_Trainer[];
 extern const struct TrainerPicInfo gTrainerPicInfo[TRAINER_PIC_COUNT];
 
 extern const struct Trainer gTrainers[DIFFICULTY_COUNT][TRAINERS_COUNT];
+extern const struct Trainer gADMG_KantoTrainers[DIFFICULTY_COUNT][TRAINERS_COUNT_FRLG];
+#if TESTING
+extern const struct Trainer gADMG_HoennTrainers[DIFFICULTY_COUNT][TRAINERS_COUNT_EMERALD];
+#else
+#define gADMG_HoennTrainers gTrainers
+#endif
 extern const struct Trainer gBattlePartners[DIFFICULTY_COUNT][PARTNER_COUNT];
 
 extern const struct TrainerClass gTrainerClasses[TRAINER_CLASS_COUNT];
@@ -257,11 +266,14 @@ static inline bool32 IsSpecialTrainer(u16 trainerId)
 
 static inline u16 SanitizeTrainerId(u16 trainerId)
 {
-    assertf(trainerId < TRAINERS_COUNT, "invalid trainer: %d", trainerId)
+    struct ADMG_TrainerRef ref;
+    if (!ADMG_TryResolveTrainer(trainerId, &ref))
+        return TRAINER_NONE;
+    if (ref.owner == ADMG_TRAINER_PARTNER)
     {
+        ADMG_StateAccessRejected(trainerId, __func__);
         return TRAINER_NONE;
     }
-
     return trainerId;
 }
 
@@ -278,19 +290,17 @@ static inline u16 GetPartnerIdFromTrainerId(u16 trainerId)
 
 static inline const struct Trainer *GetTrainerStructFromId(u16 trainerId)
 {
-    if (gIsDebugBattle) return GetDebugAiTrainer();
-    enum DifficultyLevel difficulty;
-
-    if (IsPartnerTrainerId(trainerId))
+    const struct Trainer *trainer;
+    if (gIsDebugBattle)
     {
-        difficulty = GetBattlePartnerDifficultyLevel(trainerId);
-        return &gBattlePartners[difficulty][GetPartnerIdFromTrainerId(trainerId)];
+        const struct Trainer *debugTrainer = GetDebugAiTrainer();
+        if (debugTrainer != NULL) return debugTrainer;
+        ADMG_StateAccessRejected(trainerId, __func__);
+        return &gTrainers[DIFFICULTY_NORMAL][TRAINER_NONE];
     }
-    else
-    {
-        difficulty = GetTrainerDifficultyLevel(trainerId);
-        return &gTrainers[difficulty][SanitizeTrainerId(trainerId)];
-    }
+    if (!ADMG_TryGetTrainerStruct(trainerId, &trainer))
+        return &gTrainers[DIFFICULTY_NORMAL][TRAINER_NONE];
+    return trainer;
 }
 
 static inline const enum TrainerClassID GetTrainerClassFromId(u16 trainerId)
@@ -302,7 +312,12 @@ static inline const enum TrainerClassID GetTrainerClassFromId(u16 trainerId)
 
 static inline const u8 *GetTrainerClassNameFromId(u16 trainerId)
 {
-    return gTrainerClasses[GetTrainerClassFromId(trainerId)].name;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    u32 trainerClass = GetTrainerClassFromId(trainerId);
+    if (!ADMG_EndStateAccessCheck(generation)) return gTrainerClasses[0].name;
+    if (trainerClass >= TRAINER_CLASS_COUNT)
+    { ADMG_StateAccessRejected(trainerClass, __func__); return gTrainerClasses[0].name; }
+    return gTrainerClasses[trainerClass].name;
 }
 
 static inline const u8 *GetTrainerNameFromId(u16 trainerId)

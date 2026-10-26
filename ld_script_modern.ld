@@ -67,6 +67,13 @@ SECTIONS {
         *.o(.eh_frame);
     } > ROM =0
 
+    /* Passive source roots. Compiler used attributes alone do not prevent GC. */
+    .admg.exports :
+    ALIGN(4)
+    {
+        KEEP(*(.admg.exports*))
+    } > ROM =0
+
     script_data :
     ALIGN(4)
     {

@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_state.h"
 #include "battle_pike.h"
 #include "event_data.h"
 #include "frontier_util.h"
@@ -1449,15 +1450,23 @@ static void ClearPikeTrainerIds(void)
 
 static void BufferTrainerIntro(void)
 {
+    const struct BattleFrontierTrainer *trainer;
+
     if (gSpecialVar_0x8005 == 0)
     {
         if (TRAINER_BATTLE_PARAM.opponentA < FRONTIER_TRAINERS_COUNT)
-            FrontierSpeechToString(gFacilityTrainers[TRAINER_BATTLE_PARAM.opponentA].speechBefore);
+        {
+            if (!ADMG_TryGetActiveFacilityTrainerRow(TRAINER_BATTLE_PARAM.opponentA, &trainer)) return;
+            FrontierSpeechToString(trainer->speechBefore);
+        }
     }
     else if (gSpecialVar_0x8005 == 1)
     {
         if (TRAINER_BATTLE_PARAM.opponentB < FRONTIER_TRAINERS_COUNT)
-            FrontierSpeechToString(gFacilityTrainers[TRAINER_BATTLE_PARAM.opponentB].speechBefore);
+        {
+            if (!ADMG_TryGetActiveFacilityTrainerRow(TRAINER_BATTLE_PARAM.opponentB, &trainer)) return;
+            FrontierSpeechToString(trainer->speechBefore);
+        }
     }
 }
 

@@ -1797,7 +1797,7 @@ static void fprint_species(FILE *f, const char *prefix, struct String s)
     }
 }
 
-static void fprint_trainers(const char *output_path, FILE *f, struct Parsed *parsed)
+static void fprint_trainers(const char *output_path, FILE *f, struct Parsed *parsed, const char *index_prefix)
 {
     fprintf(f, "//\n");
     fprintf(f, "// DO NOT MODIFY THIS FILE! It is auto-generated from %s\n", parsed->source->path);
@@ -1821,6 +1821,7 @@ static void fprint_trainers(const char *output_path, FILE *f, struct Parsed *par
         fprintf(f, "]");
 
         fprintf(f, "[");
+        fprintf(f, "%s", index_prefix);
         fprint_string(f, trainer->id);
         fprintf(f, "] =\n");
         fprintf(f, "    {\n");
@@ -2187,12 +2188,22 @@ int main(int argc, char *argv[])
     const char *source_path = NULL;
     const char *output_path = NULL;
     const char *real_source_path = NULL;
+    const char *index_prefix = "";
 
     int opt;
-    while ((opt = getopt(argc, argv, "i:o:")) != -1)
+    while ((opt = getopt(argc, argv, "i:o:p:")) != -1)
     {
         switch (opt)
         {
+        case 'p':
+            index_prefix = optarg;
+            if (strspn(index_prefix, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789") != strlen(index_prefix)
+             || (*index_prefix >= '0' && *index_prefix <= '9'))
+            {
+                fprintf(stderr, "invalid array index prefix\n");
+                goto exit;
+            }
+            break;
         case 'i':
             real_source_path = optarg;
             break;
@@ -2304,7 +2315,7 @@ int main(int argc, char *argv[])
             goto exit;
         }
     }
-    fprint_trainers(output_path, output_file, &parsed);
+    fprint_trainers(output_path, output_file, &parsed, index_prefix);
 
     status = 0;
 

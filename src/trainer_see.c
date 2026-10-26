@@ -1,6 +1,7 @@
 #include "global.h"
 #include "battle_setup.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "event_object_movement.h"
 #include "event_scripts.h"
 #include "field_effect.h"
@@ -456,7 +457,7 @@ bool8 CheckForTrainersWantingBattle(void)
     }
 
     // Sorts array by localId
-    for (i = 1; i <= trainerObjectsCount; i++)
+    for (i = 1; i < trainerObjectsCount; i++)
     {
         u8 x = trainerObjects[i];
         u8 j = i;
@@ -468,7 +469,7 @@ bool8 CheckForTrainersWantingBattle(void)
         trainerObjects[j] = x;
     }
 
-    for (i = 0; i <= trainerObjectsCount; i++)
+    for (i = 0; i < trainerObjectsCount; i++)
     {
         u8 numTrainers;
         numTrainers = CheckTrainer(trainerObjects[i]);
@@ -515,6 +516,9 @@ bool8 CheckForTrainersWantingBattle(void)
 
 static u8 CheckTrainer(u8 objectEventId)
 {
+    if (objectEventId >= OBJECT_EVENTS_COUNT || gNoOfApproachingTrainers >= NUM_APPROACHING_TRAINER)
+    { ADMG_StateAccessRejected(objectEventId, __func__); return 0; }
+
     const u8 *trainerBattlePtr;
     u8 numTrainers = 1;
 
@@ -548,8 +552,12 @@ static u8 CheckTrainer(u8 objectEventId)
 
     if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
     {
-        if (GetBattlePyramidTrainerFlag(objectEventId))
+        u64 generation = ADMG_BeginStateAccessCheck();
+        bool8 defeated = GetBattlePyramidTrainerFlag(objectEventId);
+        if (!ADMG_EndStateAccessCheck(generation) || defeated)
             return 0;
+        (void)LocalIdToPyramidTrainerId(gObjectEvents[objectEventId].localId);
+        if (!ADMG_EndStateAccessCheck(generation)) return 0;
     }
     else if (InTrainerHill())
     {
@@ -558,7 +566,10 @@ static u8 CheckTrainer(u8 objectEventId)
     }
     else if (trainerBattlePtr)
     {
-        if (GetTrainerFlagFromScriptPointer(trainerBattlePtr))
+        bool8 defeated;
+        if (!ADMG_TryReadTrainerFlagFromScript(trainerBattlePtr, &defeated))
+            return 0;
+        if (defeated)
         {
             //If there is a rematch, we want to trigger the approach sequence
             if (I_VS_SEEKER_CHARGING && GetRematchFromScriptPointer(trainerBattlePtr))

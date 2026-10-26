@@ -1,0 +1,1581 @@
+{
+  "extent_includes_terminator": true,
+  "format": "admg101-facility-mon-set-extents",
+  "format_version": 1,
+  "header_sha256": "e85d440aa0905f4acae829c20bc4ff687f5ec8ab00910163ef46f992bb695bf5",
+  "source_data_modified": false,
+  "source_sha256": {
+    "src/data/battle_frontier/battle_frontier_trainers.h": "e57efba0d9f44838ff931dd210157be5e50f0652d42ffce344bd45de1372c0f7",
+    "src/data/battle_frontier/battle_tent.h": "31fbb90de583b066de45bddb0fa21afeb21265550bed5741edfecfae423dd300"
+  },
+  "tables": {
+    "gBattleFrontierTrainers": [
+      {
+        "designator": "FRONTIER_TRAINER_BRADY",
+        "expression": "(const u16[]){FRONTIER_MONS_YOUNGSTER_LASS_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_CONNER",
+        "expression": "(const u16[]){FRONTIER_MONS_YOUNGSTER_LASS_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_BRADLEY",
+        "expression": "(const u16[]){FRONTIER_MONS_YOUNGSTER_LASS_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_CYBIL",
+        "expression": "(const u16[]){FRONTIER_MONS_YOUNGSTER_LASS_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_RODETTE",
+        "expression": "(const u16[]){FRONTIER_MONS_YOUNGSTER_LASS_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_PEGGY",
+        "expression": "(const u16[]){FRONTIER_MONS_YOUNGSTER_LASS_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_KEITH",
+        "expression": "(const u16[]){FRONTIER_MONS_SCHOOL_KID_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_GRAYSON",
+        "expression": "(const u16[]){FRONTIER_MONS_SCHOOL_KID_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_GLENN",
+        "expression": "(const u16[]){FRONTIER_MONS_SCHOOL_KID_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_LILIANA",
+        "expression": "(const u16[]){FRONTIER_MONS_SCHOOL_KID_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ELISE",
+        "expression": "(const u16[]){FRONTIER_MONS_SCHOOL_KID_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ZOEY",
+        "expression": "(const u16[]){FRONTIER_MONS_SCHOOL_KID_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_MANUEL",
+        "expression": "(const u16[]){FRONTIER_MONS_RICH_BOY_LADY_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_RUSS",
+        "expression": "(const u16[]){FRONTIER_MONS_RICH_BOY_LADY_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_DUSTIN",
+        "expression": "(const u16[]){FRONTIER_MONS_RICH_BOY_LADY_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_TINA",
+        "expression": "(const u16[]){FRONTIER_MONS_RICH_BOY_LADY_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_GILLIAN1",
+        "expression": "(const u16[]){FRONTIER_MONS_RICH_BOY_LADY_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ZOE",
+        "expression": "(const u16[]){FRONTIER_MONS_RICH_BOY_LADY_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_CHEN",
+        "expression": "(const u16[]){FRONTIER_MONS_CAMPER_PICNICKER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_AL",
+        "expression": "(const u16[]){FRONTIER_MONS_CAMPER_PICNICKER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_MITCH",
+        "expression": "(const u16[]){FRONTIER_MONS_CAMPER_PICNICKER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ANNE",
+        "expression": "(const u16[]){FRONTIER_MONS_CAMPER_PICNICKER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ALIZE",
+        "expression": "(const u16[]){FRONTIER_MONS_CAMPER_PICNICKER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_LAUREN",
+        "expression": "(const u16[]){FRONTIER_MONS_CAMPER_PICNICKER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_KIPP",
+        "expression": "(const u16[]){FRONTIER_MONS_TUBER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JASON",
+        "expression": "(const u16[]){FRONTIER_MONS_TUBER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JOHN",
+        "expression": "(const u16[]){FRONTIER_MONS_TUBER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ANN",
+        "expression": "(const u16[]){FRONTIER_MONS_TUBER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_EILEEN",
+        "expression": "(const u16[]){FRONTIER_MONS_TUBER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_CARLIE",
+        "expression": "(const u16[]){FRONTIER_MONS_TUBER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_GORDON",
+        "expression": "(const u16[]){FRONTIER_MONS_SWIMMER_M_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_AYDEN",
+        "expression": "(const u16[]){FRONTIER_MONS_SWIMMER_M_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_MARCO",
+        "expression": "(const u16[]){FRONTIER_MONS_SWIMMER_M_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_CIERRA",
+        "expression": "(const u16[]){FRONTIER_MONS_SWIMMER_F_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_MARCY",
+        "expression": "(const u16[]){FRONTIER_MONS_SWIMMER_F_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_KATHY",
+        "expression": "(const u16[]){FRONTIER_MONS_SWIMMER_F_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_PEYTON",
+        "expression": "(const u16[]){FRONTIER_MONS_POKEFAN_M_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JULIAN",
+        "expression": "(const u16[]){FRONTIER_MONS_POKEFAN_M_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_QUINN",
+        "expression": "(const u16[]){FRONTIER_MONS_POKEFAN_M_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_HAYLEE",
+        "expression": "(const u16[]){FRONTIER_MONS_POKEFAN_F_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_AMANDA",
+        "expression": "(const u16[]){FRONTIER_MONS_POKEFAN_F_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_STACY",
+        "expression": "(const u16[]){FRONTIER_MONS_POKEFAN_F_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_RAFAEL",
+        "expression": "(const u16[]){FRONTIER_MONS_YOUNGSTER_LASS_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_OLIVER",
+        "expression": "(const u16[]){FRONTIER_MONS_SCHOOL_KID_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_PAYTON",
+        "expression": "(const u16[]){FRONTIER_MONS_CAMPER_PICNICKER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_PAMELA",
+        "expression": "(const u16[]){FRONTIER_MONS_YOUNGSTER_LASS_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ELIZA",
+        "expression": "(const u16[]){FRONTIER_MONS_SCHOOL_KID_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_MARISA",
+        "expression": "(const u16[]){FRONTIER_MONS_CAMPER_PICNICKER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_LEWIS",
+        "expression": "(const u16[]){FRONTIER_MONS_BUG_CATCHER_1_EXTRA(METAPOD, KAKUNA)}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_YOSHI",
+        "expression": "(const u16[]){FRONTIER_MONS_BUG_CATCHER_1_EXTRA(SILCOON, CASCOON)}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_DESTIN",
+        "expression": "(const u16[]){FRONTIER_MONS_BUG_CATCHER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_KEON",
+        "expression": "(const u16[]){FRONTIER_MONS_NINJA_BOY_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_STUART",
+        "expression": "(const u16[]){FRONTIER_MONS_NINJA_BOY_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_NESTOR",
+        "expression": "(const u16[]){FRONTIER_MONS_NINJA_BOY_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_DERRICK",
+        "expression": "(const u16[]){FRONTIER_MONS_BUG_MANIAC_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_BRYSON",
+        "expression": "(const u16[]){FRONTIER_MONS_BUG_MANIAC_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_CLAYTON",
+        "expression": "(const u16[]){FRONTIER_MONS_BUG_MANIAC_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_TRENTON",
+        "expression": "(const u16[]){FRONTIER_MONS_FISHERMAN_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JENSON",
+        "expression": "(const u16[]){FRONTIER_MONS_FISHERMAN_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_WESLEY",
+        "expression": "(const u16[]){FRONTIER_MONS_FISHERMAN_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ANTON",
+        "expression": "(const u16[]){FRONTIER_MONS_RUIN_MANIAC_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_LAWSON",
+        "expression": "(const u16[]){FRONTIER_MONS_RUIN_MANIAC_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_SAMMY",
+        "expression": "(const u16[]){FRONTIER_MONS_RUIN_MANIAC_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ARNIE",
+        "expression": "(const u16[]){FRONTIER_MONS_YOUNGSTER_LASS_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ADRIAN",
+        "expression": "(const u16[]){FRONTIER_MONS_SCHOOL_KID_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_TRISTAN",
+        "expression": "(const u16[]){FRONTIER_MONS_CAMPER_PICNICKER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JULIANA",
+        "expression": "(const u16[]){FRONTIER_MONS_PARASOL_LADY_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_RYLEE",
+        "expression": "(const u16[]){FRONTIER_MONS_PARASOL_LADY_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_CHELSEA",
+        "expression": "(const u16[]){FRONTIER_MONS_PARASOL_LADY_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_DANELA",
+        "expression": "(const u16[]){FRONTIER_MONS_YOUNGSTER_LASS_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_LIZBETH",
+        "expression": "(const u16[]){FRONTIER_MONS_SCHOOL_KID_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_AMELIA",
+        "expression": "(const u16[]){FRONTIER_MONS_CAMPER_PICNICKER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JILLIAN",
+        "expression": "(const u16[]){FRONTIER_MONS_AROMA_LADY_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ABBIE",
+        "expression": "(const u16[]){FRONTIER_MONS_AROMA_LADY_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_BRIANA",
+        "expression": "(const u16[]){FRONTIER_MONS_AROMA_LADY_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ANTONIO",
+        "expression": "(const u16[]){FRONTIER_MONS_GUITARIST_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JADEN",
+        "expression": "(const u16[]){FRONTIER_MONS_GUITARIST_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_DAKOTA",
+        "expression": "(const u16[]){FRONTIER_MONS_GUITARIST_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_BRAYDEN",
+        "expression": "(const u16[]){FRONTIER_MONS_BIRD_KEEPER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_CORSON",
+        "expression": "(const u16[]){FRONTIER_MONS_BIRD_KEEPER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_TREVIN",
+        "expression": "(const u16[]){FRONTIER_MONS_BIRD_KEEPER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_PATRICK",
+        "expression": "(const u16[]){FRONTIER_MONS_SAILOR_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_KADEN",
+        "expression": "(const u16[]){FRONTIER_MONS_SAILOR_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_MAXWELL",
+        "expression": "(const u16[]){FRONTIER_MONS_SAILOR_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_DARYL",
+        "expression": "(const u16[]){FRONTIER_MONS_HIKER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_KENNETH",
+        "expression": "(const u16[]){FRONTIER_MONS_HIKER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_RICH",
+        "expression": "(const u16[]){FRONTIER_MONS_HIKER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_CADEN",
+        "expression": "(const u16[]){FRONTIER_MONS_KINDLER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_MARLON",
+        "expression": "(const u16[]){FRONTIER_MONS_KINDLER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_NASH",
+        "expression": "(const u16[]){FRONTIER_MONS_KINDLER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ROBBY",
+        "expression": "(const u16[]){FRONTIER_MONS_RUNNING_TRIATHLETE_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_REECE",
+        "expression": "(const u16[]){FRONTIER_MONS_RUNNING_TRIATHLETE_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_KATHRYN",
+        "expression": "(const u16[]){FRONTIER_MONS_RUNNING_TRIATHLETE_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ELLEN",
+        "expression": "(const u16[]){FRONTIER_MONS_RUNNING_TRIATHLETE_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_RAMON",
+        "expression": "(const u16[]){FRONTIER_MONS_SWIMMING_TRIATHLETE_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ARTHUR",
+        "expression": "(const u16[]){FRONTIER_MONS_SWIMMING_TRIATHLETE_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ALONDRA",
+        "expression": "(const u16[]){FRONTIER_MONS_SWIMMING_TRIATHLETE_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ADRIANA",
+        "expression": "(const u16[]){FRONTIER_MONS_SWIMMING_TRIATHLETE_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_MALIK",
+        "expression": "(const u16[]){FRONTIER_MONS_CYCLING_TRIATHLETE_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JILL",
+        "expression": "(const u16[]){FRONTIER_MONS_CYCLING_TRIATHLETE_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ERIK",
+        "expression": "(const u16[]){FRONTIER_MONS_RUNNING_TRIATHLETE_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_YAZMIN",
+        "expression": "(const u16[]){FRONTIER_MONS_RUNNING_TRIATHLETE_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JAMAL",
+        "expression": "(const u16[]){FRONTIER_MONS_SWIMMING_TRIATHLETE_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_LESLIE",
+        "expression": "(const u16[]){FRONTIER_MONS_SWIMMING_TRIATHLETE_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_DAVE",
+        "expression": "(const u16[]){FRONTIER_MONS_CYCLING_TRIATHLETE_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_CARLO",
+        "expression": "(const u16[]){FRONTIER_MONS_CYCLING_TRIATHLETE_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_EMILIA",
+        "expression": "(const u16[]){FRONTIER_MONS_CYCLING_TRIATHLETE_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_DALIA",
+        "expression": "(const u16[]){FRONTIER_MONS_CYCLING_TRIATHLETE_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_HITOMI",
+        "expression": "(const u16[]){FRONTIER_MONS_BLACK_BELT_BATTLE_GIRL_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_RICARDO",
+        "expression": "(const u16[]){FRONTIER_MONS_BLACK_BELT_BATTLE_GIRL_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_SHIZUKA",
+        "expression": "(const u16[]){FRONTIER_MONS_BLACK_BELT_BATTLE_GIRL_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JOANA",
+        "expression": "(const u16[]){FRONTIER_MONS_BLACK_BELT_BATTLE_GIRL_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_KELLY",
+        "expression": "(const u16[]){FRONTIER_MONS_BLACK_BELT_BATTLE_GIRL_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_RAYNA",
+        "expression": "(const u16[]){FRONTIER_MONS_BLACK_BELT_BATTLE_GIRL_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_EVAN",
+        "expression": "(const u16[]){FRONTIER_MONS_EXPERT_1A}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JORDAN",
+        "expression": "(const u16[]){FRONTIER_MONS_EXPERT_1B}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JOEL",
+        "expression": "(const u16[]){FRONTIER_MONS_EXPERT_1C}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_KRISTEN",
+        "expression": "(const u16[]){FRONTIER_MONS_EXPERT_1A}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_SELPHY",
+        "expression": "(const u16[]){FRONTIER_MONS_EXPERT_1B}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_CHLOE",
+        "expression": "(const u16[]){FRONTIER_MONS_EXPERT_1C}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_NORTON",
+        "expression": "(const u16[]){FRONTIER_MONS_PSYCHIC_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_LUKAS",
+        "expression": "(const u16[]){FRONTIER_MONS_PSYCHIC_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ZACH",
+        "expression": "(const u16[]){FRONTIER_MONS_PSYCHIC_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_KAITLYN",
+        "expression": "(const u16[]){FRONTIER_MONS_PSYCHIC_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_BREANNA",
+        "expression": "(const u16[]){FRONTIER_MONS_PSYCHIC_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_KENDRA",
+        "expression": "(const u16[]){FRONTIER_MONS_PSYCHIC_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_MOLLY",
+        "expression": "(const u16[]){FRONTIER_MONS_HEX_MANIAC_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JAZMIN",
+        "expression": "(const u16[]){FRONTIER_MONS_HEX_MANIAC_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_KELSEY",
+        "expression": "(const u16[]){FRONTIER_MONS_HEX_MANIAC_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JALEN",
+        "expression": "(const u16[]){FRONTIER_MONS_POKEMANIAC_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_GRIFFEN",
+        "expression": "(const u16[]){FRONTIER_MONS_POKEMANIAC_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_XANDER",
+        "expression": "(const u16[]){FRONTIER_MONS_POKEMANIAC_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_MARVIN",
+        "expression": "(const u16[]){FRONTIER_MONS_GENTLEMAN_1A}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_BRENNAN",
+        "expression": "(const u16[]){FRONTIER_MONS_GENTLEMAN_1B}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_BALEY",
+        "expression": "(const u16[]){FRONTIER_MONS_BUG_MANIAC_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ZACKARY",
+        "expression": "(const u16[]){FRONTIER_MONS_RUIN_MANIAC_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_GABRIEL",
+        "expression": "(const u16[]){FRONTIER_MONS_COLLECTOR_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_EMILY",
+        "expression": "(const u16[]){FRONTIER_MONS_PARASOL_LADY_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JORDYN",
+        "expression": "(const u16[]){FRONTIER_MONS_BEAUTY_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_SOFIA",
+        "expression": "(const u16[]){FRONTIER_MONS_AROMA_LADY_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_BRADEN",
+        "expression": "(const u16[]){FRONTIER_MONS_COOLTRAINER_1A}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_KAYDEN",
+        "expression": "(const u16[]){FRONTIER_MONS_COOLTRAINER_1B}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_COOPER",
+        "expression": "(const u16[]){FRONTIER_MONS_COOLTRAINER_1C}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JULIA",
+        "expression": "(const u16[]){FRONTIER_MONS_COOLTRAINER_1A}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_AMARA",
+        "expression": "(const u16[]){FRONTIER_MONS_COOLTRAINER_1B}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_LYNN",
+        "expression": "(const u16[]){FRONTIER_MONS_COOLTRAINER_1C}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JOVAN",
+        "expression": "(const u16[]){FRONTIER_MONS_PKMN_RANGER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_DOMINIC",
+        "expression": "(const u16[]){FRONTIER_MONS_PKMN_RANGER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_NIKOLAS",
+        "expression": "(const u16[]){FRONTIER_MONS_PKMN_RANGER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_VALERIA",
+        "expression": "(const u16[]){FRONTIER_MONS_PKMN_RANGER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_DELANEY",
+        "expression": "(const u16[]){FRONTIER_MONS_PKMN_RANGER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_MEGHAN",
+        "expression": "(const u16[]){FRONTIER_MONS_PKMN_RANGER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ROBERTO",
+        "expression": "(const u16[]){FRONTIER_MONS_DRAGON_TAMER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_DAMIAN",
+        "expression": "(const u16[]){FRONTIER_MONS_DRAGON_TAMER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_BRODY",
+        "expression": "(const u16[]){FRONTIER_MONS_DRAGON_TAMER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_GRAHAM",
+        "expression": "(const u16[]){FRONTIER_MONS_DRAGON_TAMER_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_TYLOR",
+        "expression": "(const u16[]){FRONTIER_MONS_POKEFAN_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JAREN",
+        "expression": "(const u16[]){FRONTIER_MONS_POKEFAN_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_CORDELL",
+        "expression": "(const u16[]){FRONTIER_MONS_PKMN_BREEDER_M_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JAZLYN",
+        "expression": "(const u16[]){FRONTIER_MONS_PKMN_BREEDER_F_1}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ZACHERY",
+        "expression": "(const u16[]){FRONTIER_MONS_YOUNGSTER_LASS_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JOHAN",
+        "expression": "(const u16[]){FRONTIER_MONS_YOUNGSTER_LASS_2_NO_DUGTRIO}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_SHEA",
+        "expression": "(const u16[]){FRONTIER_MONS_YOUNGSTER_LASS_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_KAILA",
+        "expression": "(const u16[]){FRONTIER_MONS_YOUNGSTER_LASS_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ISIAH",
+        "expression": "(const u16[]){FRONTIER_MONS_SCHOOL_KID_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_GARRETT",
+        "expression": "(const u16[]){FRONTIER_MONS_SCHOOL_KID_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_HAYLIE",
+        "expression": "(const u16[]){FRONTIER_MONS_SCHOOL_KID_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_MEGAN",
+        "expression": "(const u16[]){FRONTIER_MONS_SCHOOL_KID_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ISSAC",
+        "expression": "(const u16[]){FRONTIER_MONS_RICH_BOY_LADY_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_QUINTON",
+        "expression": "(const u16[]){FRONTIER_MONS_RICH_BOY_LADY_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_SALMA",
+        "expression": "(const u16[]){FRONTIER_MONS_RICH_BOY_LADY_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ANSLEY",
+        "expression": "(const u16[]){FRONTIER_MONS_RICH_BOY_LADY_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_HOLDEN",
+        "expression": "(const u16[]){FRONTIER_MONS_BUG_CATCHER_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_LUCA",
+        "expression": "(const u16[]){FRONTIER_MONS_BUG_CATCHER_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JAMISON",
+        "expression": "(const u16[]){FRONTIER_MONS_NINJA_BOY_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_GUNNAR",
+        "expression": "(const u16[]){FRONTIER_MONS_NINJA_BOY_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_CRAIG",
+        "expression": "(const u16[]){FRONTIER_MONS_TUBER_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_PIERCE",
+        "expression": "(const u16[]){FRONTIER_MONS_TUBER_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_REGINA",
+        "expression": "(const u16[]){FRONTIER_MONS_TUBER_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ALISON",
+        "expression": "(const u16[]){FRONTIER_MONS_TUBER_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_HANK",
+        "expression": "(const u16[]){FRONTIER_MONS_BUG_MANIAC_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_EARL",
+        "expression": "(const u16[]){FRONTIER_MONS_BUG_MANIAC_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_RAMIRO",
+        "expression": "(const u16[]){FRONTIER_MONS_FISHERMAN_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_HUNTER",
+        "expression": "(const u16[]){FRONTIER_MONS_FISHERMAN_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_AIDEN",
+        "expression": "(const u16[]){FRONTIER_MONS_RUIN_MANIAC_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_XAVIER",
+        "expression": "(const u16[]){FRONTIER_MONS_RUIN_MANIAC_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_CLINTON",
+        "expression": "(const u16[]){FRONTIER_MONS_COLLECTOR_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JESSE",
+        "expression": "(const u16[]){FRONTIER_MONS_COLLECTOR_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_EDUARDO",
+        "expression": "(const u16[]){FRONTIER_MONS_GUITARIST_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_HAL",
+        "expression": "(const u16[]){FRONTIER_MONS_GUITARIST_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_GAGE",
+        "expression": "(const u16[]){FRONTIER_MONS_BIRD_KEEPER_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ARNOLD",
+        "expression": "(const u16[]){FRONTIER_MONS_BIRD_KEEPER_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JARRETT",
+        "expression": "(const u16[]){FRONTIER_MONS_SAILOR_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_GARETT",
+        "expression": "(const u16[]){FRONTIER_MONS_SAILOR_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_EMANUEL",
+        "expression": "(const u16[]){FRONTIER_MONS_HIKER_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_GUSTAVO",
+        "expression": "(const u16[]){FRONTIER_MONS_HIKER_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_KAMERON",
+        "expression": "(const u16[]){FRONTIER_MONS_KINDLER_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ALFREDO",
+        "expression": "(const u16[]){FRONTIER_MONS_KINDLER_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_RUBEN",
+        "expression": "(const u16[]){FRONTIER_MONS_GENTLEMAN_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_LAMAR",
+        "expression": "(const u16[]){FRONTIER_MONS_GENTLEMAN_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JAXON",
+        "expression": "(const u16[]){FRONTIER_MONS_YOUNGSTER_LASS_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_LOGAN",
+        "expression": "(const u16[]){FRONTIER_MONS_YOUNGSTER_LASS_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_EMILEE",
+        "expression": "(const u16[]){FRONTIER_MONS_YOUNGSTER_LASS_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JOSIE",
+        "expression": "(const u16[]){FRONTIER_MONS_YOUNGSTER_LASS_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ARMANDO",
+        "expression": "(const u16[]){FRONTIER_MONS_CAMPER_PICNICKER_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_SKYLER",
+        "expression": "(const u16[]){FRONTIER_MONS_CAMPER_PICNICKER_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_RUTH",
+        "expression": "(const u16[]){FRONTIER_MONS_CAMPER_PICNICKER_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_MELODY",
+        "expression": "(const u16[]){FRONTIER_MONS_CAMPER_PICNICKER_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_PEDRO",
+        "expression": "(const u16[]){FRONTIER_MONS_SWIMMER_M_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ERICK",
+        "expression": "(const u16[]){FRONTIER_MONS_SWIMMER_M_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ELAINE",
+        "expression": "(const u16[]){FRONTIER_MONS_SWIMMER_F_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JOYCE",
+        "expression": "(const u16[]){FRONTIER_MONS_SWIMMER_F_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_TODD",
+        "expression": "(const u16[]){FRONTIER_MONS_POKEFAN_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_GAVIN",
+        "expression": "(const u16[]){FRONTIER_MONS_POKEFAN_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_MALORY",
+        "expression": "(const u16[]){FRONTIER_MONS_POKEFAN_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ESTHER",
+        "expression": "(const u16[]){FRONTIER_MONS_POKEFAN_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_OSCAR",
+        "expression": "(const u16[]){FRONTIER_MONS_PKMN_BREEDER_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_WILSON",
+        "expression": "(const u16[]){FRONTIER_MONS_PKMN_BREEDER_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_CLARE",
+        "expression": "(const u16[]){FRONTIER_MONS_PKMN_BREEDER_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_TESS",
+        "expression": "(const u16[]){FRONTIER_MONS_PKMN_BREEDER_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_LEON",
+        "expression": "(const u16[]){FRONTIER_MONS_COOLTRAINER_M_2A}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ALONZO",
+        "expression": "(const u16[]){FRONTIER_MONS_COOLTRAINER_M_2B}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_VINCE",
+        "expression": "(const u16[]){FRONTIER_MONS_COOLTRAINER_2C(LATIOS)}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_BRYON",
+        "expression": "(const u16[]){FRONTIER_MONS_COOLTRAINER_2D(LATIOS)}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_AVA",
+        "expression": "(const u16[]){FRONTIER_MONS_COOLTRAINER_F_2A}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_MIRIAM",
+        "expression": "(const u16[]){FRONTIER_MONS_COOLTRAINER_F_2B}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_CARRIE",
+        "expression": "(const u16[]){FRONTIER_MONS_COOLTRAINER_2C(LATIAS)}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_GILLIAN2",
+        "expression": "(const u16[]){FRONTIER_MONS_COOLTRAINER_2D(LATIAS)}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_TYLER",
+        "expression": "(const u16[]){FRONTIER_MONS_GENERAL_A}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_CHAZ",
+        "expression": "(const u16[]){FRONTIER_MONS_GENERAL_B}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_NELSON",
+        "expression": "(const u16[]){FRONTIER_MONS_COOLTRAINER_2D(LATIOS)}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_SHANIA",
+        "expression": "(const u16[]){FRONTIER_MONS_GENERAL_C}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_STELLA",
+        "expression": "(const u16[]){FRONTIER_MONS_GENERAL_D}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_DORINE",
+        "expression": "(const u16[]){FRONTIER_MONS_COOLTRAINER_2D(LATIAS)}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_MADDOX",
+        "expression": "(const u16[]){FRONTIER_MONS_DRAGON_TAMER_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_DAVIN",
+        "expression": "(const u16[]){FRONTIER_MONS_DRAGON_TAMER_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_TREVON",
+        "expression": "(const u16[]){FRONTIER_MONS_DRAGON_TAMER_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_MATEO",
+        "expression": "(const u16[]){FRONTIER_MONS_BLACK_BELT_2A}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_BRET",
+        "expression": "(const u16[]){FRONTIER_MONS_BLACK_BELT_BATTLE_GIRL_2B}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_RAUL",
+        "expression": "(const u16[]){FRONTIER_MONS_BLACK_BELT_BATTLE_GIRL_2C}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_KAY",
+        "expression": "(const u16[]){FRONTIER_MONS_BATTLE_GIRL_2A}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ELENA",
+        "expression": "(const u16[]){FRONTIER_MONS_BLACK_BELT_BATTLE_GIRL_2B}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ALANA",
+        "expression": "(const u16[]){FRONTIER_MONS_BLACK_BELT_BATTLE_GIRL_2C}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ALEXAS",
+        "expression": "(const u16[]){FRONTIER_MONS_EXPERT_2A(TYRANITAR)}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_WESTON",
+        "expression": "(const u16[]){FRONTIER_MONS_EXPERT_2B(LATIOS)}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JASPER",
+        "expression": "(const u16[]){FRONTIER_MONS_EXPERT_2C(TYRANITAR)}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_NADIA",
+        "expression": "(const u16[]){FRONTIER_MONS_EXPERT_2A(DRAGONITE)}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_MIRANDA",
+        "expression": "(const u16[]){FRONTIER_MONS_EXPERT_2B(LATIAS)}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_EMMA",
+        "expression": "(const u16[]){FRONTIER_MONS_EXPERT_2C(DRAGONITE)}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ROLANDO",
+        "expression": "(const u16[]){FRONTIER_MONS_PSYCHIC_2(LATIOS, ARTICUNO, ZAPDOS, MOLTRES)}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_STANLY",
+        "expression": "(const u16[]){FRONTIER_MONS_PSYCHIC_2(LATIOS, RAIKOU, ENTEI, SUICUNE)}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_DARIO",
+        "expression": "(const u16[]){FRONTIER_MONS_PSYCHIC_2(LATIOS, REGIROCK, REGICE, REGISTEEL)}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_KARLEE",
+        "expression": "(const u16[]){FRONTIER_MONS_PSYCHIC_2(LATIAS, ARTICUNO, ZAPDOS, MOLTRES)}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JAYLIN",
+        "expression": "(const u16[]){FRONTIER_MONS_PSYCHIC_2(LATIAS, RAIKOU, ENTEI, SUICUNE)}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_INGRID",
+        "expression": "(const u16[]){FRONTIER_MONS_PSYCHIC_2(LATIAS, REGIROCK, REGICE, REGISTEEL)}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_DELILAH",
+        "expression": "(const u16[]){FRONTIER_MONS_HEX_MANIAC_2A}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_CARLY",
+        "expression": "(const u16[]){FRONTIER_MONS_HEX_MANIAC_2B}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_LEXIE",
+        "expression": "(const u16[]){FRONTIER_MONS_HEX_MANIAC_2C}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_MILLER",
+        "expression": "(const u16[]){FRONTIER_MONS_POKEMANIAC_2A}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_MARV",
+        "expression": "(const u16[]){FRONTIER_MONS_POKEMANIAC_2B}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_LAYTON",
+        "expression": "(const u16[]){FRONTIER_MONS_POKEMANIAC_2C}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_BROOKS",
+        "expression": "(const u16[]){FRONTIER_MONS_GENERAL_A}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_GREGORY",
+        "expression": "(const u16[]){FRONTIER_MONS_GENTLEMAN_3A}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_REESE",
+        "expression": "(const u16[]){FRONTIER_MONS_GENTLEMAN_3B}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_MASON",
+        "expression": "(const u16[]){FRONTIER_MONS_GENERAL_A}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_TOBY",
+        "expression": "(const u16[]){FRONTIER_MONS_GENERAL_B}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_DOROTHY",
+        "expression": "(const u16[]){FRONTIER_MONS_GENERAL_C}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_PIPER",
+        "expression": "(const u16[]){FRONTIER_MONS_GENERAL_D}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_FINN",
+        "expression": "(const u16[]){FRONTIER_MONS_SWIMMING_TRIATHLETE_M_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_SAMIR",
+        "expression": "(const u16[]){FRONTIER_MONS_SWIMMING_TRIATHLETE_M_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_FIONA",
+        "expression": "(const u16[]){FRONTIER_MONS_SWIMMING_TRIATHLETE_F_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_GLORIA",
+        "expression": "(const u16[]){FRONTIER_MONS_SWIMMING_TRIATHLETE_F_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_NICO",
+        "expression": "(const u16[]){FRONTIER_MONS_GENERAL_A}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_JEREMY",
+        "expression": "(const u16[]){FRONTIER_MONS_GENERAL_B}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_CAITLIN",
+        "expression": "(const u16[]){FRONTIER_MONS_GENERAL_C}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_REENA",
+        "expression": "(const u16[]){FRONTIER_MONS_GENERAL_D}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_AVERY",
+        "expression": "(const u16[]){FRONTIER_MONS_BUG_MANIAC_4}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_LIAM",
+        "expression": "(const u16[]){FRONTIER_MONS_BUG_MANIAC_4}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_THEO",
+        "expression": "(const u16[]){FRONTIER_MONS_FISHERMAN_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_BAILEY",
+        "expression": "(const u16[]){FRONTIER_MONS_FISHERMAN_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_HUGO",
+        "expression": "(const u16[]){FRONTIER_MONS_RUIN_MANIAC_4}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_BRYCE",
+        "expression": "(const u16[]){FRONTIER_MONS_RUIN_MANIAC_4}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_GIDEON",
+        "expression": "(const u16[]){FRONTIER_MONS_COLLECTOR_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_TRISTON",
+        "expression": "(const u16[]){FRONTIER_MONS_COLLECTOR_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_CHARLES",
+        "expression": "(const u16[]){FRONTIER_MONS_GUITARIST_3A}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_RAYMOND",
+        "expression": "(const u16[]){FRONTIER_MONS_GUITARIST_3B}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_DIRK",
+        "expression": "(const u16[]){FRONTIER_MONS_BIRD_KEEPER_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_HAROLD",
+        "expression": "(const u16[]){FRONTIER_MONS_BIRD_KEEPER_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_OMAR",
+        "expression": "(const u16[]){FRONTIER_MONS_SAILOR_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_PETER",
+        "expression": "(const u16[]){FRONTIER_MONS_SAILOR_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_DEV",
+        "expression": "(const u16[]){FRONTIER_MONS_HIKER_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_COREY",
+        "expression": "(const u16[]){FRONTIER_MONS_HIKER_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ANDRE",
+        "expression": "(const u16[]){FRONTIER_MONS_KINDLER_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_FERRIS",
+        "expression": "(const u16[]){FRONTIER_MONS_KINDLER_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ALIVIA",
+        "expression": "(const u16[]){FRONTIER_MONS_PARASOL_LADY_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_PAIGE",
+        "expression": "(const u16[]){FRONTIER_MONS_PARASOL_LADY_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ANYA",
+        "expression": "(const u16[]){FRONTIER_MONS_EEVEELUTIONS}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_DAWN",
+        "expression": "(const u16[]){FRONTIER_MONS_BEAUTY_2}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_ABBY",
+        "expression": "(const u16[]){FRONTIER_MONS_AROMA_LADY_3}"
+      },
+      {
+        "designator": "FRONTIER_TRAINER_GRETEL",
+        "expression": "(const u16[]){FRONTIER_MONS_AROMA_LADY_3}"
+      }
+    ],
+    "gFallarborBattleTentTrainers": [
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_AMBER",
+        "expression": "gFallarborBattleTentTrainerMons_Amber"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_JAVIER",
+        "expression": "gFallarborBattleTentTrainerMons_Javier"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_NATALIA",
+        "expression": "gFallarborBattleTentTrainerMons_Natalie"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_TREVE",
+        "expression": "gFallarborBattleTentTrainerMons_Treve"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_ARIANNA",
+        "expression": "gFallarborBattleTentTrainerMons_Arianna"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_JADYN",
+        "expression": "gFallarborBattleTentTrainerMons_Jadyn"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_GERARDO",
+        "expression": "gFallarborBattleTentTrainerMons_Gerardo"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_JONN",
+        "expression": "gFallarborBattleTentTrainerMons_Jonn"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_ESTEBAN",
+        "expression": "gFallarborBattleTentTrainerMons_Esteban"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_JAMESON",
+        "expression": "gFallarborBattleTentTrainerMons_Jameson"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_ALANZO",
+        "expression": "gFallarborBattleTentTrainerMons_Alanzo"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_HOWARD",
+        "expression": "gFallarborBattleTentTrainerMons_Howard"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_CONRAD",
+        "expression": "gFallarborBattleTentTrainerMons_Conrad"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_MAKENNA",
+        "expression": "gFallarborBattleTentTrainerMons_Makenna"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_BRAYAN",
+        "expression": "gFallarborBattleTentTrainerMons_Brayan"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_MARIANA",
+        "expression": "gFallarborBattleTentTrainerMons_Mariana"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_SHELDON",
+        "expression": "gFallarborBattleTentTrainerMons_Sheldon"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_GIANNA",
+        "expression": "gFallarborBattleTentTrainerMons_Gianna"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_YAHIR",
+        "expression": "gFallarborBattleTentTrainerMons_Yahir"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_BRITNEY",
+        "expression": "gFallarborBattleTentTrainerMons_Britney"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_HECTER",
+        "expression": "gFallarborBattleTentTrainerMons_Hecter"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_TANNOR",
+        "expression": "gFallarborBattleTentTrainerMons_Tannor"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_BENJI",
+        "expression": "gFallarborBattleTentTrainerMons_Benji"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_RORY",
+        "expression": "gFallarborBattleTentTrainerMons_Rory"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_ELEANOR",
+        "expression": "gFallarborBattleTentTrainerMons_Eleanor"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_EVELYN",
+        "expression": "gFallarborBattleTentTrainerMons_Evelyn"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_ARIELLE",
+        "expression": "gFallarborBattleTentTrainerMons_Arielle"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_CONNAR",
+        "expression": "gFallarborBattleTentTrainerMons_Connar"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_MAURICE",
+        "expression": "gFallarborBattleTentTrainerMons_Maurice"
+      },
+      {
+        "designator": "FALLARBOR_TENT_TRAINER_KIANNA",
+        "expression": "gFallarborBattleTentTrainerMons_Kianna"
+      }
+    ],
+    "gSlateportBattleTentTrainers": [
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_JOLIE",
+        "expression": "gSlateportBattleTentTrainerMons_Jolie"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_MALACHI",
+        "expression": "gSlateportBattleTentTrainerMons_Malachi"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_KELSIE",
+        "expression": "gSlateportBattleTentTrainerMons_Kelsie"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_DAVON",
+        "expression": "gSlateportBattleTentTrainerMons_Davon"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_GLENDA",
+        "expression": "gSlateportBattleTentTrainerMons_Glenda"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_HELENA",
+        "expression": "gSlateportBattleTentTrainerMons_Helena"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_RODOLFO",
+        "expression": "gSlateportBattleTentTrainerMons_Rodolfo"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_DAVION",
+        "expression": "gSlateportBattleTentTrainerMons_Davion"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_KENDALL",
+        "expression": "gSlateportBattleTentTrainerMons_Kendall"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_COLTEN",
+        "expression": "gSlateportBattleTentTrainerMons_Colten"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_IRVIN",
+        "expression": "gSlateportBattleTentTrainerMons_Irvin"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_SHAUN",
+        "expression": "gSlateportBattleTentTrainerMons_Shaun"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_KYLER",
+        "expression": "gSlateportBattleTentTrainerMons_Kyler"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_MAGGIE",
+        "expression": "gSlateportBattleTentTrainerMons_Maggie"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_STEPHON",
+        "expression": "gSlateportBattleTentTrainerMons_Stephon"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_REBECCA",
+        "expression": "gSlateportBattleTentTrainerMons_Rebecca"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_REGGIE",
+        "expression": "gSlateportBattleTentTrainerMons_Reggie"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_JANAE",
+        "expression": "gSlateportBattleTentTrainerMons_Janae"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_CAIDEN",
+        "expression": "gSlateportBattleTentTrainerMons_Caiden"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_KIRSTEN",
+        "expression": "gSlateportBattleTentTrainerMons_Kirsten"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_KURTIS",
+        "expression": "gSlateportBattleTentTrainerMons_Kurtis"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_STEFAN",
+        "expression": "gSlateportBattleTentTrainerMons_Stefan"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_AVERY",
+        "expression": "gSlateportBattleTentTrainerMons_Avery"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_DWANE",
+        "expression": "gSlateportBattleTentTrainerMons_Dwane"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_MCKENNA",
+        "expression": "gSlateportBattleTentTrainerMons_Mckenna"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_CAMRYN",
+        "expression": "gSlateportBattleTentTrainerMons_Camryn"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_NATASHA",
+        "expression": "gSlateportBattleTentTrainerMons_Natasha"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_AUSTYN",
+        "expression": "gSlateportBattleTentTrainerMons_Austyn"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_DONOVAN",
+        "expression": "gSlateportBattleTentTrainerMons_Donovan"
+      },
+      {
+        "designator": "SLATEPORT_TENT_TRAINER_TAMIA",
+        "expression": "gSlateportBattleTentTrainerMons_Tamia"
+      }
+    ],
+    "gVerdanturfBattleTentTrainers": [
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_BRENNA",
+        "expression": "gVerdanturfBattleTentTrainerMons_Brenna"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_DILAN",
+        "expression": "gVerdanturfBattleTentTrainerMons_Dilan"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_ELIANA",
+        "expression": "gVerdanturfBattleTentTrainerMons_Eliana"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_MARKUS",
+        "expression": "gVerdanturfBattleTentTrainerMons_Markus"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_CAITLYN",
+        "expression": "gVerdanturfBattleTentTrainerMons_Caitlyn"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_DESIREE",
+        "expression": "gVerdanturfBattleTentTrainerMons_Desiree"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_RONALD",
+        "expression": "gVerdanturfBattleTentTrainerMons_Ronald"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_ASHTEN",
+        "expression": "gVerdanturfBattleTentTrainerMons_Ashten"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_GERARD",
+        "expression": "gVerdanturfBattleTentTrainerMons_Gerard"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_BRADLY",
+        "expression": "gVerdanturfBattleTentTrainerMons_Bradly"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_DENNIS",
+        "expression": "gVerdanturfBattleTentTrainerMons_Dennis"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_PRESTIN",
+        "expression": "gVerdanturfBattleTentTrainerMons_Prestin"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_ERNESTO",
+        "expression": "gVerdanturfBattleTentTrainerMons_Ernesto"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_NALA",
+        "expression": "gVerdanturfBattleTentTrainerMons_Nala"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_DARNELL",
+        "expression": "gVerdanturfBattleTentTrainerMons_Darnell"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_ASHLYN",
+        "expression": "gVerdanturfBattleTentTrainerMons_Ashlyn"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_ADDISON",
+        "expression": "gVerdanturfBattleTentTrainerMons_Addison"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_JUSTINE",
+        "expression": "gVerdanturfBattleTentTrainerMons_Justine"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_TYSON",
+        "expression": "gVerdanturfBattleTentTrainerMons_Tyson"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_LAILA",
+        "expression": "gVerdanturfBattleTentTrainerMons_Laila"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_WAREN",
+        "expression": "gVerdanturfBattleTentTrainerMons_Waren"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_TOBIAS",
+        "expression": "gVerdanturfBattleTentTrainerMons_Tobias"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_JOSIAH",
+        "expression": "gVerdanturfBattleTentTrainerMons_Josiah"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_DION",
+        "expression": "gVerdanturfBattleTentTrainerMons_Dion"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_KENZIE",
+        "expression": "gVerdanturfBattleTentTrainerMons_Kenzie"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_LILLIAN",
+        "expression": "gVerdanturfBattleTentTrainerMons_Lillian"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_LESLEY",
+        "expression": "gVerdanturfBattleTentTrainerMons_Lesley"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_MARQUIS",
+        "expression": "gVerdanturfBattleTentTrainerMons_Marquis"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_FREDDY",
+        "expression": "gVerdanturfBattleTentTrainerMons_Freddy"
+      },
+      {
+        "designator": "VERDANTURF_TENT_TRAINER_CECILIA",
+        "expression": "gVerdanturfBattleTentTrainerMons_Cecilia"
+      }
+    ]
+  }
+}

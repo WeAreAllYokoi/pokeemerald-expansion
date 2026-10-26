@@ -1,5 +1,6 @@
 #include "global.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "event_object_movement.h"
 #include "field_player_avatar.h"
 #include "fieldmap.h"
@@ -10,6 +11,14 @@
 #include "constants/event_object_movement.h"
 
 #define UR_SPRITE_START_ID (MAX_SPRITES - MAX_UNION_ROOM_LEADERS)
+
+/* Each existing binding is independent; all current zero settings stay zero. */
+static const u16 sADMG_UnionRoomVisibilityFlags[MAX_UNION_ROOM_LEADERS] = {
+    FLAG_HIDE_UNION_ROOM_PLAYER_1, FLAG_HIDE_UNION_ROOM_PLAYER_2,
+    FLAG_HIDE_UNION_ROOM_PLAYER_3, FLAG_HIDE_UNION_ROOM_PLAYER_4,
+    FLAG_HIDE_UNION_ROOM_PLAYER_5, FLAG_HIDE_UNION_ROOM_PLAYER_6,
+    FLAG_HIDE_UNION_ROOM_PLAYER_7, FLAG_HIDE_UNION_ROOM_PLAYER_8,
+};
 
 // Each parent player can lead a group of up to MAX_RFU_PLAYERS (including themselves).
 // Multiply the leader's id by MAX_RFU_PLAYERS and add the member's id (0 if the leader) to
@@ -152,22 +161,33 @@ static bool32 IsUnionRoomPlayerAt(u32 leaderId, u32 memberId, s32 x, s32 y)
 
 static bool32 IsUnionRoomPlayerHidden(u32 player_idx)
 {
-    return FlagGet(FLAG_HIDE_UNION_ROOM_PLAYER_1 + player_idx);
+    u16 flagId;
+    bool8 hidden;
+    if (!ADMG_TryGetFlagFromTable(sADMG_UnionRoomVisibilityFlags, player_idx, ARRAY_COUNT(sADMG_UnionRoomVisibilityFlags), &flagId)
+     || !ADMG_TryReadFlag(flagId, &hidden))
+        return TRUE;
+    return hidden;
 }
 
 static void HideUnionRoomPlayer(u32 player_idx)
 {
-    FlagSet(FLAG_HIDE_UNION_ROOM_PLAYER_1 + player_idx);
+    u16 flagId;
+    if (ADMG_TryGetFlagFromTable(sADMG_UnionRoomVisibilityFlags, player_idx, ARRAY_COUNT(sADMG_UnionRoomVisibilityFlags), &flagId))
+        FlagSet(flagId);
 }
 
 static void ShowUnionRoomPlayer(u32 player_idx)
 {
-    FlagClear(FLAG_HIDE_UNION_ROOM_PLAYER_1 + player_idx);
+    u16 flagId;
+    if (ADMG_TryGetFlagFromTable(sADMG_UnionRoomVisibilityFlags, player_idx, ARRAY_COUNT(sADMG_UnionRoomVisibilityFlags), &flagId))
+        FlagClear(flagId);
 }
 
 static void SetUnionRoomPlayerGfx(u32 leaderId, u32 gfxId)
 {
-    VarSet(VAR_OBJ_GFX_ID_0 + leaderId, gfxId);
+    u16 varId;
+    if (ADMG_TryGetIndexedVarId(VAR_OBJ_GFX_ID_0, leaderId, MAX_UNION_ROOM_LEADERS, 1, &varId))
+        VarSet(varId, gfxId);
 }
 
 static void CreateUnionRoomPlayerObjectEvent(u32 leaderId)

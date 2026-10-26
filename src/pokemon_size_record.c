@@ -1,6 +1,7 @@
 #include "global.h"
 #include "data.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "pokedex.h"
 #include "pokemon.h"
 #include "pokemon_size_record.h"
@@ -176,14 +177,14 @@ void InitSeedotSizeRecord(void)
 
 void GetSeedotSizeRecordInfo(void)
 {
-    u16 *sizeRecord = GetVarPointer(VAR_SEEDOT_SIZE_RECORD);
+    u16 *sizeRecord = ADMG_REQUIRE_VAR_SPAN(VAR_SEEDOT_SIZE_RECORD, 1);
 
     GetMonSizeRecordInfo(SPECIES_SEEDOT, sizeRecord);
 }
 
 void CompareSeedotSize(void)
 {
-    u16 *sizeRecord = GetVarPointer(VAR_SEEDOT_SIZE_RECORD);
+    u16 *sizeRecord = ADMG_REQUIRE_VAR_SPAN(VAR_SEEDOT_SIZE_RECORD, 1);
 
     gSpecialVar_Result = CompareMonSize(SPECIES_SEEDOT, sizeRecord);
 }
@@ -195,42 +196,42 @@ void InitLotadSizeRecord(void)
 
 void GetLotadSizeRecordInfo(void)
 {
-    u16 *sizeRecord = GetVarPointer(VAR_LOTAD_SIZE_RECORD);
+    u16 *sizeRecord = ADMG_REQUIRE_VAR_SPAN(VAR_LOTAD_SIZE_RECORD, 1);
 
     GetMonSizeRecordInfo(SPECIES_LOTAD, sizeRecord);
 }
 
 void CompareLotadSize(void)
 {
-    u16 *sizeRecord = GetVarPointer(VAR_LOTAD_SIZE_RECORD);
+    u16 *sizeRecord = ADMG_REQUIRE_VAR_SPAN(VAR_LOTAD_SIZE_RECORD, 1);
 
     gSpecialVar_Result = CompareMonSize(SPECIES_LOTAD, sizeRecord);
 }
 
 void GetHeracrossSizeRecordInfo(void)
 {
-    u16 *sizeRecord = GetVarPointer(VAR_HERACROSS_SIZE_RECORD);
+    u16 *sizeRecord = ADMG_REQUIRE_VAR_SPAN(VAR_HERACROSS_SIZE_RECORD, 1);
 
     GetMonSizeRecordInfo(SPECIES_HERACROSS, sizeRecord);
 }
 
 void CompareHeracrossSize(void)
 {
-    u16 *sizeRecord = GetVarPointer(VAR_HERACROSS_SIZE_RECORD);
+    u16 *sizeRecord = ADMG_REQUIRE_VAR_SPAN(VAR_HERACROSS_SIZE_RECORD, 1);
 
     gSpecialVar_Result = CompareMonSize(SPECIES_HERACROSS, sizeRecord);
 }
 
 void GetMagikarpSizeRecordInfo(void)
 {
-    u16 *sizeRecord = GetVarPointer(VAR_MAGIKARP_SIZE_RECORD);
+    u16 *sizeRecord = ADMG_REQUIRE_VAR_SPAN(VAR_MAGIKARP_SIZE_RECORD, 1);
 
     GetMonSizeRecordInfo(SPECIES_MAGIKARP, sizeRecord);
 }
 
 void CompareMagikarpSize(void)
 {
-    u16 *sizeRecord = GetVarPointer(VAR_MAGIKARP_SIZE_RECORD);
+    u16 *sizeRecord = ADMG_REQUIRE_VAR_SPAN(VAR_MAGIKARP_SIZE_RECORD, 1);
 
     gSpecialVar_Result = CompareMonSize(SPECIES_MAGIKARP, sizeRecord);
 }

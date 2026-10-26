@@ -3,6 +3,7 @@
 #include "clock.h"
 #include "dewford_trend.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "field_specials.h"
 #include "field_weather.h"
 #include "lottery_corner.h"
@@ -68,7 +69,7 @@ void DoDailyEvents(u32 daysSince)
 
 static void UpdatePerDay(struct Time *localTime)
 {
-    u16 *days = GetVarPointer(VAR_DAYS);
+    u16 *days = ADMG_REQUIRE_VAR_SPAN(VAR_DAYS, 1);
     u16 daysSince;
 
     if (*days != localTime->days && *days <= localTime->days)

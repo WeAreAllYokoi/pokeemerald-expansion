@@ -91,7 +91,10 @@
 #define MOVEMENT_TYPE_WATCH_PLAYER_OWE                 0x56
 #define MOVEMENT_TYPE_APPROACH_PLAYER_OWE              0x57
 #define MOVEMENT_TYPE_DESPAWN_OWE                      0x58
-#define NUM_MOVEMENT_TYPES                             0x59
+#define MOVEMENT_TYPE_RAISE_HAND_AND_STOP              0x59
+#define MOVEMENT_TYPE_RAISE_HAND_AND_JUMP              0x5A
+#define MOVEMENT_TYPE_RAISE_HAND_AND_SWIM              0x5B
+#define NUM_MOVEMENT_TYPES                             0x5C
 
 #define MOVEMENT_ACTION_FACE_DOWN                       0x0
 #define MOVEMENT_ACTION_FACE_UP                         0x1
@@ -276,6 +279,10 @@
 #define MOVEMENT_ACTION_SPIN_UP                         0xB3
 #define MOVEMENT_ACTION_SPIN_LEFT                       0xB4
 #define MOVEMENT_ACTION_SPIN_RIGHT                      0xB5
+
+#define MOVEMENT_ACTION_RAISE_HAND_AND_STOP             0xB6
+#define MOVEMENT_ACTION_RAISE_HAND_AND_JUMP             0xB7
+#define MOVEMENT_ACTION_RAISE_HAND_AND_SWIM             0xB8
 
 #define MOVEMENT_ACTION_STEP_END 0xFE
 #define MOVEMENT_ACTION_NONE     0xFF

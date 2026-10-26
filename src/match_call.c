@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_state.h"
 #include "malloc.h"
 #include "battle.h"
 #include "battle_setup.h"
@@ -1110,6 +1111,7 @@ static bool32 SelectMatchCallTrainer(void)
         return FALSE;
 
     matchCallId = GetTrainerMatchCallId(sMatchCallState.trainerId);
+    if (matchCallId >= ARRAY_COUNT(sMatchCallTrainers)) return FALSE;
     if (GetRematchTrainerLocation(matchCallId) == gMapHeader.regionMapSectionId && !TrainerIsEligibleForRematch(matchCallId))
         return FALSE;
 
@@ -1324,7 +1326,11 @@ static bool32 MatchCall_PrintIntro(u8 taskId)
 
         // Ready the message (and the speaker's name if possible)
         if (!sMatchCallState.triggeredFromScript)
+        {
+            u64 generation = ADMG_BeginStateAccessCheck();
             SelectMatchCallMessage(sMatchCallState.trainerId, gStringVar4);
+            if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+        }
 
         if (IsSpeakerBuffered(gStringVar4))
             TrySpawnAndShowNamebox(gSpeakerName, NAME_BOX_BASE_TILE_NUM);
@@ -1546,6 +1552,7 @@ bool32 SelectMatchCallMessage(int trainerId, u8 *str)
     bool32 newRematchRequest = FALSE;
 
     matchCallId = GetTrainerMatchCallId(trainerId);
+    if (matchCallId >= ARRAY_COUNT(sMatchCallTrainers)) return FALSE;
     sBattleFrontierStreakInfo.facilityId = 0;
 
     // If the player is on the same route as the trainer
@@ -1581,14 +1588,13 @@ bool32 SelectMatchCallMessage(int trainerId, u8 *str)
 
 static int GetTrainerMatchCallId(int trainerId)
 {
-    int i = 0;
-    while (1)
+    for (u32 i = 0; i < ARRAY_COUNT(sMatchCallTrainers); ++i)
     {
         if (sMatchCallTrainers[i].trainerId == trainerId)
             return i;
-        else
-            i++;
     }
+    ADMG_StateAccessRejected((u32)trainerId, __func__);
+    return -1;
 }
 
 static const struct MatchCallText *GetSameRouteMatchCallText(int matchCallId, u8 *str)

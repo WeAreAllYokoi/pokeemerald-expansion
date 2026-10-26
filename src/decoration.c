@@ -4,6 +4,8 @@
 #include "decoration.h"
 #include "decoration_inventory.h"
 #include "event_data.h"
+#include "admg_state.h"
+static bool8 ADMG_ValidateDecorationContext(void);
 #include "event_object_movement.h"
 #include "event_scripts.h"
 #include "field_camera.h"
@@ -1329,23 +1331,48 @@ void ShowDecorationOnMap(u16 mapX, u16 mapY, u16 decoration)
 
 void SetDecoration(void)
 {
+    if (gSaveBlock1Ptr == NULL || gMapHeader.events == NULL
+     || (gMapHeader.events->objectEventCount != 0 && gMapHeader.events->objectEvents == NULL)
+     || sPlaceDecorationGraphicsDataBuffer.decoration == NULL
+     || sPlaceDecorationGraphicsDataBuffer.decoration->tiles == NULL)
+    {
+        ADMG_StateAccessRejected(0, __func__);
+        return;
+    }
+
     u8 i;
     u8 j;
 
     for (i = 0; i < NUM_DECORATION_FLAGS; i++)
     {
-        if (FlagGet(FLAG_DECORATION_1 + i) == TRUE)
+        bool8 available;
+        if (!ADMG_TryReadFlag(FLAG_DECORATION_1 + i, &available))
+            return;
+        if (available == TRUE)
         {
-            FlagClear(FLAG_DECORATION_1 + i);
             for (j = 0; j < gMapHeader.events->objectEventCount; j++)
             {
                 if (gMapHeader.events->objectEvents[j].flagId == FLAG_DECORATION_1 + i)
                     break;
             }
 
-            VarSet(
-                VAR_OBJ_GFX_ID_0 + (gMapHeader.events->objectEvents[j].graphicsId - OBJ_EVENT_GFX_VAR_0),
-                sPlaceDecorationGraphicsDataBuffer.decoration->tiles[0]);
+            if (j == gMapHeader.events->objectEventCount)
+            {
+                ADMG_StateAccessRejected(FLAG_DECORATION_1 + i, "decoration event binding");
+                return;
+            }
+            u16 graphicsVar;
+            u32 graphicsId = gMapHeader.events->objectEvents[j].graphicsId;
+            if (graphicsId < OBJ_EVENT_GFX_VAR_0)
+            {
+                ADMG_StateAccessRejected(graphicsId, "decoration graphics binding");
+                return;
+            }
+            if (!ADMG_TryGetIndexedVarId(VAR_OBJ_GFX_ID_0, graphicsId - OBJ_EVENT_GFX_VAR_0, 16, 1, &graphicsVar))
+                return;
+            FlagClear(FLAG_DECORATION_1 + i);
+            if (!VarSet(graphicsVar, sPlaceDecorationGraphicsDataBuffer.decoration->tiles[0]))
+                return;
 
             gSpecialVar_0x8005 = gMapHeader.events->objectEvents[j].localId;
             gSpecialVar_0x8006 = sCurDecorMapX;
@@ -1537,6 +1564,17 @@ static bool8 IsFloorOrBoardAndHole(u16 behaviorAt, const struct Decoration *deco
 
 static bool8 CanPlaceDecoration(u8 taskId, const struct Decoration *decoration)
 {
+    if (taskId >= NUM_TASKS || decoration == NULL)
+    {
+        ADMG_StateAccessRejected(taskId, __func__);
+        return FALSE;
+    }
+    if (decoration->permission == DECORPERM_SPRITE && !ADMG_IsFlagIdValid(FLAG_DECORATION_1))
+    {
+        ADMG_StateAccessRejected(FLAG_DECORATION_1, __func__);
+        return FALSE;
+    }
+
     u8 i;
     u8 j;
     u8 behaviorAt;
@@ -1652,7 +1690,10 @@ static bool8 CanPlaceDecoration(u8 taskId, const struct Decoration *decoration)
     {
         for (i = 0; i < NUM_DECORATION_FLAGS; i++)
         {
-            if (FlagGet(FLAG_DECORATION_1 + i) == TRUE)
+            bool8 available;
+            if (!ADMG_TryReadFlag(FLAG_DECORATION_1 + i, &available))
+                return FALSE;
+            if (available == TRUE)
                 return TRUE;
         }
         return FALSE;
@@ -2413,10 +2454,19 @@ static void AttemptCancelPutAwayDecoration(u8 taskId)
 
 static void AttemptPutAwayDecoration_(u8 taskId)
 {
+    if (taskId >= NUM_TASKS)
+    {
+        ADMG_StateAccessRejected(taskId, __func__);
+        return;
+    }
+
     s16 *data;
     u8 behavior;
 
+    u64 generation = ADMG_BeginStateAccessCheck();
     AttemptMarkDecorUnderCursorForRemoval(taskId);
+    if (!ADMG_EndStateAccessCheck(generation))
+        return;
     if (sCurDecorSelectedInRearrangement != 0)
     {
         StringExpandPlaceholders(gStringVar4, gText_ReturnDecorationToPC);
@@ -2463,6 +2513,11 @@ static void SetCameraSpritePosition(u8 x, u8 y)
 
 static bool8 DecorationIsUnderCursor(u8 taskId, u8 idx, struct DecorRearrangementDataBuffer *data)
 {
+    if (!ADMG_ValidateDecorationContext() || taskId >= NUM_TASKS || idx >= sDecorationContext.size || data == NULL)
+    {
+        ADMG_StateAccessRejected(idx, __func__);
+        return FALSE;
+    }
     u8 x;
     u8 y;
     u8 xOff;
@@ -2479,6 +2534,15 @@ static bool8 DecorationIsUnderCursor(u8 taskId, u8 idx, struct DecorRearrangemen
 
     if (x >= xOff && x < xOff + data->width && y > yOff - ht && y <= yOff)
     {
+        if (gDecorations[sDecorationContext.items[idx]].permission == DECORPERM_SPRITE)
+            for (u32 i = 0; i < OBJECT_EVENT_TEMPLATES_COUNT; ++i)
+                if (gSaveBlock1Ptr->objectEventTemplates[i].x == xOff
+                 && gSaveBlock1Ptr->objectEventTemplates[i].y == yOff
+                 && !ADMG_IsFlagIdValid(gSaveBlock1Ptr->objectEventTemplates[i].flagId))
+                {
+                    ADMG_StateAccessRejected(gSaveBlock1Ptr->objectEventTemplates[i].flagId, __func__);
+                    return FALSE;
+                }
         SetCameraSpritePosition(data->width - (x - xOff + 1), yOff - y);
         return TRUE;
     }
@@ -2486,8 +2550,37 @@ static bool8 DecorationIsUnderCursor(u8 taskId, u8 idx, struct DecorRearrangemen
     return FALSE;
 }
 
+static bool8 ADMG_ValidateDecorationContext(void)
+{
+    if (gSaveBlock1Ptr == NULL || sDecorationContext.items == NULL || sDecorationContext.pos == NULL
+     || sDecorationContext.size > ARRAY_COUNT(sDecorRearrangementDataBuffer))
+    {
+        ADMG_StateAccessRejected(sDecorationContext.size, __func__);
+        return FALSE;
+    }
+    for (u32 i = 0; i < sDecorationContext.size; ++i)
+        if (sDecorationContext.items[i] > NUM_DECORATIONS)
+        {
+            ADMG_StateAccessRejected(sDecorationContext.items[i], __func__);
+            return FALSE;
+        }
+    return TRUE;
+}
+
 static void SetDecorRearrangementFlagIdIfFlagUnset(void)
 {
+    if (!ADMG_ValidateDecorationContext()
+     || sCurDecorSelectedInRearrangement >= ARRAY_COUNT(sDecorRearrangementDataBuffer))
+    {
+        ADMG_StateAccessRejected(sCurDecorSelectedInRearrangement, __func__);
+        return;
+    }
+    if (sDecorRearrangementDataBuffer[sCurDecorSelectedInRearrangement].idx >= sDecorationContext.size)
+    {
+        ADMG_StateAccessRejected(sDecorRearrangementDataBuffer[sCurDecorSelectedInRearrangement].idx, __func__);
+        return;
+    }
+
     u8 xOff;
     u8 yOff;
     u16 i;
@@ -2496,7 +2589,12 @@ static void SetDecorRearrangementFlagIdIfFlagUnset(void)
     yOff = sDecorationContext.pos[sDecorRearrangementDataBuffer[sCurDecorSelectedInRearrangement].idx] & 0x0F;
     for (i = 0; i < OBJECT_EVENT_TEMPLATES_COUNT; i++)
     {
-        if (gSaveBlock1Ptr->objectEventTemplates[i].x == xOff && gSaveBlock1Ptr->objectEventTemplates[i].y == yOff && !FlagGet(gSaveBlock1Ptr->objectEventTemplates[i].flagId))
+        if (gSaveBlock1Ptr->objectEventTemplates[i].x != xOff || gSaveBlock1Ptr->objectEventTemplates[i].y != yOff)
+            continue;
+        bool8 hidden;
+        if (!ADMG_TryReadFlag(gSaveBlock1Ptr->objectEventTemplates[i].flagId, &hidden))
+            return;
+        if (!hidden)
         {
             sDecorRearrangementDataBuffer[sCurDecorSelectedInRearrangement].flagId = gSaveBlock1Ptr->objectEventTemplates[i].flagId;
             break;
@@ -2506,6 +2604,9 @@ static void SetDecorRearrangementFlagIdIfFlagUnset(void)
 
 static bool8 AttemptMarkSpriteDecorUnderCursorForRemoval(u8 taskId)
 {
+    if (!ADMG_ValidateDecorationContext())
+        return FALSE;
+
     u16 i;
 
     for (i = 0; i < sDecorationContext.size; i++)
@@ -2518,7 +2619,10 @@ static bool8 AttemptMarkSpriteDecorUnderCursorForRemoval(u8 taskId)
                 if (DecorationIsUnderCursor(taskId, i, sDecorRearrangementDataBuffer) == TRUE)
                 {
                     sDecorRearrangementDataBuffer->idx = i;
+                    u64 generation = ADMG_BeginStateAccessCheck();
                     SetDecorRearrangementFlagIdIfFlagUnset();
+                    if (!ADMG_EndStateAccessCheck(generation))
+                        return FALSE;
                     sCurDecorSelectedInRearrangement = 1;
                     return TRUE;
                 }
@@ -2530,6 +2634,9 @@ static bool8 AttemptMarkSpriteDecorUnderCursorForRemoval(u8 taskId)
 
 static void MarkSpriteDecorsInBoundsForRemoval(u8 left, u8 top, u8 right, u8 bottom)
 {
+    if (!ADMG_ValidateDecorationContext())
+        return;
+
     u8 i;
     u8 xOff;
     u8 yOff;
@@ -2542,8 +2649,16 @@ static void MarkSpriteDecorsInBoundsForRemoval(u8 left, u8 top, u8 right, u8 bot
         yOff = sDecorationContext.pos[i] & 0x0F;
         if (decor != DECOR_NONE && gDecorations[decor].permission == DECORPERM_SPRITE && left <= xOff && top <= yOff && right >= xOff && bottom >= yOff)
         {
+            if (sCurDecorSelectedInRearrangement >= ARRAY_COUNT(sDecorRearrangementDataBuffer))
+            {
+                ADMG_StateAccessRejected(sCurDecorSelectedInRearrangement, __func__);
+                return;
+            }
             sDecorRearrangementDataBuffer[sCurDecorSelectedInRearrangement].idx = i;
+            u64 generation = ADMG_BeginStateAccessCheck();
             SetDecorRearrangementFlagIdIfFlagUnset();
+            if (!ADMG_EndStateAccessCheck(generation))
+                return;
             sCurDecorSelectedInRearrangement++;
         }
     }
@@ -2551,6 +2666,9 @@ static void MarkSpriteDecorsInBoundsForRemoval(u8 left, u8 top, u8 right, u8 bot
 
 static void AttemptMarkDecorUnderCursorForRemoval(u8 taskId)
 {
+    if (!ADMG_ValidateDecorationContext())
+        return;
+
     u8 i;
     u8 xOff;
     u8 yOff;
@@ -2558,7 +2676,11 @@ static void AttemptMarkDecorUnderCursorForRemoval(u8 taskId)
     u32 var2;
 
     sCurDecorSelectedInRearrangement = 0;
-    if (AttemptMarkSpriteDecorUnderCursorForRemoval(taskId) != TRUE)
+    u64 generation = ADMG_BeginStateAccessCheck();
+    bool8 spriteFound = AttemptMarkSpriteDecorUnderCursorForRemoval(taskId);
+    if (!ADMG_EndStateAccessCheck(generation))
+        return;
+    if (spriteFound != TRUE)
     {
         // Not a sprite.
         for (i = 0; i < sDecorationContext.size; i++)

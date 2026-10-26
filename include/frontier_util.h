@@ -29,6 +29,7 @@ s32 GetFronterBrainSymbol(void);
 void ClearEnemyPartyAfterChallenge(void);
 bool8 IsFrontierTrainerFemale(u16 trainerId);
 u8 GetFrontierTrainerFixedIvs(u16 trainerId);
+bool8 ADMG_TryGetFrontierTrainerIdRange(u32 challenge, u32 battle, u16 *first, u16 *last);
 u16 GetRandomScaledFrontierTrainerId(u8 challengeNum, u8 battleNum);
 void SetBattleFacilityTrainerGfxId(u16 trainerId, u8 tempVarId);
 u16 GetBattleFacilityTrainerGfxId(u16 trainerId);
@@ -57,6 +58,30 @@ struct FrontierBrain
     u16 silverSymbolFlag;
 };
 
+struct FrontierBrainMon
+{
+    enum Species species;
+    enum Item heldItem;
+    u8 fixedIV;
+    u8 nature;
+    u8 evs[NUM_STATS];
+    enum Move moves[MAX_MON_MOVES];
+};
+
+/* Temporary selection only; no saved or mod-persistence layout. */
+struct ADMG_FrontierBrainSelection
+{
+    const struct FrontierBrainMon *mons;
+    u32 facility, symbol;
+    s32 tournamentId;
+};
+bool8 ADMG_TryGetFrontierBrainInfo(u32 facility, const struct FrontierBrain **info);
+bool8 ADMG_TryGetFrontierBrainMon(u32 facility, u32 symbol, u32 monId, const struct FrontierBrainMon **mon);
+bool8 ADMG_TryPrepareFrontierBrainSelection(struct ADMG_FrontierBrainSelection *selection);
+
 extern const struct FrontierBrain gFrontierBrainInfo[];
+
+/* Internal bounded text admission; not a saved layout or public mod SDK. */
+bool8 ADMG_TryValidateTrainerText(const u8 *text, u32 extent, u32 identity, u32 *length);
 
 #endif // GUARD_FRONTIER_UTIL_H

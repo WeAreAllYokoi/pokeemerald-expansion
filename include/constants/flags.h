@@ -1,6 +1,8 @@
 #ifndef GUARD_CONSTANTS_FLAGS_H
 #define GUARD_CONSTANTS_FLAGS_H
 
+#include "constants/admg_state_ids.h"
+
 #include "constants/trainers.h"
 #include "constants/opponents.h"
 #include "constants/rematches.h"

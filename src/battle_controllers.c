@@ -1,4 +1,6 @@
 #include "global.h"
+#include "admg_trainer_actor.h"
+#include "admg_state.h"
 #include "battle.h"
 #include "battle_ai_main.h"
 #include "battle_ai_util.h"
@@ -143,6 +145,8 @@ void SetUpBattleVarsAndBirchZigzagoon(void)
 {
     s32 i;
 
+    if (!ADMG_TryValidateBattleTrainerActors(gBattleTypeFlags, TRAINER_BATTLE_PARAM.opponentA,
+        TRAINER_BATTLE_PARAM.opponentB, gPartnerTrainerId)) return;
     gBattleMainFunc = BeginBattleIntroDummy;
 
     for (i = 0; i < MAX_BATTLERS_COUNT; i++)
@@ -156,8 +160,8 @@ void SetUpBattleVarsAndBirchZigzagoon(void)
     HandleLinkBattleSetup();
     gBattleControllerExecFlags = 0;
     ClearBattleAnimationVars();
-    BattleAI_SetupItems();
-    BattleAI_SetupFlags();
+    { u64 setup = ADMG_BeginStateAccessCheck(); BattleAI_SetupItems(); if (!ADMG_EndStateAccessCheck(setup)) return; }
+    { u64 setup = ADMG_BeginStateAccessCheck(); BattleAI_SetupFlags(); if (!ADMG_EndStateAccessCheck(setup)) return; }
 
     if (!IS_FRLG && gBattleTypeFlags & BATTLE_TYPE_FIRST_BATTLE)
         CreateWildMon(SPECIES_ZIGZAGOON, 2);
@@ -508,7 +512,7 @@ static void SetBattlePartyIds(void)
                 {
                     if (gBattlerPartyIndexes[i - 2] == j && BattlersShareParty(i - 2, i))
                     {
-                        // Exclude already assigned Pokémon;
+                        // Exclude already assigned PokÃ©mon;
                     }
                     else if (IsValidForBattle(&GetBattlerParty(i)[j]))
                     {
@@ -612,6 +616,48 @@ enum
     LINK_BUFF_EFFECT_BATTLER,
     LINK_BUFF_DATA,
 };
+
+/* Pure preflight of the existing ring for the complete recorded sequence.
+ * Reserve the whole sequence before advancing any recording cursor. */
+static bool8 ADMG_RecordedTransferBatchValid(enum BattlerId battler, u32 bufferId,
+                                          const u16 *sizes, u32 count)
+{
+    if ((u32)battler >= MAX_BATTLERS_COUNT || bufferId != B_COMM_TO_CONTROLLER
+     || gBattleResources == NULL || count == 0 || count > ADMG_RECORDED_ACTION_CHUNKS)
+    { ADMG_StateAccessRejected((u32)battler, __func__); return FALSE; }
+    if (!(gBattleTypeFlags & BATTLE_TYPE_LINK))
+    {
+        if (count == 1) return TRUE;
+        ADMG_StateAccessRejected(count, __func__); return FALSE;
+    }
+    if (sLinkSendTaskId >= NUM_TASKS || !gTasks[sLinkSendTaskId].isActive
+     || gTasks[sLinkSendTaskId].func != Task_HandleSendLinkBuffersData
+     || gLinkBattleSendBuffer == NULL)
+    { ADMG_StateAccessRejected(sLinkSendTaskId, __func__); return FALSE; }
+    s32 start = gTasks[sLinkSendTaskId].tCurrentBlock_Start;
+    s32 end = gTasks[sLinkSendTaskId].tCurrentBlock_End;
+    s32 wrap = gTasks[sLinkSendTaskId].tCurrentBlock_WrapFrom;
+    if (start < 0 || end < 0 || wrap < 0 || start >= BATTLE_BUFFER_LINK_SIZE
+     || end >= BATTLE_BUFFER_LINK_SIZE || wrap >= BATTLE_BUFFER_LINK_SIZE)
+    { ADMG_StateAccessRejected(end, __func__); return FALSE; }
+    for (u32 packet = 0; packet < count; ++packet)
+    {
+        u32 block = sizes[packet] - sizes[packet] % 4 + 4 + LINK_BUFF_DATA;
+        if (sizes[packet] > sizeof(gBattleResources->transferBuffer))
+        { ADMG_StateAccessRejected(sizes[packet], __func__); return FALSE; }
+        if (end + block + 1 > BATTLE_BUFFER_LINK_SIZE)
+        {
+            if (end < start || wrap != 0 || block >= (u32)start)
+            { ADMG_StateAccessRejected(block, __func__); return FALSE; }
+            wrap = end;
+            end = 0;
+        }
+        if (end < start && end + block >= start)
+        { ADMG_StateAccessRejected(block, __func__); return FALSE; }
+        end += block;
+    }
+    return TRUE;
+}
 
 // We want to send a message. Place it into the "send" buffer.
 // First argument is a BATTLELINKCOMMTYPE_
@@ -1019,8 +1065,24 @@ void BtlController_EmitMoveAnimation(enum BattlerId battler, u32 bufferId, enum 
     PrepareBufferDataTransfer(battler, bufferId, gBattleResources->transferBuffer, 16 + sizeof(struct LinkBattleAnim));
 }
 
+bool8 ADMG_TryAdmitBattlePrint(enum BattlerId battler, u32 bufferId, enum StringID stringID,
+    bool8 indexedMove, const char *operation)
+{
+    if ((u32)battler >= MAX_BATTLERS_COUNT
+        || (bufferId != B_COMM_TO_CONTROLLER && bufferId != B_COMM_TO_ENGINE)
+        || (u32)stringID >= STRINGID_COUNT || gBattleResources == NULL || gBattleStruct == NULL
+        || !ADMG_TryValidateBattleTrainerActors(gBattleTypeFlags, TRAINER_BATTLE_PARAM.opponentA,
+            TRAINER_BATTLE_PARAM.opponentB, gPartnerTrainerId))
+    { ADMG_StateAccessRejected((u32)stringID, operation); return FALSE; }
+    if (indexedMove && (u32)gCurrentMove >= MOVES_COUNT_ALL)
+    { ADMG_StateAccessRejected((u32)gCurrentMove, operation); return FALSE; }
+    return TRUE;
+}
+
 void BtlController_EmitPrintString(enum BattlerId battler, u32 bufferId, enum StringID stringID)
 {
+    if (!ADMG_TryAdmitBattlePrint(battler, bufferId, stringID, TRUE, __func__)) return;
+
     s32 i;
     struct BattleMsgData *stringInfo;
 
@@ -1053,6 +1115,8 @@ void BtlController_EmitPrintString(enum BattlerId battler, u32 bufferId, enum St
 
 void BtlController_EmitPrintSelectionString(enum BattlerId battler, u32 bufferId, enum StringID stringID)
 {
+    if (!ADMG_TryAdmitBattlePrint(battler, bufferId, stringID, FALSE, __func__)) return;
+
     s32 i;
     struct BattleMsgData *stringInfo;
 
@@ -1420,15 +1484,20 @@ void BtlController_EmitBattleAnimation(enum BattlerId battler, u32 bufferId, u8 
 // mode is a LINK_STANDBY_* constant
 void BtlController_EmitLinkStandbyMsg(enum BattlerId battler, u32 bufferId, u8 mode, bool32 record)
 {
-    gBattleResources->transferBuffer[0] = CONTROLLER_LINKSTANDBYMSG;
-    gBattleResources->transferBuffer[1] = mode;
-
-    if (record)
-        gBattleResources->transferBuffer[3] = gBattleResources->transferBuffer[2] = RecordedBattle_BufferNewBattlerData(&gBattleResources->transferBuffer[4]);
-    else
-        gBattleResources->transferBuffer[3] = gBattleResources->transferBuffer[2] = 0;
-
-    PrepareBufferDataTransfer(battler, bufferId, gBattleResources->transferBuffer, gBattleResources->transferBuffer[2] + 4);
+    u16 sizes[ADMG_RECORDED_ACTION_CHUNKS] = {0};
+    u32 count = 1;
+    if (record && !ADMG_TryPlanRecordedActionChunks(sizes, ARRAY_COUNT(sizes), &count)) return;
+    for (u32 packet = 0; packet < count; ++packet) sizes[packet] += 4;
+    if (!ADMG_RecordedTransferBatchValid(battler, bufferId, sizes, count)) return;
+    for (u32 packet = 0; packet < count; ++packet)
+    {
+        gBattleResources->transferBuffer[0] = CONTROLLER_LINKSTANDBYMSG;
+        /* Existing default mode completes without message/bounce effects. */
+        gBattleResources->transferBuffer[1] = packet + 1 == count ? mode : LINK_STANDBY_MSG_ONLY + 1;
+        u8 length = record ? RecordedBattle_BufferNewBattlerData(&gBattleResources->transferBuffer[4]) : 0;
+        gBattleResources->transferBuffer[3] = gBattleResources->transferBuffer[2] = length;
+        PrepareBufferDataTransfer(battler, bufferId, gBattleResources->transferBuffer, length + 4);
+    }
 }
 
 void BtlController_EmitResetActionMoveSelection(enum BattlerId battler, u32 bufferId, u8 caseId)
@@ -1440,12 +1509,29 @@ void BtlController_EmitResetActionMoveSelection(enum BattlerId battler, u32 buff
 
 void BtlController_EmitEndLinkBattle(enum BattlerId battler, u32 bufferId, u8 battleOutcome)
 {
-    gBattleResources->transferBuffer[0] = CONTROLLER_ENDLINKBATTLE;
-    gBattleResources->transferBuffer[1] = battleOutcome;
-    gBattleResources->transferBuffer[2] = gSaveBlock2Ptr->frontier.disableRecordBattle;
-    gBattleResources->transferBuffer[3] = gSaveBlock2Ptr->frontier.disableRecordBattle;
-    gBattleResources->transferBuffer[5] = gBattleResources->transferBuffer[4] = RecordedBattle_BufferNewBattlerData(&gBattleResources->transferBuffer[6]);
-    PrepareBufferDataTransfer(battler, bufferId, gBattleResources->transferBuffer, gBattleResources->transferBuffer[4] + 6);
+    u16 sizes[ADMG_RECORDED_ACTION_CHUNKS];
+    u32 count;
+    if (gSaveBlock2Ptr == NULL) { ADMG_StateAccessRejected(0, __func__); return; }
+    if (!ADMG_TryPlanRecordedActionChunks(sizes, ARRAY_COUNT(sizes), &count)) return;
+    for (u32 packet = 0; packet < count; ++packet) sizes[packet] += packet + 1 == count ? 6 : 4;
+    if (!ADMG_RecordedTransferBatchValid(battler, bufferId, sizes, count)) return;
+    /* FIFO delivery drains all pending records before the original terminal
+     * command. Small packets still emit exactly the original one command. */
+    for (u32 packet = 0; packet < count; ++packet)
+    {
+        bool8 terminal = packet + 1 == count;
+        u32 header = terminal ? 6 : 4;
+        gBattleResources->transferBuffer[0] = terminal ? CONTROLLER_ENDLINKBATTLE : CONTROLLER_LINKSTANDBYMSG;
+        gBattleResources->transferBuffer[1] = terminal ? battleOutcome : LINK_STANDBY_MSG_ONLY + 1;
+        if (terminal)
+        {
+            gBattleResources->transferBuffer[2] = gSaveBlock2Ptr->frontier.disableRecordBattle;
+            gBattleResources->transferBuffer[3] = gSaveBlock2Ptr->frontier.disableRecordBattle;
+        }
+        u8 length = RecordedBattle_BufferNewBattlerData(&gBattleResources->transferBuffer[header]);
+        gBattleResources->transferBuffer[header - 1] = gBattleResources->transferBuffer[header - 2] = length;
+        PrepareBufferDataTransfer(battler, bufferId, gBattleResources->transferBuffer, length + header);
+    }
 }
 
 void BtlController_EmitDebugMenu(enum BattlerId battler, u32 bufferId)
@@ -1998,7 +2084,7 @@ static void SetBattlerMonData(enum BattlerId battler, struct Pokemon *party, u32
         HandleLowHpMusicChange(&party[gBattlerPartyIndexes[battler]], battler);
 }
 
-// In normal singles, if follower Pokémon exists, and the Pokémon following is being sent out, have it slide in instead of being thrown
+// In normal singles, if follower PokÃ©mon exists, and the PokÃ©mon following is being sent out, have it slide in instead of being thrown
 static bool8 ShouldDoSlideInAnim(enum BattlerId battler)
 {
     struct ObjectEvent *followerObj = GetFollowerObject();
@@ -2173,14 +2259,29 @@ static void Controller_DoMoveAnimation(enum BattlerId battler)
     }
 }
 
+static bool8 ADMG_TryGetControllerTrainerSprite(enum BattlerId battler, struct Sprite **sprite)
+{
+    if ((u32)battler >= MAX_BATTLERS_COUNT || gBattleStruct == NULL)
+    { ADMG_StateAccessRejected((u32)battler, __func__); return FALSE; }
+    u32 id = gBattleStruct->trainerSlideSpriteIds[battler];
+    if (id >= MAX_SPRITES)
+    { ADMG_StateAccessRejected(id, __func__); return FALSE; }
+    *sprite = &gSprites[id];
+    return TRUE;
+}
+
 static void Controller_HandleTrainerSlideBack(enum BattlerId battler)
 {
-    if (gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].callback == SpriteCallbackDummy)
+    struct Sprite *sprite;
+    if (!ADMG_TryGetControllerTrainerSprite(battler, &sprite)) return;
+    if ((*sprite).callback == SpriteCallbackDummy)
     {
+        if (!IsOnPlayerSide(battler) && sprite->oam.affineParam >= TRAINER_PIC_COUNT)
+        { ADMG_StateAccessRejected(sprite->oam.affineParam, __func__); return; }
         if (!IsOnPlayerSide(battler))
-            FreeTrainerFrontPicPalette(gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].oam.affineParam);
-        FreeSpriteOamMatrix(&gSprites[gBattleStruct->trainerSlideSpriteIds[battler]]);
-        DestroySprite(&gSprites[gBattleStruct->trainerSlideSpriteIds[battler]]);
+            FreeTrainerFrontPicPalette((*sprite).oam.affineParam);
+        FreeSpriteOamMatrix(sprite);
+        DestroySprite(sprite);
         BtlController_Complete(battler);
     }
 }
@@ -2233,7 +2334,9 @@ static void Controller_WaitForStatusAnimation(enum BattlerId battler)
 
 static void Controller_WaitForTrainerPic(enum BattlerId battler)
 {
-    if (gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].callback == SpriteCallbackDummy)
+    struct Sprite *sprite;
+    if (!ADMG_TryGetControllerTrainerSprite(battler, &sprite)) return;
+    if ((*sprite).callback == SpriteCallbackDummy)
         BtlController_Complete(battler);
 }
 
@@ -2289,7 +2392,7 @@ void BattleControllerDummy(enum BattlerId battler)
 // Handlers of the controller commands
 void BtlController_HandleGetMonData(enum BattlerId battler)
 {
-    u8 monData[sizeof(struct Pokemon) * 2 + 56]; // this allows to get full data of two Pokémon, trying to get more will result in overwriting data
+    u8 monData[sizeof(struct Pokemon) * 2 + 56]; // this allows to get full data of two PokÃ©mon, trying to get more will result in overwriting data
     struct Pokemon *party = GetBattlerParty(battler);
     u32 size = 0;
     u8 monToCheck;
@@ -2451,6 +2554,9 @@ void BtlController_HandleReturnMonToBall(enum BattlerId battler)
 
 void BtlController_HandleDrawTrainerPic(enum BattlerId battler, enum TrainerPicID trainerPicId, bool32 isFrontPic, s16 xPos, s16 yPos, s32 subpriority)
 {
+    if ((u32)battler >= MAX_BATTLERS_COUNT || gBattleStruct == NULL || (u32)trainerPicId >= TRAINER_PIC_COUNT)
+    { ADMG_StateAccessRejected((u32)battler, __func__); return; }
+
     if (!IsOnPlayerSide(battler)) // Always the front sprite for the opponent.
     {
         DecompressTrainerFrontPic(trainerPicId, battler);
@@ -2461,6 +2567,9 @@ void BtlController_HandleDrawTrainerPic(enum BattlerId battler, enum TrainerPicI
                                                    xPos,
                                                    yPos,
                                                    subpriority);
+        if (gBattleStruct->trainerSlideSpriteIds[battler] >= MAX_SPRITES)
+        { ADMG_StateAccessRejected(gBattleStruct->trainerSlideSpriteIds[battler], __func__); return; }
+
 
         gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].oam.paletteNum = IndexOfSpritePaletteTag(GetTrainerPicTag(trainerPicId, TRUE));
         gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].x2 = -DISPLAY_WIDTH;
@@ -2479,6 +2588,9 @@ void BtlController_HandleDrawTrainerPic(enum BattlerId battler, enum TrainerPicI
                                                              xPos,
                                                              yPos,
                                                              subpriority);
+        if (gBattleStruct->trainerSlideSpriteIds[battler] >= MAX_SPRITES)
+        { ADMG_StateAccessRejected(gBattleStruct->trainerSlideSpriteIds[battler], __func__); return; }
+
 
             gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].oam.paletteNum = IndexOfSpritePaletteTag(GetTrainerPicTag(trainerPicId, TRUE));
             gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].oam.affineMode = ST_OAM_AFFINE_OFF;
@@ -2495,6 +2607,9 @@ void BtlController_HandleDrawTrainerPic(enum BattlerId battler, enum TrainerPicI
                                                              xPos,
                                                              yPos,
                                                              subpriority);
+        if (gBattleStruct->trainerSlideSpriteIds[battler] >= MAX_SPRITES)
+        { ADMG_StateAccessRejected(gBattleStruct->trainerSlideSpriteIds[battler], __func__); return; }
+
             if ((gBattleTypeFlags & BATTLE_TYPE_SAFARI) && GetBattlerPosition(battler) == B_POSITION_PLAYER_LEFT)
                 gBattlerSpriteIds[battler] = gBattleStruct->trainerSlideSpriteIds[battler];
 
@@ -2515,6 +2630,24 @@ void BtlController_HandleDrawTrainerPic(enum BattlerId battler, enum TrainerPicI
 
 void BtlController_HandleTrainerSlide(enum BattlerId battler, enum TrainerPicID trainerPicId)
 {
+    if ((u32)battler >= MAX_BATTLERS_COUNT || gBattleStruct == NULL || (u32)trainerPicId >= TRAINER_PIC_COUNT)
+    { ADMG_StateAccessRejected((u32)battler, __func__); return; }
+
+    /* Reuse the existing player-side front-picture constructor. Named partners
+     * and the player keep their original back-picture implementation. */
+    if (IsOnPlayerSide(battler) && GetBattlerPosition(battler) == B_POSITION_PLAYER_RIGHT
+     && gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER && !IsPartnerTrainerId(gPartnerTrainerId))
+    {
+        u64 generation = ADMG_BeginStateAccessCheck();
+        BtlController_HandleDrawTrainerPic(battler, trainerPicId, TRUE, 80, 80, 30);
+        if (!ADMG_EndStateAccessCheck(generation)) return;
+        u32 spriteId = gBattleStruct->trainerSlideSpriteIds[battler];
+        if (spriteId >= MAX_SPRITES) { ADMG_StateAccessRejected(spriteId, __func__); return; }
+        gSprites[spriteId].x2 = -96;
+        gSprites[spriteId].sSpeedX = 2;
+        gSprites[spriteId].callback = SpriteCB_TrainerSlideIn;
+        return;
+    }
     if (IsOnPlayerSide(battler))
     {
         LoadSpritePaletteWithTag(GetTrainerBackPicPalette(trainerPicId), GetTrainerPicTag(trainerPicId, FALSE));
@@ -2523,6 +2656,9 @@ void BtlController_HandleTrainerSlide(enum BattlerId battler, enum TrainerPicID 
                                                          80,
                                                          (8 - GetTrainerBackPicCoords(trainerPicId)->size) * 4 + 80,
                                                          30);
+        if (gBattleStruct->trainerSlideSpriteIds[battler] >= MAX_SPRITES)
+        { ADMG_StateAccessRejected(gBattleStruct->trainerSlideSpriteIds[battler], __func__); return; }
+
         if ((gBattleTypeFlags & BATTLE_TYPE_SAFARI) && GetBattlerPosition(battler) == B_POSITION_PLAYER_LEFT)
             gBattlerSpriteIds[battler] = gBattleStruct->trainerSlideSpriteIds[battler];
         // Sets sprite priority to 1 so mons don't remain in foreground
@@ -2536,6 +2672,9 @@ void BtlController_HandleTrainerSlide(enum BattlerId battler, enum TrainerPicID 
         DecompressTrainerFrontPic(trainerPicId, battler);
         SetMultiuseSpriteTemplateToTrainerFront(trainerPicId, GetBattlerPosition(battler));
         gBattleStruct->trainerSlideSpriteIds[battler] = CreateSprite(&gMultiuseSpriteTemplate, 176, 40, 0);
+        if (gBattleStruct->trainerSlideSpriteIds[battler] >= MAX_SPRITES)
+        { ADMG_StateAccessRejected(gBattleStruct->trainerSlideSpriteIds[battler], __func__); return; }
+
         gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].oam.affineParam = trainerPicId;
         gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].oam.paletteNum = IndexOfSpritePaletteTag(GetTrainerPicTag(trainerPicId, TRUE));
         gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].x2 = 96;
@@ -2551,14 +2690,16 @@ void BtlController_HandleTrainerSlide(enum BattlerId battler, enum TrainerPicID 
 
 void BtlController_HandleTrainerSlideBack(enum BattlerId battler, s16 data0, bool32 startAnim)
 {
-    SetSpritePrimaryCoordsFromSecondaryCoords(&gSprites[gBattleStruct->trainerSlideSpriteIds[battler]]);
-    gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].data[0] = data0;
-    gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].data[2] = IsOnPlayerSide(battler) ? -40 : 280;
-    gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].data[4] = gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].y;
-    gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].callback = StartAnimLinearTranslation;
-    StoreSpriteCallbackInData6(&gSprites[gBattleStruct->trainerSlideSpriteIds[battler]], SpriteCallbackDummy);
+    struct Sprite *sprite;
+    if (!ADMG_TryGetControllerTrainerSprite(battler, &sprite)) return;
+    SetSpritePrimaryCoordsFromSecondaryCoords(sprite);
+    (*sprite).data[0] = data0;
+    (*sprite).data[2] = IsOnPlayerSide(battler) ? -40 : 280;
+    (*sprite).data[4] = (*sprite).y;
+    (*sprite).callback = StartAnimLinearTranslation;
+    StoreSpriteCallbackInData6(sprite, SpriteCallbackDummy);
     if (startAnim)
-        StartSpriteAnim(&gSprites[gBattleStruct->trainerSlideSpriteIds[battler]], 1);
+        StartSpriteAnim(sprite, 1);
     gBattlerControllerFuncs[battler] = Controller_HandleTrainerSlideBack;
 }
 
@@ -2658,17 +2799,35 @@ void BtlController_HandleMoveAnimation(enum BattlerId battler)
 
 void BtlController_HandlePrintString(enum BattlerId battler)
 {
-    u16 *stringId;
+    if ((u32)battler >= MAX_BATTLERS_COUNT || gBattleResources == NULL || gBattleStruct == NULL)
+    { ADMG_StateAccessRejected((u32)battler, __func__); return; }
+    u16 stringId = T1_READ_16(&gBattleResources->bufferA[battler][2]);
+    if ((u32)stringId >= STRINGID_COUNT)
+    { ADMG_StateAccessRejected((u32)stringId, __func__); return; }
+    struct ADMG_BattleTrainerActors actors;
+    if (!ADMG_TryCaptureBattleTrainerActors(gBattleTypeFlags, TRAINER_BATTLE_PARAM.opponentA,
+        TRAINER_BATTLE_PARAM.opponentB, gPartnerTrainerId, &actors)) return;
+    struct BattleResources *resources = gBattleResources;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    u16 previousX = gBattle_BG0_X, previousY = gBattle_BG0_Y;
 
     gBattle_BG0_X = 0;
     gBattle_BG0_Y = 0;
-    stringId = (u16 *)(&gBattleResources->bufferA[battler][2]);
-    BufferStringBattle(*stringId, battler);
+    BufferStringBattle(stringId, battler);
+    if (!ADMG_EndStateAccessCheck(generation) || gBattleResources != resources
+        || !ADMG_BattleTrainerActorsCurrent(&actors, gBattleTypeFlags, TRAINER_BATTLE_PARAM.opponentA,
+            TRAINER_BATTLE_PARAM.opponentB, gPartnerTrainerId))
+    {
+        gBattle_BG0_X = previousX; gBattle_BG0_Y = previousY;
+        if (ADMG_EndStateAccessCheck(generation)) ADMG_StateAccessRejected(stringId, __func__);
+        return;
+    }
+
 
     if (gTestRunnerEnabled)
     {
         TestRunner_Battle_RecordMessage(gDisplayedStringBattle);
-        if (gTestRunnerHeadless || *stringId == STRINGID_CELEBRATEMESSAGE)
+        if (gTestRunnerHeadless || stringId == STRINGID_CELEBRATEMESSAGE)
         {
             BtlController_Complete(battler);
             return;
@@ -2676,14 +2835,14 @@ void BtlController_HandlePrintString(enum BattlerId battler)
     }
 
 
-    // if (BattleStringShouldBeColored(*stringId))
+    // if (BattleStringShouldBeColored(stringId))
     //     BattlePutTextOnWindow(gDisplayedStringBattle, (B_WIN_MSG | B_TEXT_FLAG_NPC_CONTEXT_FONT));
     // else
         BattlePutTextOnWindow(gDisplayedStringBattle, B_WIN_MSG);
 
     if (gBattleTypeFlags & BATTLE_TYPE_FIRST_BATTLE && GetBattlerSide(battler) == B_SIDE_OPPONENT)
     {
-        switch (*stringId)
+        switch (stringId)
         {
         case STRINGID_TRAINER1WINTEXT:
             gBattlerControllerFuncs[battler] = PrintOakText_HowDisappointing;
@@ -2696,14 +2855,16 @@ void BtlController_HandlePrintString(enum BattlerId battler)
 
     gBattlerControllerFuncs[battler] = Controller_WaitForString;
     if (ShouldUpdateTvData(battler))
-        BattleTv_SetDataBasedOnString(*stringId);
+        BattleTv_SetDataBasedOnString(stringId);
     if (IsControllerPlayer(battler)
      || IsControllerOpponent(battler))
-        BattleArena_DeductSkillPoints(battler, *stringId);
+        BattleArena_DeductSkillPoints(battler, stringId);
 }
 
 void BtlController_HandlePrintStringPlayerOnly(enum BattlerId battler)
 {
+    if ((u32)battler >= MAX_BATTLERS_COUNT)
+    { ADMG_StateAccessRejected((u32)battler, __func__); return; }
     if (IsOnPlayerSide(battler))
         BtlController_HandlePrintString(battler);
     else
@@ -2852,12 +3013,12 @@ void BtlController_HandleSpriteInvisibility(enum BattlerId battler)
     BtlController_Complete(battler);
 }
 
-bool32 TwoPlayerIntroMons(enum BattlerId battler) // Double battle with both player Pokémon active.
+bool32 TwoPlayerIntroMons(enum BattlerId battler) // Double battle with both player PokÃ©mon active.
 {
     return (IsDoubleBattle() && IsValidForBattle(GetBattlerMon(battler ^ BIT_FLANK)));
 }
 
-bool32 TwoOpponentIntroMons(enum BattlerId battler) // Double battle with both opponent Pokémon active.
+bool32 TwoOpponentIntroMons(enum BattlerId battler) // Double battle with both opponent PokÃ©mon active.
 {
     return (IsDoubleBattle()
             && IsValidForBattle(GetBattlerMon(battler))
@@ -2876,45 +3037,91 @@ bool32 TwoOpponentIntroMons(enum BattlerId battler) // Double battle with both o
 
 void BtlController_HandleIntroTrainerBallThrow(enum BattlerId battler, u16 tagTrainerPal, const u16 *trainerPal, s16 framesToWait, void (*controllerCallback)(enum BattlerId battler))
 {
-    u8 taskId;
+    struct Sprite *sprite;
+    if (!ADMG_TryGetControllerTrainerSprite(battler, &sprite)) return;
+    struct BattleStruct *battle = gBattleStruct;
+    struct BattleSpriteData *data = gBattleSpritesDataPtr;
+    if (data == NULL || data->healthBoxesData == NULL || data->animationData == NULL || controllerCallback == NULL)
+    { ADMG_StateAccessRejected((u32)battler, __func__); return; }
+    struct BattleHealthboxInfo *health = data->healthBoxesData;
+    struct BattleAnimationInfo *animation = data->animationData;
+    bool8 summary = data->healthBoxesData[battler].partyStatusSummaryShown;
+    u32 summaryTask = gBattlerStatusSummaryTaskId[battler];
+    if (summary && (summaryTask >= NUM_TASKS || !gTasks[summaryTask].isActive
+        || (u16)gTasks[summaryTask].data[0] != (u32)battler))
+    { ADMG_StateAccessRejected(summaryTask, __func__); return; }
+    u32 freeSlot;
+    for (freeSlot = 0; freeSlot < NUM_TASKS && gTasks[freeSlot].isActive; ++freeSlot) {}
+    if (freeSlot == NUM_TASKS)
+    { ADMG_StateAccessRejected(freeSlot, __func__); return; }
+    u64 generation = ADMG_BeginStateAccessCheck();
+    struct Sprite previousSprite = *sprite;
+    u8 taskId = NUM_TASKS;
     enum BattleSide side = GetBattlerSide(battler);
 
-    SetSpritePrimaryCoordsFromSecondaryCoords(&gSprites[gBattleStruct->trainerSlideSpriteIds[battler]]);
+    SetSpritePrimaryCoordsFromSecondaryCoords(sprite);
     if (side == B_SIDE_PLAYER)
     {
-        gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].data[0] = 50;
-        gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].data[2] = -40;
+        (*sprite).data[0] = 50;
+        (*sprite).data[2] = -40;
     }
     else
     {
-        gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].data[0] = 35;
-        gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].data[2] = 280;
+        (*sprite).data[0] = 35;
+        (*sprite).data[2] = 280;
     }
 
-    gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].data[4] = gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].y;
-    gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].callback = StartAnimLinearTranslation;
-    gSprites[gBattleStruct->trainerSlideSpriteIds[battler]].sBattlerId = battler;
+    (*sprite).data[4] = (*sprite).y;
+    (*sprite).callback = StartAnimLinearTranslation;
+    (*sprite).sBattlerId = battler;
 
     if (side == B_SIDE_PLAYER)
     {
-        StoreSpriteCallbackInData6(&gSprites[gBattleStruct->trainerSlideSpriteIds[battler]], SpriteCB_FreePlayerSpriteLoadMonSprite);
-        StartSpriteAnim(&gSprites[gBattleStruct->trainerSlideSpriteIds[battler]], ShouldDoSlideInAnim(battler) ? 2 : 1);
+        StoreSpriteCallbackInData6(sprite, SpriteCB_FreePlayerSpriteLoadMonSprite);
+        StartSpriteAnim(sprite, ShouldDoSlideInAnim(battler) ? 2 : 1);
     }
     else
     {
-        StoreSpriteCallbackInData6(&gSprites[gBattleStruct->trainerSlideSpriteIds[battler]], SpriteCB_FreeOpponentSprite);
+        StoreSpriteCallbackInData6(sprite, SpriteCB_FreeOpponentSprite);
     }
 
+    if (!ADMG_EndStateAccessCheck(generation)) goto ADMG_reject;
+    if (!(gBattleStruct == battle && gBattleSpritesDataPtr == data
+        && data->healthBoxesData == health && data->animationData == animation
+        && battle->trainerSlideSpriteIds[battler] < MAX_SPRITES
+        && &gSprites[battle->trainerSlideSpriteIds[battler]] == sprite
+        && data->healthBoxesData[battler].partyStatusSummaryShown == summary
+        && (!summary || (gBattlerStatusSummaryTaskId[battler] == summaryTask
+            && gTasks[summaryTask].isActive && (u16)gTasks[summaryTask].data[0] == (u32)battler))))
+    { ADMG_StateAccessRejected((u32)battler, __func__); goto ADMG_reject; }
     taskId = CreateTask(Task_StartSendOutAnim, 5);
+    if (taskId >= NUM_TASKS || taskId != freeSlot || !gTasks[taskId].isActive
+        || gTasks[taskId].func != Task_StartSendOutAnim)
+    { ADMG_StateAccessRejected(taskId, __func__); goto ADMG_reject; }
+    if (!ADMG_EndStateAccessCheck(generation)) goto ADMG_reject;
     gTasks[taskId].tBattlerId = battler;
     gTasks[taskId].tFramesToWait = framesToWait;
     SetWordTaskArg(taskId, tControllerFunc_1, (uint32_t)(controllerCallback));
 
-    if (gBattleSpritesDataPtr->healthBoxesData[battler].partyStatusSummaryShown)
-        gTasks[gBattlerStatusSummaryTaskId[battler]].func = Task_HidePartyStatusSummary;
+    if (!ADMG_EndStateAccessCheck(generation)) goto ADMG_reject;
+    if (!(gBattleStruct == battle && gBattleSpritesDataPtr == data
+        && data->healthBoxesData == health && data->animationData == animation
+        && battle->trainerSlideSpriteIds[battler] < MAX_SPRITES
+        && &gSprites[battle->trainerSlideSpriteIds[battler]] == sprite
+        && data->healthBoxesData[battler].partyStatusSummaryShown == summary
+        && (!summary || (gBattlerStatusSummaryTaskId[battler] == summaryTask
+            && gTasks[summaryTask].isActive && (u16)gTasks[summaryTask].data[0] == (u32)battler))))
+    { ADMG_StateAccessRejected((u32)battler, __func__); goto ADMG_reject; }
+    if (summary)
+        gTasks[summaryTask].func = Task_HidePartyStatusSummary;
 
-    gBattleSpritesDataPtr->animationData->introAnimActive = TRUE;
+    data->animationData->introAnimActive = TRUE;
     gBattlerControllerFuncs[battler] = BattleControllerDummy;
+    return;
+ADMG_reject:
+    *sprite = previousSprite;
+    if (taskId < NUM_TASKS && taskId == freeSlot && gTasks[taskId].isActive
+        && gTasks[taskId].func == Task_StartSendOutAnim) DestroyTask(taskId);
 }
 
 static bool32 TwoMonsAtSendOut(enum BattlerId battler)
@@ -2941,6 +3148,11 @@ static bool32 TwoMonsAtSendOut(enum BattlerId battler)
 // Send out at start of battle
 static void Task_StartSendOutAnim(u8 taskId)
 {
+    if (taskId >= NUM_TASKS || !gTasks[taskId].isActive || gTasks[taskId].func != Task_StartSendOutAnim)
+    { ADMG_StateAccessRejected(taskId, __func__); return; }
+    u32 rawBattler = (u16)gTasks[taskId].tBattlerId;
+    if (rawBattler >= MAX_BATTLERS_COUNT)
+    { ADMG_StateAccessRejected(rawBattler, __func__); return; }
     if (gTasks[taskId].tFramesToWait != 0 && gTasks[taskId].tStartTimer < gTasks[taskId].tFramesToWait)
     {
         gTasks[taskId].tStartTimer++;
@@ -2948,24 +3160,56 @@ static void Task_StartSendOutAnim(u8 taskId)
     else
     {
         enum BattlerId battlerPartner;
-        enum BattlerId battler = gTasks[taskId].tBattlerId;
+        enum BattlerId battler = rawBattler;
+        u64 generation = ADMG_BeginStateAccessCheck();
+        u32 flags = gBattleTypeFlags;
+        struct BattleResources *resources = gBattleResources;
+        u32 partyA = gBattlerPartyIndexes[battler];
+        if (resources == NULL || partyA >= PARTY_SIZE)
+        { ADMG_StateAccessRejected(partyA, __func__); return; }
+        bool8 two = TwoMonsAtSendOut(battler);
+        u32 callback = GetWordTaskArg(taskId, tControllerFunc_1);
+        u32 partyB = two ? gBattlerPartyIndexes[battler ^ BIT_FLANK] : 0;
+        if (!ADMG_EndStateAccessCheck(generation)) return;
+        if (callback == 0 || (two && partyB >= PARTY_SIZE))
+        { ADMG_StateAccessRejected(rawBattler, __func__); return; }
+        if (gBattleResources != resources || gBattleTypeFlags != flags
+            || !gTasks[taskId].isActive || gTasks[taskId].func != Task_StartSendOutAnim
+            || (u16)gTasks[taskId].tBattlerId != rawBattler
+            || GetWordTaskArg(taskId, tControllerFunc_1) != callback
+            || gBattlerPartyIndexes[battler] != partyA
+            || (two && gBattlerPartyIndexes[battler ^ BIT_FLANK] != partyB))
+        { ADMG_StateAccessRejected(rawBattler, __func__); return; }
+        if (!ADMG_EndStateAccessCheck(generation)) return;
+        bool8 firstSlide = ShouldDoSlideInAnim(battler);
+        /* Preserve the original caller operand for both animation queries. */
+        bool8 secondSlide = two ? ShouldDoSlideInAnim(battler) : FALSE;
+        if (!ADMG_EndStateAccessCheck(generation)) return;
+        if (gBattleResources != resources || gBattleTypeFlags != flags
+            || !gTasks[taskId].isActive || gTasks[taskId].func != Task_StartSendOutAnim
+            || (u16)gTasks[taskId].tBattlerId != rawBattler
+            || GetWordTaskArg(taskId, tControllerFunc_1) != callback
+            || gBattlerPartyIndexes[battler] != partyA
+            || (two && gBattlerPartyIndexes[battler ^ BIT_FLANK] != partyB))
+        { ADMG_StateAccessRejected(rawBattler, __func__); return; }
+        if (!ADMG_EndStateAccessCheck(generation)) return;
 
-        if (TwoMonsAtSendOut(battler))
+        if (two)
         {
             gBattleResources->bufferA[battler][1] = gBattlerPartyIndexes[battler];
-            StartSendOutAnim(battler, FALSE, FALSE, ShouldDoSlideInAnim(battler));
+            StartSendOutAnim(battler, FALSE, FALSE, firstSlide);
 
             battlerPartner = battler ^ BIT_FLANK;
             gBattleResources->bufferA[battlerPartner][1] = gBattlerPartyIndexes[battlerPartner];
             BattleLoadMonSpriteGfx(GetBattlerMon(battlerPartner), battlerPartner);
-            StartSendOutAnim(battlerPartner, FALSE, FALSE, ShouldDoSlideInAnim(battler));
+            StartSendOutAnim(battlerPartner, FALSE, FALSE, secondSlide);
         }
         else
         {
             gBattleResources->bufferA[battler][1] = gBattlerPartyIndexes[battler];
-            StartSendOutAnim(battler, FALSE, FALSE, ShouldDoSlideInAnim(battler));
+            StartSendOutAnim(battler, FALSE, FALSE, firstSlide);
         }
-        gBattlerControllerFuncs[battler] = (void*)(GetWordTaskArg(taskId, tControllerFunc_1));
+        gBattlerControllerFuncs[battler] = (void*)callback;
         DestroyTask(taskId);
     }
 }

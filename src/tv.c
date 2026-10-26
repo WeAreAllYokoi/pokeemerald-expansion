@@ -3,6 +3,7 @@
 #include "overworld.h"
 #include "random.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "fieldmap.h"
 #include "field_camera.h"
 #include "field_specials.h"
@@ -1675,6 +1676,22 @@ static void TryPutWorldOfMastersOnAir(void)
 
 void TryPutTodaysRivalTrainerOnAir(void)
 {
+    ADMG_REQUIRE_FLAG_RANGE(FLAG_BADGE01_GET, NUM_BADGES, 1);
+    if (gSaveBlock2Ptr == NULL)
+    {
+        ADMG_StateAccessRejected(VARS_START, "rival broadcast save owner");
+        return;
+    }
+    for (u32 facility = 0; facility < NUM_FRONTIER_FACILITIES; ++facility)
+    {
+        if (!ADMG_IsFlagIdValid(gFrontierBrainInfo[facility].silverSymbolFlag)
+            || !ADMG_IsFlagIdValid(gFrontierBrainInfo[facility].goldSymbolFlag))
+        {
+            ADMG_StateAccessRejected(facility, "rival broadcast symbol flags");
+            return;
+        }
+    }
+
     TVShow *show;
     u32 i;
     u8 nBadges;
@@ -2288,6 +2305,22 @@ static void ResolveNumberOneShow(u16 days)
 {
     u8 i;
 
+    /* Validate all counter destinations before any show effect or reset. */
+    if (gSaveBlock1Ptr == NULL || gSaveBlock2Ptr == NULL)
+    {
+        ADMG_StateAccessRejected(0, __func__);
+        return;
+    }
+    for (i = 0; i < ARRAY_COUNT(sNumberOneVarsAndThresholds); i++)
+    {
+        u16 varId = sNumberOneVarsAndThresholds[i][0];
+        if (varId >= VARS_START && ADMG_GetVarSpan(varId, 1) == NULL)
+        {
+            ADMG_StateAccessRejected(varId, __func__);
+            return;
+        }
+    }
+
     for (i = 0; i < ARRAY_COUNT(sNumberOneVarsAndThresholds); i++)
     {
         if (VarGet(sNumberOneVarsAndThresholds[i][0]) >= sNumberOneVarsAndThresholds[i][1])
@@ -2304,6 +2337,19 @@ static void ResolveNumberOneShow(u16 days)
 static void TryPutNumberOneOnAir(u8 actionIdx)
 {
     TVShow *show;
+    u16 count;
+
+    if (actionIdx >= ARRAY_COUNT(sNumberOneVarsAndThresholds)
+     || gSaveBlock1Ptr == NULL || gSaveBlock2Ptr == NULL)
+    {
+        ADMG_StateAccessRejected(actionIdx, __func__);
+        return;
+    }
+    if (!ADMG_TryReadVar(sNumberOneVarsAndThresholds[actionIdx][0], &count, TRUE))
+    {
+        ADMG_StateAccessRejected(sNumberOneVarsAndThresholds[actionIdx][0], __func__);
+        return;
+    }
 
     IsRecordMixShowAlreadySpawned(TVSHOW_NUMBER_ONE, TRUE); // Delete old version of show
     sCurTVShowSlot = FindFirstEmptyRecordMixTVShowSlot(gSaveBlock1Ptr->tvShows);
@@ -2314,7 +2360,7 @@ static void TryPutNumberOneOnAir(u8 actionIdx)
         show->numberOne.active = FALSE; // NOTE: Show is not active until passed via Record Mix.
         StringCopy(show->numberOne.playerName, gSaveBlock2Ptr->playerName);
         show->numberOne.actionIdx = actionIdx;
-        show->numberOne.count = VarGet(sNumberOneVarsAndThresholds[actionIdx][0]);
+        show->numberOne.count = count;
         StorePlayerIdInRecordMixShow(show);
         show->numberOne.language = gGameLanguage;
     }

@@ -250,6 +250,7 @@ struct BattleMsgData
 };
 
 void BufferStringBattle(enum StringID stringID, enum BattlerId battler);
+bool8 ADMG_TryGetBattleRefereeString(u32 id, const u8 **text);
 u32 BattleStringExpandPlaceholdersToDisplayedString(const u8 *src);
 u32 BattleStringExpandPlaceholders(const u8 *src, u8 *dst, u32 dstSize);
 void BattlePutTextOnWindow(const u8 *text, u8 windowId);

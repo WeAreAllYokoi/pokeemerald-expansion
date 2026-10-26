@@ -1,4 +1,8 @@
 #include "global.h"
+#include "constants/event_object_movement.h"
+#include "admg_rematch_movement.h"
+#include "admg_state.h"
+#include "trig.h"
 #include "malloc.h"
 #include "battle_anim.h"
 #include "battle_pyramid.h"
@@ -9,6 +13,8 @@
 #include "decoration.h"
 #include "decompress.h"
 #include "event_data.h"
+#include "admg_state.h"
+#include "admg_script.h"
 #include "event_object_movement.h"
 #include "event_scripts.h"
 #include "faraway_island.h"
@@ -257,6 +263,12 @@ static void (*const sCameraObjectFuncs[])(struct Sprite *) = {
 
 #include "data/object_events/object_event_graphics.h"
 
+void MovementType_RaiseHandAndStop(struct Sprite *);
+static u8 MovementType_RaiseHandAndStop_Callback(struct ObjectEvent *, struct Sprite *);
+void MovementType_RaiseHandAndJump(struct Sprite *);
+static u8 MovementType_RaiseHandAndJump_Callback(struct ObjectEvent *, struct Sprite *);
+void MovementType_RaiseHandAndSwim(struct Sprite *);
+static u8 MovementType_RaiseHandAndSwim_Callback(struct ObjectEvent *, struct Sprite *);
 // movement type callbacks
 static void (*const sMovementTypeCallbacks[])(struct Sprite *) =
 {
@@ -349,6 +361,9 @@ static void (*const sMovementTypeCallbacks[])(struct Sprite *) =
     [MOVEMENT_TYPE_WATCH_PLAYER_OWE] = MovementType_OverworldWildEncounter_WatchPlayer,
     [MOVEMENT_TYPE_APPROACH_PLAYER_OWE] = MovementType_OverworldWildEncounter_ApproachPlayer,
     [MOVEMENT_TYPE_DESPAWN_OWE] = MovementType_OverworldWildEncounter_Despawn,
+    [MOVEMENT_TYPE_RAISE_HAND_AND_STOP] = MovementType_RaiseHandAndStop,
+    [MOVEMENT_TYPE_RAISE_HAND_AND_JUMP] = MovementType_RaiseHandAndJump,
+    [MOVEMENT_TYPE_RAISE_HAND_AND_SWIM] = MovementType_RaiseHandAndSwim,
 };
 
 static const bool8 sMovementTypeHasRange[NUM_MOVEMENT_TYPES] = {
@@ -484,6 +499,9 @@ const u8 gInitialMovementTypeFacingDirections[NUM_MOVEMENT_TYPES] = {
     [MOVEMENT_TYPE_WATCH_PLAYER_OWE] = DIR_SOUTH,
     [MOVEMENT_TYPE_APPROACH_PLAYER_OWE] = DIR_SOUTH,
     [MOVEMENT_TYPE_DESPAWN_OWE] = DIR_SOUTH,
+    [MOVEMENT_TYPE_RAISE_HAND_AND_STOP] = DIR_SOUTH,
+    [MOVEMENT_TYPE_RAISE_HAND_AND_JUMP] = DIR_SOUTH,
+    [MOVEMENT_TYPE_RAISE_HAND_AND_SWIM] = DIR_SOUTH,
 };
 
 #include "data/object_events/object_event_graphics_info_pointers.h"
@@ -493,6 +511,8 @@ const u8 gInitialMovementTypeFacingDirections[NUM_MOVEMENT_TYPES] = {
 #include "data/object_events/base_oam.h"
 #include "data/object_events/object_event_subsprites.h"
 #include "data/object_events/object_event_graphics_info.h"
+#include "admg_retention.h"
+#include "data/admg_object_roots.h"
 #include "data/object_events/object_event_graphics_info_followers.h"
 
 static const struct SpritePalette sObjectEventSpritePalettes[] = {
@@ -1557,6 +1577,48 @@ static bool8 ShouldInitObjectEventStateFromTemplate(const struct ObjectEventTemp
     return TRUE;
 }
 
+static bool8 ADMG_TryReadObjectTemplateState(const struct ObjectEventTemplate *template, u8 mapNum, u8 mapGroup, u16 *shinyState)
+{
+    u16 graphicsId;
+    *shinyState = 0;
+    if (template == NULL || gSaveBlock1Ptr == NULL || !ADMG_IsMapIdValid(mapGroup, mapNum)
+     || !ADMG_IsMapIdValid(gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum))
+    {
+        ADMG_StateAccessRejected(mapGroup, __func__);
+        return FALSE;
+    }
+    if (template->kind == OBJ_KIND_CLONE)
+    {
+        if (!ADMG_IsMapIdValid(template->targetMapGroup, template->targetMapNum))
+            return FALSE;
+        const struct MapHeader *header = Overworld_GetMapHeaderByGroupAndId(template->targetMapGroup, template->targetMapNum);
+        u32 localId = template->targetLocalId;
+        if (header == NULL || header->events == NULL || header->events->objectEvents == NULL
+         || localId == 0 || localId > header->events->objectEventCount)
+        {
+            ADMG_StateAccessRejected(localId, __func__);
+            return FALSE;
+        }
+        template = &header->events->objectEvents[localId - 1];
+    }
+    if (template->movementType >= ARRAY_COUNT(gInitialMovementTypeFacingDirections)
+     || template->movementType >= ARRAY_COUNT(sMovementTypeHasRange)
+     || !ADMG_IsFlagIdValid(template->flagId))
+    {
+        ADMG_StateAccessRejected(template->movementType, __func__);
+        return FALSE;
+    }
+    graphicsId = template->graphicsId;
+    if (graphicsId >= OBJ_EVENT_GFX_VARS && graphicsId <= OBJ_EVENT_GFX_VAR_F
+     && !ADMG_TryReadObjectGraphicsVar(graphicsId - OBJ_EVENT_GFX_VARS, &graphicsId))
+        return FALSE;
+    if ((graphicsId & OBJ_EVENT_MON) && !(template->script && template->script[0] == 0x7d)
+     && template->trainerRange_berryTreeId
+     && !ADMG_TryReadVar(template->trainerRange_berryTreeId, shinyState, TRUE))
+        return FALSE;
+    return TRUE;
+}
+
 static u8 InitObjectEventStateFromTemplate(const struct ObjectEventTemplate *template, u8 mapNum, u8 mapGroup)
 {
     struct ObjectEvent *objectEvent;
@@ -1570,9 +1632,14 @@ static u8 InitObjectEventStateFromTemplate(const struct ObjectEventTemplate *tem
     s16 y2 = 0;
     s16 x3 = 0;
     s16 y3 = 0;
+    u16 shinyState = 0;
+    if (!ADMG_TryReadObjectTemplateState(template, mapNum, mapGroup, &shinyState))
+        return OBJECT_EVENTS_COUNT;
 
     if (template->kind == OBJ_KIND_CLONE)
     {
+        if (!ADMG_IsMapIdValid(template->targetMapGroup, template->targetMapNum))
+            return OBJECT_EVENTS_COUNT;
         isClone = TRUE;
         localId = template->targetLocalId;
         mapNum = template->targetMapNum;
@@ -1582,6 +1649,12 @@ static u8 InitObjectEventStateFromTemplate(const struct ObjectEventTemplate *tem
         x3 = template->x;
         y3 = template->y;
         mapHeader = Overworld_GetMapHeaderByGroupAndId(mapGroup, mapNum);
+        if (mapHeader == NULL || mapHeader->events == NULL || mapHeader->events->objectEvents == NULL
+         || localId == 0 || localId > mapHeader->events->objectEventCount)
+        {
+            ADMG_StateAccessRejected(localId, __func__);
+            return OBJECT_EVENTS_COUNT;
+        }
         template = &(mapHeader->events->objectEvents[localId - 1]);
     }
 
@@ -1589,7 +1662,9 @@ static u8 InitObjectEventStateFromTemplate(const struct ObjectEventTemplate *tem
     if (objectEventId == OBJECT_EVENTS_COUNT)
         return OBJECT_EVENTS_COUNT;
 
-    if (!ShouldInitObjectEventStateFromTemplate(template, isClone, x3, y3))
+    u64 generation = ADMG_BeginStateAccessCheck();
+    if (!ShouldInitObjectEventStateFromTemplate(template, isClone, x3, y3)
+     || !ADMG_EndStateAccessCheck(generation))
         return OBJECT_EVENTS_COUNT;
     objectEvent = &gObjectEvents[objectEventId];
     ClearObjectEvent(objectEvent);
@@ -1612,7 +1687,7 @@ static u8 InitObjectEventStateFromTemplate(const struct ObjectEventTemplate *tem
         if (template->script && template->script[0] == 0x7d)
             objectEvent->shiny = T1_READ_16(&template->script[2]) >> 15;
         else if (template->trainerRange_berryTreeId)
-            objectEvent->shiny = VarGet(template->trainerRange_berryTreeId) >> 5;
+            objectEvent->shiny = shinyState >> 5;
     }
     objectEvent->movementType = template->movementType;
     objectEvent->localId = template->localId;
@@ -1686,7 +1761,13 @@ void RemoveObjectEventByLocalIdAndMap(u8 localId, u8 mapNum, u8 mapGroup)
     u8 objectEventId;
     if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup, &objectEventId))
     {
-        FlagSet(GetObjectEventFlagIdByObjectEventId(objectEventId));
+        u16 flagId = GetObjectEventFlagIdByObjectEventId(objectEventId);
+        if (!ADMG_IsFlagIdValid(flagId))
+        {
+            ADMG_StateAccessRejected(flagId, __func__);
+            return;
+        }
+        FlagSet(flagId);
         RemoveObjectEvent(&gObjectEvents[objectEventId]);
     }
 }
@@ -1885,6 +1966,14 @@ static u8 TrySetupObjectEventSprite(const struct ObjectEventTemplate *objectEven
 
 u8 TrySpawnObjectEventTemplate(const struct ObjectEventTemplate *objectEventTemplate, u8 mapNum, u8 mapGroup, s16 cameraX, s16 cameraY)
 {
+    u16 shinyState;
+    if (!ADMG_TryReadObjectTemplateState(objectEventTemplate, mapNum, mapGroup, &shinyState))
+        return OBJECT_EVENTS_COUNT;
+    if (objectEventTemplate->movementType >= ARRAY_COUNT(sMovementTypeCallbacks))
+    {
+        ADMG_StateAccessRejected(objectEventTemplate->movementType, __func__);
+        return OBJECT_EVENTS_COUNT;
+    }
     u8 objectEventId;
     struct SpriteTemplate spriteTemplate;
     struct SpriteFrameImage spriteFrameImage;
@@ -1911,6 +2000,14 @@ u8 TrySpawnObjectEventTemplate(const struct ObjectEventTemplate *objectEventTemp
 
 u8 SpawnSpecialObjectEvent(struct ObjectEventTemplate *objectEventTemplate)
 {
+    if (gSaveBlock1Ptr == NULL)
+    {
+        ADMG_StateAccessRejected(0, __func__);
+        return OBJECT_EVENTS_COUNT;
+    }
+    u16 shinyState;
+    if (!ADMG_TryReadObjectTemplateState(objectEventTemplate, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, &shinyState))
+        return OBJECT_EVENTS_COUNT;
     s16 cameraX;
     s16 cameraY;
 
@@ -1920,7 +2017,7 @@ u8 SpawnSpecialObjectEvent(struct ObjectEventTemplate *objectEventTemplate)
 
 u8 SpawnSpecialObjectEventParameterized(u16 graphicsId, u8 movementBehavior, u8 localId, s16 x, s16 y, u8 elevation)
 {
-    struct ObjectEventTemplate objectEventTemplate;
+    struct ObjectEventTemplate objectEventTemplate = {0};
 
     x -= MAP_OFFSET;
     y -= MAP_OFFSET;
@@ -2137,6 +2234,12 @@ const struct ObjectEventGraphicsInfo *SpeciesToGraphicsInfo(enum Species species
 {
     const struct ObjectEventGraphicsInfo *graphicsInfo = NULL;
 #if OW_POKEMON_OBJECT_EVENTS
+    /* Bound the common species lookup before any table access. */
+    if (species >= NUM_SPECIES)
+    {
+        ADMG_StateAccessRejected(species, "object graphics species");
+        return OW_SUBSTITUTE_PLACEHOLDER ? &gSpeciesInfo[SPECIES_NONE].overworldData : NULL;
+    }
     switch (species)
     {
     case SPECIES_UNOWN: // Deal with Unown forms later
@@ -2869,7 +2972,7 @@ void TrySpawnLightSprites(s16 camX, s16 camY)
         s16 npcY = template->y + MAP_OFFSET;
         if (top <= npcY && bottom >= npcY
          && left <= npcX && right >= npcX
-         && !FlagGet(template->flagId)
+         && ADMG_IsFlagClear(template->flagId)
          && template->graphicsId == OBJ_EVENT_GFX_LIGHT_SPRITE)  // event is light sprite instead
             SpawnLightSprite(npcX, npcY, camX, camY, template->trainerRange_berryTreeId);
     }
@@ -2900,7 +3003,7 @@ void TrySpawnObjectEvents(s16 cameraX, s16 cameraY)
             s16 npcX = template->x + MAP_OFFSET;
             s16 npcY = template->y + MAP_OFFSET;
 
-            if (top <= npcY && bottom >= npcY && left <= npcX && right >= npcX && !FlagGet(template->flagId))
+            if (top <= npcY && bottom >= npcY && left <= npcX && right >= npcX && ADMG_IsFlagClear(template->flagId))
             {
                 if (template->graphicsId == OBJ_EVENT_GFX_LIGHT_SPRITE)
                     SpawnLightSprite(npcX, npcY, cameraX, cameraY, template->trainerRange_berryTreeId); // light sprite instead
@@ -3198,14 +3301,18 @@ static void SetBerryTreeGraphics(struct ObjectEvent *objectEvent, struct Sprite 
 
 const struct ObjectEventGraphicsInfo *GetObjectEventGraphicsInfo(u16 graphicsId)
 {
-    if (graphicsId >= OBJ_EVENT_GFX_VARS && graphicsId <= OBJ_EVENT_GFX_VAR_F)
-        graphicsId = VarGetObjectEventGraphicsId(graphicsId - OBJ_EVENT_GFX_VARS);
+    if (graphicsId >= OBJ_EVENT_GFX_VARS && graphicsId <= OBJ_EVENT_GFX_VAR_F
+     && !ADMG_TryReadObjectGraphicsVar(graphicsId - OBJ_EVENT_GFX_VARS, &graphicsId))
+        return gObjectEventGraphicsInfoPointers[OBJ_EVENT_GFX_NINJA_BOY];
 
     if (graphicsId == OBJ_EVENT_GFX_BARD)
         return gMauvilleOldManGraphicsInfoPointers[GetCurrentMauvilleOldMan()];
 
     if (graphicsId & OBJ_EVENT_MON)
-        return SpeciesToGraphicsInfo(graphicsId & OBJ_EVENT_MON_SPECIES_MASK, graphicsId & OBJ_EVENT_MON_SHINY, graphicsId & OBJ_EVENT_MON_FEMALE);
+    {
+        const struct ObjectEventGraphicsInfo *info = SpeciesToGraphicsInfo(graphicsId & OBJ_EVENT_MON_SPECIES_MASK, graphicsId & OBJ_EVENT_MON_SHINY, graphicsId & OBJ_EVENT_MON_FEMALE);
+        return info != NULL ? info : gObjectEventGraphicsInfoPointers[OBJ_EVENT_GFX_NINJA_BOY];
+    }
 
     if (graphicsId >= NUM_OBJ_EVENT_GFX)
         graphicsId = OBJ_EVENT_GFX_NINJA_BOY;
@@ -3216,7 +3323,11 @@ const struct ObjectEventGraphicsInfo *GetObjectEventGraphicsInfo(u16 graphicsId)
 static void SetObjectEventDynamicGraphicsId(struct ObjectEvent *objectEvent)
 {
     if (objectEvent->graphicsId >= OBJ_EVENT_GFX_VARS && objectEvent->graphicsId <= OBJ_EVENT_GFX_VAR_F)
-        objectEvent->graphicsId = VarGetObjectEventGraphicsId(objectEvent->graphicsId - OBJ_EVENT_GFX_VARS);
+    {
+        u16 graphicsId;
+        if (ADMG_TryReadObjectGraphicsVar(objectEvent->graphicsId - OBJ_EVENT_GFX_VARS, &graphicsId))
+            objectEvent->graphicsId = graphicsId;
+    }
 }
 
 void SetObjectInvisibility(u8 localId, u8 mapNum, u8 mapGroup, bool8 invisible)
@@ -3653,22 +3764,33 @@ void SetObjectEventDirection(struct ObjectEvent *objectEvent, enum Direction dir
 
 static const u8 *GetObjectEventScriptPointerByLocalIdAndMap(u8 localId, u8 mapNum, u8 mapGroup)
 {
-    return GetObjectEventTemplateByLocalIdAndMap(localId, mapNum, mapGroup)->script;
+    const struct ObjectEventTemplate *template = GetObjectEventTemplateByLocalIdAndMap(localId, mapNum, mapGroup);
+    if (template == NULL)
+    {
+        ADMG_StateAccessRejected(localId, __func__);
+        return NULL;
+    }
+    return template->script;
 }
 
 const u8 *GetObjectEventScriptPointerByObjectEventId(u8 objectEventId)
 {
+    if (objectEventId >= OBJECT_EVENTS_COUNT)
+    {
+        ADMG_StateAccessRejected(objectEventId, __func__);
+        return NULL;
+    }
     return GetObjectEventScriptPointerByLocalIdAndMap(gObjectEvents[objectEventId].localId, gObjectEvents[objectEventId].mapNum, gObjectEvents[objectEventId].mapGroup);
 }
 
 u16 GetObjectEventFlagIdByLocalIdAndMap(u8 localId, u8 mapNum, u8 mapGroup)
 {
     const struct ObjectEventTemplate *obj = GetObjectEventTemplateByLocalIdAndMap(localId, mapNum, mapGroup);
-#ifdef UBFIX
-    // BUG: The function may return NULL, and attempting to read from NULL may freeze the game using modern compilers.
     if (obj == NULL)
+    {
+        ADMG_StateAccessRejected(localId, __func__);
         return 0;
-#endif // UBFIX
+    }
     return obj->flagId;
 }
 
@@ -3703,14 +3825,26 @@ const struct ObjectEventTemplate *GetObjectEventTemplateByLocalIdAndMap(u8 local
     const struct MapHeader *mapHeader;
     u8 count;
 
-    if (gSaveBlock1Ptr->location.mapNum == mapNum && gSaveBlock1Ptr->location.mapGroup == mapGroup)
+    if (!ADMG_IsMapIdValid(mapGroup, mapNum))
+        return NULL;
+    if (gSaveBlock1Ptr != NULL && gSaveBlock1Ptr->location.mapNum == mapNum && gSaveBlock1Ptr->location.mapGroup == mapGroup)
     {
+        if (gMapHeader.events == NULL || gMapHeader.events->objectEventCount > ARRAY_COUNT(gSaveBlock1Ptr->objectEventTemplates))
+        {
+            ADMG_StateAccessRejected(localId, __func__);
+            return NULL;
+        }
         templates = gSaveBlock1Ptr->objectEventTemplates;
         count = gMapHeader.events->objectEventCount;
     }
     else
     {
         mapHeader = Overworld_GetMapHeaderByGroupAndId(mapGroup, mapNum);
+        if (mapHeader == NULL || mapHeader->events == NULL)
+        {
+            ADMG_StateAccessRejected(localId, __func__);
+            return NULL;
+        }
         templates = mapHeader->events->objectEvents;
         count = mapHeader->events->objectEventCount;
     }
@@ -3719,6 +3853,11 @@ const struct ObjectEventTemplate *GetObjectEventTemplateByLocalIdAndMap(u8 local
 
 const struct ObjectEventTemplate *FindObjectEventTemplateByLocalId(u8 localId, const struct ObjectEventTemplate *templates, u8 count)
 {
+    if (templates == NULL && count != 0)
+    {
+        ADMG_StateAccessRejected(localId, __func__);
+        return NULL;
+    }
     u8 i;
 
     for (i = 0; i < count; i++)
@@ -6260,16 +6399,14 @@ enum Direction GetDirectionToFace(s16 x, s16 y, s16 targetX, s16 targetY)
 void GetDirectionToFaceScript(struct ScriptContext *ctx)
 {
     u32 varId = ScriptReadHalfword(ctx);
+    u16 *var = ADMG_SCRIPT_POINTER(ctx, varId);
     u8 sourceId = GetObjectEventIdByLocalId(ScriptReadByte(ctx));
     u8 targetId = GetObjectEventIdByLocalId(ScriptReadByte(ctx));
 
     Script_RequestEffects(SCREFF_V1);
     Script_RequestWriteVar(varId);
 
-    u16 *var = GetVarPointer(varId);
 
-    if (var == NULL)
-        return;
     if (sourceId >= OBJECT_EVENTS_COUNT || targetId >= OBJECT_EVENTS_COUNT)
         *var = DIR_NONE;
     else
@@ -6284,16 +6421,14 @@ void GetDirectionToFaceScript(struct ScriptContext *ctx)
 void IsFollowerFieldMoveUser(struct ScriptContext *ctx)
 {
     u32 varId = ScriptReadHalfword(ctx);
+    u16 *var = ADMG_SCRIPT_POINTER(ctx, varId);
 
     Script_RequestEffects(SCREFF_V1);
     Script_RequestWriteVar(varId);
 
-    u16 *var = GetVarPointer(varId);
     u16 userIndex = gFieldEffectArguments[0]; // field move user index
     struct Pokemon *follower = GetFirstLiveMon();
     struct ObjectEvent *obj = GetFollowerObject();
-    if (var == NULL)
-        return;
     *var = FALSE;
     if (follower && obj && !obj->invisible)
     {
@@ -6304,6 +6439,12 @@ void IsFollowerFieldMoveUser(struct ScriptContext *ctx)
 
 void SetTrainerMovementType(struct ObjectEvent *objectEvent, u8 movementType)
 {
+    if (objectEvent != NULL && objectEvent->spriteId < MAX_SPRITES
+     && gSprites[objectEvent->spriteId].anims == gADMG_NativeRematchAnimations
+     && !ADMG_IsNativeRematchMovement(movementType)
+     && !ADMG_TryRestoreNativeRematchSprite(objectEvent, &gSprites[objectEvent->spriteId]))
+        return;
+
     objectEvent->movementType = movementType;
     objectEvent->directionSequenceIndex = 0;
     objectEvent->playerCopyableMovement = 0;
@@ -10027,10 +10168,16 @@ bool8 AreElevationsCompatible(u8 a, u8 b)
 
 void ScriptFaceEachOther(struct ScriptContext *ctx)
 {
-    u32 localIdOne = VarGet(ScriptReadHalfword(ctx));
-    u32 localIdTwo = VarGet(ScriptReadHalfword(ctx));
-    struct ObjectEvent *objectOne = &gObjectEvents[GetObjectEventIdByLocalId(localIdOne)];
-    struct ObjectEvent *objectTwo = &gObjectEvents[GetObjectEventIdByLocalId(localIdTwo)];
+    u32 localIdOne = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
+    u32 localIdTwo = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
+    ADMG_SCRIPT_REQUIRE_INDEX(ctx, localIdOne, 256);
+    ADMG_SCRIPT_REQUIRE_INDEX(ctx, localIdTwo, 256);
+    u32 objectIdOne = GetObjectEventIdByLocalId(localIdOne);
+    u32 objectIdTwo = GetObjectEventIdByLocalId(localIdTwo);
+    ADMG_SCRIPT_REQUIRE_INDEX(ctx, objectIdOne, OBJECT_EVENTS_COUNT);
+    ADMG_SCRIPT_REQUIRE_INDEX(ctx, objectIdTwo, OBJECT_EVENTS_COUNT);
+    struct ObjectEvent *objectOne = &gObjectEvents[objectIdOne];
+    struct ObjectEvent *objectTwo = &gObjectEvents[objectIdTwo];
     
     Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
     
@@ -11376,6 +11523,15 @@ void GetDaycareGraphics(struct ScriptContext *ctx)
     bool32 female;
     s32 i;
 
+    ADMG_SCRIPT_REQUIRE_BACKING(ctx, gSaveBlock1Ptr);
+    for (i = 0; i < 2; ++i)
+    {
+        if (varGfx[i] != 0)
+            (void)ADMG_SCRIPT_POINTER(ctx, varGfx[i]);
+        if (varForm[i] != 0)
+            (void)ADMG_SCRIPT_POINTER(ctx, varForm[i]);
+    }
+
     Script_RequestEffects(SCREFF_V1);
     Script_RequestWriteVar(varGfx[0]);
     Script_RequestWriteVar(varGfx[1]);
@@ -12125,3 +12281,176 @@ bool8 MovementType_OverworldWildEncounter_Despawn_Step11(struct ObjectEvent *obj
 }
 
 #undef sDespawnTimer
+
+/* Original native readiness movements; existing Expansion movement IDs remain unchanged. */
+static bool8 NativeRematchCanStart(struct ObjectEvent *object, struct Sprite *sprite)
+{
+    const struct ADMG_NativeRematchGraphics *graphics;
+    u16 graphicsId;
+    if (!ADMG_IsNativeRematchSpritePair(object, sprite))
+        return FALSE;
+    graphicsId = object->graphicsId;
+    if (!ADMG_TryGetNativeRematchGraphics(graphicsId, &graphics))
+        return FALSE;
+    return ADMG_IsNativeRematchSpritePair(object, sprite) && object->graphicsId == graphicsId;
+}
+static bool8 NativeRematchActionIsCurrent(struct ObjectEvent *object, struct Sprite *sprite, u8 action)
+{
+    if (!ADMG_IsNativeRematchSpritePair(object, sprite)
+     || object->movementActionId != action || sprite->data[2] < 0 || sprite->data[2] > 1)
+    {
+        ADMG_StateAccessRejected(action, __func__);
+        return FALSE;
+    }
+    return TRUE;
+}
+
+void MovementType_RaiseHandAndStop(struct Sprite *sprite)
+{
+    struct ObjectEvent *object;
+    if (ADMG_TryGetNativeRematchObjectForSprite(sprite, &object))
+        UpdateObjectEventCurrentMovement(object, sprite, MovementType_RaiseHandAndStop_Callback);
+}
+
+void MovementType_RaiseHandAndJump(struct Sprite *sprite)
+{
+    struct ObjectEvent *object;
+    if (ADMG_TryGetNativeRematchObjectForSprite(sprite, &object))
+        UpdateObjectEventCurrentMovement(object, sprite, MovementType_RaiseHandAndJump_Callback);
+}
+
+void MovementType_RaiseHandAndSwim(struct Sprite *sprite)
+{
+    struct ObjectEvent *object;
+    if (ADMG_TryGetNativeRematchObjectForSprite(sprite, &object))
+        UpdateObjectEventCurrentMovement(object, sprite, MovementType_RaiseHandAndSwim_Callback);
+}
+
+static u8 MovementType_RaiseHandAndStop_Callback(struct ObjectEvent *object, struct Sprite *sprite)
+{
+    if (!ADMG_IsNativeRematchSpritePair(object, sprite)) return FALSE;
+    if (sprite->data[1] < 0 || sprite->data[1] >= ARRAY_COUNT(gMovementTypeFuncs_RaiseHandAndStop))
+    { ADMG_StateAccessRejected((u32)sprite->data[1], __func__); return FALSE; }
+    return gMovementTypeFuncs_RaiseHandAndStop[sprite->data[1]](object, sprite);
+}
+static u8 MovementType_RaiseHandAndJump_Callback(struct ObjectEvent *object, struct Sprite *sprite)
+{
+    if (!ADMG_IsNativeRematchSpritePair(object, sprite)) return FALSE;
+    if (sprite->data[1] < 0 || sprite->data[1] >= ARRAY_COUNT(gMovementTypeFuncs_RaiseHandAndJump))
+    { ADMG_StateAccessRejected((u32)sprite->data[1], __func__); return FALSE; }
+    return gMovementTypeFuncs_RaiseHandAndJump[sprite->data[1]](object, sprite);
+}
+static u8 MovementType_RaiseHandAndSwim_Callback(struct ObjectEvent *object, struct Sprite *sprite)
+{
+    if (!ADMG_IsNativeRematchSpritePair(object, sprite)) return FALSE;
+    if (sprite->data[1] < 0 || sprite->data[1] >= ARRAY_COUNT(gMovementTypeFuncs_RaiseHandAndSwim))
+    { ADMG_StateAccessRejected((u32)sprite->data[1], __func__); return FALSE; }
+    return gMovementTypeFuncs_RaiseHandAndSwim[sprite->data[1]](object, sprite);
+}
+
+u8 MovementType_RaiseHandAndStop_Step0(struct ObjectEvent *object, struct Sprite *sprite)
+{
+    if (!NativeRematchCanStart(object, sprite)) return FALSE;
+    ClearObjectEventMovement(object, sprite);
+    ObjectEventSetSingleMovement(object, sprite, MOVEMENT_ACTION_RAISE_HAND_AND_STOP);
+    sprite->data[1] = 1;
+    return TRUE;
+}
+u8 MovementType_RaiseHandAndStop_Step1(struct ObjectEvent *object, struct Sprite *sprite)
+{
+    if (!NativeRematchActionIsCurrent(object, sprite, MOVEMENT_ACTION_RAISE_HAND_AND_STOP)) return FALSE;
+    if (ObjectEventExecSingleMovementAction(object, sprite)) {sprite->data[1] = 2; return TRUE;}
+    return FALSE;
+}
+u8 MovementType_RaiseHandAndStop_Step2(struct ObjectEvent *object, struct Sprite *sprite)
+{
+    if (ADMG_IsNativeRematchSpritePair(object, sprite)) object->singleMovementActive = FALSE;
+    return FALSE;
+}
+u8 MovementType_RaiseHandAndJump_Step0(struct ObjectEvent *object, struct Sprite *sprite)
+{
+    if (!NativeRematchCanStart(object, sprite)) return FALSE;
+    ClearObjectEventMovement(object, sprite);
+    ObjectEventSetSingleMovement(object, sprite, MOVEMENT_ACTION_RAISE_HAND_AND_JUMP);
+    sprite->data[1] = 1;
+    return FALSE;
+}
+u8 MovementType_RaiseHandAndSwim_Step0(struct ObjectEvent *object, struct Sprite *sprite)
+{
+    if (!NativeRematchCanStart(object, sprite)) return FALSE;
+    ClearObjectEventMovement(object, sprite);
+    ObjectEventSetSingleMovement(object, sprite, MOVEMENT_ACTION_RAISE_HAND_AND_SWIM);
+    sprite->data[1] = 1;
+    return FALSE;
+}
+u8 MovementType_RaiseHandAndMove_Step1(struct ObjectEvent *object, struct Sprite *sprite)
+{
+    if (!ADMG_IsNativeRematchSpritePair(object, sprite)) return FALSE;
+    u8 action = object->movementType == MOVEMENT_TYPE_RAISE_HAND_AND_JUMP
+        ? MOVEMENT_ACTION_RAISE_HAND_AND_JUMP : MOVEMENT_ACTION_RAISE_HAND_AND_SWIM;
+    if (!NativeRematchActionIsCurrent(object, sprite, action)) return FALSE;
+    if (ObjectEventExecSingleMovementAction(object, sprite)) sprite->data[1] = 0;
+    return FALSE;
+}
+
+u8 MovementAction_RaiseHand_Step0(struct ObjectEvent *object, struct Sprite *sprite)
+{
+    if (!ADMG_TryPrepareNativeRematchSprite(object, sprite)) return FALSE;
+    StartSpriteAnim(sprite, ANIM_RAISE_HAND);
+    sprite->animPaused = FALSE; object->disableAnim = FALSE;
+    sprite->data[2] = 1;
+    sprite->data[4] = sprite->data[5] = sprite->data[6] = sprite->data[7] = 0;
+    return FALSE;
+}
+u8 MovementAction_RaiseHandAndStop_Step1(struct ObjectEvent *object, struct Sprite *sprite)
+{ return ADMG_IsNativeRematchSpritePair(object, sprite) && sprite->animEnded; }
+u8 MovementAction_RaiseHandAndJump_Step1(struct ObjectEvent *object, struct Sprite *sprite)
+{
+    if (!ADMG_IsNativeRematchSpritePair(object, sprite)) return FALSE;
+    if (sprite->data[7] < 0 || sprite->data[7] > 2 || sprite->data[6] < 0 || sprite->data[6] > 127
+     || sprite->data[5] < 0 || sprite->data[5] > 2
+     || (sprite->data[7] == 0 && (sprite->data[5] > 1 || sprite->data[4] != 0))
+     || (sprite->data[7] == 1 && (sprite->data[5] != 1 || sprite->data[4] < 0 || sprite->data[4] > 16))
+     || (sprite->data[7] == 2 && (sprite->data[5] != 2 || sprite->data[4] < 0 || sprite->data[4] > 80)))
+    { ADMG_StateAccessRejected((u32)sprite->data[7], __func__); return FALSE; }
+    switch (sprite->data[7])
+    {
+    case 0:
+        sprite->data[6] += 10;
+        if (sprite->data[6] > 127)
+        {
+            sprite->data[6] = 0;
+            sprite->data[5]++;
+            sprite->data[7] = sprite->data[5];
+            StartSpriteAnim(sprite, ANIM_STD_FACE_SOUTH);
+            sprite->animPaused = FALSE; object->disableAnim = FALSE;
+        }
+        sprite->y2 = -(3 * gSineTable[sprite->data[6]] >> 7);
+        object->singleMovementActive = sprite->y2 != 0;
+        return FALSE;
+    case 1:
+        if (++sprite->data[4] > 16)
+        {
+            sprite->data[4] = 0;
+            StartSpriteAnim(sprite, ANIM_RAISE_HAND);
+            sprite->animPaused = FALSE; object->disableAnim = FALSE;
+            sprite->data[7] = 0;
+        }
+        else object->singleMovementActive = FALSE;
+        return FALSE;
+    case 2:
+        object->singleMovementActive = FALSE;
+        if (++sprite->data[4] > 80) {sprite->data[4] = 0; return TRUE;}
+        return FALSE;
+    }
+    return FALSE;
+}
+u8 MovementAction_RaiseHandAndSwim_Step1(struct ObjectEvent *object, struct Sprite *sprite)
+{
+    if (!ADMG_IsNativeRematchSpritePair(object, sprite)) return FALSE;
+    if (sprite->data[7] < 0 || sprite->data[7] > 252 || (sprite->data[7] & 3) != 0)
+    { ADMG_StateAccessRejected((u32)sprite->data[7], __func__); return FALSE; }
+    sprite->data[7] = (sprite->data[7] + 4) & 0xFF;
+    sprite->x2 = gSineTable[sprite->data[7]] >> 7;
+    return sprite->data[7] == 0;
+}

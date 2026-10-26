@@ -7,6 +7,7 @@
 #include "data.h"
 #include "decompress.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "field_effect.h"
 #include "gpu_regs.h"
 #include "graphics.h"
@@ -2206,6 +2207,8 @@ static void MainMenu_FormatSavegamePokedex(void)
 
 static void MainMenu_FormatSavegameBadges(void)
 {
+    ADMG_REQUIRE_FLAG_RANGE(FLAG_BADGE01_GET, NUM_BADGES, 1);
+
     u8 str[0x20];
     u8 badgeCount = 0;
     u32 i;

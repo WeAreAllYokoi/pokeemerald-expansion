@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_state.h"
 #include "battle_tower.h"
 #include "apprentice.h"
 #include "event_data.h"
@@ -55,18 +56,18 @@ static void SaveTowerChallenge(void);
 static void GetOpponentIntroSpeech(void);
 static void BattleTowerNop1(void);
 static void BattleTowerNop2(void);
-static void LoadMultiPartnerCandidatesData(void);
-static void ShowPartnerCandidateMessage(void);
-static void LoadLinkMultiOpponentsData(void);
+ADMG_NATIVE_ENTRY void LoadMultiPartnerCandidatesData(void);
+ADMG_NATIVE_ENTRY void ShowPartnerCandidateMessage(void);
+ADMG_NATIVE_ENTRY void LoadLinkMultiOpponentsData(void);
 static void TowerTryCloseLink(void);
-static void SetMultiPartnerGfx(void);
-static void SetTowerInterviewData(void);
+ADMG_NATIVE_ENTRY void SetMultiPartnerGfx(void);
+ADMG_NATIVE_ENTRY void SetTowerInterviewData(void);
 static void ValidateBattleTowerRecordChecksums(void);
 static void SaveCurrentWinStreak(void);
 static void ValidateApprenticesChecksums(void);
 static void SetNextBattleTentOpponent(void);
 static void ClearBattleTowerRecord(struct EmeraldBattleTowerRecord *record);
-static void FillTentTrainerParty_(u16 trainerId, u8 firstMonId, u8 monCount);
+ADMG_NATIVE_ENTRY void FillTentTrainerParty_(u16 trainerId, u8 firstMonId, u8 monCount);
 
 #include "data/battle_frontier/battle_frontier_trainer_mons.h"
 #include "data/battle_frontier/battle_frontier_trainers.h"
@@ -551,58 +552,59 @@ struct
 {
     u32 facilityClass;
     const u8 *const *strings;
+    u32 stringCount;
 } static const sPartnerTrainerTextTables[] =
 {
-    {FACILITY_CLASS_LASS,                  sPartnerTextsLass},
-    {FACILITY_CLASS_YOUNGSTER,             sPartnerTextsYoungster},
-    {FACILITY_CLASS_HIKER,                 sPartnerTextsHiker},
-    {FACILITY_CLASS_BEAUTY,                sPartnerTextsBeauty},
-    {FACILITY_CLASS_FISHERMAN,             sPartnerTextsFisherman},
-    {FACILITY_CLASS_LADY,                  sPartnerTextsLady},
-    {FACILITY_CLASS_CYCLING_TRIATHLETE_F,  sPartnerTextsCyclingTriathleteF},
-    {FACILITY_CLASS_BUG_CATCHER,           sPartnerTextsBugCatcher},
-    {FACILITY_CLASS_SCHOOL_KID_M,          sPartnerTextsSchoolKidM},
-    {FACILITY_CLASS_RICH_BOY,              sPartnerTextsRichBoy},
-    {FACILITY_CLASS_BLACK_BELT,            sPartnerTextsBlackBelt},
-    {FACILITY_CLASS_TUBER_F,               sPartnerTextsTuberF},
-    {FACILITY_CLASS_HEX_MANIAC,            sPartnerTextsHexManiac},
-    {FACILITY_CLASS_PKMN_BREEDER_M,        sPartnerTextsPkmnBreederM},
-    {FACILITY_CLASS_RUNNING_TRIATHLETE_F,  sPartnerTextsRunningTriathleteF},
-    {FACILITY_CLASS_RUNNING_TRIATHLETE_M,  sPartnerTextsRunningTriathleteM},
-    {FACILITY_CLASS_BATTLE_GIRL,           sPartnerTextsBattleGirl},
-    {FACILITY_CLASS_CYCLING_TRIATHLETE_M,  sPartnerTextsCyclingTriathleteM},
-    {FACILITY_CLASS_TUBER_M,               sPartnerTextsTuberM},
-    {FACILITY_CLASS_GUITARIST,             sPartnerTextsGuitarist},
-    {FACILITY_CLASS_GENTLEMAN,             sPartnerTextsGentleman},
-    {FACILITY_CLASS_POKEFAN_M,             sPartnerTextsPokefanM},
-    {FACILITY_CLASS_EXPERT_M,              sPartnerTextsExpertM},
-    {FACILITY_CLASS_EXPERT_F,              sPartnerTextsExpertF},
-    {FACILITY_CLASS_DRAGON_TAMER,          sPartnerTextsDragonTamer},
-    {FACILITY_CLASS_BIRD_KEEPER,           sPartnerTextsBirdKeeper},
-    {FACILITY_CLASS_NINJA_BOY,             sPartnerTextsNinjaBoy},
-    {FACILITY_CLASS_PARASOL_LADY,          sPartnerTextsParasolLady},
-    {FACILITY_CLASS_BUG_MANIAC,            sPartnerTextsBugManiac},
-    {FACILITY_CLASS_SAILOR,                sPartnerTextsSailor},
-    {FACILITY_CLASS_COLLECTOR,             sPartnerTextsCollector},
-    {FACILITY_CLASS_PKMN_RANGER_M,         sPartnerTextsPkmnRangerM},
-    {FACILITY_CLASS_PKMN_RANGER_F,         sPartnerTextsPkmnRangerF},
-    {FACILITY_CLASS_AROMA_LADY,            sPartnerTextsAromaLady},
-    {FACILITY_CLASS_RUIN_MANIAC,           sPartnerTextsRuinManiac},
-    {FACILITY_CLASS_COOLTRAINER_M,         sPartnerTextsCoolTrainerM},
-    {FACILITY_CLASS_COOLTRAINER_F,         sPartnerTextsCoolTrainerF},
-    {FACILITY_CLASS_POKEMANIAC,            sPartnerTextsPokemaniac},
-    {FACILITY_CLASS_KINDLER,               sPartnerTextsKindler},
-    {FACILITY_CLASS_CAMPER,                sPartnerTextsCamper},
-    {FACILITY_CLASS_PICNICKER,             sPartnerTextsPicnicker},
-    {FACILITY_CLASS_PSYCHIC_M,             sPartnerTextsPsychicM},
-    {FACILITY_CLASS_PSYCHIC_F,             sPartnerTextsPsychicF},
-    {FACILITY_CLASS_SCHOOL_KID_F,          sPartnerTextsSchoolKidF},
-    {FACILITY_CLASS_PKMN_BREEDER_F,        sPartnerTextsPkmnBreederF},
-    {FACILITY_CLASS_POKEFAN_F,             sPartnerTextsPokefanF},
-    {FACILITY_CLASS_SWIMMER_F,             sPartnerTextsSwimmerF},
-    {FACILITY_CLASS_SWIMMING_TRIATHLETE_M, sPartnerTextsSwimmingTriathleteM},
-    {FACILITY_CLASS_SWIMMING_TRIATHLETE_F, sPartnerTextsSwimmingTriathleteF},
-    {FACILITY_CLASS_SWIMMER_M,             sPartnerTextsSwimmerM}
+    {FACILITY_CLASS_LASS,                  sPartnerTextsLass, ARRAY_COUNT(sPartnerTextsLass)},
+    {FACILITY_CLASS_YOUNGSTER,             sPartnerTextsYoungster, ARRAY_COUNT(sPartnerTextsYoungster)},
+    {FACILITY_CLASS_HIKER,                 sPartnerTextsHiker, ARRAY_COUNT(sPartnerTextsHiker)},
+    {FACILITY_CLASS_BEAUTY,                sPartnerTextsBeauty, ARRAY_COUNT(sPartnerTextsBeauty)},
+    {FACILITY_CLASS_FISHERMAN,             sPartnerTextsFisherman, ARRAY_COUNT(sPartnerTextsFisherman)},
+    {FACILITY_CLASS_LADY,                  sPartnerTextsLady, ARRAY_COUNT(sPartnerTextsLady)},
+    {FACILITY_CLASS_CYCLING_TRIATHLETE_F,  sPartnerTextsCyclingTriathleteF, ARRAY_COUNT(sPartnerTextsCyclingTriathleteF)},
+    {FACILITY_CLASS_BUG_CATCHER,           sPartnerTextsBugCatcher, ARRAY_COUNT(sPartnerTextsBugCatcher)},
+    {FACILITY_CLASS_SCHOOL_KID_M,          sPartnerTextsSchoolKidM, ARRAY_COUNT(sPartnerTextsSchoolKidM)},
+    {FACILITY_CLASS_RICH_BOY,              sPartnerTextsRichBoy, ARRAY_COUNT(sPartnerTextsRichBoy)},
+    {FACILITY_CLASS_BLACK_BELT,            sPartnerTextsBlackBelt, ARRAY_COUNT(sPartnerTextsBlackBelt)},
+    {FACILITY_CLASS_TUBER_F,               sPartnerTextsTuberF, ARRAY_COUNT(sPartnerTextsTuberF)},
+    {FACILITY_CLASS_HEX_MANIAC,            sPartnerTextsHexManiac, ARRAY_COUNT(sPartnerTextsHexManiac)},
+    {FACILITY_CLASS_PKMN_BREEDER_M,        sPartnerTextsPkmnBreederM, ARRAY_COUNT(sPartnerTextsPkmnBreederM)},
+    {FACILITY_CLASS_RUNNING_TRIATHLETE_F,  sPartnerTextsRunningTriathleteF, ARRAY_COUNT(sPartnerTextsRunningTriathleteF)},
+    {FACILITY_CLASS_RUNNING_TRIATHLETE_M,  sPartnerTextsRunningTriathleteM, ARRAY_COUNT(sPartnerTextsRunningTriathleteM)},
+    {FACILITY_CLASS_BATTLE_GIRL,           sPartnerTextsBattleGirl, ARRAY_COUNT(sPartnerTextsBattleGirl)},
+    {FACILITY_CLASS_CYCLING_TRIATHLETE_M,  sPartnerTextsCyclingTriathleteM, ARRAY_COUNT(sPartnerTextsCyclingTriathleteM)},
+    {FACILITY_CLASS_TUBER_M,               sPartnerTextsTuberM, ARRAY_COUNT(sPartnerTextsTuberM)},
+    {FACILITY_CLASS_GUITARIST,             sPartnerTextsGuitarist, ARRAY_COUNT(sPartnerTextsGuitarist)},
+    {FACILITY_CLASS_GENTLEMAN,             sPartnerTextsGentleman, ARRAY_COUNT(sPartnerTextsGentleman)},
+    {FACILITY_CLASS_POKEFAN_M,             sPartnerTextsPokefanM, ARRAY_COUNT(sPartnerTextsPokefanM)},
+    {FACILITY_CLASS_EXPERT_M,              sPartnerTextsExpertM, ARRAY_COUNT(sPartnerTextsExpertM)},
+    {FACILITY_CLASS_EXPERT_F,              sPartnerTextsExpertF, ARRAY_COUNT(sPartnerTextsExpertF)},
+    {FACILITY_CLASS_DRAGON_TAMER,          sPartnerTextsDragonTamer, ARRAY_COUNT(sPartnerTextsDragonTamer)},
+    {FACILITY_CLASS_BIRD_KEEPER,           sPartnerTextsBirdKeeper, ARRAY_COUNT(sPartnerTextsBirdKeeper)},
+    {FACILITY_CLASS_NINJA_BOY,             sPartnerTextsNinjaBoy, ARRAY_COUNT(sPartnerTextsNinjaBoy)},
+    {FACILITY_CLASS_PARASOL_LADY,          sPartnerTextsParasolLady, ARRAY_COUNT(sPartnerTextsParasolLady)},
+    {FACILITY_CLASS_BUG_MANIAC,            sPartnerTextsBugManiac, ARRAY_COUNT(sPartnerTextsBugManiac)},
+    {FACILITY_CLASS_SAILOR,                sPartnerTextsSailor, ARRAY_COUNT(sPartnerTextsSailor)},
+    {FACILITY_CLASS_COLLECTOR,             sPartnerTextsCollector, ARRAY_COUNT(sPartnerTextsCollector)},
+    {FACILITY_CLASS_PKMN_RANGER_M,         sPartnerTextsPkmnRangerM, ARRAY_COUNT(sPartnerTextsPkmnRangerM)},
+    {FACILITY_CLASS_PKMN_RANGER_F,         sPartnerTextsPkmnRangerF, ARRAY_COUNT(sPartnerTextsPkmnRangerF)},
+    {FACILITY_CLASS_AROMA_LADY,            sPartnerTextsAromaLady, ARRAY_COUNT(sPartnerTextsAromaLady)},
+    {FACILITY_CLASS_RUIN_MANIAC,           sPartnerTextsRuinManiac, ARRAY_COUNT(sPartnerTextsRuinManiac)},
+    {FACILITY_CLASS_COOLTRAINER_M,         sPartnerTextsCoolTrainerM, ARRAY_COUNT(sPartnerTextsCoolTrainerM)},
+    {FACILITY_CLASS_COOLTRAINER_F,         sPartnerTextsCoolTrainerF, ARRAY_COUNT(sPartnerTextsCoolTrainerF)},
+    {FACILITY_CLASS_POKEMANIAC,            sPartnerTextsPokemaniac, ARRAY_COUNT(sPartnerTextsPokemaniac)},
+    {FACILITY_CLASS_KINDLER,               sPartnerTextsKindler, ARRAY_COUNT(sPartnerTextsKindler)},
+    {FACILITY_CLASS_CAMPER,                sPartnerTextsCamper, ARRAY_COUNT(sPartnerTextsCamper)},
+    {FACILITY_CLASS_PICNICKER,             sPartnerTextsPicnicker, ARRAY_COUNT(sPartnerTextsPicnicker)},
+    {FACILITY_CLASS_PSYCHIC_M,             sPartnerTextsPsychicM, ARRAY_COUNT(sPartnerTextsPsychicM)},
+    {FACILITY_CLASS_PSYCHIC_F,             sPartnerTextsPsychicF, ARRAY_COUNT(sPartnerTextsPsychicF)},
+    {FACILITY_CLASS_SCHOOL_KID_F,          sPartnerTextsSchoolKidF, ARRAY_COUNT(sPartnerTextsSchoolKidF)},
+    {FACILITY_CLASS_PKMN_BREEDER_F,        sPartnerTextsPkmnBreederF, ARRAY_COUNT(sPartnerTextsPkmnBreederF)},
+    {FACILITY_CLASS_POKEFAN_F,             sPartnerTextsPokefanF, ARRAY_COUNT(sPartnerTextsPokefanF)},
+    {FACILITY_CLASS_SWIMMER_F,             sPartnerTextsSwimmerF, ARRAY_COUNT(sPartnerTextsSwimmerF)},
+    {FACILITY_CLASS_SWIMMING_TRIATHLETE_M, sPartnerTextsSwimmingTriathleteM, ARRAY_COUNT(sPartnerTextsSwimmingTriathleteM)},
+    {FACILITY_CLASS_SWIMMING_TRIATHLETE_F, sPartnerTextsSwimmingTriathleteF, ARRAY_COUNT(sPartnerTextsSwimmingTriathleteF)},
+    {FACILITY_CLASS_SWIMMER_M,             sPartnerTextsSwimmerM, ARRAY_COUNT(sPartnerTextsSwimmerM)}
 };
 
 static const u8 *const *const sPartnerApprenticeTextTables[NUM_APPRENTICES] =
@@ -624,8 +626,29 @@ static const u8 *const *const sPartnerApprenticeTextTables[NUM_APPRENTICES] =
     sPartnerApprenticeTexts15,
     sPartnerApprenticeTexts16
 };
+static const u32 sADMG_PartnerApprenticeTextCounts[] =
+{
+    ARRAY_COUNT(sPartnerApprenticeTexts1),
+    ARRAY_COUNT(sPartnerApprenticeTexts2),
+    ARRAY_COUNT(sPartnerApprenticeTexts3),
+    ARRAY_COUNT(sPartnerApprenticeTexts4),
+    ARRAY_COUNT(sPartnerApprenticeTexts5),
+    ARRAY_COUNT(sPartnerApprenticeTexts6),
+    ARRAY_COUNT(sPartnerApprenticeTexts7),
+    ARRAY_COUNT(sPartnerApprenticeTexts8),
+    ARRAY_COUNT(sPartnerApprenticeTexts9),
+    ARRAY_COUNT(sPartnerApprenticeTexts10),
+    ARRAY_COUNT(sPartnerApprenticeTexts11),
+    ARRAY_COUNT(sPartnerApprenticeTexts12),
+    ARRAY_COUNT(sPartnerApprenticeTexts13),
+    ARRAY_COUNT(sPartnerApprenticeTexts14),
+    ARRAY_COUNT(sPartnerApprenticeTexts15),
+    ARRAY_COUNT(sPartnerApprenticeTexts16),
+};
+
 
 #include "data/battle_frontier/battle_tent.h"
+#include "data/admg_facility_mon_extents.h"
 
 static void (* const sBattleTowerFuncs[])(void) =
 {
@@ -1002,19 +1025,41 @@ void PutNewBattleTowerRecord(struct EmeraldBattleTowerRecord *newRecordEm)
 
 void FillTentTrainerParty(u8 monsCount)
 {
+    u16 identity = TRAINER_BATTLE_PARAM.opponentA;
+    struct ADMG_FacilityPartyInput admitted;
+    if (!ADMG_TryPrepareFacilityParty(identity, B_TRAINER_OPPONENT_A, monsCount, TRUE, 0, &admitted)) return;
     ZeroEnemyPartyMons();
-    FillTentTrainerParty_(TRAINER_BATTLE_PARAM.opponentA, 0, monsCount);
+    const struct ADMG_FacilityPartyInput *previous = ADMG_BorrowFacilityParty(&admitted);
+    FillTentTrainerParty_(identity, 0, monsCount);
+    ADMG_BorrowFacilityParty(previous);
 }
 
 static void GetOpponentIntroSpeech(void)
 {
     u16 trainerId;
-    SetFacilityPtrsGetLevel();
 
     if (gSpecialVar_0x8005)
         trainerId = TRAINER_BATTLE_PARAM.opponentB;
     else
         trainerId = TRAINER_BATTLE_PARAM.opponentA;
+
+    if (gSaveBlock2Ptr == NULL || trainerId > TRAINER_FRONTIER_BRAIN)
+    { ADMG_StateAccessRejected(trainerId, __func__); return; }
+    const struct BattleFrontierTrainer *trainer = NULL;
+    if (trainerId < FRONTIER_TRAINERS_COUNT && !ADMG_TryGetFacilityTrainerRow(trainerId, &trainer)) return;
+    if (trainerId >= TRAINER_RECORD_MIXING_APPRENTICE && trainerId < TRAINER_EREADER
+     && gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].id >= NUM_APPRENTICES)
+    { ADMG_StateAccessRejected(trainerId, __func__); return; }
+#if FREE_BATTLE_TOWER_E_READER == TRUE
+    if (trainerId == TRAINER_EREADER) { ADMG_StateAccessRejected(trainerId, __func__); return; }
+#endif
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    SetFacilityPtrsGetLevel();
+    if (!ADMG_EndStateAccessCheck(generation)) return;
+    if (gSaveBlock2Ptr != save) { ADMG_StateAccessRejected(trainerId, __func__); return; }
+    if (trainerId == TRAINER_FRONTIER_BRAIN)
+    { CopyFrontierTrainerText(FRONTIER_BEFORE_TEXT, trainerId); return; }
 
 #if FREE_BATTLE_TOWER_E_READER == FALSE
     if (trainerId == TRAINER_EREADER)
@@ -1023,7 +1068,7 @@ static void GetOpponentIntroSpeech(void)
 #else
     if (trainerId < FRONTIER_TRAINERS_COUNT)
 #endif //FREE_BATTLE_TOWER_E_READER
-        FrontierSpeechToString(gFacilityTrainers[trainerId].speechBefore);
+        FrontierSpeechToString(trainer->speechBefore);
     else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)
         FrontierSpeechToString(gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].greeting);
     else
@@ -1114,63 +1159,113 @@ static void BattleTowerNop2(void)
 
 }
 
-static void GetApprenticeMultiPartnerParty(u16 trainerId)
+static u16 *sADMG_StoredPartnerOutput;
+
+static bool8 ADMG_TryCaptureTowerContext(struct SaveBlock2 **save,
+    enum FrontierLevelMode *level, u32 *battleMode)
 {
-    s32 i, count;
-    enum Species validSpecies[MULTI_PARTY_SIZE];
-    enum Species species1 = GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES);
-    enum Species species2 = GetMonData(&gParties[B_TRAINER_PLAYER][1], MON_DATA_SPECIES);
-
-    count = 0;
-    for (i = 0; i < MULTI_PARTY_SIZE; i++)
-    {
-        enum Species apprenticeSpecies = gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].party[i].species;
-        if (apprenticeSpecies != species1 && apprenticeSpecies != species2)
-        {
-            validSpecies[count] = i;
-            count++;
-        }
-    }
-
-    gFrontierTempParty[0] = validSpecies[Random() % count];
-    do
-    {
-        gFrontierTempParty[1] = validSpecies[Random() % count];
-    } while (gFrontierTempParty[0] == gFrontierTempParty[1]);
+    struct SaveBlock2 *selected = gSaveBlock2Ptr;
+    if (selected == NULL) { ADMG_StateAccessRejected(0, __func__); return FALSE; }
+    enum FrontierLevelMode mode = selected->frontier.lvlMode;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    u32 battle = VarGet(VAR_FRONTIER_BATTLE_MODE);
+    if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+    if (gSaveBlock2Ptr != selected || selected->frontier.lvlMode != mode
+     || battle >= ARRAY_COUNT(selected->frontier.towerWinStreaks)
+     || (u32)mode >= ARRAY_COUNT(selected->frontier.towerWinStreaks[0]))
+    { ADMG_StateAccessRejected(battle, __func__); return FALSE; }
+    *save = selected; *level = mode; *battleMode = battle;
+    return TRUE;
 }
 
-static void GetRecordMixFriendMultiPartnerParty(u16 trainerId)
+static bool8 ADMG_TryGetStoredPartnerChoices(u32 identity, u32 kind,
+    u16 *choices, u32 capacity, u32 *choiceCount)
 {
-    s32 i, count;
-    enum Species validSpecies[3];
-    enum FrontierLevelMode lvlMode = gSaveBlock2Ptr->frontier.lvlMode;
+    if (choices == NULL || choiceCount == NULL
+     || (kind != ADMG_ACTOR_APPRENTICE && kind != ADMG_ACTOR_RECORD_FRIEND))
+    { ADMG_StateAccessRejected(identity, __func__); return FALSE; }
+    struct ADMG_TrainerActorRef actor;
+    if (!ADMG_TryClassifyTrainerActor(identity, ADMG_ACTOR_FACILITY, ADMG_ACTOR_PARTNER, &actor)) return FALSE;
+    if (actor.kind != kind) { ADMG_StateAccessRejected(identity, __func__); return FALSE; }
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    if (save == NULL) { ADMG_StateAccessRejected(identity, __func__); return FALSE; }
+    enum FrontierLevelMode mode = save->frontier.lvlMode;
+    u32 rows;
+    if (kind == ADMG_ACTOR_APPRENTICE)
+    {
+        if (actor.index >= ARRAY_COUNT(save->apprentices))
+        { ADMG_StateAccessRejected(identity, __func__); return FALSE; }
+        rows = ARRAY_COUNT(save->apprentices[0].party);
+    }
+    else
+    {
+        if (actor.index >= ARRAY_COUNT(save->frontier.towerRecords))
+        { ADMG_StateAccessRejected(identity, __func__); return FALSE; }
+        rows = ARRAY_COUNT(save->frontier.towerRecords[0].party);
+    }
+    u16 selected[PARTY_SIZE];
+    enum Species species[PARTY_SIZE];
+    u8 levels[PARTY_SIZE];
+    if (rows > ARRAY_COUNT(selected) || capacity < rows)
+    { ADMG_StateAccessRejected(capacity, __func__); return FALSE; }
+    u64 generation = ADMG_BeginStateAccessCheck();
     enum Species species1 = GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES);
     enum Species species2 = GetMonData(&gParties[B_TRAINER_PLAYER][1], MON_DATA_SPECIES);
-
-    count = 0;
-    for (i = 0; i < MAX_FRONTIER_PARTY_SIZE; i++)
+    if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+    if (gSaveBlock2Ptr != save || (kind == ADMG_ACTOR_RECORD_FRIEND && save->frontier.lvlMode != mode))
+    { ADMG_StateAccessRejected(identity, __func__); return FALSE; }
+    for (u32 i = 0; i < rows; ++i)
     {
-        if (gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].party[i].species != species1
-            && gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].party[i].species != species2
-            && gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].party[i].level <= GetFrontierEnemyMonLevel(lvlMode)
-            && gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].party[i].species != SPECIES_NONE)
-        {
-            validSpecies[count] = i;
-            count++;
-        }
+        species[i] = kind == ADMG_ACTOR_APPRENTICE
+            ? save->apprentices[actor.index].party[i].species
+            : save->frontier.towerRecords[actor.index].party[i].species;
+        if (kind == ADMG_ACTOR_RECORD_FRIEND) levels[i] = save->frontier.towerRecords[actor.index].party[i].level;
     }
-
-    gFrontierTempParty[2] = validSpecies[Random() % count];
-    do
-    {
-        gFrontierTempParty[3] = validSpecies[Random() % count];
-    } while (gFrontierTempParty[2] == gFrontierTempParty[3]);
+    u32 count = 0;
+    for (u32 i = 0; i < rows; ++i)
+        if (species[i] != species1 && species[i] != species2
+         && (kind == ADMG_ACTOR_APPRENTICE
+          || (levels[i] <= GetFrontierEnemyMonLevel(mode) && species[i] != SPECIES_NONE)))
+            selected[count++] = i;
+    if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+    if (gSaveBlock2Ptr != save || (kind == ADMG_ACTOR_RECORD_FRIEND && save->frontier.lvlMode != mode))
+    { ADMG_StateAccessRejected(identity, __func__); return FALSE; }
+    for (u32 i = 0; i < count; ++i) choices[i] = selected[i];
+    *choiceCount = count;
+    return TRUE;
 }
 
-static void LoadMultiPartnerCandidatesData(void)
+static bool8 ADMG_TrySelectStoredPartnerPair(u32 identity, u32 kind, u32 offset)
+{
+    if (offset > ARRAY_COUNT(gFrontierTempParty) || 2 > ARRAY_COUNT(gFrontierTempParty) - offset)
+    { ADMG_StateAccessRejected(offset, __func__); return FALSE; }
+    u16 choices[PARTY_SIZE];
+    u32 count;
+    if (!ADMG_TryGetStoredPartnerChoices(identity, kind, choices, ARRAY_COUNT(choices), &count)) return FALSE;
+    if (count < 2) { ADMG_StateAccessRejected(identity, __func__); return FALSE; }
+    u16 first = choices[Random() % count];
+    u16 second;
+    do { second = choices[Random() % count]; } while (first == second);
+    u16 *output = sADMG_StoredPartnerOutput != NULL ? sADMG_StoredPartnerOutput : gFrontierTempParty;
+    output[offset] = first;
+    output[offset + 1] = second;
+    return TRUE;
+}
+
+ADMG_NATIVE_ENTRY void GetApprenticeMultiPartnerParty(u16 trainerId)
+{
+    ADMG_TrySelectStoredPartnerPair(trainerId, ADMG_ACTOR_APPRENTICE, 0);
+}
+
+ADMG_NATIVE_ENTRY void GetRecordMixFriendMultiPartnerParty(u16 trainerId)
+{
+    ADMG_TrySelectStoredPartnerPair(trainerId, ADMG_ACTOR_RECORD_FRIEND, 2);
+}
+
+ADMG_NATIVE_ENTRY void LoadMultiPartnerCandidatesData(void)
 {
     s32 i, j, k;
-    u32 spArray[5];
+    u32 spArray[BATTLE_TOWER_RECORD_COUNT > APPRENTICE_COUNT ? BATTLE_TOWER_RECORD_COUNT : APPRENTICE_COUNT];
     s32 r10;
     u16 trainerId;
     u16 monId;
@@ -1180,12 +1275,34 @@ static void LoadMultiPartnerCandidatesData(void)
     enum Species species1, species2;
     struct ObjectEventTemplate *objEventTemplates;
 
-    objEventTemplates = gSaveBlock1Ptr->objectEventTemplates;
-    lvlMode = gSaveBlock2Ptr->frontier.lvlMode;
-    battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);
-    challengeNum = gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode] / FRONTIER_STAGES_PER_CHALLENGE;
+    struct SaveBlock1 *mapSave = gSaveBlock1Ptr;
+    struct SaveBlock2 *save;
+    if (mapSave == NULL) { ADMG_StateAccessRejected(0, __func__); return; }
+    if (!ADMG_TryCaptureTowerContext(&save, &lvlMode, &battleMode)) return;
+    if (gSaveBlock1Ptr != mapSave) { ADMG_StateAccessRejected(battleMode, __func__); return; }
+    u16 ids[ARRAY_COUNT(save->frontier.trainerIds)];
+    u16 graphics[9];
+    u16 temp[ARRAY_COUNT(gFrontierTempParty)];
+    if (ARRAY_COUNT(mapSave->objectEventTemplates) < ARRAY_COUNT(graphics))
+    { ADMG_StateAccessRejected(ARRAY_COUNT(graphics), __func__); return; }
+    for (u32 slot = 0; slot < ARRAY_COUNT(ids); ++slot) ids[slot] = save->frontier.trainerIds[slot];
+    for (u32 slot = 0; slot < ARRAY_COUNT(graphics); ++slot) graphics[slot] = mapSave->objectEventTemplates[slot].graphicsId;
+    for (u32 slot = 0; slot < ARRAY_COUNT(temp); ++slot) temp[slot] = gFrontierTempParty[slot];
+    const struct BattleFrontierTrainer *table = gFacilityTrainers;
+    const struct TrainerMon *mons = gFacilityTrainerMons;
+    u32 monCount;
+    const struct BattleFrontierTrainer *initialRow;
+    if (!ADMG_TryGetActiveFacilityTrainerRow(0, &initialRow)
+     || !ADMG_TryGetFacilityMonTableCount(mons, &monCount)) return;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    bool8 showApprentice = FALSE, showRecord = FALSE;
+    u16 *previousOutput = sADMG_StoredPartnerOutput;
+    sADMG_StoredPartnerOutput = temp;
+    objEventTemplates = mapSave->objectEventTemplates;
+    challengeNum = save->frontier.towerWinStreaks[battleMode][lvlMode] / FRONTIER_STAGES_PER_CHALLENGE;
     species1 = GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES);
     species2 = GetMonData(&gParties[B_TRAINER_PLAYER][1], MON_DATA_SPECIES);
+    if (!ADMG_EndStateAccessCheck(generation)) goto restore;
 
     j = 0;
     do
@@ -1193,62 +1310,84 @@ static void LoadMultiPartnerCandidatesData(void)
         do
         {
             trainerId = GetRandomScaledFrontierTrainerId(challengeNum, 0);
+            const struct BattleFrontierTrainer *selected;
+            if (gFacilityTrainers != table)
+            { ADMG_StateAccessRejected(trainerId, __func__); goto restore; }
+            if (!ADMG_TryGetActiveFacilityTrainerRow(trainerId, &selected)) goto restore;
             for (i = 0; i < j; i++)
             {
-                if (gSaveBlock2Ptr->frontier.trainerIds[i] == trainerId)
+                if (ids[i] == trainerId)
                     break;
-                if (gFacilityTrainers[gSaveBlock2Ptr->frontier.trainerIds[i]].facilityClass == gFacilityTrainers[trainerId].facilityClass)
+                const struct BattleFrontierTrainer *prior;
+                if (!ADMG_TryGetActiveFacilityTrainerRow(ids[i], &prior)) goto restore;
+                if (prior->facilityClass == selected->facilityClass)
                     break;
             }
         } while (i != j);
-        gSaveBlock2Ptr->frontier.trainerIds[j] = trainerId;
+        ids[j] = trainerId;
         j++;
     } while (j < 6);
 
     r10 = 8;
     for (i = 0; i < 6; i++)
     {
-        trainerId = gSaveBlock2Ptr->frontier.trainerIds[i];
-        objEventTemplates[i + 1].graphicsId = GetBattleFacilityTrainerGfxId(trainerId);
+        trainerId = ids[i];
+        graphics[i + 1] = GetBattleFacilityTrainerGfxId(trainerId);
+        if (!ADMG_EndStateAccessCheck(generation)) goto restore;
         for (j = 0; j < 2; j++)
         {
             while (1)
             {
                 monId = GetRandomFrontierMonFromSet(trainerId);
-                if (j % 2 != 0 && gFacilityTrainerMons[gSaveBlock2Ptr->frontier.trainerIds[r10 - 1]].heldItem == gFacilityTrainerMons[monId].heldItem)
+                const struct TrainerMon *selected;
+                if (!ADMG_EndStateAccessCheck(generation)) goto restore;
+                if (gFacilityTrainerMons != mons)
+                { ADMG_StateAccessRejected(monId, __func__); goto restore; }
+                if (!ADMG_TryGetFacilityMonRowFromTable(mons, monCount, monId, &selected)) goto restore;
+                const struct TrainerMon *prior;
+                if (j % 2 != 0 && !ADMG_TryGetFacilityMonRowFromTable(mons, monCount, ids[r10 - 1], &prior)) goto restore;
+                if (j % 2 != 0 && prior->heldItem == selected->heldItem)
                     continue;
 
                 for (k = 8; k < r10; k++)
                 {
-                    if (gFacilityTrainerMons[gSaveBlock2Ptr->frontier.trainerIds[k]].species == gFacilityTrainerMons[monId].species)
+                    if (!ADMG_TryGetFacilityMonRowFromTable(mons, monCount, ids[k], &prior)) goto restore;
+                    if (prior->species == selected->species)
                         break;
-                    if (species1 == gFacilityTrainerMons[monId].species)
+                    if (species1 == selected->species)
                         break;
-                    if (species2 == gFacilityTrainerMons[monId].species)
+                    if (species2 == selected->species)
                         break;
                 }
                 if (k == r10)
                     break;
             }
 
-            gSaveBlock2Ptr->frontier.trainerIds[r10] = monId;
+            ids[r10] = monId;
             r10++;
         }
     }
 
     r10 = 0;
+    if (!ADMG_EndStateAccessCheck(generation)) goto restore;
+    if (gSaveBlock2Ptr != save || gSaveBlock1Ptr != mapSave || save->frontier.lvlMode != lvlMode)
+    { ADMG_StateAccessRejected(battleMode, __func__); goto restore; }
     ValidateApprenticesChecksums();
+    if (!ADMG_EndStateAccessCheck(generation)) goto restore;
+    if (gSaveBlock2Ptr != save) { ADMG_StateAccessRejected(battleMode, __func__); goto restore; }
     for (i = 0; i < APPRENTICE_COUNT; i++)
     {
-        if (gSaveBlock2Ptr->apprentices[i].lvlMode != 0
-            && sApprenticeChallengeThreshold[gSaveBlock2Ptr->apprentices[i].numQuestions] / FRONTIER_STAGES_PER_CHALLENGE <= challengeNum
-            && gSaveBlock2Ptr->apprentices[i].lvlMode - 1 == lvlMode)
+        if (save->apprentices[i].lvlMode != 0 && save->apprentices[i].numQuestions >= ARRAY_COUNT(sApprenticeChallengeThreshold))
+        { ADMG_StateAccessRejected(save->apprentices[i].numQuestions, __func__); goto restore; }
+        if (save->apprentices[i].lvlMode != 0
+            && sApprenticeChallengeThreshold[save->apprentices[i].numQuestions] / FRONTIER_STAGES_PER_CHALLENGE <= challengeNum
+            && save->apprentices[i].lvlMode - 1 == lvlMode)
         {
             k = 0;
             for (j = 0; j < MULTI_PARTY_SIZE; j++)
             {
-                if (species1 != gSaveBlock2Ptr->apprentices[i].party[j].species
-                    && species2 != gSaveBlock2Ptr->apprentices[i].party[j].species)
+                if (species1 != save->apprentices[i].party[j].species
+                    && species2 != save->apprentices[i].party[j].species)
                 {
                     k++;
                 }
@@ -1262,16 +1401,17 @@ static void LoadMultiPartnerCandidatesData(void)
     }
     if (r10 != 0)
     {
-        gSaveBlock2Ptr->frontier.trainerIds[6] = spArray[Random() % r10];
-        objEventTemplates[7].graphicsId = GetBattleFacilityTrainerGfxId(gSaveBlock2Ptr->frontier.trainerIds[6]);
-        FlagClear(FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_ALT_1);
-        GetApprenticeMultiPartnerParty(gSaveBlock2Ptr->frontier.trainerIds[6]);
+        ids[6] = spArray[Random() % r10];
+        graphics[7] = GetBattleFacilityTrainerGfxId(ids[6]);
+        if (!ADMG_EndStateAccessCheck(generation)) goto restore;
+        showApprentice = TRUE;
+        GetApprenticeMultiPartnerParty(ids[6]);
     }
 
     r10 = 0;
     for (i = 0; i < BATTLE_TOWER_RECORD_COUNT; i++)
     {
-        u32 *record = (u32 *)(&gSaveBlock2Ptr->frontier.towerRecords[i]);
+        u32 *record = (u32 *)(&save->frontier.towerRecords[i]);
         u32 recordHasData = 0;
         u32 checksum = 0;
         for (j = 0; j < (sizeof(struct EmeraldBattleTowerRecord) - 4) / 4; j++) // - 4, because of the last field being the checksum itself.
@@ -1280,18 +1420,18 @@ static void LoadMultiPartnerCandidatesData(void)
             checksum += record[j];
         }
 
-        if (gSaveBlock2Ptr->frontier.towerRecords[i].winStreak / FRONTIER_STAGES_PER_CHALLENGE <= challengeNum
-            && gSaveBlock2Ptr->frontier.towerRecords[i].lvlMode == lvlMode
+        if (save->frontier.towerRecords[i].winStreak / FRONTIER_STAGES_PER_CHALLENGE <= challengeNum
+            && save->frontier.towerRecords[i].lvlMode == lvlMode
             && recordHasData
-            && gSaveBlock2Ptr->frontier.towerRecords[i].checksum == checksum)
+            && save->frontier.towerRecords[i].checksum == checksum)
         {
             k = 0;
             for (j = 0; j < MAX_FRONTIER_PARTY_SIZE; j++)
             {
-                if (species1 != gSaveBlock2Ptr->frontier.towerRecords[i].party[j].species
-                    && species2 != gSaveBlock2Ptr->frontier.towerRecords[i].party[j].species
-                    && gSaveBlock2Ptr->frontier.towerRecords[i].party[j].level <= GetFrontierEnemyMonLevel(lvlMode)
-                    && gSaveBlock2Ptr->frontier.towerRecords[i].party[j].species != SPECIES_NONE)
+                if (species1 != save->frontier.towerRecords[i].party[j].species
+                    && species2 != save->frontier.towerRecords[i].party[j].species
+                    && save->frontier.towerRecords[i].party[j].level <= GetFrontierEnemyMonLevel(lvlMode)
+                    && save->frontier.towerRecords[i].party[j].species != SPECIES_NONE)
                 {
                     k++;
                 }
@@ -1305,46 +1445,101 @@ static void LoadMultiPartnerCandidatesData(void)
     }
     if (r10 != 0)
     {
-        gSaveBlock2Ptr->frontier.trainerIds[7] = spArray[Random() % r10];
-        objEventTemplates[8].graphicsId = GetBattleFacilityTrainerGfxId(gSaveBlock2Ptr->frontier.trainerIds[7]);
-        FlagClear(FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_ALT_2);
-        GetRecordMixFriendMultiPartnerParty(gSaveBlock2Ptr->frontier.trainerIds[7]);
+        ids[7] = spArray[Random() % r10];
+        graphics[8] = GetBattleFacilityTrainerGfxId(ids[7]);
+        if (!ADMG_EndStateAccessCheck(generation)) goto restore;
+        showRecord = TRUE;
+        GetRecordMixFriendMultiPartnerParty(ids[7]);
     }
+
+    if (!ADMG_EndStateAccessCheck(generation)) goto restore;
+    if (gSaveBlock2Ptr != save || gSaveBlock1Ptr != mapSave || save->frontier.lvlMode != lvlMode)
+    { ADMG_StateAccessRejected(battleMode, __func__); goto restore; }
+    for (u32 slot = 0; slot < ARRAY_COUNT(ids); ++slot) save->frontier.trainerIds[slot] = ids[slot];
+    for (u32 slot = 1; slot < ARRAY_COUNT(graphics); ++slot) objEventTemplates[slot].graphicsId = graphics[slot];
+    for (u32 slot = 0; slot < ARRAY_COUNT(temp); ++slot) gFrontierTempParty[slot] = temp[slot];
+    if (showApprentice) FlagClear(FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_ALT_1);
+    if (showRecord) FlagClear(FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_ALT_2);
+restore:
+    sADMG_StoredPartnerOutput = previousOutput;
 }
 
-static void GetPotentialPartnerMoveAndSpecies(u16 trainerId, u16 monId)
+struct ADMG_PartnerDescription
 {
-    enum Move move = MOVE_NONE;
-    enum Species species = SPECIES_NONE;
-    SetFacilityPtrsGetLevel();
+    struct ADMG_TrainerActorRef actor;
+    struct SaveBlock2 *save;
+    enum FrontierLevelMode mode;
+    enum Move move;
+    enum Species species;
+    struct Apprentice apprentice;
+};
 
-    if (trainerId != TRAINER_EREADER)
+static bool8 ADMG_TryCapturePartnerDescription(u32 identity, u32 monId, u32 message,
+    struct ADMG_PartnerDescription *input)
+{
+    if (input == NULL) { ADMG_StateAccessRejected(identity, __func__); return FALSE; }
+    struct ADMG_PartnerDescription selected = {0};
+    if (!ADMG_TryClassifyTrainerActor(identity, ADMG_ACTOR_FACILITY, ADMG_ACTOR_PARTNER, &selected.actor)) return FALSE;
+    if (selected.actor.kind != ADMG_ACTOR_FRONTIER && selected.actor.kind != ADMG_ACTOR_RECORD_FRIEND
+     && selected.actor.kind != ADMG_ACTOR_APPRENTICE && selected.actor.kind != ADMG_ACTOR_EREADER)
+    { ADMG_StateAccessRejected(identity, __func__); return FALSE; }
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    if (save == NULL) { ADMG_StateAccessRejected(identity, __func__); return FALSE; }
+    selected.save = save; selected.mode = save->frontier.lvlMode;
+    if (selected.actor.kind == ADMG_ACTOR_FRONTIER)
     {
-        if (trainerId < FRONTIER_TRAINERS_COUNT)
+        const struct BattleFrontierTrainer *table;
+        const struct TrainerMon *mons, *row;
+        u32 trainerCount, monCount;
+        if (!ADMG_TrySelectFacilityTrainerTables(selected.mode == FRONTIER_LVL_TENT, &table, &mons, &trainerCount)
+         || !ADMG_TryGetFacilityMonTableCount(mons, &monCount)
+         || !ADMG_TryGetFacilityMonRowFromTable(mons, monCount, monId, &row)) return FALSE;
+        selected.move = row->moves[0]; selected.species = row->species;
+    }
+    else if (selected.actor.kind != ADMG_ACTOR_EREADER)
+    {
+        if (message != PARTNER_MSGID_MON1 && message != PARTNER_MSGID_MON2_ASK)
+        { ADMG_StateAccessRejected(message, __func__); return FALSE; }
+        u32 offset = selected.actor.kind == ADMG_ACTOR_RECORD_FRIEND ? message + 1 : message - 1;
+        if (offset >= ARRAY_COUNT(gFrontierTempParty))
+        { ADMG_StateAccessRejected(offset, __func__); return FALSE; }
+        u32 index = gFrontierTempParty[offset];
+        if (selected.actor.kind == ADMG_ACTOR_RECORD_FRIEND)
         {
-            move = gFacilityTrainerMons[monId].moves[0];
-            species = gFacilityTrainerMons[monId].species;
-        }
-        else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)
-        {
-            move = gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].party[gFrontierTempParty[gSpecialVar_0x8005 + 1]].moves[0];
-            species = gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].party[gFrontierTempParty[gSpecialVar_0x8005 + 1]].species;
+            if (index >= ARRAY_COUNT(save->frontier.towerRecords[0].party))
+            { ADMG_StateAccessRejected(index, __func__); return FALSE; }
+            const struct BattleTowerPokemon *row = &save->frontier.towerRecords[selected.actor.index].party[index];
+            selected.move = row->moves[0]; selected.species = row->species;
         }
         else
         {
-            s32 i;
-
-            move = gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].party[gFrontierTempParty[gSpecialVar_0x8005 - 1]].moves[0];
-            species = gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].party[gFrontierTempParty[gSpecialVar_0x8005 - 1]].species;
-            for (i = 0; i < PLAYER_NAME_LENGTH; i++)
-                gStringVar3[i] = gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].playerName[i];
-            gStringVar3[i] = EOS;
-            ConvertInternationalString(gStringVar3, gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].language);
+            memcpy(&selected.apprentice, &save->apprentices[selected.actor.index], sizeof(selected.apprentice));
+            if (index >= ARRAY_COUNT(selected.apprentice.party))
+            { ADMG_StateAccessRejected(index, __func__); return FALSE; }
+            selected.move = selected.apprentice.party[index].moves[0]; selected.species = selected.apprentice.party[index].species;
         }
     }
+    memcpy(input, &selected, sizeof(selected));
+    return TRUE;
+}
 
-    StringCopy(gStringVar1, GetMoveName(move));
-    StringCopy(gStringVar2, GetSpeciesName(species));
+ADMG_NATIVE_ENTRY void GetPotentialPartnerMoveAndSpecies(u16 trainerId, u16 monId)
+{
+    struct ADMG_PartnerDescription input;
+    if (!ADMG_TryCapturePartnerDescription(trainerId, monId, gSpecialVar_0x8005, &input)) return;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    SetFacilityPtrsGetLevel();
+    if (!ADMG_EndStateAccessCheck(generation)) return;
+    if (gSaveBlock2Ptr != input.save || input.save->frontier.lvlMode != input.mode)
+    { ADMG_StateAccessRejected(trainerId, __func__); return; }
+    if (input.actor.kind == ADMG_ACTOR_APPRENTICE)
+    {
+        for (u32 i = 0; i < PLAYER_NAME_LENGTH; ++i) gStringVar3[i] = input.apprentice.playerName[i];
+        gStringVar3[PLAYER_NAME_LENGTH] = EOS;
+        ConvertInternationalString(gStringVar3, input.apprentice.language);
+    }
+    StringCopy(gStringVar1, GetMoveName(input.move));
+    StringCopy(gStringVar2, GetSpeciesName(input.species));
 }
 
 // For multi battles in the Battle Tower, the player may choose a partner by talking to them
@@ -1355,22 +1550,62 @@ static void GetPotentialPartnerMoveAndSpecies(u16 trainerId, u16 monId)
 // PARTNER_MSGID_MON2_ASK - Naming a second Pokémon on their team, a move it has, and asking if they'd like to be their partner
 // PARTNER_MSGID_ACCEPT - If the player agrees to be their partner
 // PARTNER_MSGID_REJECT - If the player declines to be their partner
-static void ShowPartnerCandidateMessage(void)
+ADMG_NATIVE_ENTRY void ShowPartnerCandidateMessage(void)
 {
     s32 i, j, partnerId;
     s32 monId;
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    enum FrontierLevelMode level = save != NULL ? save->frontier.lvlMode : FRONTIER_LVL_50;
+    u32 message = gSpecialVar_0x8005;
+    u32 talked = gSpecialVar_LastTalked;
+    if (save == NULL || talked < 2 || talked - 2 >= 8 || message > PARTNER_MSGID_REJECT)
+    { ADMG_StateAccessRejected(talked, __func__); return; }
+    u32 slot = talked - 2;
+    u16 trainerId = save->frontier.trainerIds[slot];
+    struct ADMG_TrainerActorRef actor;
+    if (!ADMG_TryClassifyTrainerActor(trainerId, ADMG_ACTOR_FACILITY, ADMG_ACTOR_PARTNER, &actor)) return;
+    if (actor.kind != ADMG_ACTOR_FRONTIER && actor.kind != ADMG_ACTOR_RECORD_FRIEND
+     && actor.kind != ADMG_ACTOR_APPRENTICE && actor.kind != ADMG_ACTOR_EREADER)
+    { ADMG_StateAccessRejected(trainerId, __func__); return; }
+    struct Apprentice apprentice;
+    if (actor.kind == ADMG_ACTOR_APPRENTICE)
+    {
+        memcpy(&apprentice, &save->apprentices[actor.index], sizeof(apprentice));
+        if (apprentice.id >= ARRAY_COUNT(sPartnerApprenticeTextTables))
+        { ADMG_StateAccessRejected(apprentice.id, __func__); return; }
+    }
+    u64 generation = ADMG_BeginStateAccessCheck();
     u16 winStreak = GetCurrentFacilityWinStreak();
+    if (!ADMG_EndStateAccessCheck(generation)) return;
+    if (gSaveBlock2Ptr != save) { ADMG_StateAccessRejected(trainerId, __func__); return; }
     s32 challengeNum = winStreak / FRONTIER_STAGES_PER_CHALLENGE;
-    s32 k = gSpecialVar_LastTalked - 2;
-    s32 trainerId = gSaveBlock2Ptr->frontier.trainerIds[k];
+    s32 k = slot;
 
     for (partnerId = 0; partnerId < ARRAY_COUNT(sPartnerTrainerTextTables); partnerId++)
     {
         if (sPartnerTrainerTextTables[partnerId].facilityClass == GetFrontierTrainerFacilityClass(trainerId))
             break;
+        if (!ADMG_EndStateAccessCheck(generation)) return;
+    }
+    if (!ADMG_EndStateAccessCheck(generation)) return;
+    if (gSaveBlock2Ptr != save || save->frontier.lvlMode != level)
+    { ADMG_StateAccessRejected(trainerId, __func__); return; }
+    const u8 *messageText = NULL;
+    if (actor.kind == ADMG_ACTOR_APPRENTICE)
+    {
+        if (message >= sADMG_PartnerApprenticeTextCounts[apprentice.id])
+        { ADMG_StateAccessRejected(message, __func__); return; }
+        messageText = sPartnerApprenticeTextTables[apprentice.id][message];
+    }
+    else if (actor.kind != ADMG_ACTOR_EREADER)
+    {
+        if ((u32)partnerId >= ARRAY_COUNT(sPartnerTrainerTextTables)
+         || message >= sPartnerTrainerTextTables[partnerId].stringCount)
+        { ADMG_StateAccessRejected(trainerId, __func__); return; }
+        messageText = sPartnerTrainerTextTables[partnerId].strings[message];
     }
 
-    switch (gSpecialVar_0x8005)
+    switch (message)
     {
     case PARTNER_MSGID_INTRO:
         if (trainerId == TRAINER_EREADER)
@@ -1387,57 +1622,98 @@ static void ShowPartnerCandidateMessage(void)
         {
             s32 i;
             for (i = 0; i < PLAYER_NAME_LENGTH; i++)
-                gStringVar1[i] = gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].playerName[i];
+                gStringVar1[i] = apprentice.playerName[i];
             gStringVar1[i] = EOS;
-            ConvertInternationalString(gStringVar1, gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].language);
-            ConvertIntToDecimalStringN(gStringVar2, gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].number, STR_CONV_MODE_LEFT_ALIGN, 3);
+            ConvertInternationalString(gStringVar1, apprentice.language);
+            ConvertIntToDecimalStringN(gStringVar2, apprentice.number, STR_CONV_MODE_LEFT_ALIGN, 3);
             GetFrontierTrainerName(gStringVar3, trainerId);
         }
         break;
     case PARTNER_MSGID_MON1:
-        monId = gSaveBlock2Ptr->frontier.trainerIds[8 + k * 2];
+        monId = 0;
+        if (actor.kind == ADMG_ACTOR_FRONTIER)
+        {
+            if (8 + slot * 2 >= ARRAY_COUNT(save->frontier.trainerIds))
+            { ADMG_StateAccessRejected(slot, __func__); return; }
+            monId = save->frontier.trainerIds[8 + slot * 2];
+        }
         GetPotentialPartnerMoveAndSpecies(trainerId, monId);
         break;
     case PARTNER_MSGID_MON2_ASK:
-        monId = gSaveBlock2Ptr->frontier.trainerIds[9 + k * 2];
+        monId = 0;
+        if (actor.kind == ADMG_ACTOR_FRONTIER)
+        {
+            if (9 + slot * 2 >= ARRAY_COUNT(save->frontier.trainerIds))
+            { ADMG_StateAccessRejected(slot, __func__); return; }
+            monId = save->frontier.trainerIds[9 + slot * 2];
+        }
         GetPotentialPartnerMoveAndSpecies(trainerId, monId);
         break;
     case PARTNER_MSGID_ACCEPT:
-        gPartnerTrainerId = trainerId;
+        u16 selectedPair[2];
         if (trainerId < FRONTIER_TRAINERS_COUNT)
         {
-            gSaveBlock2Ptr->frontier.trainerIds[18] = gSaveBlock2Ptr->frontier.trainerIds[8 + k * 2];
-            gSaveBlock2Ptr->frontier.trainerIds[19] = gSaveBlock2Ptr->frontier.trainerIds[9 + k * 2];
+            if (9 + slot * 2 >= ARRAY_COUNT(save->frontier.trainerIds))
+            { ADMG_StateAccessRejected(slot, __func__); return; }
+            selectedPair[0] = save->frontier.trainerIds[8 + k * 2];
+            selectedPair[1] = save->frontier.trainerIds[9 + k * 2];
         }
         else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)
         {
-            gSaveBlock2Ptr->frontier.trainerIds[18] = gFrontierTempParty[2];
-            gSaveBlock2Ptr->frontier.trainerIds[19] = gFrontierTempParty[3];
+            selectedPair[0] = gFrontierTempParty[2];
+            selectedPair[1] = gFrontierTempParty[3];
         }
         else
         {
-            gSaveBlock2Ptr->frontier.trainerIds[18] = gFrontierTempParty[0];
-            gSaveBlock2Ptr->frontier.trainerIds[19] = gFrontierTempParty[1];
+            selectedPair[0] = gFrontierTempParty[0];
+            selectedPair[1] = gFrontierTempParty[1];
         }
+        if (actor.kind == ADMG_ACTOR_FRONTIER)
+        {
+            const struct BattleFrontierTrainer *table;
+            const struct TrainerMon *mons, *row;
+            u32 trainerCount, monCount;
+            if (!ADMG_TrySelectFacilityTrainerTables(save->frontier.lvlMode == FRONTIER_LVL_TENT, &table, &mons, &trainerCount)
+             || !ADMG_TryGetFacilityMonTableCount(mons, &monCount)) return;
+            for (u32 pair = 0; pair < 2; ++pair)
+                if (!ADMG_TryGetFacilityMonRowFromTable(mons, monCount, selectedPair[pair], &row)) return;
+        }
+        else if (actor.kind != ADMG_ACTOR_EREADER)
+        {
+            u32 count = actor.kind == ADMG_ACTOR_RECORD_FRIEND
+                ? ARRAY_COUNT(save->frontier.towerRecords[0].party) : ARRAY_COUNT(apprentice.party);
+            if (selectedPair[0] >= count || selectedPair[1] >= count)
+            { ADMG_StateAccessRejected(trainerId, __func__); return; }
+        }
+        u16 selectedOpponents[FRONTIER_STAGES_PER_CHALLENGE * 2];
         for (k = 0; k < FRONTIER_STAGES_PER_CHALLENGE * 2; k++)
         {
             while (1)
             {
                 i = GetRandomScaledFrontierTrainerId(challengeNum, k / 2);
-                if (gPartnerTrainerId == i)
+                struct ADMG_TrainerActorRef opponent;
+                if (!ADMG_TryClassifyTrainerActor(i, ADMG_ACTOR_FACILITY, ADMG_ACTOR_OPPONENT, &opponent)
+                 || opponent.kind != ADMG_ACTOR_FRONTIER)
+                { ADMG_StateAccessRejected(i, __func__); return; }
+                if (trainerId == i)
                     continue;
 
                 for (j = 0; j < k; j++)
                 {
-                    if (gSaveBlock2Ptr->frontier.trainerIds[j] == i)
+                    if (selectedOpponents[j] == i)
                         break;
                 }
                 if (j == k)
                     break;
             }
-            gSaveBlock2Ptr->frontier.trainerIds[k] = i;
+            selectedOpponents[k] = i;
         }
-        gSaveBlock2Ptr->frontier.trainerIds[17] = trainerId;
+        if (!ADMG_EndStateAccessCheck(generation)) return;
+        if (gSaveBlock2Ptr != save) { ADMG_StateAccessRejected(trainerId, __func__); return; }
+        gPartnerTrainerId = trainerId;
+        save->frontier.trainerIds[18] = selectedPair[0]; save->frontier.trainerIds[19] = selectedPair[1];
+        for (u32 slot = 0; slot < ARRAY_COUNT(selectedOpponents); ++slot) save->frontier.trainerIds[slot] = selectedOpponents[slot];
+        save->frontier.trainerIds[17] = trainerId;
         break;
     case PARTNER_MSGID_REJECT:
         break;
@@ -1446,39 +1722,51 @@ static void ShowPartnerCandidateMessage(void)
     if (trainerId == TRAINER_EREADER)
         return;
 
-    // First check is redundant, only needs to make sure it's not an Apprentice
-    if (trainerId < FRONTIER_TRAINERS_COUNT)
-    {
-        ShowFieldMessage(sPartnerTrainerTextTables[partnerId].strings[gSpecialVar_0x8005]);
-    }
-    else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)
-    {
-        ShowFieldMessage(sPartnerTrainerTextTables[partnerId].strings[gSpecialVar_0x8005]);
-    }
-    // Trainer is a former/record-mixed Apprentice, do Apprentice message
-    else
-    {
-        u8 apprenticeId = gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].id;
-        ShowFieldMessage(sPartnerApprenticeTextTables[apprenticeId][gSpecialVar_0x8005]);
-    }
+    if (!ADMG_EndStateAccessCheck(generation)) return;
+    if (actor.kind == ADMG_ACTOR_EREADER) return;
+    ShowFieldMessage(messageText);
 }
 
-static void LoadLinkMultiOpponentsData(void)
+static bool8 ADMG_TryGetTowerBattlePair(const u16 *ids, u32 count, u32 battle,
+    u16 *first, u16 *second)
+{
+    if (ids == NULL || first == NULL || second == NULL || count < 2 || battle >= count / 2)
+    { ADMG_StateAccessRejected(battle, __func__); return FALSE; }
+    struct ADMG_TrainerActorRef a, b;
+    u32 index = battle * 2;
+    if (!ADMG_TryClassifyTrainerActor(ids[index], ADMG_ACTOR_FACILITY, ADMG_ACTOR_OPPONENT, &a)
+     || !ADMG_TryClassifyTrainerActor(ids[index + 1], ADMG_ACTOR_FACILITY, ADMG_ACTOR_OPPONENT, &b)) return FALSE;
+    *first = a.identifier; *second = b.identifier;
+    return TRUE;
+}
+
+ADMG_NATIVE_ENTRY void LoadLinkMultiOpponentsData(void)
 {
     s32 challengeNum;
     s32 i, j;
     s32 trainerId = 0;
-    enum FrontierLevelMode lvlMode = gSaveBlock2Ptr->frontier.lvlMode;
+    u32 state = gSpecialVar_Result;
+    if (state > 6) { ADMG_StateAccessRejected(state, __func__); return; }
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    if (save == NULL && state <= 3) { ADMG_StateAccessRejected(state, __func__); return; }
+    enum FrontierLevelMode lvlMode = save != NULL ? save->frontier.lvlMode : FRONTIER_LVL_50;
+    u64 generation = ADMG_BeginStateAccessCheck();
     u32 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);
-    u32 battleNum = gSaveBlock2Ptr->frontier.curChallengeBattleNum;
-    GetMultiplayerId(); // Yet another pointless function call.
+    u32 battleNum = save != NULL ? save->frontier.curChallengeBattleNum : 0;
+    GetMultiplayerId();
+    if (!ADMG_EndStateAccessCheck(generation)) return;
+    if (gSaveBlock2Ptr != save || (save != NULL && save->frontier.lvlMode != lvlMode))
+    { ADMG_StateAccessRejected(state, __func__); return; }
 
     switch (gSpecialVar_Result)
     {
     case 0:
         if (battleMode == FRONTIER_MODE_LINK_MULTIS)
         {
-            challengeNum = gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode] / FRONTIER_STAGES_PER_CHALLENGE;
+            if (battleMode >= ARRAY_COUNT(save->frontier.towerWinStreaks)
+             || (u32)lvlMode >= ARRAY_COUNT(save->frontier.towerWinStreaks[0]))
+            { ADMG_StateAccessRejected(battleMode, __func__); return; }
+            challengeNum = save->frontier.towerWinStreaks[battleMode][lvlMode] / FRONTIER_STAGES_PER_CHALLENGE;
             if (IsLinkTaskFinished())
             {
                 SendBlock(BitmaskAllOtherLinkPlayers(), &challengeNum, sizeof(challengeNum));
@@ -1493,7 +1781,9 @@ static void LoadLinkMultiOpponentsData(void)
     case 1:
         if ((GetBlockReceivedStatus() & 3) == 3)
         {
-            ResetBlockReceivedFlags();
+            u16 selected[ARRAY_COUNT(save->frontier.trainerIds)];
+            for (u32 slot = 0; slot < ARRAY_COUNT(selected); ++slot) selected[slot] = save->frontier.trainerIds[slot];
+
             if (gBlockRecvBuffer[0][0] > gBlockRecvBuffer[1][0])
                 challengeNum = gBlockRecvBuffer[0][0];
             else
@@ -1503,32 +1793,48 @@ static void LoadLinkMultiOpponentsData(void)
                 do
                 {
                     trainerId = GetRandomScaledFrontierTrainerId(challengeNum, i / 2);
+                    struct ADMG_TrainerActorRef actor;
+                    if (!ADMG_TryClassifyTrainerActor(trainerId, ADMG_ACTOR_FACILITY, ADMG_ACTOR_OPPONENT, &actor)
+                     || actor.kind != ADMG_ACTOR_FRONTIER)
+                    { ADMG_StateAccessRejected(trainerId, __func__); return; }
                     for (j = 0; j < i; j++)
                     {
-                        if (gSaveBlock2Ptr->frontier.trainerIds[j] == trainerId)
+                        if (selected[j] == trainerId)
                             break;
                     }
                 } while (i != j);
                 if (i == j) // This condition is always true, because of the loop above.
-                    gSaveBlock2Ptr->frontier.trainerIds[i] = trainerId;
+                    selected[i] = trainerId;
             }
+            if (!ADMG_EndStateAccessCheck(generation)) return;
+            if (gSaveBlock2Ptr != save || save->frontier.lvlMode != lvlMode)
+            { ADMG_StateAccessRejected(state, __func__); return; }
+            ResetBlockReceivedFlags();
+            for (u32 slot = 0; slot < ARRAY_COUNT(selected); ++slot) save->frontier.trainerIds[slot] = selected[slot];
             gSpecialVar_Result = 2;
         }
         break;
     case 2:
         if (IsLinkTaskFinished())
         {
-            SendBlock(BitmaskAllOtherLinkPlayers(), &gSaveBlock2Ptr->frontier.trainerIds, sizeof(gSaveBlock2Ptr->frontier.trainerIds));
+            SendBlock(BitmaskAllOtherLinkPlayers(), &save->frontier.trainerIds, sizeof(save->frontier.trainerIds));
             gSpecialVar_Result = 3;
         }
         break;
     case 3:
         if ((GetBlockReceivedStatus() & 3) == 3)
         {
+            u16 selected[ARRAY_COUNT(save->frontier.trainerIds)];
+            memcpy(selected, gBlockRecvBuffer, sizeof(selected));
+            u16 a, b;
+            if (!ADMG_TryGetTowerBattlePair(selected, ARRAY_COUNT(selected), battleNum, &a, &b)) return;
             ResetBlockReceivedFlags();
-            memcpy(&gSaveBlock2Ptr->frontier.trainerIds, gBlockRecvBuffer, sizeof(gSaveBlock2Ptr->frontier.trainerIds));
-            TRAINER_BATTLE_PARAM.opponentA = gSaveBlock2Ptr->frontier.trainerIds[battleNum * 2];
-            TRAINER_BATTLE_PARAM.opponentB = gSaveBlock2Ptr->frontier.trainerIds[battleNum * 2 + 1];
+            if (!ADMG_EndStateAccessCheck(generation)) return;
+            if (gSaveBlock2Ptr != save || save->frontier.lvlMode != lvlMode)
+            { ADMG_StateAccessRejected(state, __func__); return; }
+            memcpy(save->frontier.trainerIds, selected, sizeof(selected));
+            TRAINER_BATTLE_PARAM.opponentA = a;
+            TRAINER_BATTLE_PARAM.opponentB = b;
             SetBattleFacilityTrainerGfxId(TRAINER_BATTLE_PARAM.opponentA, 0);
             SetBattleFacilityTrainerGfxId(TRAINER_BATTLE_PARAM.opponentB, 1);
             if (gReceivedRemoteLinkPlayers && gWirelessCommType == 0)
@@ -1558,29 +1864,69 @@ static void TowerTryCloseLink(void)
         SetCloseLinkCallback();
 }
 
-static void SetMultiPartnerGfx(void)
+ADMG_NATIVE_ENTRY void SetMultiPartnerGfx(void)
 {
-    // 0xF below means use VAR_OBJ_GFX_ID_E
-    SetBattleFacilityTrainerGfxId(gSaveBlock2Ptr->frontier.trainerIds[17], 0xF);
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    if (save == NULL) { ADMG_StateAccessRejected(0, __func__); return; }
+    struct ADMG_TrainerActorRef actor;
+    u16 identity = save->frontier.trainerIds[17];
+    if (!ADMG_TryClassifyTrainerActor(identity, ADMG_ACTOR_FACILITY, ADMG_ACTOR_PARTNER, &actor)) return;
+    // 0xF below means use VAR_OBJ_GFX_ID_E.
+    SetBattleFacilityTrainerGfxId(identity, 0xF);
 }
 
-static void SetTowerInterviewData(void)
+ADMG_NATIVE_ENTRY void SetTowerInterviewData(void)
 {
-    s32 i;
-    u8 text[32];
-
-    if (VarGet(VAR_FRONTIER_BATTLE_MODE) != FRONTIER_MODE_SINGLES)
-        return;
-
-    GetFrontierTrainerName(text, TRAINER_BATTLE_PARAM.opponentA);
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    u32 mode = VarGet(VAR_FRONTIER_BATTLE_MODE);
+    if (!ADMG_EndStateAccessCheck(generation)) return;
+    if (mode != FRONTIER_MODE_SINGLES) return;
+    if (save == NULL || gSaveBlock2Ptr != save)
+    { ADMG_StateAccessRejected(mode, __func__); return; }
+    u16 identity = TRAINER_BATTLE_PARAM.opponentA;
+    struct ADMG_TrainerActorRef actor;
+    // The existing name/language interfaces also support disjoint native Kanto
+    // content. Preserve that caller surface without interpreting facility
+    // ordinals as Hoenn content or a named partner as an opponent.
+    u32 domain = identity > ADMG_KANTO_TRAINER_FIRST
+        && identity < ADMG_KANTO_TRAINER_FIRST + ADMG_KANTO_TRAINERS_COUNT
+        ? ADMG_ACTOR_CONTENT : ADMG_ACTOR_FACILITY;
+    if (!ADMG_TryClassifyTrainerActor(identity, domain, ADMG_ACTOR_OPPONENT, &actor)) return;
+    u8 text[32] = {EOS};
+    GetFrontierTrainerName(text, identity);
+    if (!ADMG_EndStateAccessCheck(generation)) return;
+    if (gSaveBlock2Ptr != save || TRAINER_BATTLE_PARAM.opponentA != identity)
+    { ADMG_StateAccessRejected(identity, __func__); return; }
+    if (!ADMG_TryValidateTrainerText(text, sizeof(text), identity, NULL)) return;
     StripExtCtrlCodes(text);
-    StringCopy(gSaveBlock2Ptr->frontier.towerInterview.opponentName, text);
-    GetBattleTowerTrainerLanguage(&gSaveBlock2Ptr->frontier.towerInterview.opponentLanguage, TRAINER_BATTLE_PARAM.opponentA);
-    gSaveBlock2Ptr->frontier.towerInterview.opponentSpecies = GetMonData(GetBattlerMon(1), MON_DATA_SPECIES);
-    gSaveBlock2Ptr->frontier.towerInterview.playerSpecies = GetMonData(GetBattlerMon(0), MON_DATA_SPECIES);
-    for (i = 0; i < VANILLA_POKEMON_NAME_LENGTH + 1; i++)
-        gSaveBlock2Ptr->frontier.towerInterview.opponentMonNickname[i] = gBattleMons[0].nickname[i];
-    gSaveBlock2Ptr->frontier.towerBattleOutcome = gBattleOutcome;
+    u32 length = 0;
+    while (length < ARRAY_COUNT(text) && text[length] != EOS) ++length;
+    if (length >= ARRAY_COUNT(save->frontier.towerInterview.opponentName))
+    { ADMG_StateAccessRejected(identity, __func__); return; }
+    __typeof__(save->frontier.towerInterview) selected;
+    memcpy(&selected, &save->frontier.towerInterview, sizeof(selected));
+    StringCopy(selected.opponentName, text);
+    GetBattleTowerTrainerLanguage(&selected.opponentLanguage, identity);
+    if (!ADMG_EndStateAccessCheck(generation)) return;
+    if (gSaveBlock2Ptr != save || TRAINER_BATTLE_PARAM.opponentA != identity)
+    { ADMG_StateAccessRejected(identity, __func__); return; }
+    struct Pokemon *opponent = GetBattlerMon(1);
+    struct Pokemon *player = GetBattlerMon(0);
+    if (!ADMG_EndStateAccessCheck(generation)) return;
+    if (opponent == NULL || player == NULL)
+    { ADMG_StateAccessRejected(identity, __func__); return; }
+    selected.opponentSpecies = GetMonData(opponent, MON_DATA_SPECIES);
+    selected.playerSpecies = GetMonData(player, MON_DATA_SPECIES);
+    // Preserve the original index and byte extent; this is not a nickname remap.
+    for (u32 i = 0; i < VANILLA_POKEMON_NAME_LENGTH + 1; ++i)
+        selected.opponentMonNickname[i] = gBattleMons[0].nickname[i];
+    u8 outcome = gBattleOutcome;
+    if (!ADMG_EndStateAccessCheck(generation)) return;
+    if (gSaveBlock2Ptr != save || TRAINER_BATTLE_PARAM.opponentA != identity)
+    { ADMG_StateAccessRejected(identity, __func__); return; }
+    memcpy(&save->frontier.towerInterview, &selected, sizeof(selected));
+    save->frontier.towerBattleOutcome = outcome;
 }
 
 static void ValidateBattleTowerRecordChecksums(void)
@@ -1865,30 +2211,51 @@ static void ValidateApprenticesChecksums(void)
     }
 }
 
-void GetBattleTowerTrainerLanguage(u8 *dst, u16 trainerId)
+ADMG_NATIVE_ENTRY void GetBattleTowerTrainerLanguage(u8 *dst, u16 trainerId)
 {
-    if (trainerId == TRAINER_EREADER)
+    if (dst == NULL) { ADMG_StateAccessRejected(trainerId, __func__); return; }
+    struct ADMG_TrainerActorRef actor;
+    u8 language;
+    if (IsPartnerTrainerId(trainerId)
+     || (trainerId > ADMG_KANTO_TRAINER_FIRST && trainerId < ADMG_KANTO_TRAINER_FIRST + ADMG_KANTO_TRAINERS_COUNT))
     {
-        *dst = gGameLanguage;
-    }
-    else if (trainerId < FRONTIER_TRAINERS_COUNT)
-    {
-        *dst = gGameLanguage;
-    }
-    else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)
-    {
-        if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
-            *dst = GetRecordedBattleRecordMixFriendLanguage();
-        else
-            *dst = gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].language;
+        struct ADMG_TrainerRef content;
+        if (!ADMG_TryResolveTrainer(trainerId, &content)) return;
+        /* Compiled content names use the same game-language authority as native NPCs. */
+        language = gGameLanguage;
     }
     else
     {
-        if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
-            *dst = GetRecordedBattleApprenticeLanguage();
+        if (!ADMG_TryClassifyTrainerActor(trainerId, ADMG_ACTOR_FACILITY, ADMG_ACTOR_OPPONENT, &actor)) return;
+        if (actor.kind == ADMG_ACTOR_FRONTIER || actor.kind == ADMG_ACTOR_EREADER || actor.kind == ADMG_ACTOR_BRAIN)
+            language = gGameLanguage;
         else
-            *dst = gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].language;
+        {
+            u64 generation = ADMG_BeginStateAccessCheck();
+            if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
+                language = actor.kind == ADMG_ACTOR_RECORD_FRIEND
+                    ? GetRecordedBattleRecordMixFriendLanguage() : GetRecordedBattleApprenticeLanguage();
+            else
+            {
+                struct SaveBlock2 *save = gSaveBlock2Ptr;
+                if (save == NULL) { ADMG_StateAccessRejected(trainerId, __func__); return; }
+                if (actor.kind == ADMG_ACTOR_RECORD_FRIEND)
+                {
+                    if (actor.index >= ARRAY_COUNT(save->frontier.towerRecords))
+                    { ADMG_StateAccessRejected(trainerId, __func__); return; }
+                    language = save->frontier.towerRecords[actor.index].language;
+                }
+                else
+                {
+                    if (actor.index >= ARRAY_COUNT(save->apprentices))
+                    { ADMG_StateAccessRejected(trainerId, __func__); return; }
+                    language = save->apprentices[actor.index].language;
+                }
+            }
+            if (!ADMG_EndStateAccessCheck(generation)) return;
+        }
     }
+    *dst = language;
 }
 
 static u16 GetBattleTentTrainerId(void)
@@ -1907,36 +2274,128 @@ static u16 GetBattleTentTrainerId(void)
         return 0;
 }
 
+bool8 ADMG_TryGetFacilityMonSetFromSpan(const u16 *set, u32 extent,
+    u32 monCount, const u16 **selectedSet, u32 *selectedCount)
+{
+    if (set == NULL || selectedSet == NULL || selectedCount == NULL || extent < 2)
+    { ADMG_StateAccessRejected(extent, __func__); return FALSE; }
+    for (u32 i = 0; i < extent - 1; ++i)
+        if (set[i] == 0xFFFF || set[i] >= monCount)
+        { ADMG_StateAccessRejected(set[i], __func__); return FALSE; }
+    if (set[extent - 1] != 0xFFFF)
+    { ADMG_StateAccessRejected(extent, __func__); return FALSE; }
+    *selectedSet = set; *selectedCount = extent - 1;
+    return TRUE;
+}
+
+bool8 ADMG_TryGetFacilityTrainerMonSet(const struct BattleFrontierTrainer *table,
+    u32 trainerId, const struct TrainerMon **mons, const u16 **set, u32 *count)
+{
+    if (mons == NULL || set == NULL || count == NULL)
+    { ADMG_StateAccessRejected(trainerId, __func__); return FALSE; }
+    const u32 *extents;
+    const struct TrainerMon *selectedMons;
+    u32 trainerCount;
+    if (table == gBattleFrontierTrainers)
+    { extents = sADMG_gBattleFrontierTrainersMonSetExtents; selectedMons = gBattleFrontierMons; trainerCount = ARRAY_COUNT(gBattleFrontierTrainers); }
+    else if (table == gSlateportBattleTentTrainers)
+    { extents = sADMG_gSlateportBattleTentTrainersMonSetExtents; selectedMons = gSlateportBattleTentMons; trainerCount = ARRAY_COUNT(gSlateportBattleTentTrainers); }
+    else if (table == gVerdanturfBattleTentTrainers)
+    { extents = sADMG_gVerdanturfBattleTentTrainersMonSetExtents; selectedMons = gVerdanturfBattleTentMons; trainerCount = ARRAY_COUNT(gVerdanturfBattleTentTrainers); }
+    else if (table == gFallarborBattleTentTrainers)
+    { extents = sADMG_gFallarborBattleTentTrainersMonSetExtents; selectedMons = gFallarborBattleTentMons; trainerCount = ARRAY_COUNT(gFallarborBattleTentTrainers); }
+    else { ADMG_StateAccessRejected(trainerId, __func__); return FALSE; }
+    const struct BattleFrontierTrainer *trainer;
+    u32 monCount, selectedCount;
+    const u16 *selectedSet;
+    if (!ADMG_TryGetFacilityTrainerRowFromTable(table, trainerCount, trainerId, &trainer)
+     || !ADMG_TryGetFacilityMonTableCount(selectedMons, &monCount)
+     || !ADMG_TryGetFacilityMonSetFromSpan(trainer->monSet, extents[trainerId], monCount, &selectedSet, &selectedCount)) return FALSE;
+    *mons = selectedMons; *set = selectedSet; *count = selectedCount;
+    return TRUE;
+}
+
+bool8 ADMG_TryGetFacilityMonTableCount(const struct TrainerMon *table, u32 *count)
+{
+    if (count == NULL) { ADMG_StateAccessRejected(0, __func__); return FALSE; }
+    u32 selected;
+    if (table == gBattleFrontierMons) selected = ARRAY_COUNT(gBattleFrontierMons);
+    else if (table == gSlateportBattleTentMons) selected = ARRAY_COUNT(gSlateportBattleTentMons);
+    else if (table == gVerdanturfBattleTentMons) selected = ARRAY_COUNT(gVerdanturfBattleTentMons);
+    else if (table == gFallarborBattleTentMons) selected = ARRAY_COUNT(gFallarborBattleTentMons);
+    else { ADMG_StateAccessRejected(0, __func__); return FALSE; }
+    *count = selected;
+    return TRUE;
+}
+
+bool8 ADMG_TryGetFacilityMonRowFromTable(const struct TrainerMon *table, u32 count,
+    u32 monId, const struct TrainerMon **mon)
+{
+    if (table == NULL || mon == NULL || monId >= count)
+    { ADMG_StateAccessRejected(monId, __func__); return FALSE; }
+    *mon = &table[monId];
+    return TRUE;
+}
+
+bool8 ADMG_TryGetFacilityTrainerRowFromTable(const struct BattleFrontierTrainer *table,
+    u32 count, u32 trainerId, const struct BattleFrontierTrainer **trainer)
+{
+    if (table == NULL || trainer == NULL || trainerId >= count)
+    { ADMG_StateAccessRejected(trainerId, __func__); return FALSE; }
+    *trainer = &table[trainerId];
+    return TRUE;
+}
+
+bool8 ADMG_TryGetActiveFacilityTrainerRow(u32 trainerId, const struct BattleFrontierTrainer **trainer)
+{
+    const struct BattleFrontierTrainer *table = gFacilityTrainers;
+    u32 count;
+    /* Built-in selected-table extents come from the compiled definitions.
+     * The explicit table/count interface also admits other declared spans;
+     * an unknown global pointer alone supplies no authoritative extent. */
+    if (table == gBattleFrontierTrainers) count = ARRAY_COUNT(gBattleFrontierTrainers);
+    else if (table == gSlateportBattleTentTrainers) count = ARRAY_COUNT(gSlateportBattleTentTrainers);
+    else if (table == gVerdanturfBattleTentTrainers) count = ARRAY_COUNT(gVerdanturfBattleTentTrainers);
+    else if (table == gFallarborBattleTentTrainers) count = ARRAY_COUNT(gFallarborBattleTentTrainers);
+    else { ADMG_StateAccessRejected(trainerId, __func__); return FALSE; }
+    return ADMG_TryGetFacilityTrainerRowFromTable(table, count, trainerId, trainer);
+}
+
+bool8 ADMG_TrySelectFacilityTrainerTables(bool8 tent,
+    const struct BattleFrontierTrainer **trainers, const struct TrainerMon **mons, u32 *count)
+{
+    if (trainers == NULL || mons == NULL || count == NULL)
+    { ADMG_StateAccessRejected(0, __func__); return FALSE; }
+    const struct BattleFrontierTrainer *selected = gBattleFrontierTrainers;
+    const struct TrainerMon *selectedMons = gBattleFrontierMons;
+    u32 selectedCount = FRONTIER_TRAINERS_COUNT;
+    if (tent)
+    {
+        u64 generation = ADMG_BeginStateAccessCheck();
+        u32 facility = VarGet(VAR_FRONTIER_FACILITY);
+        if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+        if (facility == FRONTIER_FACILITY_FACTORY)
+        { selected = gSlateportBattleTentTrainers; selectedMons = gSlateportBattleTentMons; }
+        else if (facility == FRONTIER_FACILITY_PALACE)
+        { selected = gVerdanturfBattleTentTrainers; selectedMons = gVerdanturfBattleTentMons; }
+        else if (facility == FRONTIER_FACILITY_ARENA)
+        { selected = gFallarborBattleTentTrainers; selectedMons = gFallarborBattleTentMons; }
+        /* Preserve the original default: any other facility selects Frontier. */
+        if (selected != gBattleFrontierTrainers) selectedCount = NUM_BATTLE_TENT_TRAINERS;
+    }
+    *trainers = selected; *mons = selectedMons; *count = selectedCount;
+    return TRUE;
+}
+
 u8 SetTentPtrsGetLevel(void)
 {
-    u8 level = TENT_MIN_LEVEL;
-    u32 facility = VarGet(VAR_FRONTIER_FACILITY);
-
-    if (facility == FRONTIER_FACILITY_FACTORY)
-    {
-        gFacilityTrainers = gSlateportBattleTentTrainers;
-        gFacilityTrainerMons = gSlateportBattleTentMons;
-    }
-    else if (facility == FRONTIER_FACILITY_PALACE)
-    {
-        gFacilityTrainers = gVerdanturfBattleTentTrainers;
-        gFacilityTrainerMons = gVerdanturfBattleTentMons;
-    }
-    else if (facility == FRONTIER_FACILITY_ARENA)
-    {
-        gFacilityTrainers = gFallarborBattleTentTrainers;
-        gFacilityTrainerMons = gFallarborBattleTentMons;
-    }
-    else
-    {
-        gFacilityTrainers = gBattleFrontierTrainers;
-        gFacilityTrainerMons = gBattleFrontierMons;
-    }
-
-    level = GetHighestLevelInPlayerParty();
-    if (level < TENT_MIN_LEVEL)
-        level = TENT_MIN_LEVEL;
-
+    const struct BattleFrontierTrainer *trainers;
+    const struct TrainerMon *mons;
+    u32 count;
+    if (!ADMG_TrySelectFacilityTrainerTables(TRUE, &trainers, &mons, &count)) return TENT_MIN_LEVEL;
+    gFacilityTrainers = trainers; gFacilityTrainerMons = mons;
+    u8 level = GetHighestLevelInPlayerParty();
+    if (level < TENT_MIN_LEVEL) level = TENT_MIN_LEVEL;
     return level;
 }
 
@@ -1961,73 +2420,11 @@ static void SetNextBattleTentOpponent(void)
        gSaveBlock2Ptr->frontier.trainerIds[gSaveBlock2Ptr->frontier.curChallengeBattleNum] = TRAINER_BATTLE_PARAM.opponentA;
 }
 
-static void FillTentTrainerParty_(u16 trainerId, u8 firstMonId, u8 monCount)
+ADMG_NATIVE_ENTRY void FillTentTrainerParty_(u16 trainerId, u8 firstMonId, u8 monCount)
 {
-    s32 i, j;
-    u16 chosenMonIndices[MAX_FRONTIER_PARTY_SIZE];
-    u8 level = SetTentPtrsGetLevel();
-    u8 fixedIV = 0;
-    u8 bfMonCount;
-    const u16 *monSet = NULL;
-    u32 otID = 0;
-    u16 monId;
-
-    monSet = gFacilityTrainers[TRAINER_BATTLE_PARAM.opponentA].monSet;
-
-    bfMonCount = 0;
-    monId = monSet[bfMonCount];
-    while (monId != 0xFFFF)
-    {
-        bfMonCount++;
-        monId = monSet[bfMonCount];
-        if (monId == 0xFFFF)
-            break;
-    }
-
-    i = 0;
-    otID = Random32();
-    while (i != monCount)
-    {
-        u16 monId = monSet[Random() % bfMonCount];
-
-        // Ensure this Pokémon species isn't a duplicate.
-        for (j = 0; j < i + firstMonId; j++)
-        {
-            if (GetMonData(&gParties[B_TRAINER_OPPONENT_A][j], MON_DATA_SPECIES) == gFacilityTrainerMons[monId].species)
-                break;
-        }
-        if (j != i + firstMonId)
-            continue;
-
-        // Ensure this Pokemon's held item isn't a duplicate.
-        for (j = 0; j < i + firstMonId; j++)
-        {
-            if (GetMonData(&gParties[B_TRAINER_OPPONENT_A][j], MON_DATA_HELD_ITEM) != ITEM_NONE
-             && GetMonData(&gParties[B_TRAINER_OPPONENT_A][j], MON_DATA_HELD_ITEM) == gFacilityTrainerMons[monId].heldItem)
-                break;
-        }
-        if (j != i + firstMonId)
-            continue;
-
-        // Ensure this exact Pokémon index isn't a duplicate. This check doesn't seem necessary
-        // because the species and held items were already checked directly above.
-        for (j = 0; j < i; j++)
-        {
-            if (chosenMonIndices[j] == monId)
-                break;
-        }
-        if (j != i)
-            continue;
-
-        chosenMonIndices[i] = monId;
-        CreateFacilityMon(&gFacilityTrainerMons[monId],
-                level, fixedIV, otID, 0,
-                &gParties[B_TRAINER_OPPONENT_A][i + firstMonId]);
-
-        // The Pokémon was successfully added to the trainer's party, so it's safe to move on to
-        // the next party slot.
-        i++;
-    }
+    /* This original private entry reads the opponent-A transport authority;
+     * its trainerId argument was unused and stays non-authoritative. */
+    ADMG_FillFacilityPartyFromArgs(trainerId, B_TRAINER_OPPONENT_A, monCount, TRUE, firstMonId);
 }
 
 void TrySetLinkBattleTowerEnemyPartyLevel(void)

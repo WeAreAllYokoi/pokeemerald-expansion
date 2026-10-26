@@ -2,6 +2,7 @@
 #include "item.h"
 #include "script.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "malloc.h"
 #include "shop_criteria.h"
 
@@ -68,7 +69,8 @@ static UNUSED bool32 ShopCriteriaByBadgeCount(u32 count)
 
 static UNUSED bool32 ShopCriteriaByFlag(u32 flagId)
 {
-    if (FlagGet(flagId))
+    bool8 value;
+    if (ADMG_TryReadFlag(flagId, &value) && value)
         return TRUE;
 
     return FALSE;
@@ -76,7 +78,8 @@ static UNUSED bool32 ShopCriteriaByFlag(u32 flagId)
 
 static UNUSED bool32 ShopCriteriaByVar(u32 varId, u32 varValue)
 {
-    if (VarGet(varId) >= varValue)
+    u16 value;
+    if (ADMG_TryReadVar(varId, &value, TRUE) && value >= varValue)
         return TRUE;
 
     return FALSE;

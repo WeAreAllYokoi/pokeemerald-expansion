@@ -1,6 +1,8 @@
 #ifndef GUARD_CONSTANTS_VARS_H
 #define GUARD_CONSTANTS_VARS_H
 
+#include "constants/admg_state_ids.h"
+
 #include "constants/vars_frlg.h"
 
 #define VARS_START 0x4000

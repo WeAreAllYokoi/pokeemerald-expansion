@@ -1,4 +1,7 @@
 #include "global.h"
+#include "admg_state.h"
+#include "admg_trainer_actor.h"
+#include <limits.h>
 #include "battle_dome.h"
 #include "battle.h"
 #include "battle_ai_util.h"
@@ -120,6 +123,9 @@ static void Task_HandleInfoCardInput(u8);
 static u8 Task_GetInfoCardInput(u8);
 static void SetFacilityTrainerAndMonPtrs(void);
 static int TrainerIdToTournamentId(u16);
+static bool8 ADMG_TryDomeTrainerSlot(u32 identity, u32 *slot);
+static bool8 ADMG_TryDomeOpponentSlot(u32 identity, u32 *slot);
+static bool8 ADMG_TryDomePlayerOpponent(u16 *identity, u32 *slot);
 static u16 TrainerIdOfPlayerOpponent(void);
 static void Task_ShowTourneyTree(u8);
 static void Task_HandleStaticTourneyTreeInput(u8);
@@ -128,13 +134,14 @@ static void VblankCb_TourneyInfoCard(void);
 static void DisplayMatchInfoOnCard(u8, u8);
 static void DisplayTrainerInfoOnCard(u8, u8);
 static int BufferDomeWinString(u8, u8 *);
+static bool8 ADMG_TryBufferDomeMatchPair(u32, u8 *, int *);
 static void CopyDomeTrainerName(u8 *, u16);
 static void HblankCb_TourneyTree(void);
 static void VblankCb_TourneyTree(void);
 static u8 UpdateTourneyTreeCursor(u8);
 static void DecideRoundWinners(u8);
 static u8 GetOpposingNPCTournamentIdByRound(u8, u8);
-static void DrawTourneyAdvancementLine(u8, u8);
+static void DrawTourneyAdvancementLine(u8, u8) __attribute__((used, noipa));
 static void SpriteCB_HorizontalScrollArrow(struct Sprite *);
 static void SpriteCB_VerticalScrollArrow(struct Sprite *);
 static void InitDomeChallenge(void);
@@ -150,6 +157,7 @@ static void SetDomeOpponentId(void);
 static void SetDomeOpponentGraphicsId(void);
 static void ShowNonInteractiveDomeTourneyTree(void);
 static void ResolveDomeRoundWinners(void);
+static u16 GetWinningMove(int, int, u8);
 static void SaveDomeChallenge(void);
 static void IncrementDomeStreaks(void);
 static void ResetSketchedMoves(void);
@@ -1908,7 +1916,199 @@ static void SetDomeData(void)
     }
 }
 
-static void InitDomeTrainers(void)
+/* Private call state; no saved layout or service activation changes. */
+struct ADMG_DomeRosterFrame
+{
+    struct SaveBlock2 *save;
+    u64 generation;
+    const struct BattleFrontierTrainer *trainers, *originalTrainers, *ownedTrainers;
+    const struct TrainerMon *mons, *originalMons, *ownedMons;
+    u16 selected[FRONTIER_PARTY_SIZE];
+    u32 level;
+    u16 *scores;
+    int *stats;
+    bool8 random, ownsTables, ownsLevel;
+    u8 previousLevel, previousDomeLevel, previousBattleMode;
+    __typeof__(((struct SaveBlock2 *)0)->frontier.domeTrainers) previousTrainers;
+    __typeof__(((struct SaveBlock2 *)0)->frontier.domeMonIds) previousMons;
+    __typeof__(((struct SaveBlock2 *)0)->frontier.domePlayerPartyData) previousPlayer;
+    __typeof__(((struct SaveBlock2 *)0)->frontier.domeWinningMoves) previousMoves;
+};
+
+static bool8 ADMG_DomeRosterCurrent(struct ADMG_DomeRosterFrame *frame)
+{
+    if (!ADMG_EndStateAccessCheck(frame->generation)) return FALSE;
+    if (frame->save == NULL || gSaveBlock2Ptr != frame->save
+        || frame->save->frontier.lvlMode != frame->level
+        || gFacilityTrainers != frame->trainers || gFacilityTrainerMons != frame->mons)
+    { ADMG_StateAccessRejected(0, __func__); return FALSE; }
+    if (!frame->random)
+        for (u32 i = 0; i < ARRAY_COUNT(frame->selected); i++)
+            if (frame->save->frontier.selectedPartyMons[i] != frame->selected[i])
+            { ADMG_StateAccessRejected(i, __func__); return FALSE; }
+    return TRUE;
+}
+
+static bool8 ADMG_TryPrepareDomeRoster(struct ADMG_DomeRosterFrame *frame, bool8 random)
+{
+    frame->save = gSaveBlock2Ptr;
+    frame->generation = ADMG_BeginStateAccessCheck();
+    if (frame->save == NULL) { ADMG_StateAccessRejected(0, __func__); return FALSE; }
+    frame->random = random;
+    frame->level = frame->previousLevel = frame->save->frontier.lvlMode;
+    frame->originalTrainers = frame->trainers = gFacilityTrainers;
+    frame->originalMons = frame->mons = gFacilityTrainerMons;
+    if (!random)
+        for (u32 i = 0; i < ARRAY_COUNT(frame->selected); i++)
+        {
+            u32 position = frame->save->frontier.selectedPartyMons[i];
+            if (position == 0 || position > ARRAY_COUNT(gParties[B_TRAINER_PLAYER]))
+            { ADMG_StateAccessRejected(position, __func__); return FALSE; }
+            frame->selected[i] = position;
+        }
+    // Native mon drawing publishes its selected tables before resource access.
+    // The previously published pointers are not entry prerequisites here.
+    if (!ADMG_DomeRosterCurrent(frame)) return FALSE;
+    frame->previousDomeLevel = frame->save->frontier.domeLvlMode;
+    frame->previousBattleMode = frame->save->frontier.domeBattleMode;
+    memcpy(frame->previousTrainers, frame->save->frontier.domeTrainers, sizeof(frame->previousTrainers));
+    memcpy(frame->previousMons, frame->save->frontier.domeMonIds, sizeof(frame->previousMons));
+    if (random)
+        memcpy(frame->previousMoves, frame->save->frontier.domeWinningMoves, sizeof(frame->previousMoves));
+    else
+        memcpy(frame->previousPlayer, frame->save->frontier.domePlayerPartyData, sizeof(frame->previousPlayer));
+    return ADMG_DomeRosterCurrent(frame);
+}
+
+static void ADMG_ReleaseDomeRoster(struct ADMG_DomeRosterFrame *frame)
+{
+    u16 *scores = frame->scores;
+    int *stats = frame->stats;
+    frame->scores = NULL; frame->stats = NULL;
+    if (scores != NULL) Free(scores);
+    if (stats != NULL) Free(stats);
+}
+
+static void ADMG_RestoreDomeRoster(struct ADMG_DomeRosterFrame *frame)
+{
+    memcpy(frame->save->frontier.domeTrainers, frame->previousTrainers, sizeof(frame->previousTrainers));
+    memcpy(frame->save->frontier.domeMonIds, frame->previousMons, sizeof(frame->previousMons));
+    frame->save->frontier.domeLvlMode = frame->previousDomeLevel;
+    frame->save->frontier.domeBattleMode = frame->previousBattleMode;
+    if (frame->random)
+        memcpy(frame->save->frontier.domeWinningMoves, frame->previousMoves, sizeof(frame->previousMoves));
+    else
+        memcpy(frame->save->frontier.domePlayerPartyData, frame->previousPlayer, sizeof(frame->previousPlayer));
+    if (frame->ownsLevel && frame->save->frontier.lvlMode == frame->level)
+        frame->save->frontier.lvlMode = frame->previousLevel;
+    if (frame->ownsTables)
+    {
+        if (gFacilityTrainers == frame->ownedTrainers) gFacilityTrainers = frame->originalTrainers;
+        if (gFacilityTrainerMons == frame->ownedMons) gFacilityTrainerMons = frame->originalMons;
+    }
+}
+
+static const struct TrainerMon *ADMG_DomeRosterMonRow(struct ADMG_DomeRosterFrame *frame, u32 identity)
+{
+    if (!ADMG_DomeRosterCurrent(frame)) return NULL;
+    u32 count;
+    const struct TrainerMon *row;
+    if (!ADMG_TryGetFacilityMonTableCount(frame->mons, &count)
+        || !ADMG_TryGetFacilityMonRowFromTable(frame->mons, count, identity, &row) || row == NULL)
+    {
+        if (ADMG_EndStateAccessCheck(frame->generation)) ADMG_StateAccessRejected(identity, __func__);
+        return NULL;
+    }
+    return ADMG_DomeRosterCurrent(frame) ? row : NULL;
+}
+
+static u32 ADMG_DomeRosterMonId(struct ADMG_DomeRosterFrame *frame, u32 identity)
+{
+    return ADMG_DomeRosterMonRow(frame, identity) != NULL ? identity : 0;
+}
+
+static u32 ADMG_DomeRosterTrainerId(struct ADMG_DomeRosterFrame *frame, u32 identity)
+{
+    const struct BattleFrontierTrainer *row;
+    const struct BattleFrontierTrainer *trainers;
+    const struct TrainerMon *mons;
+    u32 count;
+    if (identity > 0x3FF
+        || !ADMG_TrySelectFacilityTrainerTables(frame->level == FRONTIER_LVL_TENT, &trainers, &mons, &count)
+        || !ADMG_TryGetFacilityTrainerRowFromTable(trainers, count, identity, &row) || row == NULL)
+    {
+        if (ADMG_EndStateAccessCheck(frame->generation)) ADMG_StateAccessRejected(identity, __func__);
+        return 0;
+    }
+    return identity;
+}
+
+static bool8 ADMG_TryDomeRosterPublication(struct ADMG_DomeRosterFrame *frame)
+{
+    if (!ADMG_DomeRosterCurrent(frame)) return FALSE;
+    const struct BattleFrontierTrainer *trainers;
+    const struct TrainerMon *mons;
+    u32 count;
+    if (!ADMG_TrySelectFacilityTrainerTables(frame->level == FRONTIER_LVL_TENT, &trainers, &mons, &count))
+    {
+        if (ADMG_EndStateAccessCheck(frame->generation)) ADMG_StateAccessRejected(0, __func__);
+        return FALSE;
+    }
+    if (!ADMG_DomeRosterCurrent(frame)) return FALSE;
+    frame->ownedTrainers = trainers; frame->ownedMons = mons;
+    frame->ownsTables = TRUE;
+    return TRUE;
+}
+
+static bool8 ADMG_AcceptDomeRosterPublication(struct ADMG_DomeRosterFrame *frame)
+{
+    if (!ADMG_EndStateAccessCheck(frame->generation)) return FALSE;
+    if (gFacilityTrainers != frame->ownedTrainers || gFacilityTrainerMons != frame->ownedMons)
+    { ADMG_StateAccessRejected(0, __func__); return FALSE; }
+    frame->trainers = gFacilityTrainers; frame->mons = gFacilityTrainerMons;
+    return ADMG_DomeRosterCurrent(frame);
+}
+
+static u32 ADMG_DomeRosterLevel(struct ADMG_DomeRosterFrame *frame)
+{
+    if (!ADMG_TryDomeRosterPublication(frame)) return 0;
+    u32 level = SetFacilityPtrsGetLevel();
+    if (!ADMG_AcceptDomeRosterPublication(frame)) return 0;
+    return level;
+}
+
+static u32 ADMG_DomeRosterDrawMon(struct ADMG_DomeRosterFrame *frame, u16 trainer)
+{
+    if (!ADMG_TryDomeRosterPublication(frame)) return 0xFFFF;
+    u32 identity = GetRandomFrontierMonFromSet(trainer);
+    if (!ADMG_AcceptDomeRosterPublication(frame)) return 0xFFFF;
+    return identity;
+}
+
+static u32 ADMG_DomeRosterMode(u32 value)
+{
+    if (value >= UCHAR_MAX)
+    { ADMG_StateAccessRejected(value, __func__); return 0; }
+    return value;
+}
+
+static void ADMG_DomeRosterRound(struct ADMG_DomeRosterFrame *frame, u8 round)
+{
+    // The original winning-move provider may publish the level-selected tables.
+    if (!ADMG_TryDomeRosterPublication(frame)) return;
+    DecideRoundWinners(round);
+    if (ADMG_EndStateAccessCheck(frame->generation)
+        && gFacilityTrainers == frame->ownedTrainers && gFacilityTrainerMons == frame->ownedMons)
+    { frame->trainers = gFacilityTrainers; frame->mons = gFacilityTrainerMons; }
+}
+
+#define ADMG_DOME_ROSTER_VALUE(frame, expression) \
+    ({ __typeof__(expression) admg_value = (expression); \
+       if (!ADMG_DomeRosterCurrent(frame)) goto ADMG_roster_reject; admg_value; })
+#define ADMG_DOME_ROSTER_ACTION(frame, expression) \
+    do { expression; if (!ADMG_DomeRosterCurrent(frame)) goto ADMG_roster_reject; } while (0)
+
+static bool8 ADMG_RunInitDomeTrainers(struct ADMG_DomeRosterFrame *frame)
 {
     int i, j, k;
     int monLevel;
@@ -1923,11 +2123,15 @@ static void InitDomeTrainers(void)
     species[0] = SPECIES_NONE;
     species[1] = SPECIES_NONE;
     species[2] = SPECIES_NONE;
-    rankingScores = AllocZeroed(sizeof(u16) * DOME_TOURNAMENT_TRAINERS_COUNT);
-    statValues = AllocZeroed(sizeof(int) * NUM_STATS);
+    rankingScores = frame->scores = AllocZeroed(sizeof(u16) * DOME_TOURNAMENT_TRAINERS_COUNT);
+    if (rankingScores == NULL) { ADMG_StateAccessRejected(0, __func__); goto ADMG_roster_reject; }
+    if (!ADMG_DomeRosterCurrent(frame)) goto ADMG_roster_reject;
+    statValues = frame->stats = AllocZeroed(sizeof(int) * NUM_STATS);
+    if (statValues == NULL) { ADMG_StateAccessRejected(0, __func__); goto ADMG_roster_reject; }
+    if (!ADMG_DomeRosterCurrent(frame)) goto ADMG_roster_reject;
 
-    gSaveBlock2Ptr->frontier.domeLvlMode = gSaveBlock2Ptr->frontier.lvlMode + 1;
-    gSaveBlock2Ptr->frontier.domeBattleMode = VarGet(VAR_FRONTIER_BATTLE_MODE) + 1;
+    frame->save->frontier.domeLvlMode = frame->save->frontier.lvlMode + 1;
+    frame->save->frontier.domeBattleMode = ADMG_DOME_ROSTER_VALUE(frame, ADMG_DomeRosterMode(ADMG_DOME_ROSTER_VALUE(frame, VarGet(VAR_FRONTIER_BATTLE_MODE)))) + 1;
     DOME_TRAINERS[0].trainerId = TRAINER_PLAYER;
     DOME_TRAINERS[0].isEliminated = FALSE;
     DOME_TRAINERS[0].eliminatedAt = 0;
@@ -1936,13 +2140,13 @@ static void InitDomeTrainers(void)
     // Store the data used to display party information on the player's tourney page
     for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
     {
-        DOME_MONS[0][i] = GetMonData(&gParties[B_TRAINER_PLAYER][gSaveBlock2Ptr->frontier.selectedPartyMons[i] - 1], MON_DATA_SPECIES);
+        DOME_MONS[0][i] = ADMG_DOME_ROSTER_VALUE(frame, GetMonData(&gParties[B_TRAINER_PLAYER][frame->selected[i] - 1], MON_DATA_SPECIES));
         for (j = 0; j < MAX_MON_MOVES; j++)
-            gSaveBlock2Ptr->frontier.domePlayerPartyData[i].moves[j] = GetMonData(&gParties[B_TRAINER_PLAYER][gSaveBlock2Ptr->frontier.selectedPartyMons[i] - 1], MON_DATA_MOVE1 + j);
+            frame->save->frontier.domePlayerPartyData[i].moves[j] = ADMG_DOME_ROSTER_VALUE(frame, GetMonData(&gParties[B_TRAINER_PLAYER][frame->selected[i] - 1], MON_DATA_MOVE1 + j));
         for (j = 0; j < NUM_STATS; j++)
-            gSaveBlock2Ptr->frontier.domePlayerPartyData[i].evs[j] = GetMonData(&gParties[B_TRAINER_PLAYER][gSaveBlock2Ptr->frontier.selectedPartyMons[i] - 1], MON_DATA_HP_EV + j);
+            frame->save->frontier.domePlayerPartyData[i].evs[j] = ADMG_DOME_ROSTER_VALUE(frame, GetMonData(&gParties[B_TRAINER_PLAYER][frame->selected[i] - 1], MON_DATA_HP_EV + j));
 
-        gSaveBlock2Ptr->frontier.domePlayerPartyData[i].nature = GetNature(&gParties[B_TRAINER_PLAYER][gSaveBlock2Ptr->frontier.selectedPartyMons[i] - 1]);
+        frame->save->frontier.domePlayerPartyData[i].nature = ADMG_DOME_ROSTER_VALUE(frame, GetNature(&gParties[B_TRAINER_PLAYER][frame->selected[i] - 1]));
     }
 
     // Populate the tourney roster with random frontier trainers (dependent on streak)
@@ -1953,7 +2157,7 @@ static void InitDomeTrainers(void)
         {
             do
             {
-                trainerId = GetRandomScaledFrontierTrainerId(GetCurrentFacilityWinStreak(), 0);
+                trainerId = ADMG_DOME_ROSTER_VALUE(frame, ADMG_DomeRosterTrainerId(frame, ADMG_DOME_ROSTER_VALUE(frame, GetRandomScaledFrontierTrainerId(ADMG_DOME_ROSTER_VALUE(frame, GetCurrentFacilityWinStreak()), 0))));
                 for (j = 1; j < i; j++)
                 {
                     if (DOME_TRAINERS[j].trainerId == trainerId)
@@ -1966,7 +2170,7 @@ static void InitDomeTrainers(void)
         {
             do
             {
-                trainerId = GetRandomScaledFrontierTrainerId(GetCurrentFacilityWinStreak() + 1, 0);
+                trainerId = ADMG_DOME_ROSTER_VALUE(frame, ADMG_DomeRosterTrainerId(frame, ADMG_DOME_ROSTER_VALUE(frame, GetRandomScaledFrontierTrainerId(ADMG_DOME_ROSTER_VALUE(frame, GetCurrentFacilityWinStreak()) + 1, 0))));
                 for (j = 1; j < i; j++)
                 {
                     if (DOME_TRAINERS[j].trainerId == trainerId)
@@ -1981,21 +2185,21 @@ static void InitDomeTrainers(void)
         {
             do
             {
-                monId = GetRandomFrontierMonFromSet(trainerId);
+                monId = ADMG_DOME_ROSTER_VALUE(frame, ADMG_DomeRosterMonId(frame, ADMG_DOME_ROSTER_VALUE(frame, ADMG_DomeRosterDrawMon(frame, trainerId))));
                 for (k = 0; k < j; k++)
                 {
                     // Make sure the mon is valid.
                     int alreadySelectedMonId = DOME_MONS[i][k];
                     if (alreadySelectedMonId == monId
-                        || species[0] == gFacilityTrainerMons[monId].species
-                        || species[1] == gFacilityTrainerMons[monId].species
-                        || gFacilityTrainerMons[alreadySelectedMonId].heldItem == gFacilityTrainerMons[monId].heldItem)
+                        || species[0] == (*ADMG_DOME_ROSTER_VALUE(frame, ADMG_DomeRosterMonRow(frame, monId))).species
+                        || species[1] == (*ADMG_DOME_ROSTER_VALUE(frame, ADMG_DomeRosterMonRow(frame, monId))).species
+                        || (*ADMG_DOME_ROSTER_VALUE(frame, ADMG_DomeRosterMonRow(frame, alreadySelectedMonId))).heldItem == (*ADMG_DOME_ROSTER_VALUE(frame, ADMG_DomeRosterMonRow(frame, monId))).heldItem)
                         break;
                 }
             } while (k != j);
 
             DOME_MONS[i][j] = monId;
-            species[j] = gFacilityTrainerMons[monId].species;
+            species[j] = (*ADMG_DOME_ROSTER_VALUE(frame, ADMG_DomeRosterMonRow(frame, monId))).species;
         }
 
         DOME_TRAINERS[i].isEliminated = FALSE;
@@ -2012,15 +2216,15 @@ static void InitDomeTrainers(void)
     for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
     {
         // trainerId var re-used here as index of selected mons
-        trainerId = gSaveBlock2Ptr->frontier.selectedPartyMons[i] - 1;
-        rankingScores[0] += GetMonData(&gParties[B_TRAINER_PLAYER][trainerId], MON_DATA_ATK);
-        rankingScores[0] += GetMonData(&gParties[B_TRAINER_PLAYER][trainerId], MON_DATA_DEF);
-        rankingScores[0] += GetMonData(&gParties[B_TRAINER_PLAYER][trainerId], MON_DATA_SPATK);
-        rankingScores[0] += GetMonData(&gParties[B_TRAINER_PLAYER][trainerId], MON_DATA_SPDEF);
-        rankingScores[0] += GetMonData(&gParties[B_TRAINER_PLAYER][trainerId], MON_DATA_SPEED);
-        rankingScores[0] += GetMonData(&gParties[B_TRAINER_PLAYER][trainerId], MON_DATA_MAX_HP);
-        monTypesBits |= 1u << GetSpeciesType(GetMonData(&gParties[B_TRAINER_PLAYER][trainerId], MON_DATA_SPECIES), 0);
-        monTypesBits |= 1u << GetSpeciesType(GetMonData(&gParties[B_TRAINER_PLAYER][trainerId], MON_DATA_SPECIES), 1);
+        trainerId = frame->selected[i] - 1;
+        rankingScores[0] += ADMG_DOME_ROSTER_VALUE(frame, GetMonData(&gParties[B_TRAINER_PLAYER][trainerId], MON_DATA_ATK));
+        rankingScores[0] += ADMG_DOME_ROSTER_VALUE(frame, GetMonData(&gParties[B_TRAINER_PLAYER][trainerId], MON_DATA_DEF));
+        rankingScores[0] += ADMG_DOME_ROSTER_VALUE(frame, GetMonData(&gParties[B_TRAINER_PLAYER][trainerId], MON_DATA_SPATK));
+        rankingScores[0] += ADMG_DOME_ROSTER_VALUE(frame, GetMonData(&gParties[B_TRAINER_PLAYER][trainerId], MON_DATA_SPDEF));
+        rankingScores[0] += ADMG_DOME_ROSTER_VALUE(frame, GetMonData(&gParties[B_TRAINER_PLAYER][trainerId], MON_DATA_SPEED));
+        rankingScores[0] += ADMG_DOME_ROSTER_VALUE(frame, GetMonData(&gParties[B_TRAINER_PLAYER][trainerId], MON_DATA_MAX_HP));
+        monTypesBits |= 1u << ADMG_DOME_ROSTER_VALUE(frame, GetSpeciesType(ADMG_DOME_ROSTER_VALUE(frame, GetMonData(&gParties[B_TRAINER_PLAYER][trainerId], MON_DATA_SPECIES)), 0));
+        monTypesBits |= 1u << ADMG_DOME_ROSTER_VALUE(frame, GetSpeciesType(ADMG_DOME_ROSTER_VALUE(frame, GetMonData(&gParties[B_TRAINER_PLAYER][trainerId], MON_DATA_SPECIES)), 1));
     }
 
     // Count the number of types in the players party, to factor into the ranking
@@ -2031,7 +2235,7 @@ static void InitDomeTrainers(void)
         monTypesBits >>= 1;
     }
 
-    monLevel = SetFacilityPtrsGetLevel();
+    monLevel = ADMG_DOME_ROSTER_VALUE(frame, ADMG_DomeRosterLevel(frame));
     rankingScores[0] += (monTypesCount * monLevel) / 20;
 
     // Calculate rankingScores for the opponent trainers
@@ -2039,11 +2243,11 @@ static void InitDomeTrainers(void)
     {
         monTypesBits = 0;
         rankingScores[i] = 0;
-        ivs = GetDomeTrainerMonIvs(DOME_TRAINERS[i].trainerId);
+        ivs = ADMG_DOME_ROSTER_VALUE(frame, GetDomeTrainerMonIvs(DOME_TRAINERS[i].trainerId));
         for (j = 0; j < FRONTIER_PARTY_SIZE; j++)
         {
-            CalcDomeMonStats(&gFacilityTrainerMons[DOME_MONS[i][j]],
-                             monLevel, ivs, statValues);
+            ADMG_DOME_ROSTER_ACTION(frame, CalcDomeMonStats(&(*ADMG_DOME_ROSTER_VALUE(frame, ADMG_DomeRosterMonRow(frame, DOME_MONS[i][j]))),
+                             monLevel, ivs, statValues));
 
             rankingScores[i] += statValues[STAT_ATK];
             rankingScores[i] += statValues[STAT_DEF];
@@ -2051,8 +2255,8 @@ static void InitDomeTrainers(void)
             rankingScores[i] += statValues[STAT_SPDEF];
             rankingScores[i] += statValues[STAT_SPEED];
             rankingScores[i] += statValues[STAT_HP];
-            monTypesBits |= 1u << GetSpeciesType(gFacilityTrainerMons[DOME_MONS[i][j]].species, 0);
-            monTypesBits |= 1u << GetSpeciesType(gFacilityTrainerMons[DOME_MONS[i][j]].species, 1);
+            monTypesBits |= 1u << ADMG_DOME_ROSTER_VALUE(frame, GetSpeciesType((*ADMG_DOME_ROSTER_VALUE(frame, ADMG_DomeRosterMonRow(frame, DOME_MONS[i][j]))).species, 0));
+            monTypesBits |= 1u << ADMG_DOME_ROSTER_VALUE(frame, GetSpeciesType((*ADMG_DOME_ROSTER_VALUE(frame, ADMG_DomeRosterMonRow(frame, DOME_MONS[i][j]))).species, 1));
         }
 
         for (monTypesCount = 0, j = 0; j < 32; j++)
@@ -2071,29 +2275,28 @@ static void InitDomeTrainers(void)
         {
             if (rankingScores[i] < rankingScores[j])
             {
-                SwapDomeTrainers(i, j, rankingScores);
+                ADMG_DOME_ROSTER_ACTION(frame, SwapDomeTrainers(i, j, rankingScores));
             }
             else
             {
                 if (rankingScores[i] == rankingScores[j])
                 {
                     if (DOME_TRAINERS[j].trainerId == TRAINER_PLAYER)
-                        SwapDomeTrainers(i, j, rankingScores);
+                        ADMG_DOME_ROSTER_ACTION(frame, SwapDomeTrainers(i, j, rankingScores));
                     else if (DOME_TRAINERS[i].trainerId > DOME_TRAINERS[j].trainerId)
-                        SwapDomeTrainers(i, j, rankingScores);
+                        ADMG_DOME_ROSTER_ACTION(frame, SwapDomeTrainers(i, j, rankingScores));
                 }
             }
         }
     }
 
     // Add Frontier Brain to the tourney if they should be fought at the end of it
-    if (GetFrontierBrainStatus() != FRONTIER_BRAIN_NOT_READY)
+    if (ADMG_DOME_ROSTER_VALUE(frame, GetFrontierBrainStatus()) != FRONTIER_BRAIN_NOT_READY)
     {
-        for (i = 0; i < DOME_TOURNAMENT_TRAINERS_COUNT; i++)
-        {
-            if (DOME_TRAINERS[i].trainerId == TRAINER_PLAYER)
-                break;
-        }
+        u32 playerSlot;
+        if (!ADMG_TryDomeTrainerSlot(TRAINER_PLAYER, &playerSlot)
+            || !ADMG_DomeRosterCurrent(frame)) goto ADMG_roster_reject;
+        i = playerSlot;
 
         if (sTrainerNamePositions[i][0] != TOURNEYWIN_NAMES_LEFT)
         {
@@ -2107,11 +2310,23 @@ static void InitDomeTrainers(void)
         }
 
         for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
-            DOME_MONS[j][i] = GetFrontierBrainMonSpecies(i);
+            DOME_MONS[j][i] = ADMG_DOME_ROSTER_VALUE(frame, GetFrontierBrainMonSpecies(i));
     }
 
-    Free(rankingScores);
-    Free(statValues);
+    ADMG_ReleaseDomeRoster(frame);
+    if (!ADMG_DomeRosterCurrent(frame)) goto ADMG_roster_reject;
+    return TRUE;
+ADMG_roster_reject:
+    return FALSE;
+}
+
+static void InitDomeTrainers(void)
+{
+    struct ADMG_DomeRosterFrame frame = {0};
+    if (!ADMG_TryPrepareDomeRoster(&frame, FALSE)) return;
+    bool8 completed = ADMG_RunInitDomeTrainers(&frame);
+    ADMG_ReleaseDomeRoster(&frame);
+    if (!completed || !ADMG_DomeRosterCurrent(&frame)) ADMG_RestoreDomeRoster(&frame);
 }
 
 #define CALC_STAT(base, statIndex)                                                          \
@@ -2154,6 +2369,9 @@ static void SwapDomeTrainers(int id1, int id2, u16 *statsArray)
 {
     int i;
     u16 temp;
+    if (gSaveBlock2Ptr == NULL || statsArray == NULL
+        || (u32)id1 >= ARRAY_COUNT(DOME_TRAINERS) || (u32)id2 >= ARRAY_COUNT(DOME_TRAINERS))
+    { ADMG_StateAccessRejected(id1, __func__); return; }
 
     SWAP(statsArray[id1], statsArray[id2], temp);
     SWAP(DOME_TRAINERS[id1].trainerId, DOME_TRAINERS[id2].trainerId, temp);
@@ -2167,49 +2385,256 @@ static void BufferDomeRoundText(void)
     StringCopy(gStringVar1, gRoundsStringTable[gSaveBlock2Ptr->frontier.curChallengeBattleNum]);
 }
 
+/* Dome names admit physical facility rows or the two native special roles. */
+static bool8 ADMG_TryDomeNameIdentity(u32 identity, const struct BattleFrontierTrainer **trainer)
+{
+    if (trainer == NULL || gSaveBlock2Ptr == NULL
+        || (identity >= FRONTIER_TRAINERS_COUNT && identity != TRAINER_PLAYER && identity != TRAINER_FRONTIER_BRAIN))
+    { ADMG_StateAccessRejected(identity, __func__); return FALSE; }
+    *trainer = NULL;
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    if (identity < FRONTIER_TRAINERS_COUNT && !ADMG_TryGetFacilityTrainerRow(identity, trainer)) return FALSE;
+    if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+    if (gSaveBlock2Ptr != save) { ADMG_StateAccessRejected(identity, __func__); return FALSE; }
+    return TRUE;
+}
+
 static void BufferDomeOpponentName(void)
 {
+    if (gSaveBlock2Ptr == NULL || gSaveBlock2Ptr->frontier.curChallengeBattleNum >= DOME_ROUNDS_COUNT)
+    { ADMG_StateAccessRejected(0, __func__); return; }
+    const struct BattleFrontierTrainer *trainer;
+    if (!ADMG_TryDomeNameIdentity(TRAINER_BATTLE_PARAM.opponentA, &trainer)) return;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    u8 previousRound[sizeof(gStringVar1)], previousName[sizeof(gStringVar2)];
+    memcpy(previousRound, gStringVar1, sizeof(previousRound));
+    memcpy(previousName, gStringVar2, sizeof(previousName));
+
     StringCopy(gStringVar1, gRoundsStringTable[gSaveBlock2Ptr->frontier.curChallengeBattleNum]);
-    CopyDomeTrainerName(gStringVar2, TRAINER_BATTLE_PARAM.opponentA);
+    if (ADMG_EndStateAccessCheck(generation)) CopyDomeTrainerName(gStringVar2, TRAINER_BATTLE_PARAM.opponentA);
+
+    if (!ADMG_EndStateAccessCheck(generation))
+    {
+        memcpy(gStringVar1, previousRound, sizeof(previousRound));
+        memcpy(gStringVar2, previousName, sizeof(previousName));
+    }
+}
+
+/* Only the selected native roster/mon coordinates are borrowed here. */
+static bool8 ADMG_DomePartyInputCurrent(struct SaveBlock2 *save, u64 generation,
+    u16 identity, u32 slot, const u16 *mons)
+{
+    if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+    if (save == NULL || gSaveBlock2Ptr != save || TRAINER_BATTLE_PARAM.opponentA != identity)
+    { ADMG_StateAccessRejected(identity, __func__); return FALSE; }
+    u32 selected;
+    if (!ADMG_TryDomeOpponentSlot(identity, &selected) || !ADMG_EndStateAccessCheck(generation)) return FALSE;
+    if (gSaveBlock2Ptr != save || TRAINER_BATTLE_PARAM.opponentA != identity || selected != slot)
+    { ADMG_StateAccessRejected(identity, __func__); return FALSE; }
+    if (mons != NULL)
+        for (u32 i = 0; i < FRONTIER_PARTY_SIZE; i++)
+            if (DOME_MONS[slot][i] != mons[i])
+            { ADMG_StateAccessRejected(slot, __func__); return FALSE; }
+    return TRUE;
+}
+
+static void ADMG_RunDomeOpponentParty(u16 identity, u32 slot, struct SaveBlock2 *save,
+    u64 generation) __attribute__((noinline));
+static void ADMG_RunDomeOpponentParty(u16 identity, u32 slot, struct SaveBlock2 *save,
+    u64 generation)
+{
+    if (!ADMG_DomePartyInputCurrent(save, generation, identity, slot, NULL)) return;
+    u16 mons[FRONTIER_PARTY_SIZE];
+    memcpy(mons, DOME_MONS[slot], sizeof(mons));
+    if (!ADMG_DomePartyInputCurrent(save, generation, identity, slot, mons)) return;
+    struct Pokemon saved[2][PARTY_SIZE];
+    memcpy(saved[0], gParties[B_TRAINER_OPPONENT_A], sizeof(saved[0]));
+    memcpy(saved[1], gParties[B_TRAINER_OPPONENT_B], sizeof(saved[1]));
+    u8 playerCount = gPartiesCount[B_TRAINER_PLAYER];
+    u8 countA = gPartiesCount[B_TRAINER_OPPONENT_A], countB = gPartiesCount[B_TRAINER_OPPONENT_B];
+    CalculatePlayerPartyCount();
+    if (!ADMG_DomePartyInputCurrent(save, generation, identity, slot, mons)) goto ADMG_reject;
+    CreateDomeOpponentMons(slot);
+    if (ADMG_DomePartyInputCurrent(save, generation, identity, slot, mons)) return;
+ADMG_reject:
+    memcpy(gParties[B_TRAINER_OPPONENT_A], saved[0], sizeof(saved[0]));
+    memcpy(gParties[B_TRAINER_OPPONENT_B], saved[1], sizeof(saved[1]));
+    gPartiesCount[B_TRAINER_PLAYER] = playerCount;
+    gPartiesCount[B_TRAINER_OPPONENT_A] = countA; gPartiesCount[B_TRAINER_OPPONENT_B] = countB;
 }
 
 static void InitDomeOpponentParty(void)
 {
-    CalculatePlayerPartyCount();
-    CreateDomeOpponentMons(TrainerIdToTournamentId(TRAINER_BATTLE_PARAM.opponentA));
+    u16 identity = TRAINER_BATTLE_PARAM.opponentA;
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    u32 slot;
+    if (!ADMG_TryDomeOpponentSlot(identity, &slot) || !ADMG_EndStateAccessCheck(generation)) return;
+    if (gSaveBlock2Ptr != save || TRAINER_BATTLE_PARAM.opponentA != identity)
+    { ADMG_StateAccessRejected(identity, __func__); return; }
+    ADMG_RunDomeOpponentParty(identity, slot, save, generation);
+}
+
+/* A physical Dome slot is distinct from the first identity lookup match. */
+static bool8 ADMG_TryDomeNpcAtSlot(u32 slot, u16 *identity)
+{
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    if (save == NULL || identity == NULL || slot >= ARRAY_COUNT(DOME_TRAINERS))
+    { ADMG_StateAccessRejected(slot, __func__); return FALSE; }
+    u16 actor = DOME_TRAINERS[slot].trainerId;
+    u32 first;
+    if (!ADMG_TryDomeOpponentSlot(actor, &first) || !ADMG_EndStateAccessCheck(generation)) return FALSE;
+    if (gSaveBlock2Ptr != save || DOME_TRAINERS[slot].trainerId != actor)
+    { ADMG_StateAccessRejected(actor, __func__); return FALSE; }
+    *identity = actor;
+    return TRUE;
+}
+
+static bool8 ADMG_TryDomeMonRowFromTable(u32 slot, u32 mon,
+    const struct TrainerMon *table, const struct TrainerMon **row)
+{
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    u16 actor;
+    if (row == NULL || mon >= ARRAY_COUNT(DOME_MONS[0]))
+    { ADMG_StateAccessRejected(mon, __func__); return FALSE; }
+    if (!ADMG_TryDomeNpcAtSlot(slot, &actor) || !ADMG_EndStateAccessCheck(generation)) return FALSE;
+    if (gSaveBlock2Ptr != save)
+    { ADMG_StateAccessRejected(slot, __func__); return FALSE; }
+    u32 index = DOME_MONS[slot][mon], count;
+    const struct TrainerMon *selected;
+    if (!ADMG_TryGetFacilityMonTableCount(table, &count)
+        || !ADMG_TryGetFacilityMonRowFromTable(table, count, index, &selected)
+        || !ADMG_EndStateAccessCheck(generation)) return FALSE;
+    if (gSaveBlock2Ptr != save || DOME_TRAINERS[slot].trainerId != actor
+        || DOME_MONS[slot][mon] != index)
+    { ADMG_StateAccessRejected(index, __func__); return FALSE; }
+    *row = selected;
+    return TRUE;
+}
+
+static bool8 ADMG_DomeMonSourceCurrent(struct SaveBlock2 *save, u64 generation,
+    u32 slot, u32 mon, u16 actor, u16 index)
+{
+    if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+    if (save == NULL || gSaveBlock2Ptr != save || slot >= ARRAY_COUNT(DOME_TRAINERS)
+        || mon >= ARRAY_COUNT(DOME_MONS[0]) || DOME_TRAINERS[slot].trainerId != actor
+        || DOME_MONS[slot][mon] != index)
+    { ADMG_StateAccessRejected(slot, __func__); return FALSE; }
+    return TRUE;
 }
 
 static void CreateDomeOpponentMon(u8 monPartyId, u16 tournamentTrainerId, u8 tournamentMonId, u32 otId)
 {
+    if (monPartyId >= ARRAY_COUNT(gParties[B_TRAINER_OPPONENT_A])
+        || tournamentMonId >= ARRAY_COUNT(DOME_MONS[0]))
+    { ADMG_StateAccessRejected(monPartyId, __func__); return; }
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    const struct BattleFrontierTrainer *trainers;
+    const struct TrainerMon *mons, *row;
+    u32 count;
+    u16 actor;
+    if (!ADMG_TryDomeNpcAtSlot(tournamentTrainerId, &actor) || !ADMG_EndStateAccessCheck(generation)) return;
+    if (gSaveBlock2Ptr != save || DOME_TRAINERS[tournamentTrainerId].trainerId != actor)
+    { ADMG_StateAccessRejected(tournamentTrainerId, __func__); return; }
+    u16 index = DOME_MONS[tournamentTrainerId][tournamentMonId];
+    if (!ADMG_TrySelectFacilityTrainerTables(save->frontier.lvlMode == FRONTIER_LVL_TENT, &trainers, &mons, &count)
+        || !ADMG_TryDomeMonRowFromTable(tournamentTrainerId, tournamentMonId, mons, &row)
+        || !ADMG_DomeMonSourceCurrent(save, generation, tournamentTrainerId, tournamentMonId, actor, index)) return;
     #ifdef BUGFIX
     u8 fixedIv = GetDomeTrainerMonIvs(DOME_TRAINERS[tournamentTrainerId].trainerId);
     #else
-    u8 fixedIv = GetDomeTrainerMonIvs(tournamentTrainerId); // BUG: Using the wrong ID. As a result, all Pokémon have ivs of 3.
+    u8 fixedIv = GetDomeTrainerMonIvs(tournamentTrainerId); // Preserve the original native IV selection branch.
     #endif
+    if (!ADMG_DomeMonSourceCurrent(save, generation, tournamentTrainerId, tournamentMonId, actor, index)) return;
+    const struct BattleFrontierTrainer *previousTrainers = gFacilityTrainers;
+    const struct TrainerMon *previousMons = gFacilityTrainerMons;
     u8 level = SetFacilityPtrsGetLevel();
-
-    CreateFacilityMon(&gFacilityTrainerMons[DOME_MONS[tournamentTrainerId][tournamentMonId]],
-                      level, fixedIv, otId, 0, &gParties[B_TRAINER_OPPONENT_A][monPartyId]);
+    if (!ADMG_DomeMonSourceCurrent(save, generation, tournamentTrainerId, tournamentMonId, actor, index)) goto ADMG_reject_tables;
+    if (gFacilityTrainers != trainers || gFacilityTrainerMons != mons || level > MAX_LEVEL)
+    { ADMG_StateAccessRejected(level, __func__); goto ADMG_reject_tables; }
+    struct Pokemon *target = &gParties[B_TRAINER_OPPONENT_A][monPartyId];
+    struct Pokemon previous = *target;
+    CreateFacilityMon(row, level, fixedIv, otId, 0, target);
+    if (ADMG_DomeMonSourceCurrent(save, generation, tournamentTrainerId, tournamentMonId, actor, index))
+    {
+        if (gFacilityTrainers == trainers && gFacilityTrainerMons == mons) return;
+        ADMG_StateAccessRejected(tournamentTrainerId, __func__);
+    }
+    *target = previous;
+ADMG_reject_tables:
+    if (gFacilityTrainers == trainers) gFacilityTrainers = previousTrainers;
+    if (gFacilityTrainerMons == mons) gFacilityTrainerMons = previousMons;
 }
 
-static void CreateDomeOpponentMons(u16 tournamentTrainerId)
+static bool8 ADMG_DomeMonPartyCurrent(struct SaveBlock2 *save, u64 generation,
+    u32 slot, u16 actor, const u16 *indices, u32 used)
+{
+    if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+    if (save == NULL || gSaveBlock2Ptr != save || slot >= ARRAY_COUNT(DOME_TRAINERS)
+        || DOME_TRAINERS[slot].trainerId != actor)
+    { ADMG_StateAccessRejected(slot, __func__); return FALSE; }
+    if (indices != NULL)
+        for (u32 i = 0; i < FRONTIER_PARTY_SIZE; i++)
+            if ((used & (1u << i)) && DOME_MONS[slot][i] != indices[i])
+            { ADMG_StateAccessRejected(slot, __func__); return FALSE; }
+    return TRUE;
+}
+
+static void ADMG_RunDomeMonParty(u16 tournamentTrainerId, u16 actor,
+    struct SaveBlock2 *save, u64 generation) __attribute__((noinline));
+static void ADMG_RunDomeMonParty(u16 tournamentTrainerId, u16 actor,
+    struct SaveBlock2 *save, u64 generation)
 {
     u8 monsCount = 0;
     u32 otId = 0;
     int i, selectedMonBits;
 
+    if (!ADMG_DomeMonPartyCurrent(save, generation, tournamentTrainerId, actor, NULL, 0)) return;
+    u16 indices[FRONTIER_PARTY_SIZE];
+    memcpy(indices, DOME_MONS[tournamentTrainerId], sizeof(indices));
+    u32 used = actor == TRAINER_FRONTIER_BRAIN ? 0 : (1u << FRONTIER_PARTY_SIZE) - 1;
+    struct Pokemon saved[2][PARTY_SIZE];
+    memcpy(saved[0], gParties[B_TRAINER_OPPONENT_A], sizeof(saved[0]));
+    memcpy(saved[1], gParties[B_TRAINER_OPPONENT_B], sizeof(saved[1]));
+    u8 countA = gPartiesCount[B_TRAINER_OPPONENT_A], countB = gPartiesCount[B_TRAINER_OPPONENT_B];
+    const struct BattleFrontierTrainer *previousTrainers = gFacilityTrainers;
+    const struct TrainerMon *previousMons = gFacilityTrainerMons;
+    const struct BattleFrontierTrainer *ownedTrainers = NULL;
+    const struct TrainerMon *ownedMons = NULL;
     ZeroEnemyPartyMons();
+    if (!ADMG_DomeMonPartyCurrent(save, generation, tournamentTrainerId, actor, indices, used)) goto ADMG_reject;
     selectedMonBits = GetDomeTrainerSelectedMons(tournamentTrainerId);
+    if (!ADMG_DomeMonPartyCurrent(save, generation, tournamentTrainerId, actor, indices, used)) goto ADMG_reject;
+    used |= (u32)selectedMonBits & ((1u << FRONTIER_PARTY_SIZE) - 1);
+    // Check only the native constructor inputs that this mask will consume.
+    const struct BattleFrontierTrainer *trainers;
+    const struct TrainerMon *mons, *row;
+    u32 trainerCount;
+    if (!ADMG_TrySelectFacilityTrainerTables(save->frontier.lvlMode == FRONTIER_LVL_TENT, &trainers, &mons, &trainerCount)
+        || !ADMG_DomeMonPartyCurrent(save, generation, tournamentTrainerId, actor, indices, used)) goto ADMG_reject;
+    for (u32 mon = 0; mon < FRONTIER_PARTY_SIZE; mon++)
+        if (((u32)selectedMonBits & (1u << mon))
+            && (!ADMG_TryDomeMonRowFromTable(tournamentTrainerId, mon, mons, &row)
+                || !ADMG_DomeMonPartyCurrent(save, generation, tournamentTrainerId, actor, indices, used))) goto ADMG_reject;
     otId = Random32();
+    if (!ADMG_DomeMonPartyCurrent(save, generation, tournamentTrainerId, actor, indices, used)) goto ADMG_reject;
 
-    if (Random() % 10 > 5)
+    u16 order = Random();
+    if (!ADMG_DomeMonPartyCurrent(save, generation, tournamentTrainerId, actor, indices, used)) goto ADMG_reject;
+    if (order % 10 > 5)
     {
         // Create mon if it was selected, starting from front
         for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
         {
             if (selectedMonBits & 1)
             {
+                ownedTrainers = trainers; ownedMons = mons;
                 CreateDomeOpponentMon(monsCount, tournamentTrainerId, i, otId);
+                if (!ADMG_DomeMonPartyCurrent(save, generation, tournamentTrainerId, actor, indices, used)) goto ADMG_reject;
                 monsCount++;
             }
             selectedMonBits >>= 1;
@@ -2222,12 +2647,31 @@ static void CreateDomeOpponentMons(u16 tournamentTrainerId)
         {
             if (selectedMonBits & (1 << (FRONTIER_PARTY_SIZE - 1)))
             {
+                ownedTrainers = trainers; ownedMons = mons;
                 CreateDomeOpponentMon(monsCount, tournamentTrainerId, i, otId);
+                if (!ADMG_DomeMonPartyCurrent(save, generation, tournamentTrainerId, actor, indices, used)) goto ADMG_reject;
                 monsCount++;
             }
             selectedMonBits <<= 1;
         }
     }
+    return;
+ADMG_reject:
+    memcpy(gParties[B_TRAINER_OPPONENT_A], saved[0], sizeof(saved[0]));
+    memcpy(gParties[B_TRAINER_OPPONENT_B], saved[1], sizeof(saved[1]));
+    gPartiesCount[B_TRAINER_OPPONENT_A] = countA; gPartiesCount[B_TRAINER_OPPONENT_B] = countB;
+    if (ownedTrainers != NULL && gFacilityTrainers == ownedTrainers) gFacilityTrainers = previousTrainers;
+    if (ownedMons != NULL && gFacilityTrainerMons == ownedMons) gFacilityTrainerMons = previousMons;
+}
+
+static void CreateDomeOpponentMons(u16 tournamentTrainerId)
+{
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    u16 actor;
+    if (!ADMG_TryDomeNpcAtSlot(tournamentTrainerId, &actor)
+        || !ADMG_DomeMonPartyCurrent(save, generation, tournamentTrainerId, actor, NULL, 0)) return;
+    ADMG_RunDomeMonParty(tournamentTrainerId, actor, save, generation);
 }
 
 // Returns a bitmask representing which 2 of the trainer's 3 Pokémon to select.
@@ -2237,29 +2681,89 @@ static void CreateDomeOpponentMons(u16 tournamentTrainerId)
 // In the good mode movesets are preferred which are more effective against the
 // player, and in the bad mode the opposite is true. If all 3 Pokémon tie, the
 // other mode will be tried. If they tie again, the Pokémon selection is random.
+struct ADMG_DomeSelectionInput
+{
+    struct SaveBlock2 *save;
+    u64 generation;
+    u32 slot;
+    u16 actor;
+    const struct TrainerMon *table;
+    const struct TrainerMon *rows[FRONTIER_PARTY_SIZE];
+    u16 indices[FRONTIER_PARTY_SIZE];
+};
+
+static bool8 ADMG_DomeSelectionCurrent(const struct ADMG_DomeSelectionInput *input)
+{
+    if (!ADMG_EndStateAccessCheck(input->generation)) return FALSE;
+    if (gSaveBlock2Ptr != input->save || input->save == NULL
+        || input->slot >= ARRAY_COUNT(DOME_TRAINERS)
+        || DOME_TRAINERS[input->slot].trainerId != input->actor)
+    { ADMG_StateAccessRejected(input->slot, __func__); return FALSE; }
+    if (input->actor != TRAINER_FRONTIER_BRAIN)
+    {
+        if (gFacilityTrainerMons != input->table)
+        { ADMG_StateAccessRejected(input->slot, __func__); return FALSE; }
+        for (u32 i = 0; i < ARRAY_COUNT(input->indices); i++)
+            if (DOME_MONS[input->slot][i] != input->indices[i])
+            { ADMG_StateAccessRejected(input->slot, __func__); return FALSE; }
+    }
+    return TRUE;
+}
+
+static bool8 ADMG_TryPrepareDomeSelection(u32 slot, struct ADMG_DomeSelectionInput *input)
+{
+    if (input == NULL) { ADMG_StateAccessRejected(slot, __func__); return FALSE; }
+    struct ADMG_DomeSelectionInput selected = { .save = gSaveBlock2Ptr,
+        .generation = ADMG_BeginStateAccessCheck(), .slot = slot };
+    if (!ADMG_TryDomeNpcAtSlot(slot, &selected.actor)
+        || !ADMG_EndStateAccessCheck(selected.generation)) return FALSE;
+    if (gSaveBlock2Ptr != selected.save)
+    { ADMG_StateAccessRejected(slot, __func__); return FALSE; }
+    if (selected.actor != TRAINER_FRONTIER_BRAIN)
+    {
+        selected.table = gFacilityTrainerMons;
+        for (u32 i = 0; i < ARRAY_COUNT(selected.indices); i++)
+            selected.indices[i] = DOME_MONS[slot][i];
+        for (u32 i = 0; i < ARRAY_COUNT(selected.rows); i++)
+            if (!ADMG_TryDomeMonRowFromTable(slot, i, selected.table, &selected.rows[i])
+                || !ADMG_EndStateAccessCheck(selected.generation)) return FALSE;
+    }
+    if (!ADMG_DomeSelectionCurrent(&selected)) return FALSE;
+    *input = selected;
+    return TRUE;
+}
+
 int GetDomeTrainerSelectedMons(u16 tournamentTrainerId)
 {
     int selectedMonBits;
-    if (Random() & 1)
+    struct ADMG_DomeSelectionInput input;
+    if (!ADMG_TryPrepareDomeSelection(tournamentTrainerId, &input)) return 0;
+    u16 choice = Random();
+    if (!ADMG_DomeSelectionCurrent(&input)) return 0;
+    if (choice & 1)
     {
         selectedMonBits = SelectOpponentMons_Good(tournamentTrainerId, FALSE);
+        if (!ADMG_DomeSelectionCurrent(&input)) return 0;
         if (selectedMonBits == 0)
             selectedMonBits = SelectOpponentMons_Bad(tournamentTrainerId, TRUE);
     }
     else
     {
         selectedMonBits = SelectOpponentMons_Bad(tournamentTrainerId, FALSE);
+        if (!ADMG_DomeSelectionCurrent(&input)) return 0;
         if (selectedMonBits == 0)
             selectedMonBits = SelectOpponentMons_Good(tournamentTrainerId, TRUE);
     }
 
-    return selectedMonBits;
+    return ADMG_DomeSelectionCurrent(&input) ? selectedMonBits : 0;
 }
 
 static int SelectOpponentMons_Good(u16 tournamentTrainerId, bool8 allowRandom)
 {
     int i, moveIndex, playerMonId;
     int partyMovePoints[FRONTIER_PARTY_SIZE];
+    struct ADMG_DomeSelectionInput input;
+    if (!ADMG_TryPrepareDomeSelection(tournamentTrainerId, &input)) return 0;
 
     for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
     {
@@ -2268,20 +2772,23 @@ static int SelectOpponentMons_Good(u16 tournamentTrainerId, bool8 allowRandom)
         {
             for (playerMonId = 0; playerMonId < FRONTIER_PARTY_SIZE; playerMonId++)
             {
-                if (DOME_TRAINERS[tournamentTrainerId].trainerId == TRAINER_FRONTIER_BRAIN)
+                if (!ADMG_DomeSelectionCurrent(&input)) return 0;
+                if (input.actor == TRAINER_FRONTIER_BRAIN)
                 {
                     partyMovePoints[i] += GetTypeEffectivenessPoints(GetFrontierBrainMonMove(i, moveIndex),
                                             GetMonData(&gParties[B_TRAINER_PLAYER][playerMonId], MON_DATA_SPECIES), EFFECTIVENESS_MODE_GOOD);
                 }
                 else
                 {
-                    partyMovePoints[i] += GetTypeEffectivenessPoints(gFacilityTrainerMons[DOME_MONS[tournamentTrainerId][i]].moves[moveIndex],
+                    partyMovePoints[i] += GetTypeEffectivenessPoints(input.rows[i]->moves[moveIndex],
                                             GetMonData(&gParties[B_TRAINER_PLAYER][playerMonId], MON_DATA_SPECIES), EFFECTIVENESS_MODE_GOOD);
                 }
+                if (!ADMG_DomeSelectionCurrent(&input)) return 0;
             }
         }
     }
-    return SelectOpponentMonsFromParty(partyMovePoints, allowRandom);
+    int result = SelectOpponentMonsFromParty(partyMovePoints, allowRandom);
+    return ADMG_DomeSelectionCurrent(&input) ? result : 0;
 }
 
 // Identical to function above, but uses EFFECTIVENESS_MODE_BAD
@@ -2289,6 +2796,8 @@ static int SelectOpponentMons_Bad(u16 tournamentTrainerId, bool8 allowRandom)
 {
     int i, moveIndex, playerMonId;
     int partyMovePoints[FRONTIER_PARTY_SIZE];
+    struct ADMG_DomeSelectionInput input;
+    if (!ADMG_TryPrepareDomeSelection(tournamentTrainerId, &input)) return 0;
 
     for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
     {
@@ -2297,20 +2806,23 @@ static int SelectOpponentMons_Bad(u16 tournamentTrainerId, bool8 allowRandom)
         {
             for (playerMonId = 0; playerMonId < FRONTIER_PARTY_SIZE; playerMonId++)
             {
-                if (DOME_TRAINERS[tournamentTrainerId].trainerId == TRAINER_FRONTIER_BRAIN)
+                if (!ADMG_DomeSelectionCurrent(&input)) return 0;
+                if (input.actor == TRAINER_FRONTIER_BRAIN)
                 {
                     partyMovePoints[i] += GetTypeEffectivenessPoints(GetFrontierBrainMonMove(i, moveIndex),
                                             GetMonData(&gParties[B_TRAINER_PLAYER][playerMonId], MON_DATA_SPECIES), EFFECTIVENESS_MODE_BAD);
                 }
                 else
                 {
-                    partyMovePoints[i] += GetTypeEffectivenessPoints(gFacilityTrainerMons[DOME_MONS[tournamentTrainerId][i]].moves[moveIndex],
+                    partyMovePoints[i] += GetTypeEffectivenessPoints(input.rows[i]->moves[moveIndex],
                                             GetMonData(&gParties[B_TRAINER_PLAYER][playerMonId], MON_DATA_SPECIES), EFFECTIVENESS_MODE_BAD);
                 }
+                if (!ADMG_DomeSelectionCurrent(&input)) return 0;
             }
         }
     }
-    return SelectOpponentMonsFromParty(partyMovePoints, allowRandom);
+    int result = SelectOpponentMonsFromParty(partyMovePoints, allowRandom);
+    return ADMG_DomeSelectionCurrent(&input) ? result : 0;
 }
 
 static int SelectOpponentMonsFromParty(int *partyMovePoints, bool8 allowRandom)
@@ -2528,12 +3040,11 @@ static int TournamentIdOfOpponent(int roundId, int trainerId)
 {
     int i, j, opponentMax;
 
-    // Get trainer's tournament id
-    for (i = 0; i < DOME_TOURNAMENT_TRAINERS_COUNT; i++)
-    {
-        if (DOME_TRAINERS[i].trainerId == trainerId)
-            break;
-    }
+    u32 slot;
+    if ((u32)roundId >= DOME_ROUNDS_COUNT)
+    { ADMG_StateAccessRejected(roundId, __func__); return 0xFF; }
+    if (!ADMG_TryDomeTrainerSlot(trainerId, &slot)) return 0xFF;
+    i = slot;
 
     // Get trainer's opponent's tournament id
     if (roundId != DOME_ROUND1)
@@ -2566,13 +3077,42 @@ static int TournamentIdOfOpponent(int roundId, int trainerId)
 
 static void SetDomeOpponentId(void)
 {
-    TRAINER_BATTLE_PARAM.opponentA = TrainerIdOfPlayerOpponent();
+    u16 identity; u32 slot;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    if (!ADMG_TryDomePlayerOpponent(&identity, &slot)
+        || !ADMG_EndStateAccessCheck(generation)) return;
+    TRAINER_BATTLE_PARAM.opponentA = identity;
 }
 
 // While not an issue in-game, this will overflow if called after the player's opponent for the current round has been eliminated
+/* Admit the native opponent result before any caller publishes its identity. */
+static bool8 ADMG_TryDomePlayerOpponent(u16 *identity, u32 *slot)
+{
+    if (gSaveBlock2Ptr == NULL || identity == NULL || slot == NULL)
+    { ADMG_StateAccessRejected(TRAINER_PLAYER, __func__); return FALSE; }
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    int selected = TournamentIdOfOpponent(gSaveBlock2Ptr->frontier.curChallengeBattleNum, TRAINER_PLAYER);
+    if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+    if (gSaveBlock2Ptr != save)
+    { ADMG_StateAccessRejected(TRAINER_PLAYER, __func__); return FALSE; }
+    if ((u32)selected >= ARRAY_COUNT(DOME_TRAINERS))
+    { ADMG_StateAccessRejected(selected, __func__); return FALSE; }
+    u16 value = DOME_TRAINERS[selected].trainerId;
+    u32 first;
+    if (!ADMG_TryDomeOpponentSlot(value, &first)) return FALSE;
+    if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+    if (gSaveBlock2Ptr != save)
+    { ADMG_StateAccessRejected(value, __func__); return FALSE; }
+    *identity = value; *slot = first;
+    return TRUE;
+}
+
 static u16 TrainerIdOfPlayerOpponent(void)
 {
-    return DOME_TRAINERS[TournamentIdOfOpponent(gSaveBlock2Ptr->frontier.curChallengeBattleNum, TRAINER_PLAYER)].trainerId;
+    u16 identity; u32 slot;
+    if (!ADMG_TryDomePlayerOpponent(&identity, &slot)) return TRAINER_NONE;
+    return identity;
 }
 
 static void SetDomeOpponentGraphicsId(void)
@@ -2606,9 +3146,29 @@ static void IncrementDomeStreaks(void)
 // For showing the opponent info card of the upcoming trainer
 static void ShowDomeOpponentInfo(void)
 {
+    u16 identity; u32 slot;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    if (!ADMG_TryDomePlayerOpponent(&identity, &slot) || !ADMG_EndStateAccessCheck(generation)) return;
+    u32 round = save->frontier.curChallengeBattleNum;
+    u32 freeSlot;
+    for (freeSlot = 0; freeSlot < NUM_TASKS && gTasks[freeSlot].isActive; freeSlot++) {}
+    if (freeSlot == NUM_TASKS)
+    { ADMG_StateAccessRejected(freeSlot, __func__); return; }
     u8 taskId = CreateTask(Task_ShowTourneyInfoCard, 0);
+    if (taskId != freeSlot || !gTasks[taskId].isActive || gTasks[taskId].func != Task_ShowTourneyInfoCard)
+    { ADMG_StateAccessRejected(taskId, __func__); return; }
+    u16 current; u32 currentSlot;
+    if (!ADMG_TryDomePlayerOpponent(&current, &currentSlot) || !ADMG_EndStateAccessCheck(generation)
+        || gSaveBlock2Ptr != save || gSaveBlock2Ptr->frontier.curChallengeBattleNum != round
+        || current != identity || currentSlot != slot)
+    {
+        if (ADMG_EndStateAccessCheck(generation)) ADMG_StateAccessRejected(identity, __func__);
+        if (gTasks[taskId].isActive && gTasks[taskId].func == Task_ShowTourneyInfoCard) DestroyTask(taskId);
+        return;
+    }
     gTasks[taskId].tState = 0;
-    gTasks[taskId].tTournamentId = TrainerIdToTournamentId(TrainerIdOfPlayerOpponent());
+    gTasks[taskId].tTournamentId = slot;
     gTasks[taskId].tMode = INFOCARD_NEXT_OPPONENT;
     gTasks[taskId].tPrevTaskId = 0;
 
@@ -2616,8 +3176,59 @@ static void ShowDomeOpponentInfo(void)
 }
 
 // For showing the opponent info card or the match info card
+/* The native allocator returns zero when full. A new card task must occupy
+ * a previously free slot; named replacements may choose any such slot. */
+static u32 ADMG_DomeFreeTaskSlots(void)
+{
+    _Static_assert(NUM_TASKS <= 32, "Dome task-slot mask width");
+    u32 slots = 0;
+    for (u32 i = 0; i < NUM_TASKS; i++) if (!gTasks[i].isActive) slots |= 1u << i;
+    if (slots == 0) ADMG_StateAccessRejected(NUM_TASKS, __func__);
+    return slots;
+}
+
+static bool8 ADMG_TryCreateDomeTask(TaskFunc function, u32 freeSlots, u8 *result)
+{
+    if (freeSlots == 0 || result == NULL)
+    { ADMG_StateAccessRejected(0, __func__); return FALSE; }
+    u64 generation = ADMG_BeginStateAccessCheck();
+    u8 task = CreateTask(function, 0);
+    if (task >= NUM_TASKS || !(freeSlots & (1u << task))
+        || !gTasks[task].isActive || gTasks[task].func != function)
+    { ADMG_StateAccessRejected(task, __func__); return FALSE; }
+    if (!ADMG_EndStateAccessCheck(generation)) { DestroyTask(task); return FALSE; }
+    *result = task;
+    return TRUE;
+}
+
+static bool8 ADMG_TryDomeInfoCardEntry(u8 task)
+{
+    if (task >= NUM_TASKS || gSaveBlock2Ptr == NULL)
+    { ADMG_StateAccessRejected(task, __func__); return FALSE; }
+    int id = gTasks[task].tTournamentId, mode = gTasks[task].tMode, parent = gTasks[task].tPrevTaskId;
+    if ((u32)id >= (mode == INFOCARD_MATCH ? DOME_TOURNAMENT_MATCHES_COUNT : DOME_TOURNAMENT_TRAINERS_COUNT))
+    { ADMG_StateAccessRejected(id, __func__); return FALSE; }
+    if (mode != INFOCARD_NEXT_OPPONENT && (u32)gTasks[task].tPrevTaskId >= NUM_TASKS)
+    { ADMG_StateAccessRejected(gTasks[task].tPrevTaskId, __func__); return FALSE; }
+    if (mode != INFOCARD_MATCH)
+    {
+        const struct BattleFrontierTrainer *trainer;
+        if (!ADMG_TryDomeNameIdentity(DOME_TRAINERS[id].trainerId, &trainer)) return FALSE;
+    }
+    if (gTasks[task].tTournamentId != id || gTasks[task].tMode != mode
+        || (mode != INFOCARD_NEXT_OPPONENT && gTasks[task].tPrevTaskId != parent))
+    { ADMG_StateAccessRejected(id, __func__); return FALSE; }
+    return TRUE;
+}
+
 static void Task_ShowTourneyInfoCard(u8 taskId)
 {
+    if (taskId >= NUM_TASKS) { ADMG_StateAccessRejected(taskId, __func__); return; }
+    if ((gTasks[taskId].tState == 0 || gTasks[taskId].tState == 3) && !ADMG_TryDomeInfoCardEntry(taskId)) return;
+
+    u8 admgChild;
+    u32 admgFreeSlots;
+    u64 admgGeneration;
     int i;
     int tournamentId = gTasks[taskId].tTournamentId;
     int mode = gTasks[taskId].tMode;
@@ -2682,12 +3293,22 @@ static void Task_ShowTourneyInfoCard(u8 taskId)
         gTasks[taskId].tState++;
         break;
     case 3:
+        admgFreeSlots = ADMG_DomeFreeTaskSlots();
+        if (admgFreeSlots == 0) return;
+        admgGeneration = ADMG_BeginStateAccessCheck();
         SetVBlankCallback(VblankCb_TourneyInfoCard);
         sInfoCard = AllocZeroed(sizeof(*sInfoCard));
         for (i = 0; i < NUM_INFOCARD_SPRITES; i++)
             sInfoCard->spriteIds[i] = SPRITE_NONE;
+        sInfoCard->pos = 0;
         LoadMonIconPalettes();
-        i = CreateTask(Task_HandleInfoCardInput, 0);
+        if (!ADMG_TryCreateDomeTask(Task_HandleInfoCardInput, admgFreeSlots, &admgChild))
+        {
+            FREE_AND_SET_NULL(sInfoCard);
+            DestroyTask(taskId);
+            return;
+        }
+        i = admgChild;
         gTasks[i].data[0] = 0;
         gTasks[i].data[2] = 0;
         gTasks[i].data[3] = mode;
@@ -2695,11 +3316,17 @@ static void Task_ShowTourneyInfoCard(u8 taskId)
         if (mode == INFOCARD_MATCH)
         {
             DisplayMatchInfoOnCard(0, tournamentId);
-            sInfoCard->pos = 1;
+            if (ADMG_EndStateAccessCheck(admgGeneration)) sInfoCard->pos = 1;
         }
         else
         {
             DisplayTrainerInfoOnCard(0, tournamentId);
+        }
+        if (!ADMG_EndStateAccessCheck(admgGeneration))
+        {
+            if (gTasks[admgChild].isActive && gTasks[admgChild].func == Task_HandleInfoCardInput) DestroyTask(admgChild);
+            DestroyTask(taskId);
+            return;
         }
         SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_BG_ALL_ON | DISPCNT_OBJ_1D_MAP);
         if (mode != INFOCARD_NEXT_OPPONENT)
@@ -2912,12 +3539,36 @@ static void SpriteCB_MonIconCardScrollRight(struct Sprite *sprite)
     }
 }
 
+/* Paired trainer positions are 0..15. Match-card positions are a different
+ * domain and must never be read through this table. */
+static bool8 ADMG_TryDomeCardTrainerPosition(int position, u32 *slot)
+{
+    if (slot == NULL || (u32)position >= ARRAY_COUNT(sTourneyTreeTrainerIds))
+    { ADMG_StateAccessRejected(position, __func__); return FALSE; }
+    u32 selected = sTourneyTreeTrainerIds[position];
+    if (selected >= DOME_TOURNAMENT_TRAINERS_COUNT)
+    { ADMG_StateAccessRejected(selected, __func__); return FALSE; }
+    *slot = selected;
+    return TRUE;
+}
+
 static void SpriteCB_HorizontalScrollArrow(struct Sprite *sprite)
 {
+    if (sprite == NULL || sInfoCard == NULL)
+    { ADMG_StateAccessRejected(0, __func__); return; }
     int taskId1 = sprite->data[0];
-    int arrId = gTasks[gTasks[taskId1].data[4]].data[1];
-    int tournmanetTrainerId = sTourneyTreeTrainerIds[arrId];
-    int roundId = gSaveBlock2Ptr->frontier.curChallengeBattleNum;
+    if ((u32)taskId1 >= NUM_TASKS)
+    { ADMG_StateAccessRejected(taskId1, __func__); return; }
+    u32 tournmanetTrainerId = 0;
+    int roundId = 0;
+    if (gTasks[taskId1].data[3] == 1 && sprite->data[1])
+    {
+        int parent = gTasks[taskId1].data[4];
+        if ((u32)parent >= NUM_TASKS || gSaveBlock2Ptr == NULL)
+        { ADMG_StateAccessRejected(parent, __func__); return; }
+        if (!ADMG_TryDomeCardTrainerPosition(gTasks[parent].data[1], &tournmanetTrainerId)) return;
+        roundId = gSaveBlock2Ptr->frontier.curChallengeBattleNum;
+    }
 
     if (gTasks[taskId1].data[3] == 1)
     {
@@ -3024,8 +3675,19 @@ static void SpriteCB_VerticalScrollArrow(struct Sprite *sprite)
 
 #define tUsingAlternateSlot data[2] // CARD_ALTERNATE_SLOT
 
+#define ADMG_DOME_CARD_DISPLAY(expression) \
+    do { expression; if (!ADMG_EndStateAccessCheck(admgCardGeneration)) goto ADMG_card_reject; } while (0)
+
 static void Task_HandleInfoCardInput(u8 taskId)
 {
+    u64 admgCardGeneration = ADMG_BeginStateAccessCheck();
+    __typeof__(gBattle_BG0_X) admgOldBg0X = gBattle_BG0_X;
+    __typeof__(gBattle_BG0_Y) admgOldBg0Y = gBattle_BG0_Y;
+    __typeof__(gBattle_BG1_X) admgOldBg1X = gBattle_BG1_X;
+    __typeof__(gBattle_BG1_Y) admgOldBg1Y = gBattle_BG1_Y;
+    __typeof__(gBattle_BG2_X) admgOldBg2X = gBattle_BG2_X;
+    __typeof__(gBattle_BG2_Y) admgOldBg2Y = gBattle_BG2_Y;
+
     int i;
     int windowId = 0;
     int mode = gTasks[taskId].data[3];
@@ -3101,14 +3763,14 @@ static void Task_HandleInfoCardInput(u8 taskId)
                     gBattle_BG2_X = 0;
                     gBattle_BG2_Y = DISPLAY_HEIGHT * 2;
                     trainerTourneyId = sTourneyTreeTrainerIds[gTasks[taskId2].data[1]];
-                    DisplayTrainerInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_UP, trainerTourneyId);
+                    ADMG_DOME_CARD_DISPLAY(DisplayTrainerInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_UP, trainerTourneyId));
                 }
                 else
                 {
                     gBattle_BG2_X = DISPLAY_WIDTH + 16;
                     gBattle_BG2_Y = 0;
                     trainerTourneyId = sTourneyTreeTrainerIds[gTasks[taskId2].data[1]];
-                    DisplayTrainerInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_UP, trainerTourneyId);
+                    ADMG_DOME_CARD_DISPLAY(DisplayTrainerInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_UP, trainerTourneyId));
                     sInfoCard->pos = 0;
                 }
             }
@@ -3117,27 +3779,27 @@ static void Task_HandleInfoCardInput(u8 taskId)
                 if (sInfoCard->pos == 0)
                 {
                     matchNo = gTasks[taskId2].data[1] - 16;
-                    BufferDomeWinString(matchNo, sInfoCard->tournamentIds);
+                    if (!ADMG_TryBufferDomeMatchPair(matchNo, sInfoCard->tournamentIds, NULL)) goto ADMG_card_reject;
                     gBattle_BG2_X = 0;
                     gBattle_BG2_Y = DISPLAY_HEIGHT * 2;
                     trainerTourneyId = sInfoCard->tournamentIds[0];
-                    DisplayTrainerInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_UP, trainerTourneyId);
+                    ADMG_DOME_CARD_DISPLAY(DisplayTrainerInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_UP, trainerTourneyId));
                 }
                 else if (sInfoCard->pos == 2)
                 {
                     matchNo = gTasks[taskId2].data[1] - 16;
-                    BufferDomeWinString(matchNo, sInfoCard->tournamentIds);
+                    if (!ADMG_TryBufferDomeMatchPair(matchNo, sInfoCard->tournamentIds, NULL)) goto ADMG_card_reject;
                     gBattle_BG2_X = 0;
                     gBattle_BG2_Y = DISPLAY_HEIGHT * 2;
                     trainerTourneyId = sInfoCard->tournamentIds[1];
-                    DisplayTrainerInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_UP, trainerTourneyId);
+                    ADMG_DOME_CARD_DISPLAY(DisplayTrainerInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_UP, trainerTourneyId));
                 }
                 else
                 {
                     gBattle_BG2_X = DISPLAY_WIDTH + 16;
                     gBattle_BG2_Y = DISPLAY_HEIGHT;
                     matchNo = gTasks[taskId2].data[1] - 16;
-                    DisplayMatchInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_UP, matchNo);
+                    ADMG_DOME_CARD_DISPLAY(DisplayMatchInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_UP, matchNo));
                 }
             }
 
@@ -3217,14 +3879,14 @@ static void Task_HandleInfoCardInput(u8 taskId)
                     gBattle_BG2_X = 0;
                     gBattle_BG2_Y = DISPLAY_HEIGHT;
                     trainerTourneyId = sTourneyTreeTrainerIds[gTasks[taskId2].data[1]];
-                    DisplayTrainerInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_DOWN, trainerTourneyId);
+                    ADMG_DOME_CARD_DISPLAY(DisplayTrainerInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_DOWN, trainerTourneyId));
                 }
                 else
                 {
                     gBattle_BG2_X = 0;
                     gBattle_BG2_Y = 0;
                     trainerTourneyId = sTourneyTreeTrainerIds[gTasks[taskId2].data[1]];
-                    DisplayTrainerInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_DOWN, trainerTourneyId);
+                    ADMG_DOME_CARD_DISPLAY(DisplayTrainerInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_DOWN, trainerTourneyId));
                     sInfoCard->pos = 0;
                 }
             }
@@ -3233,27 +3895,27 @@ static void Task_HandleInfoCardInput(u8 taskId)
                 if (sInfoCard->pos == 0)
                 {
                     matchNo = gTasks[taskId2].data[1] - 16;
-                    BufferDomeWinString(matchNo, sInfoCard->tournamentIds);
+                    if (!ADMG_TryBufferDomeMatchPair(matchNo, sInfoCard->tournamentIds, NULL)) goto ADMG_card_reject;
                     gBattle_BG2_X = 0;
                     gBattle_BG2_Y = DISPLAY_HEIGHT;
                     trainerTourneyId = sInfoCard->tournamentIds[0];
-                    DisplayTrainerInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_DOWN, trainerTourneyId);
+                    ADMG_DOME_CARD_DISPLAY(DisplayTrainerInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_DOWN, trainerTourneyId));
                 }
                 else if (sInfoCard->pos == 2)
                 {
                     matchNo = gTasks[taskId2].data[1] - 16;
-                    BufferDomeWinString(matchNo, sInfoCard->tournamentIds);
+                    if (!ADMG_TryBufferDomeMatchPair(matchNo, sInfoCard->tournamentIds, NULL)) goto ADMG_card_reject;
                     gBattle_BG2_X = 0;
                     gBattle_BG2_Y = DISPLAY_HEIGHT;
                     trainerTourneyId = sInfoCard->tournamentIds[1];
-                    DisplayTrainerInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_DOWN, trainerTourneyId);
+                    ADMG_DOME_CARD_DISPLAY(DisplayTrainerInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_DOWN, trainerTourneyId));
                 }
                 else
                 {
                     gBattle_BG2_X = DISPLAY_WIDTH + 16;
                     gBattle_BG2_Y = 0;
                     matchNo = gTasks[taskId2].data[1] - 16;
-                    DisplayMatchInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_DOWN, matchNo);
+                    ADMG_DOME_CARD_DISPLAY(DisplayMatchInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_DOWN, matchNo));
                 }
             }
 
@@ -3330,14 +3992,14 @@ static void Task_HandleInfoCardInput(u8 taskId)
                 gBattle_BG2_X = DISPLAY_WIDTH + 16;
                 gBattle_BG2_Y = DISPLAY_HEIGHT;
                 trainerTourneyId = sTourneyTreeTrainerIds[gTasks[taskId2].data[1]];
-                DisplayTrainerInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_LEFT, trainerTourneyId);
+                ADMG_DOME_CARD_DISPLAY(DisplayTrainerInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_LEFT, trainerTourneyId));
             }
             else
             {
                 gBattle_BG2_X = DISPLAY_WIDTH + 16;
                 gBattle_BG2_Y = 0;
                 matchNo = sIdToMatchNumber[gTasks[taskId2].data[1]][sInfoCard->pos - 1];
-                DisplayMatchInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_LEFT, matchNo);
+                ADMG_DOME_CARD_DISPLAY(DisplayMatchInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_LEFT, matchNo));
             }
 
             for (i = 0; i < NUM_INFOCARD_SPRITES / 2; i++)
@@ -3413,14 +4075,14 @@ static void Task_HandleInfoCardInput(u8 taskId)
                 gBattle_BG2_X = DISPLAY_WIDTH + 16;
                 gBattle_BG2_Y = DISPLAY_HEIGHT;
                 trainerTourneyId = sInfoCard->tournamentIds[0];
-                DisplayTrainerInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_LEFT, trainerTourneyId);
+                ADMG_DOME_CARD_DISPLAY(DisplayTrainerInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_LEFT, trainerTourneyId));
             }
             else
             {
                 gBattle_BG2_X = 0;
                 gBattle_BG2_Y = DISPLAY_HEIGHT;
                 matchNo = gTasks[taskId2].data[1] - 16;
-                DisplayMatchInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_LEFT, matchNo);
+                ADMG_DOME_CARD_DISPLAY(DisplayMatchInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_LEFT, matchNo));
             }
 
             for (i = 0; i < NUM_INFOCARD_SPRITES / 2; i++)
@@ -3502,7 +4164,7 @@ static void Task_HandleInfoCardInput(u8 taskId)
                 gBattle_BG2_Y = 0;
             }
             matchNo = sIdToMatchNumber[gTasks[taskId2].data[1]][sInfoCard->pos - 1];
-            DisplayMatchInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_RIGHT, matchNo);
+            ADMG_DOME_CARD_DISPLAY(DisplayMatchInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_RIGHT, matchNo));
 
             for (i = 0; i < NUM_INFOCARD_SPRITES / 2; i++)
             {
@@ -3577,14 +4239,14 @@ static void Task_HandleInfoCardInput(u8 taskId)
                 gBattle_BG2_X = DISPLAY_WIDTH + 16;
                 gBattle_BG2_Y = DISPLAY_HEIGHT;
                 trainerTourneyId = sInfoCard->tournamentIds[1];
-                DisplayTrainerInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_RIGHT, trainerTourneyId);
+                ADMG_DOME_CARD_DISPLAY(DisplayTrainerInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_RIGHT, trainerTourneyId));
             }
             else
             {
                 gBattle_BG2_X = 0;
                 gBattle_BG2_Y = DISPLAY_HEIGHT;
                 matchNo = gTasks[taskId2].data[1] - 16;
-                DisplayMatchInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_RIGHT, matchNo);
+                ADMG_DOME_CARD_DISPLAY(DisplayMatchInfoOnCard(gTasks[taskId].tUsingAlternateSlot | MOVE_CARD_RIGHT, matchNo));
             }
 
             for (i = 0; i < NUM_INFOCARD_SPRITES / 2; i++)
@@ -3740,7 +4402,17 @@ static void Task_HandleInfoCardInput(u8 taskId)
         }
         break;
     }
+    return;
+ADMG_card_reject:
+    gBattle_BG0_X = admgOldBg0X;
+    gBattle_BG0_Y = admgOldBg0Y;
+    gBattle_BG1_X = admgOldBg1X;
+    gBattle_BG1_Y = admgOldBg1Y;
+    gBattle_BG2_X = admgOldBg2X;
+    gBattle_BG2_Y = admgOldBg2Y;
 }
+
+#undef ADMG_DOME_CARD_DISPLAY
 
 // undefine task states for Task_HandleInfoCardInput
 #undef STATE_FADE_IN
@@ -3756,20 +4428,24 @@ static void Task_HandleInfoCardInput(u8 taskId)
 static u8 Task_GetInfoCardInput(u8 taskId)
 {
     u8 input = INFOCARD_INPUT_NONE;
+    if (taskId >= NUM_TASKS) { ADMG_StateAccessRejected(taskId, __func__); return input; }
+    if (JOY_NEW(A_BUTTON | B_BUTTON)) input = INFOCARD_INPUT_AB;
+    // The next-opponent card uses no parent, saved round or trainer position.
+    if (gTasks[taskId].data[3] == INFOCARD_NEXT_OPPONENT) return input;
     int taskId2 = gTasks[taskId].data[4];
+    if ((u32)taskId2 >= NUM_TASKS || sInfoCard == NULL)
+    { ADMG_StateAccessRejected(taskId2, __func__); return INFOCARD_INPUT_NONE; }
     int position = gTasks[taskId2].data[1];
-    u8 tourneyId = sTourneyTreeTrainerIds[position];
-    u16 roundId = gSaveBlock2Ptr->frontier.curChallengeBattleNum;
-
-    if (JOY_NEW(A_BUTTON | B_BUTTON))
-        input = INFOCARD_INPUT_AB;
-
-    // Next opponent card can't scroll
-    if (gTasks[taskId].data[3] == INFOCARD_NEXT_OPPONENT)
-        return input;
+    u32 tourneyId = 0;
+    u16 roundId = 0;
 
     if (gTasks[taskId].data[3] == INFOCARD_TRAINER)
     {
+        if (!ADMG_TryDomeCardTrainerPosition(position, &tourneyId)) return INFOCARD_INPUT_NONE;
+        if (gSaveBlock2Ptr == NULL || sInfoCard->pos > ARRAY_COUNT(sTrainerAndRoundToLastMatchCardNum[0]))
+        { ADMG_StateAccessRejected(sInfoCard->pos, __func__); return INFOCARD_INPUT_NONE; }
+        roundId = gSaveBlock2Ptr->frontier.curChallengeBattleNum;
+
         // For trainer info cards, pos is 0 when on a trainer info card (not viewing that trainer's match progression)
         // Scrolling up/down from a trainer info card goes to other trainer info cards
         if (JOY_NEW(DPAD_UP) && sInfoCard->pos == 0)
@@ -3800,12 +4476,16 @@ static u8 Task_GetInfoCardInput(u8 taskId)
             // Can only scroll right from a trainer card until the round they were eliminated
             if (DOME_TRAINERS[tourneyId].isEliminated && sInfoCard->pos - 1 < DOME_TRAINERS[tourneyId].eliminatedAt)
             {
+                if (sInfoCard->pos == ARRAY_COUNT(sTrainerAndRoundToLastMatchCardNum[0]))
+                { ADMG_StateAccessRejected(sInfoCard->pos, __func__); return INFOCARD_INPUT_NONE; }
                 sInfoCard->pos++;
                 input = TRAINERCARD_INPUT_RIGHT;
             }
             // otherwise can scroll as far right as the current round allows
             if (!DOME_TRAINERS[tourneyId].isEliminated && sInfoCard->pos - 1 < roundId)
             {
+                if (sInfoCard->pos == ARRAY_COUNT(sTrainerAndRoundToLastMatchCardNum[0]))
+                { ADMG_StateAccessRejected(sInfoCard->pos, __func__); return INFOCARD_INPUT_NONE; }
                 sInfoCard->pos++;
                 input = TRAINERCARD_INPUT_RIGHT;
             }
@@ -3821,6 +4501,16 @@ static u8 Task_GetInfoCardInput(u8 taskId)
     }
     else // gTasks[taskId].data[3] == INFOCARD_MATCH
     {
+        if (sInfoCard->pos > NUM_INFOCARD_TRAINERS)
+        { ADMG_StateAccessRejected(sInfoCard->pos, __func__); return INFOCARD_INPUT_NONE; }
+        if ((JOY_NEW(DPAD_UP) || JOY_NEW(DPAD_DOWN)) && sInfoCard->pos == 1)
+        {
+            if (gSaveBlock2Ptr == NULL || gSaveBlock2Ptr->frontier.curChallengeBattleNum >= ARRAY_COUNT(sLastMatchCardNum)
+                || position < DOME_TOURNAMENT_TRAINERS_COUNT
+                || position >= DOME_TOURNAMENT_TRAINERS_COUNT + DOME_TOURNAMENT_MATCHES_COUNT)
+            { ADMG_StateAccessRejected(position, __func__); return INFOCARD_INPUT_NONE; }
+            roundId = gSaveBlock2Ptr->frontier.curChallengeBattleNum;
+        }
         // For match info cards, pos is 1 when on the match card, 0 when on the left trainer, and 1 when on the right trainer
         // Scrolling up/down from a match info card goes to the next/previous match
         if (JOY_NEW(DPAD_UP) && sInfoCard->pos == 1)
@@ -3829,6 +4519,9 @@ static u8 Task_GetInfoCardInput(u8 taskId)
                 position = sLastMatchCardNum[roundId];
             else
                 position--;
+            if (position < DOME_TOURNAMENT_TRAINERS_COUNT
+                || position >= DOME_TOURNAMENT_TRAINERS_COUNT + DOME_TOURNAMENT_MATCHES_COUNT)
+            { ADMG_StateAccessRejected(position, __func__); return INFOCARD_INPUT_NONE; }
             input = MATCHCARD_INPUT_UP;
         }
         else if (JOY_NEW(DPAD_DOWN) && sInfoCard->pos == 1)
@@ -3837,6 +4530,9 @@ static u8 Task_GetInfoCardInput(u8 taskId)
                 position = DOME_TOURNAMENT_TRAINERS_COUNT;
             else
                 position++;
+            if (position < DOME_TOURNAMENT_TRAINERS_COUNT
+                || position >= DOME_TOURNAMENT_TRAINERS_COUNT + DOME_TOURNAMENT_MATCHES_COUNT)
+            { ADMG_StateAccessRejected(position, __func__); return INFOCARD_INPUT_NONE; }
             input = MATCHCARD_INPUT_DOWN;
         }
         // Scrolling left/right from a match info card shows the trainer info card of the competitors for that match
@@ -3853,6 +4549,11 @@ static u8 Task_GetInfoCardInput(u8 taskId)
 
         if (input == INFOCARD_INPUT_AB)
         {
+            if (sInfoCard->pos == 0 && sInfoCard->tournamentIds[0] >= ARRAY_COUNT(sTournamentIdToPairedTrainerIds))
+            { ADMG_StateAccessRejected(sInfoCard->tournamentIds[0], __func__); return INFOCARD_INPUT_NONE; }
+
+            if (sInfoCard->pos == 2 && sInfoCard->tournamentIds[1] >= ARRAY_COUNT(sTournamentIdToPairedTrainerIds))
+            { ADMG_StateAccessRejected(sInfoCard->tournamentIds[1], __func__); return INFOCARD_INPUT_NONE; }
             if (sInfoCard->pos == 0) // On left trainer info card
                 gTasks[taskId2].data[1] = sTournamentIdToPairedTrainerIds[sInfoCard->tournamentIds[0]];
             else if (sInfoCard->pos == 2) // On right trainer info card
@@ -4106,6 +4807,128 @@ static bool32 IsDomeComboMove(enum Move move)
 // allocatedArray below needs to be large enough to hold stat totals for each mon, or totals of each type of move points
 #define ALLOC_ARRAY_SIZE max(NUM_STATS * FRONTIER_PARTY_SIZE, NUM_MOVE_POINT_TYPES)
 
+/* Card identities are physical roster slots. Native name/metadata calls may
+ * publish a different declared mon table; do not freeze the initial globals. */
+struct ADMG_DomeCardView
+{
+    struct SaveBlock2 *save;
+    struct TourneyTreeInfoCard *card;
+    u64 generation;
+    u16 actors[NUM_INFOCARD_TRAINERS];
+    u8 slots[NUM_INFOCARD_TRAINERS];
+    u32 count;
+};
+
+static bool8 ADMG_DomeCardCurrent(const struct ADMG_DomeCardView *view)
+{
+    if (!ADMG_EndStateAccessCheck(view->generation)) return FALSE;
+    if (gSaveBlock2Ptr != view->save || sInfoCard != view->card)
+    { ADMG_StateAccessRejected(0, __func__); return FALSE; }
+    for (u32 i = 0; i < view->count; i++)
+        if (view->save->frontier.domeTrainers[view->slots[i]].trainerId != view->actors[i])
+        { ADMG_StateAccessRejected(view->slots[i], __func__); return FALSE; }
+    return TRUE;
+}
+
+static const struct TrainerMon *ADMG_DomeCardMonRow(const struct ADMG_DomeCardView *view,
+    u32 slot, u32 mon, const struct TrainerMon *table)
+{
+    if (!ADMG_DomeCardCurrent(view)) return NULL;
+    if (slot >= ARRAY_COUNT(DOME_MONS) || mon >= ARRAY_COUNT(DOME_MONS[0]))
+    { ADMG_StateAccessRejected(slot, __func__); return NULL; }
+    u32 count;
+    const struct TrainerMon *row = NULL;
+    if (!ADMG_TryGetFacilityMonTableCount(table, &count)
+        || !ADMG_TryGetFacilityMonRowFromTable(table, count, DOME_MONS[slot][mon], &row)
+        || row == NULL)
+    { ADMG_StateAccessRejected(slot, __func__); return NULL; }
+    return ADMG_DomeCardCurrent(view) ? row : NULL;
+}
+
+static u32 ADMG_DomeCardNature(u32 nature)
+{
+    if (nature >= NUM_NATURES) { ADMG_StateAccessRejected(nature, __func__); return 0; }
+    return nature;
+}
+
+static u32 ADMG_DomeCardSpecies(const struct ADMG_DomeCardView *view, u32 slot, u32 mon)
+{
+    if (!ADMG_DomeCardCurrent(view)) return SPECIES_NONE;
+    if (slot >= ARRAY_COUNT(DOME_MONS) || mon >= ARRAY_COUNT(DOME_MONS[0]))
+    { ADMG_StateAccessRejected(slot, __func__); return SPECIES_NONE; }
+    u32 actor = DOME_TRAINERS[slot].trainerId, species;
+    if (actor == TRAINER_PLAYER || actor == TRAINER_FRONTIER_BRAIN) species = DOME_MONS[slot][mon];
+    else
+    {
+        const struct TrainerMon *row = ADMG_DomeCardMonRow(view, slot, mon, gFacilityTrainerMons);
+        if (row == NULL) return SPECIES_NONE;
+        species = row->species;
+    }
+    /* CreateMonIcon reads the palette field before its species sanitization. */
+    if (species > NUM_SPECIES) { ADMG_StateAccessRejected(species, __func__); return SPECIES_NONE; }
+    return species;
+}
+
+static bool8 ADMG_TryPrepareDomeCard(struct ADMG_DomeCardView *view,
+    const u8 *slots, u32 count, bool8 stats)
+{
+    if (view == NULL || slots == NULL || gSaveBlock2Ptr == NULL || sInfoCard == NULL
+        || count == 0 || count > NUM_INFOCARD_TRAINERS)
+    { ADMG_StateAccessRejected(count, __func__); return FALSE; }
+    *view = (struct ADMG_DomeCardView){ .save = gSaveBlock2Ptr, .card = sInfoCard,
+        .generation = ADMG_BeginStateAccessCheck() };
+    for (u32 i = 0; i < count; i++)
+    {
+        if (slots[i] >= ARRAY_COUNT(DOME_TRAINERS))
+        { ADMG_StateAccessRejected(slots[i], __func__); return FALSE; }
+        view->slots[i] = slots[i]; view->actors[i] = DOME_TRAINERS[slots[i]].trainerId; view->count++;
+        const struct BattleFrontierTrainer *trainer;
+        if (!ADMG_TryDomeNameIdentity(view->actors[i], &trainer) || !ADMG_DomeCardCurrent(view)) return FALSE;
+        if (trainer != NULL && trainer->facilityClass >= FACILITY_CLASSES_COUNT)
+        { ADMG_StateAccessRejected(trainer->facilityClass, __func__); return FALSE; }
+        if (view->actors[i] == TRAINER_PLAYER)
+        {
+            u32 length;
+            if (!ADMG_TryValidateTrainerText(view->save->playerName, sizeof(view->save->playerName), TRAINER_PLAYER, &length)
+                || !ADMG_DomeCardCurrent(view)) return FALSE;
+        }
+        const struct TrainerMon *mons = NULL;
+        if (trainer != NULL)
+        {
+            const struct BattleFrontierTrainer *trainers;
+            u32 trainerCount;
+            if (!ADMG_TrySelectFacilityTrainerTables(view->save->frontier.lvlMode == FRONTIER_LVL_TENT,
+                    &trainers, &mons, &trainerCount) || !ADMG_DomeCardCurrent(view)) return FALSE;
+        }
+        for (u32 j = 0; j < FRONTIER_PARTY_SIZE; j++)
+        {
+            u32 species;
+            if (trainer != NULL)
+            {
+                const struct TrainerMon *row = ADMG_DomeCardMonRow(view, slots[i], j, mons);
+                if (row == NULL) return FALSE;
+                species = row->species;
+                if (stats) ADMG_DomeCardNature(row->nature);
+            }
+            else
+            {
+                species = DOME_MONS[slots[i]][j];
+                if (stats && view->actors[i] == TRAINER_PLAYER)
+                    ADMG_DomeCardNature(view->save->frontier.domePlayerPartyData[j].nature);
+            }
+            if (species > NUM_SPECIES) { ADMG_StateAccessRejected(species, __func__); return FALSE; }
+            if (!ADMG_DomeCardCurrent(view)) return FALSE;
+        }
+    }
+    return ADMG_DomeCardCurrent(view);
+}
+
+#define ADMG_DOME_INFO_VALUE(expression) \
+    ({ __typeof__(expression) admg_value = (expression); \
+       if (!ADMG_DomeCardCurrent(&admgView)) goto ADMG_info_reject; admg_value; })
+#define ADMG_DOME_INFO_ACTION(expression) \
+    do { expression; if (!ADMG_DomeCardCurrent(&admgView)) goto ADMG_info_reject; } while (0)
+
 static void DisplayTrainerInfoOnCard(u8 flags, u8 trainerTourneyId)
 {
     struct TextPrinterTemplate textPrinter;
@@ -4116,6 +4939,8 @@ static void DisplayTrainerInfoOnCard(u8 flags, u8 trainerTourneyId)
     int windowId = WIN_TRAINER_NAME;
     int x = 0, y = 0;
     u8 palSlot = 0;
+    struct ADMG_DomeCardView admgView;
+    if (!ADMG_TryPrepareDomeCard(&admgView, &trainerTourneyId, 1, TRUE)) return;
     s16 *allocatedArray = AllocZeroed(sizeof(s16) * ALLOC_ARRAY_SIZE);
     trainerId = DOME_TRAINERS[trainerTourneyId].trainerId;
 
@@ -4132,11 +4957,11 @@ static void DisplayTrainerInfoOnCard(u8 flags, u8 trainerTourneyId)
 
     // Create trainer pic sprite
     if (trainerId == TRAINER_PLAYER)
-        sInfoCard->spriteIds[arrId] = CreateTrainerPicSprite(PlayerGenderToFrontTrainerPicId(gSaveBlock2Ptr->playerGender), TRUE, x + 48, y + 64, palSlot + 12, TAG_NONE);
+        sInfoCard->spriteIds[arrId] = CreateTrainerPicSprite(ADMG_DOME_INFO_VALUE(PlayerGenderToFrontTrainerPicId(gSaveBlock2Ptr->playerGender)), TRUE, x + 48, y + 64, palSlot + 12, TAG_NONE);
     else if (trainerId == TRAINER_FRONTIER_BRAIN)
-        sInfoCard->spriteIds[arrId] = CreateTrainerPicSprite(GetFrontierBrainTrainerPicIndex(), TRUE, x + 48, y + 64, palSlot + 12, TAG_NONE);
+        sInfoCard->spriteIds[arrId] = CreateTrainerPicSprite(ADMG_DOME_INFO_VALUE(GetFrontierBrainTrainerPicIndex()), TRUE, x + 48, y + 64, palSlot + 12, TAG_NONE);
     else
-        sInfoCard->spriteIds[arrId] = CreateTrainerPicSprite(GetFrontierTrainerFrontSpriteId(trainerId), TRUE, x + 48, y + 64, palSlot + 12, TAG_NONE);
+        sInfoCard->spriteIds[arrId] = CreateTrainerPicSprite(ADMG_DOME_INFO_VALUE(GetFrontierTrainerFrontSpriteId(trainerId)), TRUE, x + 48, y + 64, palSlot + 12, TAG_NONE);
 
     if (flags & MOVE_CARD)
         gSprites[sInfoCard->spriteIds[arrId]].invisible = TRUE;
@@ -4146,7 +4971,7 @@ static void DisplayTrainerInfoOnCard(u8 flags, u8 trainerTourneyId)
     {
         if (trainerId == TRAINER_PLAYER)
         {
-            sInfoCard->spriteIds[2 + i + arrId] = CreateMonIcon(DOME_MONS[trainerTourneyId][i],
+            sInfoCard->spriteIds[2 + i + arrId] = CreateMonIcon(ADMG_DOME_INFO_VALUE(ADMG_DomeCardSpecies(&admgView, trainerTourneyId, i)),
                                                                   SpriteCB_MonIconDomeInfo,
                                                                   x | sInfoTrainerMonX[i],
                                                                   y + sInfoTrainerMonY[i],
@@ -4155,7 +4980,7 @@ static void DisplayTrainerInfoOnCard(u8 flags, u8 trainerTourneyId)
         }
         else if (trainerId == TRAINER_FRONTIER_BRAIN)
         {
-            sInfoCard->spriteIds[2 + i + arrId] = CreateMonIcon(DOME_MONS[trainerTourneyId][i],
+            sInfoCard->spriteIds[2 + i + arrId] = CreateMonIcon(ADMG_DOME_INFO_VALUE(ADMG_DomeCardSpecies(&admgView, trainerTourneyId, i)),
                                                                   SpriteCB_MonIconDomeInfo,
                                                                   x | sInfoTrainerMonX[i],
                                                                   y + sInfoTrainerMonY[i],
@@ -4164,7 +4989,7 @@ static void DisplayTrainerInfoOnCard(u8 flags, u8 trainerTourneyId)
         }
         else
         {
-            sInfoCard->spriteIds[2 + i + arrId] = CreateMonIcon(gFacilityTrainerMons[DOME_MONS[trainerTourneyId][i]].species,
+            sInfoCard->spriteIds[2 + i + arrId] = CreateMonIcon(ADMG_DOME_INFO_VALUE(ADMG_DomeCardSpecies(&admgView, trainerTourneyId, i)),
                                                                   SpriteCB_MonIconDomeInfo,
                                                                   x | sInfoTrainerMonX[i],
                                                                   y + sInfoTrainerMonY[i],
@@ -4195,10 +5020,12 @@ static void DisplayTrainerInfoOnCard(u8 flags, u8 trainerTourneyId)
     if (trainerId == TRAINER_PLAYER)
         j = gFacilityClassToTrainerClass[FACILITY_CLASS_BRENDAN];
     else if (trainerId == TRAINER_FRONTIER_BRAIN)
-        j = GetFrontierBrainTrainerClass();
+        j = ADMG_DOME_INFO_VALUE(GetFrontierBrainTrainerClass());
     else
-        j = GetFrontierOpponentClass(trainerId);
+        j = ADMG_DOME_INFO_VALUE(GetFrontierOpponentClass(trainerId));
 
+    if ((u32)j >= ARRAY_COUNT(gTrainerClasses))
+    { ADMG_StateAccessRejected(j, __func__); goto ADMG_info_reject; }
     for (;gTrainerClasses[j].name[i] != EOS; i++)
         gStringVar1[i] = gTrainerClasses[j].name[i];
     gStringVar1[i] = CHAR_SPACE;
@@ -4210,12 +5037,12 @@ static void DisplayTrainerInfoOnCard(u8 flags, u8 trainerTourneyId)
     }
     else if (trainerId == TRAINER_FRONTIER_BRAIN)
     {
-        CopyFrontierBrainTrainerName(gStringVar2);
+        ADMG_DOME_INFO_ACTION(CopyFrontierBrainTrainerName(gStringVar2));
         StringAppend(gStringVar1, gStringVar2);
     }
     else
     {
-        CopyDomeTrainerName(gStringVar2, trainerId);
+        ADMG_DOME_INFO_ACTION(CopyDomeTrainerName(gStringVar2, trainerId));
         StringAppend(gStringVar1, gStringVar2);
     }
 
@@ -4233,11 +5060,11 @@ static void DisplayTrainerInfoOnCard(u8 flags, u8 trainerTourneyId)
     {
         textPrinter.currentY = sSpeciesNameTextYCoords[i];
         if (trainerId == TRAINER_PLAYER)
-            textPrinter.currentChar = GetSpeciesName(DOME_MONS[trainerTourneyId][i]);
+            textPrinter.currentChar = GetSpeciesName(ADMG_DOME_INFO_VALUE(ADMG_DomeCardSpecies(&admgView, trainerTourneyId, i)));
         else if (trainerId == TRAINER_FRONTIER_BRAIN)
-            textPrinter.currentChar = GetSpeciesName(DOME_MONS[trainerTourneyId][i]);
+            textPrinter.currentChar = GetSpeciesName(ADMG_DOME_INFO_VALUE(ADMG_DomeCardSpecies(&admgView, trainerTourneyId, i)));
         else
-            textPrinter.currentChar = GetSpeciesName(gFacilityTrainerMons[DOME_MONS[trainerTourneyId][i]].species);
+            textPrinter.currentChar = GetSpeciesName(ADMG_DOME_INFO_VALUE(ADMG_DomeCardSpecies(&admgView, trainerTourneyId, i)));
         textPrinter.fontId = GetFontIdToFit(textPrinter.currentChar, FONT_SHORT, 0, 60);
 
         textPrinter.windowId = WIN_TRAINER_MON1_NAME + i + windowId;
@@ -4277,11 +5104,11 @@ static void DisplayTrainerInfoOnCard(u8 flags, u8 trainerTourneyId)
             {
                 enum Move move;
                 if (trainerId == TRAINER_FRONTIER_BRAIN)
-                    move = GetFrontierBrainMonMove(i, j);
+                    move = ADMG_DOME_INFO_VALUE(GetFrontierBrainMonMove(i, j));
                 else if (trainerId == TRAINER_PLAYER)
                     move = gSaveBlock2Ptr->frontier.domePlayerPartyData[i].moves[j];
                 else
-                    move = gFacilityTrainerMons[DOME_MONS[trainerTourneyId][i]].moves[j];
+                    move = (*ADMG_DOME_INFO_VALUE(ADMG_DomeCardMonRow(&admgView, trainerTourneyId, i, gFacilityTrainerMons))).moves[j];
                 u32 accuracy = GetMoveAccuracy(move);
 
                 switch (k)
@@ -4377,7 +5204,7 @@ static void DisplayTrainerInfoOnCard(u8 flags, u8 trainerTourneyId)
             for (j = 0; j < NUM_STATS; j++)
             {
                 if (trainerId == TRAINER_FRONTIER_BRAIN)
-                    allocatedArray[j] = GetFrontierBrainMonEvs(i, j);
+                    allocatedArray[j] = ADMG_DOME_INFO_VALUE(GetFrontierBrainMonEvs(i, j));
                 else
                     allocatedArray[j] = gSaveBlock2Ptr->frontier.domePlayerPartyData[i].evs[j];
             }
@@ -4389,9 +5216,9 @@ static void DisplayTrainerInfoOnCard(u8 flags, u8 trainerTourneyId)
             for (j = 0; j < NUM_NATURE_STATS; j++)
             {
                 if (trainerId == TRAINER_FRONTIER_BRAIN)
-                    nature = GetFrontierBrainMonNature(i);
+                    nature = ADMG_DOME_INFO_VALUE(ADMG_DomeCardNature(ADMG_DOME_INFO_VALUE(GetFrontierBrainMonNature(i))));
                 else
-                    nature = gSaveBlock2Ptr->frontier.domePlayerPartyData[i].nature;
+                    nature = ADMG_DOME_INFO_VALUE(ADMG_DomeCardNature(gSaveBlock2Ptr->frontier.domePlayerPartyData[i].nature));
 
                 if (gNaturesInfo[nature].statUp == gNaturesInfo[nature].statDown)
                 {
@@ -4424,8 +5251,8 @@ static void DisplayTrainerInfoOnCard(u8 flags, u8 trainerTourneyId)
         {
             for (j = 0; j < NUM_STATS; j++)
             {
-                if (gFacilityTrainerMons[DOME_MONS[trainerTourneyId][i]].ev != NULL)
-                    allocatedArray[j] = gFacilityTrainerMons[DOME_MONS[trainerTourneyId][i]].ev[j];
+                if ((*ADMG_DOME_INFO_VALUE(ADMG_DomeCardMonRow(&admgView, trainerTourneyId, i, gFacilityTrainerMons))).ev != NULL)
+                    allocatedArray[j] = (*ADMG_DOME_INFO_VALUE(ADMG_DomeCardMonRow(&admgView, trainerTourneyId, i, gFacilityTrainerMons))).ev[j];
                 else
                     allocatedArray[j] = 0;
             }
@@ -4433,7 +5260,7 @@ static void DisplayTrainerInfoOnCard(u8 flags, u8 trainerTourneyId)
             allocatedArray[NUM_STATS] += allocatedArray[STAT_HP];
             for (j = 0; j < NUM_NATURE_STATS; j++)
             {
-                nature = gFacilityTrainerMons[DOME_MONS[trainerTourneyId][i]].nature;
+                nature = ADMG_DOME_INFO_VALUE(ADMG_DomeCardNature((*ADMG_DOME_INFO_VALUE(ADMG_DomeCardMonRow(&admgView, trainerTourneyId, i, gFacilityTrainerMons))).nature));
 
                 if (gNaturesInfo[nature].statUp == gNaturesInfo[nature].statDown)
                 {
@@ -4553,9 +5380,116 @@ static void DisplayTrainerInfoOnCard(u8 flags, u8 trainerTourneyId)
     textPrinter.currentY = 36;
     AddTextPrinter(&textPrinter, 0, NULL);
     Free(allocatedArray);
+
+    return;
+ADMG_info_reject:
+    Free(allocatedArray);
 }
 
-static int BufferDomeWinString(u8 matchNum, u8 *tournamentIds)
+
+/* Match fields are borrowed; only output bytes and native text writes are owned. */
+struct ADMG_DomeMatchView
+{
+    struct SaveBlock2 *save;
+    u64 generation;
+    struct BattleDomeTrainer trainers[DOME_TOURNAMENT_TRAINERS_COUNT];
+    u16 moves[DOME_TOURNAMENT_TRAINERS_COUNT];
+    u8 playerName[PLAYER_NAME_LENGTH + 1];
+    u8 ids[2];
+    u32 count, readMask, roundMask, nameMask, moveMask;
+    u32 writtenStrings, writtenIds;
+    bool8 playerNameUsed, failed;
+};
+
+static bool8 ADMG_DomeMatchCurrent(struct ADMG_DomeMatchView *view)
+{
+    if (view == NULL || view->save == NULL)
+    { ADMG_StateAccessRejected(0, __func__); return FALSE; }
+    if (!ADMG_EndStateAccessCheck(view->generation)) return FALSE;
+    if (gSaveBlock2Ptr != view->save)
+    { ADMG_StateAccessRejected(0, __func__); return FALSE; }
+    for (u32 i = 0; i < ARRAY_COUNT(view->trainers); i++)
+    {
+        u32 bit = 1u << i;
+        const struct BattleDomeTrainer *actual = &view->save->frontier.domeTrainers[i];
+        if (((view->readMask & bit) && actual->isEliminated != view->trainers[i].isEliminated)
+            || ((view->roundMask & bit) && actual->eliminatedAt != view->trainers[i].eliminatedAt)
+            || ((view->nameMask & bit) && actual->trainerId != view->trainers[i].trainerId)
+            || ((view->moveMask & bit) && (actual->forfeited != view->trainers[i].forfeited
+                || view->save->frontier.domeWinningMoves[i] != view->moves[i])))
+        { ADMG_StateAccessRejected(i, __func__); return FALSE; }
+    }
+    if (view->playerNameUsed && memcmp(view->playerName, view->save->playerName, sizeof(view->playerName)) != 0)
+    { ADMG_StateAccessRejected(TRAINER_PLAYER, __func__); return FALSE; }
+    return TRUE;
+}
+
+static bool8 ADMG_TryPrepareDomeMatch(u32 match, struct ADMG_DomeMatchView *view)
+{
+    if (view == NULL || gSaveBlock2Ptr == NULL || match >= ARRAY_COUNT(sCompetitorRangeByMatch))
+    { ADMG_StateAccessRejected(match, __func__); return FALSE; }
+    *view = (struct ADMG_DomeMatchView){0};
+    view->save = gSaveBlock2Ptr;
+    view->generation = ADMG_BeginStateAccessCheck();
+    u32 first = sCompetitorRangeByMatch[match][0], length = sCompetitorRangeByMatch[match][1];
+    u32 round = sCompetitorRangeByMatch[match][2];
+    if (first > ARRAY_COUNT(sTourneyTreeTrainerIds2) || length > ARRAY_COUNT(sTourneyTreeTrainerIds2) - first)
+    { ADMG_StateAccessRejected(match, __func__); return FALSE; }
+    memcpy(view->trainers, view->save->frontier.domeTrainers, sizeof(view->trainers));
+    memcpy(view->moves, view->save->frontier.domeWinningMoves, sizeof(view->moves));
+    memcpy(view->playerName, view->save->playerName, sizeof(view->playerName));
+    for (u32 i = first; i < first + length; i++)
+    {
+        u32 slot = sTourneyTreeTrainerIds2[i];
+        if (slot >= ARRAY_COUNT(view->trainers))
+        { ADMG_StateAccessRejected(slot, __func__); return FALSE; }
+        view->readMask |= 1u << slot;
+        if (!view->trainers[slot].isEliminated)
+        {
+            if (view->count == ARRAY_COUNT(view->ids))
+            { ADMG_StateAccessRejected(match, __func__); return FALSE; }
+            view->ids[view->count++] = slot;
+            view->nameMask |= 1u << slot;
+        }
+    }
+    if (view->count != ARRAY_COUNT(view->ids))
+        for (u32 i = first; i < first + length; i++)
+        {
+            u32 slot = sTourneyTreeTrainerIds2[i];
+            if (view->trainers[slot].isEliminated)
+            {
+                view->roundMask |= 1u << slot;
+                if (view->trainers[slot].eliminatedAt >= round)
+                {
+                    view->ids[view->count++] = slot;
+                    if (view->trainers[slot].eliminatedAt == round) view->moveMask |= 1u << slot;
+                    else view->nameMask |= 1u << slot;
+                }
+            }
+            if (view->count == ARRAY_COUNT(view->ids)) break;
+        }
+    for (u32 slot = 0; slot < ARRAY_COUNT(view->trainers); slot++)
+        if (view->nameMask & (1u << slot))
+        {
+            u32 firstSlot, actor = view->trainers[slot].trainerId;
+            if (!ADMG_TryDomeTrainerSlot(actor, &firstSlot)) return FALSE;
+            if (actor == TRAINER_PLAYER)
+            {
+                view->playerNameUsed = TRUE;
+                if (!ADMG_TryValidateTrainerText(view->playerName, sizeof(view->playerName), actor, NULL)) return FALSE;
+            }
+        }
+    return ADMG_DomeMatchCurrent(view);
+}
+
+#define ADMG_DOME_MATCH_VALUE(view, expression) \
+    ({ __typeof__(expression) admg_value = (expression); \
+       if (!ADMG_DomeMatchCurrent(view)) goto ADMG_match_reject; admg_value; })
+#define ADMG_DOME_MATCH_WRITE(view, mask, expression) \
+    do { (view)->writtenStrings |= (mask); expression; \
+         if (!ADMG_DomeMatchCurrent(view)) goto ADMG_match_reject; } while (0)
+
+static int ADMG_RunDomeWinString(u8 matchNum, u8 *tournamentIds, struct ADMG_DomeMatchView *view)
 {
     int i;
     u8 tournamentId;
@@ -4566,15 +5500,16 @@ static int BufferDomeWinString(u8 matchNum, u8 *tournamentIds)
     for (i = sCompetitorRangeByMatch[matchNum][0]; i < sCompetitorRangeByMatch[matchNum][0] + sCompetitorRangeByMatch[matchNum][1]; i++)
     {
         tournamentId = sTourneyTreeTrainerIds2[i];
-        if (!DOME_TRAINERS[tournamentId].isEliminated)
+        if (!view->trainers[tournamentId].isEliminated)
         {
+            view->writtenIds |= 1u << count;
             tournamentIds[count] = tournamentId;
-            if (DOME_TRAINERS[tournamentId].trainerId == TRAINER_PLAYER)
-                StringCopy(gStringVar1, gSaveBlock2Ptr->playerName);
-            else if (DOME_TRAINERS[tournamentId].trainerId == TRAINER_FRONTIER_BRAIN)
-                CopyFrontierBrainTrainerName(gStringVar1);
+            if (view->trainers[tournamentId].trainerId == TRAINER_PLAYER)
+                ADMG_DOME_MATCH_WRITE(view, 1u, StringCopy(gStringVar1, view->save->playerName));
+            else if (view->trainers[tournamentId].trainerId == TRAINER_FRONTIER_BRAIN)
+                ADMG_DOME_MATCH_WRITE(view, 1u, CopyFrontierBrainTrainerName(gStringVar1));
             else
-                CopyDomeTrainerName(gStringVar1, DOME_TRAINERS[tournamentId].trainerId);
+                ADMG_DOME_MATCH_WRITE(view, 1u, CopyDomeTrainerName(gStringVar1, view->trainers[tournamentId].trainerId));
             count++;
         }
     }
@@ -4587,29 +5522,30 @@ static int BufferDomeWinString(u8 matchNum, u8 *tournamentIds)
     {
         tournamentId = sTourneyTreeTrainerIds2[i];
 
-        if (DOME_TRAINERS[tournamentId].isEliminated
-            && DOME_TRAINERS[tournamentId].eliminatedAt >= sCompetitorRangeByMatch[matchNum][2])
+        if (view->trainers[tournamentId].isEliminated
+            && view->trainers[tournamentId].eliminatedAt >= sCompetitorRangeByMatch[matchNum][2])
         {
+            view->writtenIds |= 1u << count;
             tournamentIds[count] = tournamentId;
             count++;
 
-            if (DOME_TRAINERS[tournamentId].eliminatedAt == sCompetitorRangeByMatch[matchNum][2])
+            if (view->trainers[tournamentId].eliminatedAt == sCompetitorRangeByMatch[matchNum][2])
             {
                 // Set initial winStringId offset
-                StringCopy(gStringVar2, GetMoveName(gSaveBlock2Ptr->frontier.domeWinningMoves[tournamentId]));
-                winStringId = DOME_TRAINERS[tournamentId].forfeited * 2; // (DOME_TEXT_WON_USING_MOVE - 1) or (DOME_TEXT_WON_ON_FORFEIT - 1)
+                ADMG_DOME_MATCH_WRITE(view, 2u, StringCopy(gStringVar2, ADMG_DOME_MATCH_VALUE(view, GetMoveName(view->moves[tournamentId]))));
+                winStringId = view->trainers[tournamentId].forfeited * 2; // (DOME_TEXT_WON_USING_MOVE - 1) or (DOME_TEXT_WON_ON_FORFEIT - 1)
 
-                if (gSaveBlock2Ptr->frontier.domeWinningMoves[tournamentId] == MOVE_NONE && DOME_TRAINERS[tournamentId].forfeited == FALSE)
+                if (view->moves[tournamentId] == MOVE_NONE && view->trainers[tournamentId].forfeited == FALSE)
                     winStringId = DOME_TEXT_WON_NO_MOVES - 1;
             }
             else
             {
-                if (DOME_TRAINERS[tournamentId].trainerId == TRAINER_PLAYER)
-                    StringCopy(gStringVar1, gSaveBlock2Ptr->playerName);
-                else if (DOME_TRAINERS[tournamentId].trainerId == TRAINER_FRONTIER_BRAIN)
-                    CopyFrontierBrainTrainerName(gStringVar1);
+                if (view->trainers[tournamentId].trainerId == TRAINER_PLAYER)
+                    ADMG_DOME_MATCH_WRITE(view, 1u, StringCopy(gStringVar1, view->save->playerName));
+                else if (view->trainers[tournamentId].trainerId == TRAINER_FRONTIER_BRAIN)
+                    ADMG_DOME_MATCH_WRITE(view, 1u, CopyFrontierBrainTrainerName(gStringVar1));
                 else
-                    CopyDomeTrainerName(gStringVar1, DOME_TRAINERS[tournamentId].trainerId);
+                    ADMG_DOME_MATCH_WRITE(view, 1u, CopyDomeTrainerName(gStringVar1, view->trainers[tournamentId].trainerId));
             }
         }
 
@@ -4621,10 +5557,48 @@ static int BufferDomeWinString(u8 matchNum, u8 *tournamentIds)
         return winStringId + 2; // use DOME_TEXT_CHAMP_*
     else
         return winStringId + 1; // use DOME_TEXT_WON_*
+ADMG_match_reject:
+    view->failed = TRUE;
+    return DOME_TEXT_NO_WINNER_YET;
+}
+
+static int BufferDomeWinString(u8 matchNum, u8 *tournamentIds)
+{
+    if (tournamentIds == NULL) { ADMG_StateAccessRejected(matchNum, __func__); return DOME_TEXT_NO_WINNER_YET; }
+    struct ADMG_DomeMatchView view;
+    if (!ADMG_TryPrepareDomeMatch(matchNum, &view)) return DOME_TEXT_NO_WINNER_YET;
+    u8 oldIds[2], oldFirst[sizeof(gStringVar1)], oldSecond[sizeof(gStringVar2)];
+    memcpy(oldIds, tournamentIds, sizeof(oldIds));
+    memcpy(oldFirst, gStringVar1, sizeof(oldFirst)); memcpy(oldSecond, gStringVar2, sizeof(oldSecond));
+    int result = ADMG_RunDomeWinString(matchNum, tournamentIds, &view);
+    if (!view.failed && ADMG_DomeMatchCurrent(&view)) return result;
+    for (u32 i = 0; i < ARRAY_COUNT(oldIds); i++) if (view.writtenIds & (1u << i)) tournamentIds[i] = oldIds[i];
+    if (view.writtenStrings & 1u) memcpy(gStringVar1, oldFirst, sizeof(oldFirst));
+    if (view.writtenStrings & 2u) memcpy(gStringVar2, oldSecond, sizeof(oldSecond));
+    return DOME_TEXT_NO_WINNER_YET;
+}
+
+/* Preserve named BufferDomeWinString hooks; require both outputs only when used. */
+static bool8 ADMG_TryBufferDomeMatchPair(u32 match, u8 *ids, int *text)
+{
+    if (ids == NULL || gSaveBlock2Ptr == NULL || match >= ARRAY_COUNT(sCompetitorRangeByMatch))
+    { ADMG_StateAccessRejected(match, __func__); return FALSE; }
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    u8 staged[2] = {0xFF, 0xFF};
+    int result = BufferDomeWinString(match, staged);
+    if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+    if (gSaveBlock2Ptr != save || staged[0] >= ARRAY_COUNT(DOME_TRAINERS) || staged[1] >= ARRAY_COUNT(DOME_TRAINERS)
+        || (text != NULL && (u32)result >= ARRAY_COUNT(sBattleDomeWinTexts)))
+    { ADMG_StateAccessRejected(match, __func__); return FALSE; }
+    ids[0] = staged[0]; ids[1] = staged[1];
+    if (text != NULL) *text = result;
+    return TRUE;
 }
 
 static void DisplayMatchInfoOnCard(u8 flags, u8 matchNo)
 {
+    if (sInfoCard == NULL) { ADMG_StateAccessRejected(matchNo, __func__); return; }
     struct TextPrinterTemplate textPrinter;
     int tournamentIds[2];
     int trainerIds[2];
@@ -4648,10 +5622,12 @@ static void DisplayMatchInfoOnCard(u8 flags, u8 matchNo)
         y = -DISPLAY_HEIGHT;
 
     // Copy trainers information to handy arrays.
-    winStringId = BufferDomeWinString(matchNo, sInfoCard->tournamentIds);
+    if (!ADMG_TryBufferDomeMatchPair(matchNo, sInfoCard->tournamentIds, &winStringId)) return;
+    struct ADMG_DomeCardView admgView;
+    if (!ADMG_TryPrepareDomeCard(&admgView, sInfoCard->tournamentIds, NUM_INFOCARD_TRAINERS, FALSE)) return;
     for (i = 0; i < NUM_INFOCARD_TRAINERS; i++)
     {
-        tournamentIds[i] = sInfoCard->tournamentIds[i];
+        tournamentIds[i] = admgView.slots[i];
         trainerIds[i] = DOME_TRAINERS[tournamentIds[i]].trainerId;
         if (DOME_TRAINERS[tournamentIds[i]].eliminatedAt <= sCompetitorRangeByMatch[matchNo][2]
             && DOME_TRAINERS[tournamentIds[i]].isEliminated)
@@ -4662,11 +5638,11 @@ static void DisplayMatchInfoOnCard(u8 flags, u8 matchNo)
 
     // Draw left trainer sprite.
     if (trainerIds[0] == TRAINER_PLAYER)
-        sInfoCard->spriteIds[arrId] = CreateTrainerPicSprite(PlayerGenderToFrontTrainerPicId(gSaveBlock2Ptr->playerGender), TRUE, x + 48, y + 88, palSlot + 12, TAG_NONE);
+        sInfoCard->spriteIds[arrId] = CreateTrainerPicSprite(ADMG_DOME_INFO_VALUE(PlayerGenderToFrontTrainerPicId(gSaveBlock2Ptr->playerGender)), TRUE, x + 48, y + 88, palSlot + 12, TAG_NONE);
     else if (trainerIds[0] == TRAINER_FRONTIER_BRAIN)
-        sInfoCard->spriteIds[arrId] = CreateTrainerPicSprite(GetFrontierBrainTrainerPicIndex(), TRUE, x + 48, y + 88, palSlot + 12, TAG_NONE);
+        sInfoCard->spriteIds[arrId] = CreateTrainerPicSprite(ADMG_DOME_INFO_VALUE(GetFrontierBrainTrainerPicIndex()), TRUE, x + 48, y + 88, palSlot + 12, TAG_NONE);
     else
-        sInfoCard->spriteIds[arrId] = CreateTrainerPicSprite(GetFrontierTrainerFrontSpriteId(trainerIds[0]), TRUE, x + 48, y + 88, palSlot + 12, TAG_NONE);
+        sInfoCard->spriteIds[arrId] = CreateTrainerPicSprite(ADMG_DOME_INFO_VALUE(GetFrontierTrainerFrontSpriteId(trainerIds[0])), TRUE, x + 48, y + 88, palSlot + 12, TAG_NONE);
 
     if (flags & MOVE_CARD)
         gSprites[sInfoCard->spriteIds[arrId]].invisible = TRUE;
@@ -4675,11 +5651,11 @@ static void DisplayMatchInfoOnCard(u8 flags, u8 matchNo)
 
     // Draw right trainer sprite.
     if (trainerIds[1] == TRAINER_PLAYER)
-        sInfoCard->spriteIds[1 + arrId] = CreateTrainerPicSprite(PlayerGenderToFrontTrainerPicId(gSaveBlock2Ptr->playerGender), TRUE, x + 192, y + 88, palSlot + 13, TAG_NONE);
+        sInfoCard->spriteIds[1 + arrId] = CreateTrainerPicSprite(ADMG_DOME_INFO_VALUE(PlayerGenderToFrontTrainerPicId(gSaveBlock2Ptr->playerGender)), TRUE, x + 192, y + 88, palSlot + 13, TAG_NONE);
     else if (trainerIds[1] == TRAINER_FRONTIER_BRAIN)
-        sInfoCard->spriteIds[1 + arrId] = CreateTrainerPicSprite(GetFrontierBrainTrainerPicIndex(), TRUE, x + 192, y + 88, palSlot + 13, TAG_NONE);
+        sInfoCard->spriteIds[1 + arrId] = CreateTrainerPicSprite(ADMG_DOME_INFO_VALUE(GetFrontierBrainTrainerPicIndex()), TRUE, x + 192, y + 88, palSlot + 13, TAG_NONE);
     else
-        sInfoCard->spriteIds[1 + arrId] = CreateTrainerPicSprite(GetFrontierTrainerFrontSpriteId(trainerIds[1]), TRUE, x + 192, y + 88, palSlot + 13, TAG_NONE);
+        sInfoCard->spriteIds[1 + arrId] = CreateTrainerPicSprite(ADMG_DOME_INFO_VALUE(GetFrontierTrainerFrontSpriteId(trainerIds[1])), TRUE, x + 192, y + 88, palSlot + 13, TAG_NONE);
 
     if (flags & MOVE_CARD)
         gSprites[sInfoCard->spriteIds[1 + arrId]].invisible = TRUE;
@@ -4691,7 +5667,7 @@ static void DisplayMatchInfoOnCard(u8 flags, u8 matchNo)
     {
         if (trainerIds[0] == TRAINER_PLAYER)
         {
-            sInfoCard->spriteIds[2 + i + arrId] = CreateMonIcon(DOME_MONS[tournamentIds[0]][i],
+            sInfoCard->spriteIds[2 + i + arrId] = CreateMonIcon(ADMG_DOME_INFO_VALUE(ADMG_DomeCardSpecies(&admgView, tournamentIds[0], i)),
                                                                   SpriteCB_MonIconDomeInfo,
                                                                   x | sLeftTrainerMonX[i],
                                                                   y + sLeftTrainerMonY[i],
@@ -4700,7 +5676,7 @@ static void DisplayMatchInfoOnCard(u8 flags, u8 matchNo)
         }
         else if (trainerIds[0] == TRAINER_FRONTIER_BRAIN)
         {
-            sInfoCard->spriteIds[2 + i + arrId] = CreateMonIcon(DOME_MONS[tournamentIds[0]][i],
+            sInfoCard->spriteIds[2 + i + arrId] = CreateMonIcon(ADMG_DOME_INFO_VALUE(ADMG_DomeCardSpecies(&admgView, tournamentIds[0], i)),
                                                                   SpriteCB_MonIconDomeInfo,
                                                                   x | sLeftTrainerMonX[i],
                                                                   y + sLeftTrainerMonY[i],
@@ -4709,7 +5685,7 @@ static void DisplayMatchInfoOnCard(u8 flags, u8 matchNo)
         }
         else
         {
-            sInfoCard->spriteIds[2 + i + arrId] = CreateMonIcon(gFacilityTrainerMons[DOME_MONS[tournamentIds[0]][i]].species,
+            sInfoCard->spriteIds[2 + i + arrId] = CreateMonIcon(ADMG_DOME_INFO_VALUE(ADMG_DomeCardSpecies(&admgView, tournamentIds[0], i)),
                                                                   SpriteCB_MonIconDomeInfo,
                                                                   x | sLeftTrainerMonX[i],
                                                                   y + sLeftTrainerMonY[i],
@@ -4731,7 +5707,7 @@ static void DisplayMatchInfoOnCard(u8 flags, u8 matchNo)
     {
         if (trainerIds[1] == TRAINER_PLAYER)
         {
-            sInfoCard->spriteIds[5 + i + arrId] = CreateMonIcon(DOME_MONS[tournamentIds[1]][i],
+            sInfoCard->spriteIds[5 + i + arrId] = CreateMonIcon(ADMG_DOME_INFO_VALUE(ADMG_DomeCardSpecies(&admgView, tournamentIds[1], i)),
                                                                   SpriteCB_MonIconDomeInfo,
                                                                   x | sRightTrainerMonX[i],
                                                                   y + sRightTrainerMonY[i],
@@ -4740,7 +5716,7 @@ static void DisplayMatchInfoOnCard(u8 flags, u8 matchNo)
         }
         else if (trainerIds[1] == TRAINER_FRONTIER_BRAIN)
         {
-            sInfoCard->spriteIds[5 + i + arrId] = CreateMonIcon(DOME_MONS[tournamentIds[1]][i],
+            sInfoCard->spriteIds[5 + i + arrId] = CreateMonIcon(ADMG_DOME_INFO_VALUE(ADMG_DomeCardSpecies(&admgView, tournamentIds[1], i)),
                                                                   SpriteCB_MonIconDomeInfo,
                                                                   x | sRightTrainerMonX[i],
                                                                   y + sRightTrainerMonY[i],
@@ -4749,7 +5725,7 @@ static void DisplayMatchInfoOnCard(u8 flags, u8 matchNo)
         }
         else
         {
-            sInfoCard->spriteIds[5 + i + arrId] = CreateMonIcon(gFacilityTrainerMons[DOME_MONS[tournamentIds[1]][i]].species,
+            sInfoCard->spriteIds[5 + i + arrId] = CreateMonIcon(ADMG_DOME_INFO_VALUE(ADMG_DomeCardSpecies(&admgView, tournamentIds[1], i)),
                                                                   SpriteCB_MonIconDomeInfo,
                                                                   x | sRightTrainerMonX[i],
                                                                   y + sRightTrainerMonY[i],
@@ -4792,9 +5768,9 @@ static void DisplayMatchInfoOnCard(u8 flags, u8 matchNo)
     if (trainerIds[0] == TRAINER_PLAYER)
         StringCopy(gStringVar1, gSaveBlock2Ptr->playerName);
     else if (trainerIds[0] == TRAINER_FRONTIER_BRAIN)
-        CopyFrontierBrainTrainerName(gStringVar1);
+        ADMG_DOME_INFO_ACTION(CopyFrontierBrainTrainerName(gStringVar1));
     else
-        CopyDomeTrainerName(gStringVar1, trainerIds[0]);
+        ADMG_DOME_INFO_ACTION(CopyDomeTrainerName(gStringVar1, trainerIds[0]));
 
     textPrinter.fontId = FONT_SHORT;
     textPrinter.letterSpacing = 2;
@@ -4810,9 +5786,9 @@ static void DisplayMatchInfoOnCard(u8 flags, u8 matchNo)
     if (trainerIds[1] == TRAINER_PLAYER)
         StringCopy(gStringVar1, gSaveBlock2Ptr->playerName);
     else if (trainerIds[1] == TRAINER_FRONTIER_BRAIN)
-        CopyFrontierBrainTrainerName(gStringVar1);
+        ADMG_DOME_INFO_ACTION(CopyFrontierBrainTrainerName(gStringVar1));
     else
-        CopyDomeTrainerName(gStringVar1, trainerIds[1]);
+        ADMG_DOME_INFO_ACTION(CopyDomeTrainerName(gStringVar1, trainerIds[1]));
 
     textPrinter.currentChar = gStringVar1;
     textPrinter.windowId = windowId + WIN_MATCH_TRAINER_NAME_RIGHT;
@@ -4831,7 +5807,14 @@ static void DisplayMatchInfoOnCard(u8 flags, u8 matchNo)
     PutWindowTilemap(windowId + WIN_MATCH_NUMBER);
     CopyWindowToVram(windowId + WIN_MATCH_NUMBER, COPYWIN_FULL);
     AddTextPrinter(&textPrinter, 0, NULL);
+
+    return;
+ADMG_info_reject:
 }
+
+#undef ADMG_DOME_INFO_VALUE
+#undef ADMG_DOME_INFO_ACTION
+
 
 static void ShowDomeTourneyTree(void)
 {
@@ -4869,6 +5852,9 @@ static void ShowPreviousDomeTourneyTree(void)
 
 static void Task_HandleTourneyTreeInput(u8 taskId)
 {
+    if (taskId >= NUM_TASKS) { ADMG_StateAccessRejected(taskId, __func__); return; }
+    u32 admgFreeSlots, admgTrainerSlot;
+
     u8 newTaskId = 0;
     int spriteId = gTasks[taskId].data[1];
 
@@ -4877,6 +5863,8 @@ static void Task_HandleTourneyTreeInput(u8 taskId)
     case STATE_FADE_IN:
         if (!gPaletteFade.active)
         {
+            if ((u32)spriteId >= ARRAY_COUNT(sTourneyTreeCursorMovementMap))
+            { ADMG_StateAccessRejected(spriteId, __func__); return; }
             BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
             gTasks[taskId].tState = STATE_WAIT_FADE;
             StartSpriteAnim(&gSprites[spriteId], 1);
@@ -4909,17 +5897,23 @@ static void Task_HandleTourneyTreeInput(u8 taskId)
     case STATE_SHOW_INFOCARD_TRAINER:
         if (!gPaletteFade.active)
         {
+            if (!ADMG_TryDomeCardTrainerPosition(spriteId, &admgTrainerSlot)) return;
+            if (gSaveBlock2Ptr == NULL) { ADMG_StateAccessRejected(admgTrainerSlot, __func__); return; }
+            const struct BattleFrontierTrainer *admgTrainer;
+            if (!ADMG_TryDomeNameIdentity(DOME_TRAINERS[admgTrainerSlot].trainerId, &admgTrainer)) return;
+            admgFreeSlots = ADMG_DomeFreeTaskSlots();
+            if (admgFreeSlots == 0) return;
             FreeAllWindowBuffers();
             ScanlineEffect_Stop();
             FREE_AND_SET_NULL(sTilemapBuffer);
-            newTaskId = CreateTask(Task_ShowTourneyInfoCard, 0);
+            if (!ADMG_TryCreateDomeTask(Task_ShowTourneyInfoCard, admgFreeSlots, &newTaskId)) return;
             gTasks[newTaskId].tState = 0;
-            gTasks[newTaskId].tTournamentId = sTourneyTreeTrainerIds[spriteId];
+            gTasks[newTaskId].tTournamentId = admgTrainerSlot;
             gTasks[newTaskId].tMode = INFOCARD_TRAINER;
             gTasks[newTaskId].tPrevTaskId = taskId;
 
             gTasks[taskId].tState = STATE_SHOW_INFOCARD_TRAINER + 1;
-            sInfoCard->pos = 0;
+            /* Position is initialized by the card builder after allocation. */
         }
         break;
     case STATE_SHOW_INFOCARD_TRAINER + 1:
@@ -4927,10 +5921,15 @@ static void Task_HandleTourneyTreeInput(u8 taskId)
     case STATE_SHOW_INFOCARD_MATCH:
         if (!gPaletteFade.active)
         {
+            if (spriteId < DOME_TOURNAMENT_TRAINERS_COUNT
+                || (u32)(spriteId - DOME_TOURNAMENT_TRAINERS_COUNT) >= DOME_TOURNAMENT_MATCHES_COUNT)
+            { ADMG_StateAccessRejected(spriteId, __func__); return; }
+            admgFreeSlots = ADMG_DomeFreeTaskSlots();
+            if (admgFreeSlots == 0) return;
             FreeAllWindowBuffers();
             ScanlineEffect_Stop();
             FREE_AND_SET_NULL(sTilemapBuffer);
-            newTaskId = CreateTask(Task_ShowTourneyInfoCard, 0);
+            if (!ADMG_TryCreateDomeTask(Task_ShowTourneyInfoCard, admgFreeSlots, &newTaskId)) return;
             gTasks[newTaskId].tState = 0;
             gTasks[newTaskId].tTournamentId = spriteId - DOME_TOURNAMENT_TRAINERS_COUNT;
             gTasks[newTaskId].tMode = INFOCARD_MATCH;
@@ -4974,10 +5973,13 @@ static void Task_HandleTourneyTreeInput(u8 taskId)
 // The 'cursor' is actually just which button sprite is currently doing the 'selected' animation
 static u8 UpdateTourneyTreeCursor(u8 taskId)
 {
+    if (taskId >= NUM_TASKS)
+    { ADMG_StateAccessRejected(taskId, __func__); return TOURNEY_TREE_NO_SELECTION; }
+
     u8 selection = TOURNEY_TREE_NO_SELECTION;
     int direction = MOVE_DIR_NONE;
     int tourneyTreeCursorSpriteId = gTasks[taskId].data[1];
-    int roundId = gSaveBlock2Ptr->frontier.curChallengeBattleNum;
+    int roundId;
 
     if (gMain.newKeys == B_BUTTON || (JOY_NEW(A_BUTTON) && tourneyTreeCursorSpriteId == TOURNEY_TREE_CLOSE_BUTTON))
     {
@@ -4986,6 +5988,8 @@ static u8 UpdateTourneyTreeCursor(u8 taskId)
     }
     else if (JOY_NEW(A_BUTTON))
     {
+        if ((u32)tourneyTreeCursorSpriteId >= ARRAY_COUNT(sTourneyTreeCursorMovementMap))
+        { ADMG_StateAccessRejected(tourneyTreeCursorSpriteId, __func__); return TOURNEY_TREE_NO_SELECTION; }
         if (tourneyTreeCursorSpriteId < DOME_TOURNAMENT_TRAINERS_COUNT)
         {
             PlaySE(SE_SELECT);
@@ -4999,6 +6003,13 @@ static u8 UpdateTourneyTreeCursor(u8 taskId)
     }
     else
     {
+        if (gMain.newKeys != DPAD_UP && gMain.newKeys != DPAD_DOWN
+            && gMain.newKeys != DPAD_LEFT && gMain.newKeys != DPAD_RIGHT) return selection;
+        if (gSaveBlock2Ptr == NULL || (u32)tourneyTreeCursorSpriteId >= ARRAY_COUNT(sTourneyTreeCursorMovementMap))
+        { ADMG_StateAccessRejected(tourneyTreeCursorSpriteId, __func__); return TOURNEY_TREE_NO_SELECTION; }
+        roundId = gSaveBlock2Ptr->frontier.curChallengeBattleNum;
+        if ((u32)roundId >= ARRAY_COUNT(sTourneyTreeCursorMovementMap[0]))
+        { ADMG_StateAccessRejected(roundId, __func__); return TOURNEY_TREE_NO_SELECTION; }
         if (gMain.newKeys == DPAD_UP && sTourneyTreeCursorMovementMap[tourneyTreeCursorSpriteId][roundId][0] != 0xFF)
             direction = MOVE_DIR_UP;
         else if (gMain.newKeys == DPAD_DOWN && sTourneyTreeCursorMovementMap[tourneyTreeCursorSpriteId][roundId][1] != 0xFF)
@@ -5038,37 +6049,191 @@ static void ShowNonInteractiveDomeTourneyTree(void)
     SetMainCallback2(CB2_TourneyTree);
 }
 
-static void ResolveDomeRoundWinners(void)
+/* Each round owns outcome fields, not trainer identities or raw mon words. */
+struct ADMG_DomeRoundFrame
+{
+    struct SaveBlock2 *save;
+    u64 generation;
+    struct BattleDomeTrainer trainers[DOME_TOURNAMENT_TRAINERS_COUNT];
+    u16 moves[DOME_TOURNAMENT_TRAINERS_COUNT];
+    u8 first[sizeof(gStringVar1)], second[sizeof(gStringVar2)];
+    const struct ADMG_DomeSelectionInput *left, *right;
+    const struct BattleFrontierTrainer *previousTrainers, *ownedTrainers;
+    const struct TrainerMon *previousMons, *ownedMons;
+    u32 writtenMask, forfeitMask;
+    bool8 textUsed;
+};
+
+static bool8 ADMG_DomeRoundCurrent(const struct ADMG_DomeRoundFrame *frame)
+{
+    if (!ADMG_EndStateAccessCheck(frame->generation)) return FALSE;
+    if (frame->save == NULL || gSaveBlock2Ptr != frame->save)
+    { ADMG_StateAccessRejected(0, __func__); return FALSE; }
+    if (frame->left != NULL && !ADMG_DomeSelectionCurrent(frame->left)) return FALSE;
+    if (frame->right != NULL && !ADMG_DomeSelectionCurrent(frame->right)) return FALSE;
+    return TRUE;
+}
+
+static bool8 ADMG_TryPrepareDomeRound(struct ADMG_DomeRoundFrame *frame)
+{
+    if (gSaveBlock2Ptr == NULL) { ADMG_StateAccessRejected(0, __func__); return FALSE; }
+    *frame = (struct ADMG_DomeRoundFrame){ .save = gSaveBlock2Ptr,
+        .generation = ADMG_BeginStateAccessCheck(),
+        .previousTrainers = gFacilityTrainers, .previousMons = gFacilityTrainerMons };
+    memcpy(frame->trainers, DOME_TRAINERS, sizeof(frame->trainers));
+    memcpy(frame->moves, frame->save->frontier.domeWinningMoves, sizeof(frame->moves));
+    memcpy(frame->first, gStringVar1, sizeof(frame->first)); memcpy(frame->second, gStringVar2, sizeof(frame->second));
+    return ADMG_DomeRoundCurrent(frame);
+}
+
+static void ADMG_RestoreDomeRound(const struct ADMG_DomeRoundFrame *frame)
+{
+    for (u32 i = 0; i < ARRAY_COUNT(frame->trainers); i++)
+    {
+        if (frame->writtenMask & (1u << i))
+        {
+            frame->save->frontier.domeTrainers[i].isEliminated = frame->trainers[i].isEliminated;
+            frame->save->frontier.domeTrainers[i].eliminatedAt = frame->trainers[i].eliminatedAt;
+            frame->save->frontier.domeWinningMoves[i] = frame->moves[i];
+        }
+        if (frame->forfeitMask & (1u << i))
+            frame->save->frontier.domeTrainers[i].forfeited = frame->trainers[i].forfeited;
+    }
+    if (frame->textUsed)
+    { memcpy(gStringVar1, frame->first, sizeof(frame->first)); memcpy(gStringVar2, frame->second, sizeof(frame->second)); }
+    if (frame->ownedTrainers != NULL && gFacilityTrainers == frame->ownedTrainers) gFacilityTrainers = frame->previousTrainers;
+    if (frame->ownedMons != NULL && gFacilityTrainerMons == frame->ownedMons) gFacilityTrainerMons = frame->previousMons;
+}
+
+static u16 ADMG_DomeRoundWinning(struct ADMG_DomeRoundFrame *frame, int winner, int loser, u8 round)
+{
+    // Winning-move publication can legitimately replace the scoring table.
+    frame->left = frame->right = NULL;
+    if (round > DOME_ROUND2) frame->textUsed = TRUE;
+    u16 result = GetWinningMove(winner, loser, round);
+    frame->ownedTrainers = gFacilityTrainers; frame->ownedMons = gFacilityTrainerMons;
+    return result;
+}
+
+static void ADMG_DomeRoundChildren(struct ADMG_DomeRoundFrame *frame, u8 round)
+{
+    // The existing named round owns all descendant elimination/move outcomes.
+    frame->writtenMask = (1u << DOME_TOURNAMENT_TRAINERS_COUNT) - 1;
+    if (round > DOME_ROUND2) frame->textUsed = TRUE;
+    DecideRoundWinners(round);
+    frame->ownedTrainers = gFacilityTrainers; frame->ownedMons = gFacilityTrainerMons;
+}
+
+#define ADMG_DOME_ROUND_VALUE(frame, expression) \
+    ({ __typeof__(expression) admg_value = (expression); \
+       if (!ADMG_DomeRoundCurrent(frame)) goto ADMG_round_reject; admg_value; })
+#define ADMG_DOME_ROUND_ACTION(frame, expression) \
+    do { expression; if (!ADMG_DomeRoundCurrent(frame)) goto ADMG_round_reject; } while (0)
+
+static bool8 ADMG_RunResolveDomeRound(struct ADMG_DomeRoundFrame *frame)
 {
     int i;
+    u32 slot;
+    u32 identity = gSpecialVar_0x8005 == DOME_PLAYER_WON_MATCH ? TRAINER_BATTLE_PARAM.opponentA : TRAINER_PLAYER;
+    if (!(gSpecialVar_0x8005 == DOME_PLAYER_WON_MATCH
+        ? ADMG_TryDomeOpponentSlot(identity, &slot) : ADMG_TryDomeTrainerSlot(identity, &slot))) return FALSE;
+    if (!ADMG_DomeRoundCurrent(frame)) return FALSE;
+    u32 round = gSaveBlock2Ptr->frontier.curChallengeBattleNum;
+    if (round >= DOME_ROUNDS_COUNT)
+    { ADMG_StateAccessRejected(round, __func__); return FALSE; }
 
+    frame->writtenMask |= 1u << slot;
     if (gSpecialVar_0x8005 == DOME_PLAYER_WON_MATCH)
     {
-        DOME_TRAINERS[TrainerIdToTournamentId(TRAINER_BATTLE_PARAM.opponentA)].isEliminated = TRUE;
-        DOME_TRAINERS[TrainerIdToTournamentId(TRAINER_BATTLE_PARAM.opponentA)].eliminatedAt = gSaveBlock2Ptr->frontier.curChallengeBattleNum;
-        gSaveBlock2Ptr->frontier.domeWinningMoves[TrainerIdToTournamentId(TRAINER_BATTLE_PARAM.opponentA)] = gBattleResults.lastUsedMovePlayer;
+        DOME_TRAINERS[slot].isEliminated = TRUE;
+        DOME_TRAINERS[slot].eliminatedAt = gSaveBlock2Ptr->frontier.curChallengeBattleNum;
+        gSaveBlock2Ptr->frontier.domeWinningMoves[slot] = gBattleResults.lastUsedMovePlayer;
 
         // If the player's match was the final one, no NPC vs NPC matches to decide
         if (gSaveBlock2Ptr->frontier.curChallengeBattleNum < DOME_FINAL)
-            DecideRoundWinners(gSaveBlock2Ptr->frontier.curChallengeBattleNum);
+            ADMG_DOME_ROUND_ACTION(frame, ADMG_DomeRoundChildren(frame, gSaveBlock2Ptr->frontier.curChallengeBattleNum));
     }
     else // DOME_PLAYER_LOST_MATCH or DOME_PLAYER_RETIRED
     {
-        DOME_TRAINERS[TrainerIdToTournamentId(TRAINER_PLAYER)].isEliminated = TRUE;
-        DOME_TRAINERS[TrainerIdToTournamentId(TRAINER_PLAYER)].eliminatedAt = gSaveBlock2Ptr->frontier.curChallengeBattleNum;
-        gSaveBlock2Ptr->frontier.domeWinningMoves[TrainerIdToTournamentId(TRAINER_PLAYER)] = gBattleResults.lastUsedMoveOpponent;
+        DOME_TRAINERS[slot].isEliminated = TRUE;
+        DOME_TRAINERS[slot].eliminatedAt = gSaveBlock2Ptr->frontier.curChallengeBattleNum;
+        gSaveBlock2Ptr->frontier.domeWinningMoves[slot] = gBattleResults.lastUsedMoveOpponent;
 
         if (gBattleOutcome == B_OUTCOME_FORFEITED || gSpecialVar_0x8005 == DOME_PLAYER_RETIRED)
-            DOME_TRAINERS[TrainerIdToTournamentId(TRAINER_PLAYER)].forfeited = TRUE;
+        {
+            frame->forfeitMask |= 1u << slot;
+            DOME_TRAINERS[slot].forfeited = TRUE;
+        }
 
         // Player lost, decide remaining outcome of tournament
         for (i = gSaveBlock2Ptr->frontier.curChallengeBattleNum; i < DOME_ROUNDS_COUNT; i++)
-            DecideRoundWinners(i);
+            ADMG_DOME_ROUND_ACTION(frame, ADMG_DomeRoundChildren(frame, i));
     }
+    return TRUE;
+ADMG_round_reject:
+    return FALSE;
+}
+
+static void ResolveDomeRoundWinners(void)
+{
+    struct ADMG_DomeRoundFrame frame;
+    if (!ADMG_TryPrepareDomeRound(&frame)) return;
+    if (!ADMG_RunResolveDomeRound(&frame) || !ADMG_DomeRoundCurrent(&frame)) ADMG_RestoreDomeRound(&frame);
 }
 
 // Decides the winning move of an NPC vs NPC match
-static u16 GetWinningMove(int winnerTournamentId, int loserTournamentId, u8 roundId)
+/* Winning-move roles differ: a Brain winner uses Brain moves; every loser
+ * retains the original raw facility-mon semantics. No campaign selects identity. */
+struct ADMG_DomeWinningInput
+{
+    struct ADMG_DomeSelectionInput winner;
+    u32 loser;
+    u16 loserActor, loserIndices[FRONTIER_PARTY_SIZE];
+    const struct TrainerMon *loserRows[FRONTIER_PARTY_SIZE];
+    const struct TrainerMon *table;
+    bool8 failed, textUsed;
+};
+
+static bool8 ADMG_DomeWinningCurrent(const struct ADMG_DomeWinningInput *input)
+{
+    if (!ADMG_DomeSelectionCurrent(&input->winner)) return FALSE;
+    if (gFacilityTrainerMons != input->table
+        || DOME_TRAINERS[input->loser].trainerId != input->loserActor)
+    { ADMG_StateAccessRejected(input->loser, __func__); return FALSE; }
+    for (u32 i = 0; i < ARRAY_COUNT(input->loserIndices); i++)
+        if (DOME_MONS[input->loser][i] != input->loserIndices[i])
+        { ADMG_StateAccessRejected(i, __func__); return FALSE; }
+    return TRUE;
+}
+
+static bool8 ADMG_TryPrepareDomeWinning(u32 winner, u32 loser, struct ADMG_DomeWinningInput *input)
+{
+    *input = (struct ADMG_DomeWinningInput){ .loser = loser, .table = gFacilityTrainerMons };
+    if (!ADMG_TryPrepareDomeSelection(winner, &input->winner)
+        || !ADMG_TryDomeNpcAtSlot(loser, &input->loserActor)) return FALSE;
+    for (u32 i = 0; i < ARRAY_COUNT(input->loserRows); i++)
+    {
+        input->loserIndices[i] = DOME_MONS[loser][i];
+        if (!ADMG_TryDomeMonRowFromTable(loser, i, input->table, &input->loserRows[i])) return FALSE;
+    }
+    return ADMG_DomeWinningCurrent(input);
+}
+
+static u32 ADMG_DomeWinningOpponent(struct ADMG_DomeWinningInput *input, u32 winner, u32 round)
+{
+    input->textUsed = TRUE;
+    u32 slot = GetOpposingNPCTournamentIdByRound(winner, round);
+    if (!ADMG_DomeWinningCurrent(input)) return 0;
+    if (slot >= ARRAY_COUNT(DOME_TRAINERS))
+    { ADMG_StateAccessRejected(slot, __func__); return 0; }
+    return slot;
+}
+
+#define ADMG_DOME_WIN_VALUE(input, expression) \
+    ({ __typeof__(expression) admg_value = (expression); \
+       if (!ADMG_DomeWinningCurrent(input)) goto ADMG_winning_reject; admg_value; })
+
+static u16 ADMG_RunDomeWinningMove(int winnerTournamentId, int loserTournamentId, u8 roundId, struct ADMG_DomeWinningInput *input)
 {
     int i, j, k;
     int moveScores[MAX_MON_MOVES * FRONTIER_PARTY_SIZE];
@@ -5076,7 +6241,7 @@ static u16 GetWinningMove(int winnerTournamentId, int loserTournamentId, u8 roun
     u16 bestScore = 0;
     u16 bestId = 0;
     int movePower = 0;
-    SetFacilityPtrsGetLevel();
+
 
     // Calc move points of all 4 moves for all 3 Pokémon hitting all 3 target mons.
     for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
@@ -5087,18 +6252,18 @@ static u16 GetWinningMove(int winnerTournamentId, int loserTournamentId, u8 roun
             enum Move move;
 
             moveScores[moveIndex] = 0;
-            if (DOME_TRAINERS[winnerTournamentId].trainerId == TRAINER_FRONTIER_BRAIN)
-                move = GetFrontierBrainMonMove(i, j);
+            if (input->winner.actor == TRAINER_FRONTIER_BRAIN)
+                move = ADMG_DOME_WIN_VALUE(input, GetFrontierBrainMonMove(i, j));
             else
-                move = gFacilityTrainerMons[DOME_MONS[winnerTournamentId][i]].moves[j];
+                move = input->winner.rows[i]->moves[j];
             moves[moveIndex] = move;
 
-            movePower = GetMovePower(move);
-            if (IsBattleMoveStatus(move))
+            movePower = ADMG_DOME_WIN_VALUE(input, GetMovePower(move));
+            if (ADMG_DOME_WIN_VALUE(input, IsBattleMoveStatus(move)))
                 movePower = 40;
             else if (movePower == 1)
                 movePower = 60;
-            else if (GetConfig(B_EXPLOSION_DEFENSE) < GEN_5 && IsExplosionMove(move))
+            else if (ADMG_DOME_WIN_VALUE(input, GetConfig(B_EXPLOSION_DEFENSE)) < GEN_5 && ADMG_DOME_WIN_VALUE(input, IsExplosionMove(move)))
                 movePower /= 2;
 
             for (k = 0; k < FRONTIER_PARTY_SIZE; k++)
@@ -5109,17 +6274,17 @@ static u16 GetWinningMove(int winnerTournamentId, int loserTournamentId, u8 roun
                 uq4_12_t typeMultiplier = 0;
                 do
                 {
-                    personality = Random32();
-                } while (gFacilityTrainerMons[DOME_MONS[loserTournamentId][k]].nature != GetNatureFromPersonality(personality));
+                    personality = ADMG_DOME_WIN_VALUE(input, Random32());
+                } while (input->loserRows[k]->nature != ADMG_DOME_WIN_VALUE(input, GetNatureFromPersonality(personality)));
 
-                targetSpecies = gFacilityTrainerMons[DOME_MONS[loserTournamentId][k]].species;
+                targetSpecies = input->loserRows[k]->species;
 
                 if (personality & 1)
-                    targetAbility = GetSpeciesAbility(targetSpecies, 1);
+                    targetAbility = ADMG_DOME_WIN_VALUE(input, GetSpeciesAbility(targetSpecies, 1));
                 else
-                    targetAbility = GetSpeciesAbility(targetSpecies, 0);
+                    targetAbility = ADMG_DOME_WIN_VALUE(input, GetSpeciesAbility(targetSpecies, 0));
 
-                typeMultiplier = CalcPartyMonTypeEffectivenessMultiplier(moves[i * 4 + j], targetSpecies, targetAbility);
+                typeMultiplier = ADMG_DOME_WIN_VALUE(input, CalcPartyMonTypeEffectivenessMultiplier(moves[i * 4 + j], targetSpecies, targetAbility));
                 if (typeMultiplier == UQ_4_12(0))
                     moveScores[moveIndex] += 0;
                 else if (typeMultiplier >= UQ_4_12(2.0))
@@ -5148,7 +6313,7 @@ static u16 GetWinningMove(int winnerTournamentId, int loserTournamentId, u8 roun
     {
         for (i = 0; i < roundId - 1; i++)
         {
-            if (gSaveBlock2Ptr->frontier.domeWinningMoves[GetOpposingNPCTournamentIdByRound(winnerTournamentId, i)] == moves[j])
+            if (gSaveBlock2Ptr->frontier.domeWinningMoves[ADMG_DOME_WIN_VALUE(input, ADMG_DomeWinningOpponent(input, winnerTournamentId, i))] == moves[j])
                 break;
         }
         if (i != roundId - 1)
@@ -5181,10 +6346,98 @@ static u16 GetWinningMove(int winnerTournamentId, int loserTournamentId, u8 roun
         j = bestId;
 
     return moves[j];
+ADMG_winning_reject:
+    input->failed = TRUE;
+    return MOVE_NONE;
+}
+
+static u16 GetWinningMove(int winnerTournamentId, int loserTournamentId, u8 roundId)
+{
+    if ((u32)winnerTournamentId >= DOME_TOURNAMENT_TRAINERS_COUNT
+        || (u32)loserTournamentId >= DOME_TOURNAMENT_TRAINERS_COUNT || roundId >= DOME_ROUNDS_COUNT)
+    { ADMG_StateAccessRejected(roundId, __func__); return MOVE_NONE; }
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    u16 winnerActor, loserActor;
+    if (!ADMG_TryDomeNpcAtSlot(winnerTournamentId, &winnerActor)
+        || !ADMG_TryDomeNpcAtSlot(loserTournamentId, &loserActor)
+        || !ADMG_EndStateAccessCheck(generation)) return MOVE_NONE;
+    if (gSaveBlock2Ptr != save)
+    { ADMG_StateAccessRejected(roundId, __func__); return MOVE_NONE; }
+    const struct BattleFrontierTrainer *previousTrainers = gFacilityTrainers;
+    const struct TrainerMon *previousMons = gFacilityTrainerMons;
+    u8 oldFirst[sizeof(gStringVar1)], oldSecond[sizeof(gStringVar2)];
+    memcpy(oldFirst, gStringVar1, sizeof(oldFirst)); memcpy(oldSecond, gStringVar2, sizeof(oldSecond));
+    struct ADMG_DomeWinningInput input = {0};
+    // Keep the original native level/table publication point and ignored return value.
+    SetFacilityPtrsGetLevel();
+    const struct BattleFrontierTrainer *publishedTrainers = gFacilityTrainers;
+    const struct TrainerMon *publishedMons = gFacilityTrainerMons;
+    if (!ADMG_EndStateAccessCheck(generation)) goto ADMG_reject_winning_tables;
+    if (gSaveBlock2Ptr != save || DOME_TRAINERS[winnerTournamentId].trainerId != winnerActor
+        || DOME_TRAINERS[loserTournamentId].trainerId != loserActor)
+    { ADMG_StateAccessRejected(roundId, __func__); goto ADMG_reject_winning_tables; }
+    if (!ADMG_TryPrepareDomeWinning(winnerTournamentId, loserTournamentId, &input)) goto ADMG_reject_winning_tables;
+    u16 result = ADMG_RunDomeWinningMove(winnerTournamentId, loserTournamentId, roundId, &input);
+    if (!input.failed && ADMG_DomeWinningCurrent(&input)) return result;
+ADMG_reject_winning_tables:
+    if (input.textUsed)
+    { memcpy(gStringVar1, oldFirst, sizeof(oldFirst)); memcpy(gStringVar2, oldSecond, sizeof(oldSecond)); }
+    if (gFacilityTrainers == publishedTrainers) gFacilityTrainers = previousTrainers;
+    if (gFacilityTrainerMons == publishedMons) gFacilityTrainerMons = previousMons;
+    return MOVE_NONE;
+}
+
+/* Only the native name actors are borrowed. Table publication remains live. */
+struct ADMG_DomeTreeNames
+{
+    struct SaveBlock2 *save;
+    u64 generation;
+    u16 actors[DOME_TOURNAMENT_TRAINERS_COUNT];
+};
+
+static bool8 ADMG_DomeTreeNamesCurrent(const struct ADMG_DomeTreeNames *view)
+{
+    if (!ADMG_EndStateAccessCheck(view->generation)) return FALSE;
+    if (gSaveBlock2Ptr != view->save)
+    { ADMG_StateAccessRejected(0, __func__); return FALSE; }
+    for (u32 i = 0; i < ARRAY_COUNT(view->actors); i++)
+        if (view->save->frontier.domeTrainers[i].trainerId != view->actors[i])
+        { ADMG_StateAccessRejected(i, __func__); return FALSE; }
+    return TRUE;
+}
+
+static bool8 ADMG_TryPrepareDomeTreeNames(struct ADMG_DomeTreeNames *view)
+{
+    if (view == NULL || gSaveBlock2Ptr == NULL)
+    { ADMG_StateAccessRejected(0, __func__); return FALSE; }
+    *view = (struct ADMG_DomeTreeNames){ .save = gSaveBlock2Ptr,
+        .generation = ADMG_BeginStateAccessCheck() };
+    for (u32 i = 0; i < ARRAY_COUNT(view->actors); i++) view->actors[i] = DOME_TRAINERS[i].trainerId;
+    for (u32 i = 0; i < ARRAY_COUNT(view->actors); i++)
+    {
+        const struct BattleFrontierTrainer *trainer;
+        if (!ADMG_TryDomeNameIdentity(view->actors[i], &trainer) || !ADMG_DomeTreeNamesCurrent(view)) return FALSE;
+    }
+    return TRUE;
+}
+
+/* Check the caller's wide computed round before the named u8 interface. */
+static bool8 ADMG_TryDomeAdvancementLine(u32 tournamentId, int roundId)
+{
+    if (tournamentId >= ARRAY_COUNT(sTourneyTreeLineSections)
+        || (u32)roundId >= ARRAY_COUNT(sTourneyTreeLineSections[0]))
+    { ADMG_StateAccessRejected(roundId, __func__); return FALSE; }
+    u64 generation = ADMG_BeginStateAccessCheck();
+    DrawTourneyAdvancementLine(tournamentId, roundId);
+    return ADMG_EndStateAccessCheck(generation);
 }
 
 static void Task_ShowTourneyTree(u8 taskId)
 {
+    if (taskId >= NUM_TASKS) { ADMG_StateAccessRejected(taskId, __func__); return; }
+    struct ADMG_DomeTreeNames admgNames;
+
     int i;
     struct TextPrinterTemplate textPrinter;
     int notInteractive = gTasks[taskId].tNotInteractive;
@@ -5263,6 +6516,7 @@ static void Task_ShowTourneyTree(u8 taskId)
         gTasks[taskId].tState++;
         break;
     case 4:
+        if (!ADMG_TryPrepareDomeTreeNames(&admgNames)) return;
         textPrinter.type = WINDOW_TEXT_PRINTER;
         textPrinter.fontId = FONT_SHORT;
         textPrinter.currentChar = gText_BattleTourney;
@@ -5282,7 +6536,8 @@ static void Task_ShowTourneyTree(u8 taskId)
         {
             int roundId, var2;
 
-            CopyDomeTrainerName(gDisplayedStringBattle, DOME_TRAINERS[i].trainerId);
+            CopyDomeTrainerName(gDisplayedStringBattle, admgNames.actors[i]);
+            if (!ADMG_DomeTreeNamesCurrent(&admgNames)) goto ADMG_tree_reject;
             if (notInteractive == TRUE)
             {
                 if (DOME_TRAINERS[i].isEliminated)
@@ -5290,12 +6545,14 @@ static void Task_ShowTourneyTree(u8 taskId)
                     if (DOME_TRAINERS[i].eliminatedAt != DOME_ROUND1)
                     {
                         var2 = DOME_TRAINERS[i].eliminatedAt - 1;
-                        DrawTourneyAdvancementLine(i, var2);
+                        if (!ADMG_TryDomeAdvancementLine(i, var2)
+                        || !ADMG_DomeTreeNamesCurrent(&admgNames)) goto ADMG_tree_reject;
                     }
                 }
                 else if (gSaveBlock2Ptr->frontier.curChallengeBattleNum != DOME_ROUND2)
                 {
-                    DrawTourneyAdvancementLine(i, gSaveBlock2Ptr->frontier.curChallengeBattleNum - 2);
+                    if (!ADMG_TryDomeAdvancementLine(i, gSaveBlock2Ptr->frontier.curChallengeBattleNum - 2)
+                        || !ADMG_DomeTreeNamesCurrent(&admgNames)) goto ADMG_tree_reject;
                 }
             }
             else if (notInteractive == FALSE)
@@ -5305,7 +6562,8 @@ static void Task_ShowTourneyTree(u8 taskId)
                     if (DOME_TRAINERS[i].eliminatedAt != DOME_ROUND1)
                     {
                         var2 = DOME_TRAINERS[i].eliminatedAt - 1;
-                        DrawTourneyAdvancementLine(i, var2);
+                        if (!ADMG_TryDomeAdvancementLine(i, var2)
+                        || !ADMG_DomeTreeNamesCurrent(&admgNames)) goto ADMG_tree_reject;
                     }
                 }
                 else if (gSaveBlock2Ptr->frontier.curChallengeBattleNum != DOME_ROUND1)
@@ -5314,7 +6572,8 @@ static void Task_ShowTourneyTree(u8 taskId)
                         var2 = gSaveBlock2Ptr->frontier.curChallengeBattleNum;
                     else
                         var2 = gSaveBlock2Ptr->frontier.curChallengeBattleNum - 1;
-                    DrawTourneyAdvancementLine(i, var2);
+                    if (!ADMG_TryDomeAdvancementLine(i, var2)
+                        || !ADMG_DomeTreeNamesCurrent(&admgNames)) goto ADMG_tree_reject;
                 }
             }
 
@@ -5413,10 +6672,19 @@ static void Task_ShowTourneyTree(u8 taskId)
         DestroyTask(taskId);
         break;
     }
+
+    return;
+ADMG_tree_reject:
+    return;
 }
+
 
 static void DrawTourneyAdvancementLine(u8 tournamentId, u8 roundId)
 {
+    if ((u32)tournamentId >= ARRAY_COUNT(sTourneyTreeLineSections)
+        || (u32)roundId >= ARRAY_COUNT(sTourneyTreeLineSections[0]))
+    { ADMG_StateAccessRejected(roundId, __func__); return; }
+
     int i;
     const struct TourneyTreeLineSection *lineSection = sTourneyTreeLineSections[tournamentId][roundId];
 
@@ -5435,6 +6703,10 @@ static void DrawTourneyAdvancementLine(u8 tournamentId, u8 roundId)
 // The non-interactive tourney tree that's shown when a round is completed
 static void Task_HandleStaticTourneyTreeInput(u8 taskId)
 {
+    if (taskId >= NUM_TASKS) { ADMG_StateAccessRejected(taskId, __func__); return; }
+    struct ADMG_DomeTreeNames admgNames;
+    s16 admgOldState = gTasks[taskId].tState, admgOldDelay = gTasks[taskId].data[3];
+
     int i;
     struct TextPrinterTemplate textPrinter;
 
@@ -5447,6 +6719,7 @@ static void Task_HandleStaticTourneyTreeInput(u8 taskId)
     case STATE_SHOW_RESULTS:
         if (!gPaletteFade.active)
         {
+            if (!ADMG_TryPrepareDomeTreeNames(&admgNames)) return;
             gTasks[taskId].tState = STATE_DELAY;
             gTasks[taskId].data[3] = 64;
             textPrinter.type = WINDOW_TEXT_PRINTER;
@@ -5463,7 +6736,8 @@ static void Task_HandleStaticTourneyTreeInput(u8 taskId)
             // Update the advancement lines and gray out eliminated trainer names
             for (i = 0; i < DOME_TOURNAMENT_TRAINERS_COUNT; i++)
             {
-                CopyDomeTrainerName(gDisplayedStringBattle, DOME_TRAINERS[i].trainerId);
+                CopyDomeTrainerName(gDisplayedStringBattle, admgNames.actors[i]);
+                if (!ADMG_DomeTreeNamesCurrent(&admgNames)) goto ADMG_tree_reject;
                 if (DOME_TRAINERS[i].eliminatedAt == gSaveBlock2Ptr->frontier.curChallengeBattleNum - 1
                     && DOME_TRAINERS[i].isEliminated)
                 {
@@ -5480,7 +6754,8 @@ static void Task_HandleStaticTourneyTreeInput(u8 taskId)
                 if (!DOME_TRAINERS[i].isEliminated)
                 {
                     int roundId = gSaveBlock2Ptr->frontier.curChallengeBattleNum - 1;
-                    DrawTourneyAdvancementLine(i, roundId);
+                    if (!ADMG_TryDomeAdvancementLine(i, roundId)
+                        || !ADMG_DomeTreeNamesCurrent(&admgNames)) goto ADMG_tree_reject;
                 }
             }
         }
@@ -5504,7 +6779,13 @@ static void Task_HandleStaticTourneyTreeInput(u8 taskId)
         }
         break;
     }
+
+    return;
+ADMG_tree_reject:
+    gTasks[taskId].tState = admgOldState;
+    gTasks[taskId].data[3] = admgOldDelay;
 }
+
 
 #undef STATE_FADE_IN
 #undef STATE_SHOW_RESULTS
@@ -5633,13 +6914,36 @@ static void SetFacilityTrainerAndMonPtrs(void)
     gFacilityTrainers = gBattleFrontierTrainers;
 }
 
+/* Battle-selection order and saved-party positions are separate one-based
+ * domains. Admit every used coordinate before either restoration starts. */
+static bool8 ADMG_TryDomePlayerRestoreSlots(u32 *slots)
+{
+    if (gSaveBlock2Ptr == NULL || slots == NULL)
+    { ADMG_StateAccessRejected(0, __func__); return FALSE; }
+    u32 staged[DOME_BATTLE_PARTY_SIZE];
+    for (u32 i = 0; i < ARRAY_COUNT(staged); i++)
+    {
+        u32 order = gSelectedOrderFromParty[i];
+        if (order == 0 || order > ARRAY_COUNT(gSaveBlock2Ptr->frontier.selectedPartyMons))
+        { ADMG_StateAccessRejected(order, __func__); return FALSE; }
+        u32 saved = gSaveBlock2Ptr->frontier.selectedPartyMons[order - 1];
+        if (saved == 0 || saved > ARRAY_COUNT(gParties[B_TRAINER_PLAYER]))
+        { ADMG_StateAccessRejected(saved, __func__); return FALSE; }
+        staged[i] = saved - 1;
+    }
+    memcpy(slots, staged, sizeof(staged));
+    return TRUE;
+}
+
 static void ResetSketchedMoves(void)
 {
+    u32 playerSlots[DOME_BATTLE_PARTY_SIZE];
+    if (!ADMG_TryDomePlayerRestoreSlots(playerSlots)) return;
     int i, moveSlot;
 
     for (i = 0; i < DOME_BATTLE_PARTY_SIZE; i++)
     {
-        int playerMonId = gSaveBlock2Ptr->frontier.selectedPartyMons[gSelectedOrderFromParty[i] - 1] - 1;
+        int playerMonId = playerSlots[i];
         int count;
 
         for (moveSlot = 0; moveSlot < MAX_MON_MOVES; moveSlot++)
@@ -5661,11 +6965,13 @@ static void ResetSketchedMoves(void)
 
 static void RestoreDomePlayerPartyHeldItems(void)
 {
+    u32 playerSlots[DOME_BATTLE_PARTY_SIZE];
+    if (!ADMG_TryDomePlayerRestoreSlots(playerSlots)) return;
     int i;
 
     for (i = 0; i < DOME_BATTLE_PARTY_SIZE; i++)
     {
-        int playerMonId = gSaveBlock2Ptr->frontier.selectedPartyMons[gSelectedOrderFromParty[i] - 1] - 1;
+        int playerMonId = playerSlots[i];
         enum Item item = GetMonData(GetSavedPlayerPartyMon(playerMonId), MON_DATA_HELD_ITEM);
         SetMonData(&gParties[B_TRAINER_PLAYER][i], MON_DATA_HELD_ITEM, &item);
     }
@@ -5678,8 +6984,11 @@ static void ReduceDomePlayerPartyToSelectedMons(void)
 
 static void GetPlayerSeededBeforeOpponent(void)
 {
+    u32 opponent, player;
+    if (!ADMG_TryDomeOpponentSlot(TRAINER_BATTLE_PARAM.opponentA, &opponent)
+        || !ADMG_TryDomeTrainerSlot(TRAINER_PLAYER, &player)) return;
     // A higher tournament ID is a worse seed
-    if (TrainerIdToTournamentId(TRAINER_BATTLE_PARAM.opponentA) > TrainerIdToTournamentId(TRAINER_PLAYER))
+    if (opponent > player)
         gSpecialVar_Result = 1;
     else
         gSpecialVar_Result = 2;
@@ -5687,6 +6996,8 @@ static void GetPlayerSeededBeforeOpponent(void)
 
 static void BufferLastDomeWinnerName(void)
 {
+    if (gSaveBlock2Ptr == NULL) { ADMG_StateAccessRejected(0, __func__); return; }
+
     int i;
 
     SetFacilityTrainerAndMonPtrs();
@@ -5695,11 +7006,13 @@ static void BufferLastDomeWinnerName(void)
         if (!DOME_TRAINERS[i].isEliminated)
             break;
     }
+    if (i == DOME_TOURNAMENT_TRAINERS_COUNT)
+    { ADMG_StateAccessRejected(i, __func__); return; }
     CopyDomeTrainerName(gStringVar1, DOME_TRAINERS[i].trainerId);
 }
 
 // For showing the previous tourney results before the player has entered a challenge
-static void InitRandomTourneyTreeResults(void)
+static bool8 ADMG_RunInitRandomTourneyTreeResults(struct ADMG_DomeRosterFrame *frame)
 {
     int i, j, k;
     int monLevel;
@@ -5717,29 +7030,35 @@ static void InitRandomTourneyTreeResults(void)
     species[0] = SPECIES_NONE;
     species[1] = SPECIES_NONE;
     species[2] = SPECIES_NONE;
-    if ((gSaveBlock2Ptr->frontier.domeLvlMode != -gSaveBlock2Ptr->frontier.domeBattleMode) && gSaveBlock2Ptr->frontier.challengeStatus != CHALLENGE_STATUS_SAVING)
-        return;
+    if ((frame->save->frontier.domeLvlMode != -frame->save->frontier.domeBattleMode) && frame->save->frontier.challengeStatus != CHALLENGE_STATUS_SAVING)
+        return TRUE;
 
-    statSums = AllocZeroed(sizeof(u16) * DOME_TOURNAMENT_TRAINERS_COUNT);
-    statValues = AllocZeroed(sizeof(int) * NUM_STATS);
-    lvlMode = gSaveBlock2Ptr->frontier.lvlMode;
-    gSaveBlock2Ptr->frontier.lvlMode = FRONTIER_LVL_50;
+    statSums = frame->scores = AllocZeroed(sizeof(u16) * DOME_TOURNAMENT_TRAINERS_COUNT);
+    if (statSums == NULL) { ADMG_StateAccessRejected(0, __func__); goto ADMG_roster_reject; }
+    if (!ADMG_DomeRosterCurrent(frame)) goto ADMG_roster_reject;
+    statValues = frame->stats = AllocZeroed(sizeof(int) * NUM_STATS);
+    if (statValues == NULL) { ADMG_StateAccessRejected(0, __func__); goto ADMG_roster_reject; }
+    if (!ADMG_DomeRosterCurrent(frame)) goto ADMG_roster_reject;
+    lvlMode = frame->save->frontier.lvlMode;
+    frame->ownsLevel = TRUE;
+    frame->level = FRONTIER_LVL_50;
+    frame->save->frontier.lvlMode = FRONTIER_LVL_50;
     zero1 = 0;
     zero2 = 0;
 
-    gSaveBlock2Ptr->frontier.domeLvlMode = zero1 + 1;
-    gSaveBlock2Ptr->frontier.domeBattleMode = zero2 + 1;
+    frame->save->frontier.domeLvlMode = zero1 + 1;
+    frame->save->frontier.domeBattleMode = zero2 + 1;
 
     for (i = 0; i < DOME_TOURNAMENT_TRAINERS_COUNT; i++)
     {
         do
         {
             if (i < 5)
-                trainerId = Random() % 10;
+                trainerId = ADMG_DOME_ROSTER_VALUE(frame, Random()) % 10;
             else if (i < 15)
-                trainerId = Random() % 20 + 10;
+                trainerId = ADMG_DOME_ROSTER_VALUE(frame, Random()) % 20 + 10;
             else
-                trainerId = Random() % 10 + 30;
+                trainerId = ADMG_DOME_ROSTER_VALUE(frame, Random()) % 10 + 30;
 
             for (j = 0; j < i; j++)
             {
@@ -5753,21 +7072,21 @@ static void InitRandomTourneyTreeResults(void)
         {
             do
             {
-                monId = GetRandomFrontierMonFromSet(trainerId);
+                monId = ADMG_DOME_ROSTER_VALUE(frame, ADMG_DomeRosterMonId(frame, ADMG_DOME_ROSTER_VALUE(frame, ADMG_DomeRosterDrawMon(frame, trainerId))));
                 for (k = 0; k < j; k++)
                 {
                     // Make sure the mon is valid.
                     int alreadySelectedMonId = DOME_MONS[i][k];
                     if (alreadySelectedMonId == monId
-                        || species[0] == gFacilityTrainerMons[monId].species
-                        || species[1] == gFacilityTrainerMons[monId].species
-                        || gFacilityTrainerMons[alreadySelectedMonId].heldItem == gFacilityTrainerMons[monId].heldItem)
+                        || species[0] == (*ADMG_DOME_ROSTER_VALUE(frame, ADMG_DomeRosterMonRow(frame, monId))).species
+                        || species[1] == (*ADMG_DOME_ROSTER_VALUE(frame, ADMG_DomeRosterMonRow(frame, monId))).species
+                        || (*ADMG_DOME_ROSTER_VALUE(frame, ADMG_DomeRosterMonRow(frame, alreadySelectedMonId))).heldItem == (*ADMG_DOME_ROSTER_VALUE(frame, ADMG_DomeRosterMonRow(frame, monId))).heldItem)
                         break;
                 }
             } while (k != j);
 
             DOME_MONS[i][j] = monId;
-            species[j] = gFacilityTrainerMons[monId].species;
+            species[j] = (*ADMG_DOME_ROSTER_VALUE(frame, ADMG_DomeRosterMonRow(frame, monId))).species;
         }
         DOME_TRAINERS[i].isEliminated = FALSE;
         DOME_TRAINERS[i].eliminatedAt = 0;
@@ -5779,11 +7098,11 @@ static void InitRandomTourneyTreeResults(void)
     {
         monTypesBits = 0;
         statSums[i] = 0;
-        ivs = GetDomeTrainerMonIvs(DOME_TRAINERS[i].trainerId);
+        ivs = ADMG_DOME_ROSTER_VALUE(frame, GetDomeTrainerMonIvs(DOME_TRAINERS[i].trainerId));
         for (j = 0; j < FRONTIER_PARTY_SIZE; j++)
         {
-            CalcDomeMonStats(&gFacilityTrainerMons[DOME_MONS[i][j]],
-                             monLevel, ivs, statValues);
+            ADMG_DOME_ROSTER_ACTION(frame, CalcDomeMonStats(&(*ADMG_DOME_ROSTER_VALUE(frame, ADMG_DomeRosterMonRow(frame, DOME_MONS[i][j]))),
+                             monLevel, ivs, statValues));
 
             statSums[i] += statValues[STAT_ATK];
             statSums[i] += statValues[STAT_DEF];
@@ -5791,8 +7110,8 @@ static void InitRandomTourneyTreeResults(void)
             statSums[i] += statValues[STAT_SPDEF];
             statSums[i] += statValues[STAT_SPEED];
             statSums[i] += statValues[STAT_HP];
-            monTypesBits |= 1u << GetSpeciesType(gFacilityTrainerMons[DOME_MONS[i][j]].species, 0);
-            monTypesBits |= 1u << GetSpeciesType(gFacilityTrainerMons[DOME_MONS[i][j]].species, 1);
+            monTypesBits |= 1u << ADMG_DOME_ROSTER_VALUE(frame, GetSpeciesType((*ADMG_DOME_ROSTER_VALUE(frame, ADMG_DomeRosterMonRow(frame, DOME_MONS[i][j]))).species, 0));
+            monTypesBits |= 1u << ADMG_DOME_ROSTER_VALUE(frame, GetSpeciesType((*ADMG_DOME_ROSTER_VALUE(frame, ADMG_DomeRosterMonRow(frame, DOME_MONS[i][j]))).species, 1));
         }
 
         // Because GF hates temporary vars, trainerId acts like monTypesCount here.
@@ -5811,64 +7130,109 @@ static void InitRandomTourneyTreeResults(void)
         {
             if (statSums[i] < statSums[j])
             {
-                SwapDomeTrainers(i, j, statSums);
+                ADMG_DOME_ROSTER_ACTION(frame, SwapDomeTrainers(i, j, statSums));
             }
             else if (statSums[i] == statSums[j])
             {
                 if (DOME_TRAINERS[i].trainerId > DOME_TRAINERS[j].trainerId)
-                    SwapDomeTrainers(i, j, statSums);
+                    ADMG_DOME_ROSTER_ACTION(frame, SwapDomeTrainers(i, j, statSums));
             }
         }
     }
 
-    Free(statSums);
-    Free(statValues);
+    ADMG_ReleaseDomeRoster(frame);
+    if (!ADMG_DomeRosterCurrent(frame)) goto ADMG_roster_reject;
 
     for (i = 0; i < DOME_ROUNDS_COUNT; i++)
-        DecideRoundWinners(i);
+        ADMG_DOME_ROSTER_ACTION(frame, ADMG_DomeRosterRound(frame, i));
 
-    gSaveBlock2Ptr->frontier.lvlMode = lvlMode;
+    frame->save->frontier.lvlMode = lvlMode;
+    frame->level = lvlMode;
+    frame->ownsLevel = FALSE;
+    return TRUE;
+ADMG_roster_reject:
+    return FALSE;
+}
+
+static void InitRandomTourneyTreeResults(void)
+{
+    if (gSaveBlock2Ptr == NULL) { ADMG_StateAccessRejected(0, __func__); return; }
+    if ((gSaveBlock2Ptr->frontier.domeLvlMode != -gSaveBlock2Ptr->frontier.domeBattleMode)
+        && gSaveBlock2Ptr->frontier.challengeStatus != CHALLENGE_STATUS_SAVING) return;
+    struct ADMG_DomeRosterFrame frame = {0};
+    if (!ADMG_TryPrepareDomeRoster(&frame, TRUE)) return;
+    bool8 completed = ADMG_RunInitRandomTourneyTreeResults(&frame);
+    ADMG_ReleaseDomeRoster(&frame);
+    if (!completed || !ADMG_DomeRosterCurrent(&frame)) ADMG_RestoreDomeRoster(&frame);
+}
+
+/* Dome transport is an explicit native roster domain, never content ownership. */
+static bool8 ADMG_TryDomeTrainerSlot(u32 identity, u32 *slot)
+{
+    if (gSaveBlock2Ptr == NULL || slot == NULL || identity > USHRT_MAX)
+    { ADMG_StateAccessRejected(identity, __func__); return FALSE; }
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    if (identity != TRAINER_PLAYER && identity != TRAINER_FRONTIER_BRAIN)
+    {
+        const struct BattleFrontierTrainer *table, *row;
+        const struct TrainerMon *mons;
+        u32 count;
+        if (!ADMG_TrySelectFacilityTrainerTables(FALSE, &table, &mons, &count)
+            || !ADMG_EndStateAccessCheck(generation)) return FALSE;
+        if (gSaveBlock2Ptr != save)
+        { ADMG_StateAccessRejected(identity, __func__); return FALSE; }
+        if (!ADMG_TryGetFacilityTrainerRowFromTable(table, count, identity, &row)
+            || !ADMG_EndStateAccessCheck(generation)) return FALSE;
+        if (gSaveBlock2Ptr != save)
+        { ADMG_StateAccessRejected(identity, __func__); return FALSE; }
+    }
+    for (u32 i = 0; i < ARRAY_COUNT(DOME_TRAINERS); i++)
+        if (DOME_TRAINERS[i].trainerId == identity)
+        { *slot = i; return TRUE; }
+    ADMG_StateAccessRejected(identity, __func__);
+    return FALSE;
+}
+
+static bool8 ADMG_TryDomeOpponentSlot(u32 identity, u32 *slot)
+{
+    struct ADMG_TrainerActorRef actor;
+    if (!ADMG_TryClassifyTrainerActor(identity, ADMG_ACTOR_FACILITY, ADMG_ACTOR_OPPONENT, &actor)) return FALSE;
+    return ADMG_TryDomeTrainerSlot(identity, slot);
 }
 
 static int TrainerIdToTournamentId(u16 trainerId)
 {
-    int i;
-
-    for (i = 0; i < DOME_TOURNAMENT_TRAINERS_COUNT; i++)
-    {
-        if (DOME_TRAINERS[i].trainerId == trainerId)
-            break;
-    }
-
-    return i;
+    u32 slot;
+    if (!ADMG_TryDomeTrainerSlot(trainerId, &slot)) return DOME_TOURNAMENT_TRAINERS_COUNT;
+    return slot;
 }
 
 // The same as the above one, but has global scope.
 int TrainerIdToDomeTournamentId(u16 trainerId)
 {
-    int i;
-
-    for (i = 0; i < DOME_TOURNAMENT_TRAINERS_COUNT; i++)
-    {
-        if (DOME_TRAINERS[i].trainerId == trainerId)
-            break;
-    }
-
-    return i;
+    return TrainerIdToTournamentId(trainerId);
 }
 
 static u8 GetOpposingNPCTournamentIdByRound(u8 tournamentId, u8 round)
 {
+    if (gSaveBlock2Ptr == NULL || tournamentId >= ARRAY_COUNT(sTournamentIdToPairedTrainerIds)
+        || round >= ARRAY_COUNT(sTrainerAndRoundToLastMatchCardNum[0]))
+    { ADMG_StateAccessRejected(tournamentId, __func__); return 0xFF; }
+    u32 paired = sTournamentIdToPairedTrainerIds[tournamentId] / 2;
+    if (paired >= ARRAY_COUNT(sTrainerAndRoundToLastMatchCardNum))
+    { ADMG_StateAccessRejected(paired, __func__); return 0xFF; }
+    u32 card = sTrainerAndRoundToLastMatchCardNum[paired][round];
+    if (card < DOME_TOURNAMENT_TRAINERS_COUNT)
+    { ADMG_StateAccessRejected(card, __func__); return 0xFF; }
     u8 tournamentIds[2];
-    BufferDomeWinString(sTrainerAndRoundToLastMatchCardNum[sTournamentIdToPairedTrainerIds[tournamentId] / 2][round] - 16, tournamentIds);
-    if (tournamentId == tournamentIds[0])
-        return tournamentIds[1];
-    else
-        return tournamentIds[0];
+    if (!ADMG_TryBufferDomeMatchPair(card - DOME_TOURNAMENT_TRAINERS_COUNT, tournamentIds, NULL)) return 0xFF;
+    if (tournamentId == tournamentIds[0]) return tournamentIds[1];
+    return tournamentIds[0];
 }
 
 // Determines which trainers won in the NPC vs NPC battles
-static void DecideRoundWinners(u8 roundId)
+static bool8 ADMG_RunDomeRound(u8 roundId, struct ADMG_DomeRoundFrame *frame)
 {
     int i;
     int moveSlot, monId1, monId2;
@@ -5881,21 +7245,28 @@ static void DecideRoundWinners(u8 roundId)
         if (DOME_TRAINERS[i].isEliminated || DOME_TRAINERS[i].trainerId == TRAINER_PLAYER)
             continue;
 
+        frame->left = frame->right = NULL;
+        u16 actor;
+        if (!ADMG_TryDomeNpcAtSlot(i, &actor) || !ADMG_DomeRoundCurrent(frame)) goto ADMG_round_reject;
         tournamentId1 = i;
-        tournamentId2 = TournamentIdOfOpponent(roundId, DOME_TRAINERS[tournamentId1].trainerId);
+        tournamentId2 = ADMG_DOME_ROUND_VALUE(frame, TournamentIdOfOpponent(roundId, DOME_TRAINERS[tournamentId1].trainerId));
+        if (tournamentId2 != 0xFF && (u32)tournamentId2 >= DOME_TOURNAMENT_TRAINERS_COUNT)
+        { ADMG_StateAccessRejected(tournamentId2, __func__); goto ADMG_round_reject; }
         // Frontier Brain always wins, check tournamentId1.
         if (DOME_TRAINERS[tournamentId1].trainerId == TRAINER_FRONTIER_BRAIN && tournamentId2 != 0xFF)
         {
+            frame->writtenMask |= 1u << tournamentId2;
             DOME_TRAINERS[tournamentId2].isEliminated = TRUE;
             DOME_TRAINERS[tournamentId2].eliminatedAt = roundId;
-            gSaveBlock2Ptr->frontier.domeWinningMoves[tournamentId2] = GetWinningMove(tournamentId1, tournamentId2, roundId);
+            gSaveBlock2Ptr->frontier.domeWinningMoves[tournamentId2] = ADMG_DOME_ROUND_VALUE(frame, ADMG_DomeRoundWinning(frame, tournamentId1, tournamentId2, roundId));
         }
         // Frontier Brain always wins, check tournamentId2.
         else if (tournamentId2 != 0xFF && DOME_TRAINERS[tournamentId2].trainerId == TRAINER_FRONTIER_BRAIN && tournamentId1 != 0xFF)
         {
+            frame->writtenMask |= 1u << tournamentId1;
             DOME_TRAINERS[tournamentId1].isEliminated = TRUE;
             DOME_TRAINERS[tournamentId1].eliminatedAt = roundId;
-            gSaveBlock2Ptr->frontier.domeWinningMoves[tournamentId1] = GetWinningMove(tournamentId2, tournamentId1, roundId);
+            gSaveBlock2Ptr->frontier.domeWinningMoves[tournamentId1] = ADMG_DOME_ROUND_VALUE(frame, ADMG_DomeRoundWinning(frame, tournamentId2, tournamentId1, roundId));
         }
         // Decide which one of two trainers wins!
         else if (tournamentId2 != 0xFF)
@@ -5906,6 +7277,11 @@ static void DecideRoundWinners(u8 roundId)
             points2 = 0;
             #endif
 
+            struct ADMG_DomeSelectionInput left, right;
+            if (!ADMG_TryPrepareDomeSelection(tournamentId1, &left)
+                || !ADMG_TryPrepareDomeSelection(tournamentId2, &right)) goto ADMG_round_reject;
+            frame->left = &left; frame->right = &right;
+            if (!ADMG_DomeRoundCurrent(frame)) goto ADMG_round_reject;
             // Calculate points for both trainers.
             for (monId1 = 0; monId1 < FRONTIER_PARTY_SIZE; monId1++)
             {
@@ -5913,15 +7289,15 @@ static void DecideRoundWinners(u8 roundId)
                 {
                     for (monId2 = 0; monId2 < FRONTIER_PARTY_SIZE; monId2++)
                     {
-                        points1 += GetTypeEffectivenessPoints(gFacilityTrainerMons[DOME_MONS[tournamentId1][monId1]].moves[moveSlot],
-                                                gFacilityTrainerMons[DOME_MONS[tournamentId2][monId2]].species, EFFECTIVENESS_MODE_AI_VS_AI);
+                        points1 += ADMG_DOME_ROUND_VALUE(frame, GetTypeEffectivenessPoints(left.rows[monId1]->moves[moveSlot],
+                                                right.rows[monId2]->species, EFFECTIVENESS_MODE_AI_VS_AI));
                     }
                 }
-                species = gFacilityTrainerMons[DOME_MONS[tournamentId1][monId1]].species;
-                points1 += GetTotalBaseStat(species) / 10;
+                species = left.rows[monId1]->species;
+                points1 += ADMG_DOME_ROUND_VALUE(frame, GetTotalBaseStat(species)) / 10;
             }
             // Random part of the formula.
-            points1 += (Random() & 0x1F);
+            points1 += (ADMG_DOME_ROUND_VALUE(frame, Random()) & 0x1F);
             // Favor trainers with higher id;
             points1 += tournamentId1;
 
@@ -5931,51 +7307,74 @@ static void DecideRoundWinners(u8 roundId)
                 {
                     for (monId2 = 0; monId2 < FRONTIER_PARTY_SIZE; monId2++)
                     {
-                        points2 += GetTypeEffectivenessPoints(gFacilityTrainerMons[DOME_MONS[tournamentId2][monId1]].moves[moveSlot],
-                                                gFacilityTrainerMons[DOME_MONS[tournamentId1][monId2]].species, EFFECTIVENESS_MODE_AI_VS_AI);
+                        points2 += ADMG_DOME_ROUND_VALUE(frame, GetTypeEffectivenessPoints(right.rows[monId1]->moves[moveSlot],
+                                                left.rows[monId2]->species, EFFECTIVENESS_MODE_AI_VS_AI));
                     }
                 }
-                species = gFacilityTrainerMons[DOME_MONS[tournamentId2][monId1]].species;
-                points2 += GetTotalBaseStat(species) / 10;
+                species = right.rows[monId1]->species;
+                points2 += ADMG_DOME_ROUND_VALUE(frame, GetTotalBaseStat(species)) / 10;
             }
             // Random part of the formula.
-            points2 += (Random() & 0x1F);
+            points2 += (ADMG_DOME_ROUND_VALUE(frame, Random()) & 0x1F);
             // Favor trainers with higher id;
             points2 += tournamentId2;
 
             if (points1 > points2)
             {
-                DOME_TRAINERS[tournamentId2].isEliminated = TRUE;
+                frame->writtenMask |= 1u << tournamentId2;
+            DOME_TRAINERS[tournamentId2].isEliminated = TRUE;
                 DOME_TRAINERS[tournamentId2].eliminatedAt = roundId;
-                gSaveBlock2Ptr->frontier.domeWinningMoves[tournamentId2] = GetWinningMove(tournamentId1, tournamentId2, roundId);
+                gSaveBlock2Ptr->frontier.domeWinningMoves[tournamentId2] = ADMG_DOME_ROUND_VALUE(frame, ADMG_DomeRoundWinning(frame, tournamentId1, tournamentId2, roundId));
             }
             else if (points1 < points2)
             {
-                DOME_TRAINERS[tournamentId1].isEliminated = TRUE;
+                frame->writtenMask |= 1u << tournamentId1;
+            DOME_TRAINERS[tournamentId1].isEliminated = TRUE;
                 DOME_TRAINERS[tournamentId1].eliminatedAt = roundId;
-                gSaveBlock2Ptr->frontier.domeWinningMoves[tournamentId1] = GetWinningMove(tournamentId2, tournamentId1, roundId);
+                gSaveBlock2Ptr->frontier.domeWinningMoves[tournamentId1] = ADMG_DOME_ROUND_VALUE(frame, ADMG_DomeRoundWinning(frame, tournamentId2, tournamentId1, roundId));
             }
             // Points are the same, so we favor the one with the higher id.
             else if (tournamentId1 > tournamentId2)
             {
-                DOME_TRAINERS[tournamentId2].isEliminated = TRUE;
+                frame->writtenMask |= 1u << tournamentId2;
+            DOME_TRAINERS[tournamentId2].isEliminated = TRUE;
                 DOME_TRAINERS[tournamentId2].eliminatedAt = roundId;
-                gSaveBlock2Ptr->frontier.domeWinningMoves[tournamentId2] = GetWinningMove(tournamentId1, tournamentId2, roundId);
+                gSaveBlock2Ptr->frontier.domeWinningMoves[tournamentId2] = ADMG_DOME_ROUND_VALUE(frame, ADMG_DomeRoundWinning(frame, tournamentId1, tournamentId2, roundId));
             }
             else
             {
-                DOME_TRAINERS[tournamentId1].isEliminated = TRUE;
+                frame->writtenMask |= 1u << tournamentId1;
+            DOME_TRAINERS[tournamentId1].isEliminated = TRUE;
                 DOME_TRAINERS[tournamentId1].eliminatedAt = roundId;
-                gSaveBlock2Ptr->frontier.domeWinningMoves[tournamentId1] = GetWinningMove(tournamentId2, tournamentId1, roundId);
+                gSaveBlock2Ptr->frontier.domeWinningMoves[tournamentId1] = ADMG_DOME_ROUND_VALUE(frame, ADMG_DomeRoundWinning(frame, tournamentId2, tournamentId1, roundId));
             }
         }
     }
+    return TRUE;
+ADMG_round_reject:
+    return FALSE;
+}
+
+static void DecideRoundWinners(u8 roundId)
+{
+    if (roundId >= DOME_ROUNDS_COUNT) { ADMG_StateAccessRejected(roundId, __func__); return; }
+    struct ADMG_DomeRoundFrame frame;
+    if (!ADMG_TryPrepareDomeRound(&frame)) return;
+    if (!ADMG_RunDomeRound(roundId, &frame) || !ADMG_DomeRoundCurrent(&frame)) ADMG_RestoreDomeRound(&frame);
 }
 
 static void CopyDomeTrainerName(u8 *str, u16 trainerId)
 {
+    const struct BattleFrontierTrainer *trainer = NULL;
+    if (str == NULL) { ADMG_StateAccessRejected(trainerId, __func__); return; }
+    if (!ADMG_TryDomeNameIdentity(trainerId, &trainer)) return;
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    u64 generation = ADMG_BeginStateAccessCheck();
+
     int i = 0;
     SetFacilityPtrsGetLevel();
+    if (!ADMG_EndStateAccessCheck(generation)) return;
+    if (gSaveBlock2Ptr != save) { ADMG_StateAccessRejected(trainerId, __func__); return; }
 
     if (trainerId == TRAINER_FRONTIER_BRAIN)
     {
@@ -5991,7 +7390,7 @@ static void CopyDomeTrainerName(u8 *str, u16 trainerId)
         else if (trainerId < FRONTIER_TRAINERS_COUNT)
         {
             for (i = 0; i < PLAYER_NAME_LENGTH; i++)
-                str[i] = gFacilityTrainers[trainerId].trainerName[i];
+                str[i] = trainer->trainerName[i];
         }
         str[i] = EOS;
     }

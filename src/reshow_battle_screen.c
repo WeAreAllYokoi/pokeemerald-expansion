@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_state.h"
 #include "reshow_battle_screen.h"
 #include "battle.h"
 #include "palette.h"
@@ -71,7 +72,7 @@ static void CB2_ReshowBattleScreenAfterMenu(void)
         CpuFastFill(0, (void *)(VRAM), VRAM_SIZE);
         break;
     case 2:
-        LoadBattleTextboxAndBackground();
+        { u64 background = ADMG_BeginStateAccessCheck(); LoadBattleTextboxAndBackground(); if (!ADMG_EndStateAccessCheck(background)) return; }
         break;
     case 3:
         ResetSpriteData();
@@ -213,7 +214,7 @@ static void CB2_ReshowBlankBattleScreenAfterMenu(void)
         CpuFastFill(0, (void *)(VRAM), VRAM_SIZE);
         break;
     case 2:
-        LoadBattleTextboxAndBackground();
+        { u64 background = ADMG_BeginStateAccessCheck(); LoadBattleTextboxAndBackground(); if (!ADMG_EndStateAccessCheck(background)) return; }
         break;
     case 3:
         ResetSpriteData();

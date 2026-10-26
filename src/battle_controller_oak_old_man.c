@@ -1,4 +1,6 @@
 #include "global.h"
+#include "admg_state.h"
+#include "admg_trainer_actor.h"
 #include "battle.h"
 #include "battle_anim.h"
 #include "battle_controllers.h"
@@ -705,25 +707,37 @@ static void OakOldManHandleTrainerSlide(enum BattlerId battler)
 
 static void OakOldManHandlePrintString(enum BattlerId battler)
 {
-    u16 *stringId;
+    if ((u32)battler >= MAX_BATTLERS_COUNT || gBattleResources == NULL)
+    { ADMG_StateAccessRejected((u32)battler, __func__); return; }
+    u16 stringId = T1_READ_16(&gBattleResources->bufferA[battler][2]);
+    if ((u32)stringId >= STRINGID_COUNT)
+    { ADMG_StateAccessRejected((u32)stringId, __func__); return; }
+    u16 previousX = gBattle_BG0_X, previousY = gBattle_BG0_Y;
 
     gBattle_BG0_X = 0;
     gBattle_BG0_Y = 0;
-    stringId = (u16 *)(&gBattleResources->bufferA[battler][2]);
-    if (gBattleTypeFlags & BATTLE_TYPE_CATCH_TUTORIAL && *stringId == 1)
+    if (gBattleTypeFlags & BATTLE_TYPE_CATCH_TUTORIAL && stringId == 1)
     {
         OakOldManBufferExecCompleted(battler);
     }
     else
     {
-        BufferStringBattle(*stringId, battler);
-        // if (BattleStringShouldBeColored(*stringId))
+        u64 generation = ADMG_BeginStateAccessCheck();
+        struct BattleResources *resources = gBattleResources;
+        BufferStringBattle(stringId, battler);
+        if (!ADMG_EndStateAccessCheck(generation) || gBattleResources != resources)
+        {
+            gBattle_BG0_X = previousX; gBattle_BG0_Y = previousY;
+            if (ADMG_EndStateAccessCheck(generation)) ADMG_StateAccessRejected(stringId, __func__);
+            return;
+        }
+        // if (BattleStringShouldBeColored(stringId))
         //     BattlePutTextOnWindow(gDisplayedStringBattle, (B_WIN_MSG | B_TEXT_FLAG_NPC_CONTEXT_FONT));
         // else
             BattlePutTextOnWindow(gDisplayedStringBattle, B_WIN_MSG);
         if (gBattleTypeFlags & BATTLE_TYPE_FIRST_BATTLE)
         {
-            switch (*stringId)
+            switch (stringId)
             {
             case STRINGID_STATFELL:
                 if (gBattlerTarget == battler && IS_FRLG && !BtlCtrl_OakOldMan_TestState2Flag(FIRST_BATTLE_MSG_FLAG_STAT_CHG))

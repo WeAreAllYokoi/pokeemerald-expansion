@@ -1,0 +1,4659 @@
+{
+  "authority_sha256": "3b36bdfa5f8f83506106058e97432260964b24ff1c7d98cb0bdef2429e8514aa",
+  "campaign_used_for_identity": false,
+  "current_map_used_for_identity": false,
+  "distinct_members": 351,
+  "families_with_repeated_identity": 136,
+  "family_count": 221,
+  "format": "admg101-native-rematch-operands",
+  "format_version": 1,
+  "other_retained_rows": 273,
+  "relationship_commit": "037335f4c725d7c9aecdac87066f2002b4bd7e14",
+  "rows": [
+    {
+      "base_symbol": "TRAINER_YOUNGSTER_BEN",
+      "canonical_slots": [
+        1025,
+        1037,
+        65535,
+        1408,
+        1409,
+        0
+      ],
+      "initializer_sha256": "86ae834fd0282e6c5f0b7aa6f98a1b37d2584f694b8c99ae642d88f68d121c7a",
+      "reference_row": 0,
+      "symbols": [
+        "TRAINER_YOUNGSTER_BEN",
+        "TRAINER_YOUNGSTER_BEN_2",
+        "SKIP",
+        "TRAINER_YOUNGSTER_BEN_3",
+        "TRAINER_YOUNGSTER_BEN_4",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_YOUNGSTER_CALVIN",
+      "canonical_slots": [
+        1026,
+        1026,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "db82803f01de8de70b9c898778269f928e6121bc3b6ad18a6b23844bbd9cc4bd",
+      "reference_row": 1,
+      "symbols": [
+        "TRAINER_YOUNGSTER_CALVIN",
+        "TRAINER_YOUNGSTER_CALVIN",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BUG_CATCHER_COLTON",
+      "canonical_slots": [
+        1041,
+        1634,
+        65535,
+        1635,
+        65535,
+        1636
+      ],
+      "initializer_sha256": "93e0bfa160c149cc7f7b77a05419657839a8f3ba6cd7f3b2dc0addd8eacee54f",
+      "reference_row": 2,
+      "symbols": [
+        "TRAINER_BUG_CATCHER_COLTON",
+        "TRAINER_BUG_CATCHER_COLTON_2",
+        "SKIP",
+        "TRAINER_BUG_CATCHER_COLTON_3",
+        "SKIP",
+        "TRAINER_BUG_CATCHER_COLTON_4"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BUG_CATCHER_GREG",
+      "canonical_slots": [
+        1042,
+        1042,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "140595ce14c2db9b3f9bb4f2edcaeb996a2bea57985a8efda3a73befd8c9be2c",
+      "reference_row": 3,
+      "symbols": [
+        "TRAINER_BUG_CATCHER_GREG",
+        "TRAINER_BUG_CATCHER_GREG",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BUG_CATCHER_JAMES",
+      "canonical_slots": [
+        1043,
+        1043,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "30ad4ca781dc996fa7d780b6b0715fb64bad0fb7e3463321d837301cc5e52a0c",
+      "reference_row": 4,
+      "symbols": [
+        "TRAINER_BUG_CATCHER_JAMES",
+        "TRAINER_BUG_CATCHER_JAMES",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_LASS_JANICE",
+      "canonical_slots": [
+        1051,
+        1417,
+        65535,
+        1418,
+        0,
+        0
+      ],
+      "initializer_sha256": "e1a96a2acc8c1cc9b77680e1758754ca4fd5d7044167d546a7691ca6c5201762",
+      "reference_row": 5,
+      "symbols": [
+        "TRAINER_LASS_JANICE",
+        "TRAINER_LASS_JANICE_2",
+        "SKIP",
+        "TRAINER_LASS_JANICE_3",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_LASS_SALLY",
+      "canonical_slots": [
+        1052,
+        1052,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "62f558fd8b79d90d9e9180eb3f1abe84af7d5d9922f3e08cbfe5c56fbe7ca933",
+      "reference_row": 6,
+      "symbols": [
+        "TRAINER_LASS_SALLY",
+        "TRAINER_LASS_SALLY",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_LASS_ROBIN",
+      "canonical_slots": [
+        1053,
+        1053,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "23199f8bfa7461e64b78b7018a00c4e2eb6a66555620f9b183b6f320af3b2e87",
+      "reference_row": 7,
+      "symbols": [
+        "TRAINER_LASS_ROBIN",
+        "TRAINER_LASS_ROBIN",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_LASS_CRISSY",
+      "canonical_slots": [
+        1054,
+        1054,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "c78b6f1b4ed3729a1d4654d48db003665f175b4e6814c1731a86636d9dc70bf2",
+      "reference_row": 8,
+      "symbols": [
+        "TRAINER_LASS_CRISSY",
+        "TRAINER_LASS_CRISSY",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_YOUNGSTER_TIMMY",
+      "canonical_slots": [
+        1028,
+        1413,
+        65535,
+        1414,
+        65535,
+        1415
+      ],
+      "initializer_sha256": "ed6171dbc9c9509b322aba694c7e93e9b3ccef214ee3a572d0e72b6bdd79947e",
+      "reference_row": 9,
+      "symbols": [
+        "TRAINER_YOUNGSTER_TIMMY",
+        "TRAINER_YOUNGSTER_TIMMY_2",
+        "SKIP",
+        "TRAINER_YOUNGSTER_TIMMY_3",
+        "SKIP",
+        "TRAINER_YOUNGSTER_TIMMY_4"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BUG_CATCHER_CALE",
+      "canonical_slots": [
+        1046,
+        1046,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "77372cd4ef5fff2bb2db23790dfa744c304351d57b7990e0272632c7f15a263e",
+      "reference_row": 10,
+      "symbols": [
+        "TRAINER_BUG_CATCHER_CALE",
+        "TRAINER_BUG_CATCHER_CALE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_LASS_RELI",
+      "canonical_slots": [
+        1057,
+        1411,
+        65535,
+        1412,
+        0,
+        0
+      ],
+      "initializer_sha256": "97db1caa52499863ce8d1ef628fac509508a89b084142cba9f53ebe425e041d0",
+      "reference_row": 11,
+      "symbols": [
+        "TRAINER_LASS_RELI",
+        "TRAINER_LASS_RELI_2",
+        "SKIP",
+        "TRAINER_LASS_RELI_3",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_LASS_ALI",
+      "canonical_slots": [
+        1058,
+        1058,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "88c91e6736f4e39c70d12b9b1b0b7ae1f56aec06191f258ff71a9dcc7f40e85a",
+      "reference_row": 12,
+      "symbols": [
+        "TRAINER_LASS_ALI",
+        "TRAINER_LASS_ALI",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_CAMPER_SHANE",
+      "canonical_slots": [
+        1077,
+        1077,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "a4da85eb26b276bd2f8d68da9c7ab008ff383d8eda6e407584c2d4f47fa5b5f9",
+      "reference_row": 13,
+      "symbols": [
+        "TRAINER_CAMPER_SHANE",
+        "TRAINER_CAMPER_SHANE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_CAMPER_ETHAN",
+      "canonical_slots": [
+        1078,
+        1078,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "b34513b57946041d8eca5eba608e450e036938b5c10abe647a965fcb693e4b5b",
+      "reference_row": 14,
+      "symbols": [
+        "TRAINER_CAMPER_ETHAN",
+        "TRAINER_CAMPER_ETHAN",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_YOUNGSTER_JOEY",
+      "canonical_slots": [
+        1029,
+        1029,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "a0381172a98cb4f121e759174d698e4f10469bd1b4e858bb8fd11c02a4763fe8",
+      "reference_row": 15,
+      "symbols": [
+        "TRAINER_YOUNGSTER_JOEY",
+        "TRAINER_YOUNGSTER_JOEY",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_YOUNGSTER_DAN",
+      "canonical_slots": [
+        1030,
+        1030,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "61f2a8f96125be6fb43ece458f9123763d4808c41900a8fa6627ef38d2a9a3c4",
+      "reference_row": 16,
+      "symbols": [
+        "TRAINER_YOUNGSTER_DAN",
+        "TRAINER_YOUNGSTER_DAN",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_YOUNGSTER_CHAD",
+      "canonical_slots": [
+        1031,
+        1410,
+        65535,
+        1416,
+        1419,
+        0
+      ],
+      "initializer_sha256": "c9023009e72593d16e0c27647e35ac0020096b2cc4e01b1eaea8056c609d414f",
+      "reference_row": 17,
+      "symbols": [
+        "TRAINER_YOUNGSTER_CHAD",
+        "TRAINER_YOUNGSTER_CHAD_2",
+        "SKIP",
+        "TRAINER_YOUNGSTER_CHAD_3",
+        "TRAINER_YOUNGSTER_CHAD_4",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PICNICKER_KELSEY",
+      "canonical_slots": [
+        1086,
+        1526,
+        65535,
+        1527,
+        1528,
+        0
+      ],
+      "initializer_sha256": "7762cbdd0f2f65c319729fa15e9b1dafde816cf877a98ff0439e4fc33ace89f5",
+      "reference_row": 18,
+      "symbols": [
+        "TRAINER_PICNICKER_KELSEY",
+        "TRAINER_PICNICKER_KELSEY_2",
+        "SKIP",
+        "TRAINER_PICNICKER_KELSEY_3",
+        "TRAINER_PICNICKER_KELSEY_4",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_LASS_HALEY",
+      "canonical_slots": [
+        1059,
+        1059,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "daa9eaa8a3d39c396d2601bed7ba9f58f92c6af9242ef1036f9354f43df4afc4",
+      "reference_row": 19,
+      "symbols": [
+        "TRAINER_LASS_HALEY",
+        "TRAINER_LASS_HALEY",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_HIKER_FRANKLIN",
+      "canonical_slots": [
+        1112,
+        65535,
+        1420,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "0466c98a63d8a40c2ebc48dca55a191b833d77193f7d4cdfc2172e2182faadd5",
+      "reference_row": 20,
+      "symbols": [
+        "TRAINER_HIKER_FRANKLIN",
+        "SKIP",
+        "TRAINER_HIKER_FRANKLIN_2",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_HIKER_NOB",
+      "canonical_slots": [
+        1113,
+        1113,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "4cbd2afa03d129fd6da25b4d55df8646989b62289af39df9e5c4f7b993b13216",
+      "reference_row": 21,
+      "symbols": [
+        "TRAINER_HIKER_NOB",
+        "TRAINER_HIKER_NOB",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_HIKER_WAYNE",
+      "canonical_slots": [
+        1114,
+        1114,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "82eb7d128416e2af00b48573b0da072ef1c33287c7a18f7614c16f6fda572cbe",
+      "reference_row": 22,
+      "symbols": [
+        "TRAINER_HIKER_WAYNE",
+        "TRAINER_HIKER_WAYNE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_CAMPER_FLINT",
+      "canonical_slots": [
+        1387,
+        1387,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "709c13eb63d90c868bc3a25a4bec4e6a3a0f4d966b1a6523fd7ecd906d3adbc6",
+      "reference_row": 23,
+      "symbols": [
+        "TRAINER_CAMPER_FLINT",
+        "TRAINER_CAMPER_FLINT",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BUG_CATCHER_KEIGO",
+      "canonical_slots": [
+        1047,
+        1047,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "2ba5251720a4cb084bc95f7baac5c6d04d5c3274ffb4cb13e2dcce3c51763f3a",
+      "reference_row": 24,
+      "symbols": [
+        "TRAINER_BUG_CATCHER_KEIGO",
+        "TRAINER_BUG_CATCHER_KEIGO",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BUG_CATCHER_ELIJAH",
+      "canonical_slots": [
+        1048,
+        1048,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "eed939c15cfd5502f8e8b2bd47c10787854d4284d0f671ac9fb689dffb9f46bc",
+      "reference_row": 25,
+      "symbols": [
+        "TRAINER_BUG_CATCHER_ELIJAH",
+        "TRAINER_BUG_CATCHER_ELIJAH",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_CAMPER_RICKY",
+      "canonical_slots": [
+        1079,
+        1529,
+        65535,
+        1530,
+        65535,
+        1531
+      ],
+      "initializer_sha256": "0ca60f90b0dffc4925df410ddebf0567c2369ddb72ea97386b9b8f61c5a46d90",
+      "reference_row": 26,
+      "symbols": [
+        "TRAINER_CAMPER_RICKY",
+        "TRAINER_CAMPER_RICKY_2",
+        "SKIP",
+        "TRAINER_CAMPER_RICKY_3",
+        "SKIP",
+        "TRAINER_CAMPER_RICKY_4"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_CAMPER_JEFF",
+      "canonical_slots": [
+        1080,
+        1532,
+        65535,
+        1533,
+        65535,
+        1534
+      ],
+      "initializer_sha256": "569926932b501718b2d005d6e5ee6df1d934959891281eaac6fe2f89f3c55c7b",
+      "reference_row": 27,
+      "symbols": [
+        "TRAINER_CAMPER_JEFF",
+        "TRAINER_CAMPER_JEFF_2",
+        "SKIP",
+        "TRAINER_CAMPER_JEFF_3",
+        "SKIP",
+        "TRAINER_CAMPER_JEFF_4"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PICNICKER_NANCY",
+      "canonical_slots": [
+        1084,
+        1084,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "6b5df35e977963d75c34be69d5e75f30c75d458eaade5c02a9c25e325cf31854",
+      "reference_row": 28,
+      "symbols": [
+        "TRAINER_PICNICKER_NANCY",
+        "TRAINER_PICNICKER_NANCY",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PICNICKER_ISABELLE",
+      "canonical_slots": [
+        1085,
+        1535,
+        65535,
+        1536,
+        1537,
+        0
+      ],
+      "initializer_sha256": "89cd0c8fb45ad98fa7aa40d2e6d08a4aebed2d782a15473021f776626d7cd13d",
+      "reference_row": 29,
+      "symbols": [
+        "TRAINER_PICNICKER_ISABELLE",
+        "TRAINER_PICNICKER_ISABELLE_2",
+        "SKIP",
+        "TRAINER_PICNICKER_ISABELLE_3",
+        "TRAINER_PICNICKER_ISABELLE_4",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_YOUNGSTER_EDDIE",
+      "canonical_slots": [
+        1033,
+        1033,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "bb5482a179d79b7c848a9985d445115329fbff0e71e87d4f8f4257639cb6b821",
+      "reference_row": 30,
+      "symbols": [
+        "TRAINER_YOUNGSTER_EDDIE",
+        "TRAINER_YOUNGSTER_EDDIE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_YOUNGSTER_DILLON",
+      "canonical_slots": [
+        1034,
+        1034,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "e8637152fdbfba99ecb8bcde3d508da2c3a541e321a6174032fe4e9780e32e0c",
+      "reference_row": 31,
+      "symbols": [
+        "TRAINER_YOUNGSTER_DILLON",
+        "TRAINER_YOUNGSTER_DILLON",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_YOUNGSTER_YASU",
+      "canonical_slots": [
+        1035,
+        65535,
+        1538,
+        65535,
+        1539,
+        0
+      ],
+      "initializer_sha256": "c5e4147ad2dd643d6a5345afc62be78e792147560e3fe13cfa4c704e3913d44b",
+      "reference_row": 32,
+      "symbols": [
+        "TRAINER_YOUNGSTER_YASU",
+        "SKIP",
+        "TRAINER_YOUNGSTER_YASU_2",
+        "SKIP",
+        "TRAINER_YOUNGSTER_YASU_3",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_YOUNGSTER_DAVE",
+      "canonical_slots": [
+        1036,
+        1036,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "62d16c8e2049f8f0ae5c8221f9ca55279bb95b93cb8b54704efaef86620115b5",
+      "reference_row": 33,
+      "symbols": [
+        "TRAINER_YOUNGSTER_DAVE",
+        "TRAINER_YOUNGSTER_DAVE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_ENGINEER_BRAXTON",
+      "canonical_slots": [
+        1146,
+        1146,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "72ddcf02be21417216011dea3dbb063ab06dd64646c2e7dacb9f144574e8fb9e",
+      "reference_row": 34,
+      "symbols": [
+        "TRAINER_ENGINEER_BRAXTON",
+        "TRAINER_ENGINEER_BRAXTON",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_ENGINEER_BERNIE",
+      "canonical_slots": [
+        1147,
+        65535,
+        65535,
+        1540,
+        0,
+        0
+      ],
+      "initializer_sha256": "d52b2036eeda3a9a5c460c9f7c785aa33a69b58cfb31681aaf8b769ac23ba80e",
+      "reference_row": 35,
+      "symbols": [
+        "TRAINER_ENGINEER_BERNIE",
+        "SKIP",
+        "SKIP",
+        "TRAINER_ENGINEER_BERNIE_2",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_GAMER_HUGO",
+      "canonical_slots": [
+        1183,
+        1183,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "3e9782e872fa993d5d7fc372d2ae9e3fcd6be7f5b8660f43f764102c07482201",
+      "reference_row": 36,
+      "symbols": [
+        "TRAINER_GAMER_HUGO",
+        "TRAINER_GAMER_HUGO",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_GAMER_JASPER",
+      "canonical_slots": [
+        1184,
+        1184,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "87de8d7a36b526a82b07bc3f3b887f0fc04abbf1173c3e8436dac3d39c7b830f",
+      "reference_row": 37,
+      "symbols": [
+        "TRAINER_GAMER_JASPER",
+        "TRAINER_GAMER_JASPER",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_GAMER_DIRK",
+      "canonical_slots": [
+        1185,
+        1185,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "925eccff926eae7be7f877310d57a79d69db14370cf6a34bc89de6922bc61cfd",
+      "reference_row": 38,
+      "symbols": [
+        "TRAINER_GAMER_DIRK",
+        "TRAINER_GAMER_DIRK",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_GAMER_DARIAN",
+      "canonical_slots": [
+        1186,
+        65535,
+        65535,
+        1541,
+        0,
+        0
+      ],
+      "initializer_sha256": "8247907cfcbdf346e0861b0a72868d8c57a832e5cd490035e52d480e8dc6ccbf",
+      "reference_row": 39,
+      "symbols": [
+        "TRAINER_GAMER_DARIAN",
+        "SKIP",
+        "SKIP",
+        "TRAINER_GAMER_DARIAN_2",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BUG_CATCHER_BRENT",
+      "canonical_slots": [
+        1049,
+        1049,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "3b7db1e03cdd472489239f7c5335239cd39823a170d930c3dc50f3885074c36e",
+      "reference_row": 40,
+      "symbols": [
+        "TRAINER_BUG_CATCHER_BRENT",
+        "TRAINER_BUG_CATCHER_BRENT",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BUG_CATCHER_CONNER",
+      "canonical_slots": [
+        1050,
+        1050,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "c29a116940474871352c21ba1962f4c579027371373661b84ff9fafe41b5bd4c",
+      "reference_row": 41,
+      "symbols": [
+        "TRAINER_BUG_CATCHER_CONNER",
+        "TRAINER_BUG_CATCHER_CONNER",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_CAMPER_CHRIS",
+      "canonical_slots": [
+        1081,
+        65535,
+        1542,
+        1543,
+        65535,
+        1544
+      ],
+      "initializer_sha256": "4e55a612244ab1044934461cbe37d291a016cd88298de893a51853f70f276a9b",
+      "reference_row": 42,
+      "symbols": [
+        "TRAINER_CAMPER_CHRIS",
+        "SKIP",
+        "TRAINER_CAMPER_CHRIS_2",
+        "TRAINER_CAMPER_CHRIS_3",
+        "SKIP",
+        "TRAINER_CAMPER_CHRIS_4"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_CAMPER_DREW",
+      "canonical_slots": [
+        1082,
+        1082,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "cab71c5c4d7d36c706b0764e4e373426ad207026722ba1454cb7c38e1724c965",
+      "reference_row": 43,
+      "symbols": [
+        "TRAINER_CAMPER_DREW",
+        "TRAINER_CAMPER_DREW",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PICNICKER_ALICIA",
+      "canonical_slots": [
+        1087,
+        65535,
+        1545,
+        1546,
+        65535,
+        1547
+      ],
+      "initializer_sha256": "3a73bb3bff92e386fd6aaa1faf039aff35b70ac31d5c5c58f4b5b1e6407091bd",
+      "reference_row": 44,
+      "symbols": [
+        "TRAINER_PICNICKER_ALICIA",
+        "SKIP",
+        "TRAINER_PICNICKER_ALICIA_2",
+        "TRAINER_PICNICKER_ALICIA_3",
+        "SKIP",
+        "TRAINER_PICNICKER_ALICIA_4"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PICNICKER_CAITLIN",
+      "canonical_slots": [
+        1088,
+        1088,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "5cb76dd3f090377beeb94087c86bbf9c25deb95230bec24a19fa8e7ed5cbd674",
+      "reference_row": 45,
+      "symbols": [
+        "TRAINER_PICNICKER_CAITLIN",
+        "TRAINER_PICNICKER_CAITLIN",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_HIKER_ALAN",
+      "canonical_slots": [
+        1115,
+        1115,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "ec87a5a9bc01e70ebf24374c8fe6f2529adbde7aadc151dfcc4a75021c89f9be",
+      "reference_row": 46,
+      "symbols": [
+        "TRAINER_HIKER_ALAN",
+        "TRAINER_HIKER_ALAN",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_HIKER_BRICE",
+      "canonical_slots": [
+        1116,
+        1116,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "e270f165564204364160a96879accc1fc2da3b89e7fbd4f22d6e7135c48a8434",
+      "reference_row": 47,
+      "symbols": [
+        "TRAINER_HIKER_BRICE",
+        "TRAINER_HIKER_BRICE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_HIKER_JEREMY",
+      "canonical_slots": [
+        1381,
+        65535,
+        65535,
+        1548,
+        0,
+        0
+      ],
+      "initializer_sha256": "d63ba58dba00103e378b5ae0b1cd4b8c3e27c6c85f475d310c228cee5eaf486d",
+      "reference_row": 48,
+      "symbols": [
+        "TRAINER_HIKER_JEREMY",
+        "SKIP",
+        "SKIP",
+        "TRAINER_HIKER_JEREMY_2",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PICNICKER_HEIDI",
+      "canonical_slots": [
+        1089,
+        1089,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "d5bc80c19a29fbf9676c7a686c51fdaa302682f8ca58f469cfe224fd05f1b47e",
+      "reference_row": 49,
+      "symbols": [
+        "TRAINER_PICNICKER_HEIDI",
+        "TRAINER_PICNICKER_HEIDI",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PICNICKER_CAROL",
+      "canonical_slots": [
+        1090,
+        1090,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "92f5f3ea66022399e007b54dace56d848c7203f9ea4b559109fb83ec9af073a8",
+      "reference_row": 50,
+      "symbols": [
+        "TRAINER_PICNICKER_CAROL",
+        "TRAINER_PICNICKER_CAROL",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_POKEMANIAC_MARK",
+      "canonical_slots": [
+        1095,
+        65535,
+        65535,
+        1499,
+        65535,
+        1549
+      ],
+      "initializer_sha256": "b8e49761ac632421c18ea8aedfad915aab2e206062063c7ef94b8f6a21dcc25c",
+      "reference_row": 51,
+      "symbols": [
+        "TRAINER_POKEMANIAC_MARK",
+        "SKIP",
+        "SKIP",
+        "TRAINER_POKEMANIAC_MARK_2",
+        "SKIP",
+        "TRAINER_POKEMANIAC_MARK_3"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_POKEMANIAC_HERMAN",
+      "canonical_slots": [
+        1096,
+        65535,
+        65535,
+        1550,
+        65535,
+        1551
+      ],
+      "initializer_sha256": "3492b97f80b88659e4a010094a17769abd82f63c832a01599a2708e3b987e05e",
+      "reference_row": 52,
+      "symbols": [
+        "TRAINER_POKEMANIAC_HERMAN",
+        "SKIP",
+        "SKIP",
+        "TRAINER_POKEMANIAC_HERMAN_2",
+        "SKIP",
+        "TRAINER_POKEMANIAC_HERMAN_3"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_HIKER_CLARK",
+      "canonical_slots": [
+        1117,
+        1117,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "8872eaa2532b5d0c1d94fc2d0f5e1b7786d557c9620515ddf5308d1c20de36c1",
+      "reference_row": 53,
+      "symbols": [
+        "TRAINER_HIKER_CLARK",
+        "TRAINER_HIKER_CLARK",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_HIKER_TRENT",
+      "canonical_slots": [
+        1118,
+        65535,
+        65535,
+        1552,
+        0,
+        0
+      ],
+      "initializer_sha256": "c9e61e947e0e5f71cb38f9ad09c60650e9e5748fa2df477a58d28c0cc9905a19",
+      "reference_row": 54,
+      "symbols": [
+        "TRAINER_HIKER_TRENT",
+        "SKIP",
+        "SKIP",
+        "TRAINER_HIKER_TRENT_2",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_LASS_PAIGE",
+      "canonical_slots": [
+        1062,
+        1062,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "1393ec6670982b1ecfaba8a59ba4ac57bcebfcc2a185cbc601e0bdd15cdf767a",
+      "reference_row": 55,
+      "symbols": [
+        "TRAINER_LASS_PAIGE",
+        "TRAINER_LASS_PAIGE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_LASS_ANDREA",
+      "canonical_slots": [
+        1063,
+        1063,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "29de3cb453c8eb70fbf0835677323136d641fdc8879959e99d59c8922a561a0e",
+      "reference_row": 56,
+      "symbols": [
+        "TRAINER_LASS_ANDREA",
+        "TRAINER_LASS_ANDREA",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_LASS_MEGAN",
+      "canonical_slots": [
+        1064,
+        65535,
+        1553,
+        65535,
+        1554,
+        0
+      ],
+      "initializer_sha256": "f80a02165659f369db96833eb5dd41fc7f1f965685ebb46a2a13e3552abff959",
+      "reference_row": 57,
+      "symbols": [
+        "TRAINER_LASS_MEGAN",
+        "SKIP",
+        "TRAINER_LASS_MEGAN_2",
+        "SKIP",
+        "TRAINER_LASS_MEGAN_3",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_LASS_JULIA",
+      "canonical_slots": [
+        1065,
+        1065,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "89f69f60ed4baac686e4c5c2290f8182add58b5678cfc7525fece7661f451bde",
+      "reference_row": 58,
+      "symbols": [
+        "TRAINER_LASS_JULIA",
+        "TRAINER_LASS_JULIA",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SUPER_NERD_AIDAN",
+      "canonical_slots": [
+        1104,
+        1104,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "048fec6f14cc91ace823f6ea639e5a097087fc35845aa04861f6993c32622431",
+      "reference_row": 59,
+      "symbols": [
+        "TRAINER_SUPER_NERD_AIDAN",
+        "TRAINER_SUPER_NERD_AIDAN",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SUPER_NERD_GLENN",
+      "canonical_slots": [
+        1105,
+        65535,
+        65535,
+        1555,
+        0,
+        0
+      ],
+      "initializer_sha256": "a5c597b364670ba5e7e4f84cac2d6b8bac2eadd15e1f0154d739b1768552142e",
+      "reference_row": 60,
+      "symbols": [
+        "TRAINER_SUPER_NERD_GLENN",
+        "SKIP",
+        "SKIP",
+        "TRAINER_SUPER_NERD_GLENN_2",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SUPER_NERD_LESLIE",
+      "canonical_slots": [
+        1106,
+        1106,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "f999c15b29694d4fe3a5397e6003cb4fbd6dfd1d9877ac56c2c7de5fc38eef7f",
+      "reference_row": 61,
+      "symbols": [
+        "TRAINER_SUPER_NERD_LESLIE",
+        "TRAINER_SUPER_NERD_LESLIE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_GAMER_STAN",
+      "canonical_slots": [
+        1187,
+        1187,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "27b77fab79f725045b9f018970abaa628a45d7741f27203e6828e70ff4cfaeb0",
+      "reference_row": 62,
+      "symbols": [
+        "TRAINER_GAMER_STAN",
+        "TRAINER_GAMER_STAN",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_GAMER_RICH",
+      "canonical_slots": [
+        1188,
+        65535,
+        65535,
+        1556,
+        0,
+        0
+      ],
+      "initializer_sha256": "dc9544c5441dfa9620e4f14c2d6bfff350d48bb6a80668fbb1385cfbdb9c0f4c",
+      "reference_row": 63,
+      "symbols": [
+        "TRAINER_GAMER_RICH",
+        "SKIP",
+        "SKIP",
+        "TRAINER_GAMER_RICH_2",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_TWINS_ELI_ANNE",
+      "canonical_slots": [
+        1400,
+        65535,
+        65535,
+        1438,
+        0,
+        0
+      ],
+      "initializer_sha256": "07c48997a54045375a0f20bf459abe5d963fa24559edec97c7bd59ead76bb464",
+      "reference_row": 64,
+      "symbols": [
+        "TRAINER_TWINS_ELI_ANNE",
+        "SKIP",
+        "SKIP",
+        "TRAINER_TWINS_ELI_ANNE_2",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIKER_RICARDO",
+      "canonical_slots": [
+        1440,
+        1440,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "fe4722747619fba7c93af5f641ffd09936ebe6d9dab9d5d1e01abd0167540c81",
+      "reference_row": 65,
+      "symbols": [
+        "TRAINER_BIKER_RICARDO",
+        "TRAINER_BIKER_RICARDO",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIKER_JAREN",
+      "canonical_slots": [
+        1441,
+        65535,
+        65535,
+        1557,
+        0,
+        0
+      ],
+      "initializer_sha256": "07d52c218443b70a90cbb4eeccf8483b90ccba10dff5b044dc549e8a1efe7722",
+      "reference_row": 66,
+      "symbols": [
+        "TRAINER_BIKER_JAREN",
+        "SKIP",
+        "SKIP",
+        "TRAINER_BIKER_JAREN_2",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_FISHERMAN_NED",
+      "canonical_slots": [
+        1150,
+        1150,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "e528c097c9af44d5ba90ca4cda1334c1fe9e312f9454f11d35a6ff8f0cd045e1",
+      "reference_row": 67,
+      "symbols": [
+        "TRAINER_FISHERMAN_NED",
+        "TRAINER_FISHERMAN_NED",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_FISHERMAN_CHIP",
+      "canonical_slots": [
+        1151,
+        1151,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "ae063fb3d009a4375f633b78a7f21f4ad9cef74f9d7f519553c3e6b9d3667c58",
+      "reference_row": 68,
+      "symbols": [
+        "TRAINER_FISHERMAN_CHIP",
+        "TRAINER_FISHERMAN_CHIP",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_FISHERMAN_HANK",
+      "canonical_slots": [
+        1152,
+        1152,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "842ba60219a8b407e09177a6e7305ab9352a684d6c5a69b24a0b573632df3485",
+      "reference_row": 69,
+      "symbols": [
+        "TRAINER_FISHERMAN_HANK",
+        "TRAINER_FISHERMAN_HANK",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_FISHERMAN_ELLIOT",
+      "canonical_slots": [
+        1153,
+        65535,
+        65535,
+        1558,
+        0,
+        0
+      ],
+      "initializer_sha256": "379615f3b3ee2ed868b8d10c753eebc4f42f9b022f77bed907fc1d782541b66a",
+      "reference_row": 70,
+      "symbols": [
+        "TRAINER_FISHERMAN_ELLIOT",
+        "SKIP",
+        "SKIP",
+        "TRAINER_FISHERMAN_ELLIOT_2",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_FISHERMAN_ANDREW",
+      "canonical_slots": [
+        1158,
+        1158,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "04e72bd18c00104b873fb5454e1bd87299b4a4b6dc423ad509138f11823e407e",
+      "reference_row": 71,
+      "symbols": [
+        "TRAINER_FISHERMAN_ANDREW",
+        "TRAINER_FISHERMAN_ANDREW",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_ROCKER_LUCA",
+      "canonical_slots": [
+        1209,
+        65535,
+        65535,
+        1559,
+        0,
+        0
+      ],
+      "initializer_sha256": "d78a593b83139a0e87c0a6acebd077ceba0d09d32d59a20fe9d6afffefa8f40e",
+      "reference_row": 72,
+      "symbols": [
+        "TRAINER_ROCKER_LUCA",
+        "SKIP",
+        "SKIP",
+        "TRAINER_ROCKER_LUCA_2",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_CAMPER_JUSTIN",
+      "canonical_slots": [
+        1393,
+        1393,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "9bc0ac80cf80f82efd20efa5f6b22f0643e0119afa3234273ea13f56170b3f98",
+      "reference_row": 73,
+      "symbols": [
+        "TRAINER_CAMPER_JUSTIN",
+        "TRAINER_CAMPER_JUSTIN",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_YOUNG_COUPLE_GIA_JES",
+      "canonical_slots": [
+        1402,
+        65535,
+        65535,
+        1611,
+        65535,
+        1612
+      ],
+      "initializer_sha256": "d006b2be7404fa830b9081439c66e41c1b3029ae7943b75f312ff6a6ae01d296",
+      "reference_row": 74,
+      "symbols": [
+        "TRAINER_YOUNG_COUPLE_GIA_JES",
+        "SKIP",
+        "SKIP",
+        "TRAINER_YOUNG_COUPLE_GIA_JES_2",
+        "SKIP",
+        "TRAINER_YOUNG_COUPLE_GIA_JES_3"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIKER_JARED",
+      "canonical_slots": [
+        1125,
+        1125,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "6ce7694561752fe1c7ebca5d8b0cdad91fe894457f18cd3bc61545dec860d87e",
+      "reference_row": 75,
+      "symbols": [
+        "TRAINER_BIKER_JARED",
+        "TRAINER_BIKER_JARED",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BEAUTY_LOLA",
+      "canonical_slots": [
+        1192,
+        1192,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "63e9bb8a77f9fbe7324e24c389322ed280dfc236d372788aa6b0a5c89874ab4f",
+      "reference_row": 76,
+      "symbols": [
+        "TRAINER_BEAUTY_LOLA",
+        "TRAINER_BEAUTY_LOLA",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BEAUTY_SHEILA",
+      "canonical_slots": [
+        1193,
+        65535,
+        65535,
+        65535,
+        1560,
+        0
+      ],
+      "initializer_sha256": "332fb1e4009ee429079345374594b25cca48f0b95ec406468c1b3cef77248a5b",
+      "reference_row": 77,
+      "symbols": [
+        "TRAINER_BEAUTY_SHEILA",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_BEAUTY_SHEILA_2",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIRD_KEEPER_SEBASTIAN",
+      "canonical_slots": [
+        1224,
+        1224,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "8e195e372f9ba45f7e76286463d738d5a6d9c6bfb80dd6c39feaea436afe7d70",
+      "reference_row": 78,
+      "symbols": [
+        "TRAINER_BIRD_KEEPER_SEBASTIAN",
+        "TRAINER_BIRD_KEEPER_SEBASTIAN",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIRD_KEEPER_PERRY",
+      "canonical_slots": [
+        1225,
+        1225,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "fa9e6585c97f4e66f4cf08974d23244be214975e7bcfcff686e55ef66540d70f",
+      "reference_row": 79,
+      "symbols": [
+        "TRAINER_BIRD_KEEPER_PERRY",
+        "TRAINER_BIRD_KEEPER_PERRY",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIRD_KEEPER_ROBERT",
+      "canonical_slots": [
+        1226,
+        65535,
+        65535,
+        1561,
+        1562,
+        0
+      ],
+      "initializer_sha256": "67b55919871abe73f0310b44c3bf65efe1afcfdbf9f1a1573851f9e3a6a7041f",
+      "reference_row": 80,
+      "symbols": [
+        "TRAINER_BIRD_KEEPER_ROBERT",
+        "SKIP",
+        "SKIP",
+        "TRAINER_BIRD_KEEPER_ROBERT_2",
+        "TRAINER_BIRD_KEEPER_ROBERT_3",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PICNICKER_ALMA",
+      "canonical_slots": [
+        1382,
+        1382,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "ac8e553f395053ad143358cf6ae245eb28f8bd3c9c9c2e33e6315e9b508eb2c7",
+      "reference_row": 81,
+      "symbols": [
+        "TRAINER_PICNICKER_ALMA",
+        "TRAINER_PICNICKER_ALMA",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PICNICKER_SUSIE",
+      "canonical_slots": [
+        1383,
+        65535,
+        65535,
+        1563,
+        1564,
+        1565
+      ],
+      "initializer_sha256": "27b8f8089b139e97ed91a64e80a7253f12eec1ae3fc626d935ce36508b6be2b9",
+      "reference_row": 82,
+      "symbols": [
+        "TRAINER_PICNICKER_SUSIE",
+        "SKIP",
+        "SKIP",
+        "TRAINER_PICNICKER_SUSIE_2",
+        "TRAINER_PICNICKER_SUSIE_3",
+        "TRAINER_PICNICKER_SUSIE_4"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PICNICKER_VALERIE",
+      "canonical_slots": [
+        1384,
+        1384,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "180e59c65d2d5af7b03a21d12915aba7ec9e9ca395874baca4f0371da930f89e",
+      "reference_row": 83,
+      "symbols": [
+        "TRAINER_PICNICKER_VALERIE",
+        "TRAINER_PICNICKER_VALERIE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PICNICKER_GWEN",
+      "canonical_slots": [
+        1385,
+        1385,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "9ea7fe85e1ea81e234edc8b1966855be9417ec66ac53fb15d7d4984282076151",
+      "reference_row": 84,
+      "symbols": [
+        "TRAINER_PICNICKER_GWEN",
+        "TRAINER_PICNICKER_GWEN",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIKER_MALIK",
+      "canonical_slots": [
+        1126,
+        1126,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "81dc73df32644a5db9898936cb10b434221b86268ca0d39167329f0a787f404b",
+      "reference_row": 85,
+      "symbols": [
+        "TRAINER_BIKER_MALIK",
+        "TRAINER_BIKER_MALIK",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIKER_LUKAS",
+      "canonical_slots": [
+        1136,
+        65535,
+        65535,
+        65535,
+        1566,
+        0
+      ],
+      "initializer_sha256": "971156c0b376ad8ccd186234f50776a6471babfdfab71084126ef023ba3d086c",
+      "reference_row": 86,
+      "symbols": [
+        "TRAINER_BIKER_LUKAS",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_BIKER_LUKAS_2",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIKER_ISAAC",
+      "canonical_slots": [
+        1137,
+        1137,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "f880088ca1939cecbc6edb2816c86d60c7cc8f06ecc0ea88988a5090c601c243",
+      "reference_row": 87,
+      "symbols": [
+        "TRAINER_BIKER_ISAAC",
+        "TRAINER_BIKER_ISAAC",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIKER_GERALD",
+      "canonical_slots": [
+        1138,
+        1138,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "5b7ee725185c7875249c82463fcc1afb1ce8d9c79afa4f5c4e9ec43e439091dd",
+      "reference_row": 88,
+      "symbols": [
+        "TRAINER_BIKER_GERALD",
+        "TRAINER_BIKER_GERALD",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIRD_KEEPER_DONALD",
+      "canonical_slots": [
+        1227,
+        1227,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "3c3621af789fd871341e6a5c5ec34a775d0d8bcb2e8f44afc20094bfa79d2d17",
+      "reference_row": 89,
+      "symbols": [
+        "TRAINER_BIRD_KEEPER_DONALD",
+        "TRAINER_BIRD_KEEPER_DONALD",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIRD_KEEPER_BENNY",
+      "canonical_slots": [
+        1228,
+        65535,
+        65535,
+        1567,
+        1568,
+        0
+      ],
+      "initializer_sha256": "7a36fb92112e02a1a78c7c03390ca7036269d970c581f7e8268a327a0f99df7b",
+      "reference_row": 90,
+      "symbols": [
+        "TRAINER_BIRD_KEEPER_BENNY",
+        "SKIP",
+        "SKIP",
+        "TRAINER_BIRD_KEEPER_BENNY_2",
+        "TRAINER_BIRD_KEEPER_BENNY_3",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIRD_KEEPER_CARTER",
+      "canonical_slots": [
+        1237,
+        1237,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "a08ba5caa4cb1b8a88780f71f928901405493af6d9f4e524e0159668a2833cee",
+      "reference_row": 91,
+      "symbols": [
+        "TRAINER_BIRD_KEEPER_CARTER",
+        "TRAINER_BIRD_KEEPER_CARTER",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIRD_KEEPER_MITCH",
+      "canonical_slots": [
+        1238,
+        1238,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "a745b1b3da1186f071d2dcf492225ddba04039151188620d6bda7b90cdda3f3a",
+      "reference_row": 92,
+      "symbols": [
+        "TRAINER_BIRD_KEEPER_MITCH",
+        "TRAINER_BIRD_KEEPER_MITCH",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIRD_KEEPER_BECK",
+      "canonical_slots": [
+        1239,
+        1239,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "079c477d001e9d08c94ff8ef670b7ba8dbe289ebbb55741aa617de4d9a5b42a3",
+      "reference_row": 93,
+      "symbols": [
+        "TRAINER_BIRD_KEEPER_BECK",
+        "TRAINER_BIRD_KEEPER_BECK",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIRD_KEEPER_MARLON",
+      "canonical_slots": [
+        1240,
+        65535,
+        65535,
+        1569,
+        1570,
+        0
+      ],
+      "initializer_sha256": "52005b5144c9e6cdf854d59af5df81dea997646aeebf32e82383b5b19c65a05a",
+      "reference_row": 94,
+      "symbols": [
+        "TRAINER_BIRD_KEEPER_MARLON",
+        "SKIP",
+        "SKIP",
+        "TRAINER_BIRD_KEEPER_MARLON_2",
+        "TRAINER_BIRD_KEEPER_MARLON_3",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_TWINS_KIRI_JAN",
+      "canonical_slots": [
+        1403,
+        1403,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "84cfd6e738453ba29440f9ee0162dafe7577485b035cd40bf7123936d17e8fe1",
+      "reference_row": 95,
+      "symbols": [
+        "TRAINER_TWINS_KIRI_JAN",
+        "TRAINER_TWINS_KIRI_JAN",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIKER_ERNEST",
+      "canonical_slots": [
+        1127,
+        1127,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "76d0aa441945e4682331e248ab47cbc10c44a32e79818571446b30b305546131",
+      "reference_row": 96,
+      "symbols": [
+        "TRAINER_BIKER_ERNEST",
+        "TRAINER_BIKER_ERNEST",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIKER_ALEX",
+      "canonical_slots": [
+        1128,
+        1128,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "9d462066878f3f747aff455478dcca9419c688ad0abfdbeffe6a6ebdc3c52bda",
+      "reference_row": 97,
+      "symbols": [
+        "TRAINER_BIKER_ALEX",
+        "TRAINER_BIKER_ALEX",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BEAUTY_GRACE",
+      "canonical_slots": [
+        1197,
+        65535,
+        65535,
+        65535,
+        1571,
+        0
+      ],
+      "initializer_sha256": "83459670c30f8f8575af0f39e0f67b80d8f3bda6d10c6025c7b7315cb13e31d3",
+      "reference_row": 98,
+      "symbols": [
+        "TRAINER_BEAUTY_GRACE",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_BEAUTY_GRACE_2",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BEAUTY_OLIVIA",
+      "canonical_slots": [
+        1198,
+        1198,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "a9aecef4466ef6a213b049e020eefbdbd8d21e93ae96a4b5a918bf145f35b6b5",
+      "reference_row": 99,
+      "symbols": [
+        "TRAINER_BEAUTY_OLIVIA",
+        "TRAINER_BEAUTY_OLIVIA",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIRD_KEEPER_EDWIN",
+      "canonical_slots": [
+        1229,
+        1229,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "996a6414409c303cb4a88bcc12abeb4f915bff349ac84f761670d3be0bb7e525",
+      "reference_row": 100,
+      "symbols": [
+        "TRAINER_BIRD_KEEPER_EDWIN",
+        "TRAINER_BIRD_KEEPER_EDWIN",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIRD_KEEPER_CHESTER",
+      "canonical_slots": [
+        1230,
+        65535,
+        65535,
+        1572,
+        1573,
+        0
+      ],
+      "initializer_sha256": "bedacf93ecf7d75afa8f51006905e5cbdda1de00832cefc369580115a9129460",
+      "reference_row": 101,
+      "symbols": [
+        "TRAINER_BIRD_KEEPER_CHESTER",
+        "SKIP",
+        "SKIP",
+        "TRAINER_BIRD_KEEPER_CHESTER_2",
+        "TRAINER_BIRD_KEEPER_CHESTER_3",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PICNICKER_YAZMIN",
+      "canonical_slots": [
+        1394,
+        1394,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "b318b8c8de227caf00029fbffb733f3c46e899e595b2386189865e7298d1bdd4",
+      "reference_row": 102,
+      "symbols": [
+        "TRAINER_PICNICKER_YAZMIN",
+        "TRAINER_PICNICKER_YAZMIN",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PICNICKER_KINDRA",
+      "canonical_slots": [
+        1395,
+        1395,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "c62e5a846e3504389f21f10205a3380ae8212ebef12b9b65571094b141309b4f",
+      "reference_row": 103,
+      "symbols": [
+        "TRAINER_PICNICKER_KINDRA",
+        "TRAINER_PICNICKER_KINDRA",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PICNICKER_BECKY",
+      "canonical_slots": [
+        1396,
+        65535,
+        65535,
+        1574,
+        1575,
+        1576
+      ],
+      "initializer_sha256": "ebee74e6f9c5c1e3caee9847d068ef0d540512e4ac86146d7c8215b910028314",
+      "reference_row": 104,
+      "symbols": [
+        "TRAINER_PICNICKER_BECKY",
+        "SKIP",
+        "SKIP",
+        "TRAINER_PICNICKER_BECKY_2",
+        "TRAINER_PICNICKER_BECKY_3",
+        "TRAINER_PICNICKER_BECKY_4"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PICNICKER_CELIA",
+      "canonical_slots": [
+        1397,
+        1397,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "ddc0c3e8a2305e6f2c63bbd44e257e2354f6ec7ed4b235d4a37aeaa4ca183a5d",
+      "reference_row": 105,
+      "symbols": [
+        "TRAINER_PICNICKER_CELIA",
+        "TRAINER_PICNICKER_CELIA",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_CRUSH_KIN_RON_MYA",
+      "canonical_slots": [
+        1404,
+        65535,
+        65535,
+        1577,
+        1578,
+        1579
+      ],
+      "initializer_sha256": "8118b5f8ce01d07dd372eda5d0e83f9f16f3a31bc50b61afff5cb06a796ca090",
+      "reference_row": 106,
+      "symbols": [
+        "TRAINER_CRUSH_KIN_RON_MYA",
+        "SKIP",
+        "SKIP",
+        "TRAINER_CRUSH_KIN_RON_MYA_2",
+        "TRAINER_CRUSH_KIN_RON_MYA_3",
+        "TRAINER_CRUSH_KIN_RON_MYA_4"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIKER_LAO",
+      "canonical_slots": [
+        1129,
+        1129,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "f41ce02bed6ba06057d49d4a1d8d79df86f578e4a003ff75af2b8bae8a308a57",
+      "reference_row": 107,
+      "symbols": [
+        "TRAINER_BIKER_LAO",
+        "TRAINER_BIKER_LAO",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIKER_HIDEO",
+      "canonical_slots": [
+        1130,
+        1130,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "96cdbee44bfdc992f97824cd163b70255bc6f5b74a1371cf7704dddc713f5aea",
+      "reference_row": 108,
+      "symbols": [
+        "TRAINER_BIKER_HIDEO",
+        "TRAINER_BIKER_HIDEO",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIKER_RUBEN",
+      "canonical_slots": [
+        1131,
+        65535,
+        65535,
+        65535,
+        1580,
+        0
+      ],
+      "initializer_sha256": "2dcbd30042d27711da8114f52aa06c94509cd254848ccfeacf197a2e82548298",
+      "reference_row": 109,
+      "symbols": [
+        "TRAINER_BIKER_RUBEN",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_BIKER_RUBEN_2",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_CUE_BALL_KOJI",
+      "canonical_slots": [
+        1174,
+        1174,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "3695e86628e447bfd9dc23e22552793a0617414945abb6bca67d3ecf03fc22c2",
+      "reference_row": 110,
+      "symbols": [
+        "TRAINER_CUE_BALL_KOJI",
+        "TRAINER_CUE_BALL_KOJI",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_CUE_BALL_LUKE",
+      "canonical_slots": [
+        1175,
+        1175,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "346735a6c44e0e6878dd86e8aee9c463d15157245555c13fde19a43e7450f44b",
+      "reference_row": 111,
+      "symbols": [
+        "TRAINER_CUE_BALL_LUKE",
+        "TRAINER_CUE_BALL_LUKE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_CUE_BALL_CAMRON",
+      "canonical_slots": [
+        1176,
+        65535,
+        65535,
+        65535,
+        1581,
+        0
+      ],
+      "initializer_sha256": "e468d6a44345c0d6fa5a068a1b3abfd921a11f26e2c35015ff1d767111792b9a",
+      "reference_row": 112,
+      "symbols": [
+        "TRAINER_CUE_BALL_CAMRON",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_CUE_BALL_CAMRON_2",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_YOUNG_COUPLE_LEA_JED",
+      "canonical_slots": [
+        1405,
+        1405,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "13b4f1f278e2730390918f07a20e7e074cd4dc590f07031b31453622ed4ad5f1",
+      "reference_row": 113,
+      "symbols": [
+        "TRAINER_YOUNG_COUPLE_LEA_JED",
+        "TRAINER_YOUNG_COUPLE_LEA_JED",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIKER_BILLY",
+      "canonical_slots": [
+        1132,
+        1132,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "b5d123a3c17799628ec77c546b40cbd7c6f76f997817ffe64f2280fe1d68c4d5",
+      "reference_row": 114,
+      "symbols": [
+        "TRAINER_BIKER_BILLY",
+        "TRAINER_BIKER_BILLY",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIKER_NIKOLAS",
+      "canonical_slots": [
+        1133,
+        1133,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "25c1a7945ca9d6acf8eaed78dc6262564f75bb344e5679dc7702a353c7d4cc30",
+      "reference_row": 115,
+      "symbols": [
+        "TRAINER_BIKER_NIKOLAS",
+        "TRAINER_BIKER_NIKOLAS",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIKER_JAXON",
+      "canonical_slots": [
+        1134,
+        65535,
+        65535,
+        65535,
+        1582,
+        0
+      ],
+      "initializer_sha256": "0f05e84212314bfaa2541131e385113f0d3bce7d8ebaa994d777b657ec8a0ab6",
+      "reference_row": 116,
+      "symbols": [
+        "TRAINER_BIKER_JAXON",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_BIKER_JAXON_2",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIKER_WILLIAM",
+      "canonical_slots": [
+        1135,
+        1135,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "fd3789889d1f79196f037cb8b80715482a6078e61f3834d8d7556ecd58da7834",
+      "reference_row": 117,
+      "symbols": [
+        "TRAINER_BIKER_WILLIAM",
+        "TRAINER_BIKER_WILLIAM",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_CUE_BALL_RAUL",
+      "canonical_slots": [
+        1177,
+        1177,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "af17ae07d9a59daaf60f03403e436e78c5674e3fbbce8135172a126ee307a1d4",
+      "reference_row": 118,
+      "symbols": [
+        "TRAINER_CUE_BALL_RAUL",
+        "TRAINER_CUE_BALL_RAUL",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_CUE_BALL_ISAIAH",
+      "canonical_slots": [
+        1178,
+        65535,
+        65535,
+        65535,
+        1583,
+        0
+      ],
+      "initializer_sha256": "5adb4016742015b8e4a8baa6a0afe10f5cf31aa5f146fec6b7b8be2b344e39eb",
+      "reference_row": 119,
+      "symbols": [
+        "TRAINER_CUE_BALL_ISAIAH",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_CUE_BALL_ISAIAH_2",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_CUE_BALL_ZEEK",
+      "canonical_slots": [
+        1179,
+        1179,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "09df40cf1fef2d4b1c5e876e34154963d7e1afa90c5a88c53edfa5ca81792c02",
+      "reference_row": 120,
+      "symbols": [
+        "TRAINER_CUE_BALL_ZEEK",
+        "TRAINER_CUE_BALL_ZEEK",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_CUE_BALL_JAMAL",
+      "canonical_slots": [
+        1180,
+        1180,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "4f8d74982f28abcb1d99bc0726af1cc7b2abd041746aded4b7147402632d25de",
+      "reference_row": 121,
+      "symbols": [
+        "TRAINER_CUE_BALL_JAMAL",
+        "TRAINER_CUE_BALL_JAMAL",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_CUE_BALL_COREY",
+      "canonical_slots": [
+        1181,
+        65535,
+        65535,
+        65535,
+        1584,
+        0
+      ],
+      "initializer_sha256": "0fac17732a81882bad7edde9568dedd6c945d7dc2864d23f58b8159ce60f2466",
+      "reference_row": 122,
+      "symbols": [
+        "TRAINER_CUE_BALL_COREY",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_CUE_BALL_COREY_2",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIKER_VIRGIL",
+      "canonical_slots": [
+        1386,
+        1386,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "269a3ef84b08822fb8803cfd83fa51ed82b8690c7da9cf42f5e9f91d3048ff60",
+      "reference_row": 123,
+      "symbols": [
+        "TRAINER_BIKER_VIRGIL",
+        "TRAINER_BIKER_VIRGIL",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIRD_KEEPER_WILTON",
+      "canonical_slots": [
+        1231,
+        1231,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "215f593dc0212c5cedef2b04c7725ebca7e59c16b74f7fd08276c35c1e856e51",
+      "reference_row": 124,
+      "symbols": [
+        "TRAINER_BIRD_KEEPER_WILTON",
+        "TRAINER_BIRD_KEEPER_WILTON",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIRD_KEEPER_RAMIRO",
+      "canonical_slots": [
+        1232,
+        1232,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "e974be07754f04eec28a66aed7df72ec9ff8848f34682f2ef293988a76238749",
+      "reference_row": 125,
+      "symbols": [
+        "TRAINER_BIRD_KEEPER_RAMIRO",
+        "TRAINER_BIRD_KEEPER_RAMIRO",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIRD_KEEPER_JACOB",
+      "canonical_slots": [
+        1233,
+        65535,
+        65535,
+        1585,
+        1586,
+        0
+      ],
+      "initializer_sha256": "b364811745ce45735dfe6428234b835907e10a6425e87c61ad084fba88bdb0ef",
+      "reference_row": 126,
+      "symbols": [
+        "TRAINER_BIRD_KEEPER_JACOB",
+        "SKIP",
+        "SKIP",
+        "TRAINER_BIRD_KEEPER_JACOB_2",
+        "TRAINER_BIRD_KEEPER_JACOB_3",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_MALE_RICHARD",
+      "canonical_slots": [
+        1160,
+        1160,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "03e7b2e5fcaed0583224ac21afea23ae40bfd89551d4f6a8a9625bf7b8560973",
+      "reference_row": 127,
+      "symbols": [
+        "TRAINER_SWIMMER_MALE_RICHARD",
+        "TRAINER_SWIMMER_MALE_RICHARD",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_MALE_REECE",
+      "canonical_slots": [
+        1161,
+        1161,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "a8cad2d43eafd5d0ada38473aeb6b01bb14b4ab1562edcfbda976fec9ee6b556",
+      "reference_row": 128,
+      "symbols": [
+        "TRAINER_SWIMMER_MALE_REECE",
+        "TRAINER_SWIMMER_MALE_REECE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_MALE_MATTHEW",
+      "canonical_slots": [
+        1162,
+        65535,
+        65535,
+        65535,
+        1637,
+        0
+      ],
+      "initializer_sha256": "68830efd8dac88fa666a10151efb2e4e5721d7e3cc02c9f6dcb0730af876a20e",
+      "reference_row": 129,
+      "symbols": [
+        "TRAINER_SWIMMER_MALE_MATTHEW",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_SWIMMER_MALE_MATTHEW_2",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_MALE_DOUGLAS",
+      "canonical_slots": [
+        1163,
+        1163,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "e27b0b344962a976641f3822226faeece7f021783048873cc4ec88d91687297b",
+      "reference_row": 130,
+      "symbols": [
+        "TRAINER_SWIMMER_MALE_DOUGLAS",
+        "TRAINER_SWIMMER_MALE_DOUGLAS",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_MALE_DAVID",
+      "canonical_slots": [
+        1164,
+        1164,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "a8225cab0febd6bbcd23400d08fbe34706424c53f07a276c675e19452376fb85",
+      "reference_row": 131,
+      "symbols": [
+        "TRAINER_SWIMMER_MALE_DAVID",
+        "TRAINER_SWIMMER_MALE_DAVID",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_MALE_TONY",
+      "canonical_slots": [
+        1165,
+        65535,
+        65535,
+        65535,
+        1638,
+        0
+      ],
+      "initializer_sha256": "5f19ab6a72bad7caac973b79e308dd181b600df87bb9abac50e95fb33cc30f57",
+      "reference_row": 132,
+      "symbols": [
+        "TRAINER_SWIMMER_MALE_TONY",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_SWIMMER_MALE_TONY_2",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_MALE_AXLE",
+      "canonical_slots": [
+        1166,
+        1166,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "afd86dd83d1ae5ef939cbf007238f4bd00f6e2d2605d2da79187460bb64510f2",
+      "reference_row": 133,
+      "symbols": [
+        "TRAINER_SWIMMER_MALE_AXLE",
+        "TRAINER_SWIMMER_MALE_AXLE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_FEMALE_ANYA",
+      "canonical_slots": [
+        1200,
+        1200,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "d406e10eddbc9ddb1beb96903e0c4d0b7b17c9676a2985a947926e9e7318c367",
+      "reference_row": 134,
+      "symbols": [
+        "TRAINER_SWIMMER_FEMALE_ANYA",
+        "TRAINER_SWIMMER_FEMALE_ANYA",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_FEMALE_ALICE",
+      "canonical_slots": [
+        1201,
+        65535,
+        65535,
+        65535,
+        1587,
+        0
+      ],
+      "initializer_sha256": "4ece1539f3b0c48be0b6dec05117dbf94639bd258cb93071c8f2b04ba91393b2",
+      "reference_row": 135,
+      "symbols": [
+        "TRAINER_SWIMMER_FEMALE_ALICE",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_SWIMMER_FEMALE_ALICE_2",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_FEMALE_CONNIE",
+      "canonical_slots": [
+        1202,
+        1202,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "3a4a202b1e2dc4a64c2fbaed227e36af92b48fa096b77f1ddb23b1e293d15d2d",
+      "reference_row": 136,
+      "symbols": [
+        "TRAINER_SWIMMER_FEMALE_CONNIE",
+        "TRAINER_SWIMMER_FEMALE_CONNIE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SIS_AND_BRO_LIA_LUC",
+      "canonical_slots": [
+        1406,
+        1406,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "b7ca020c0b4fb2969c48a9ca7153ad4fafef16994dc15a8f6afafdcc206f94be",
+      "reference_row": 137,
+      "symbols": [
+        "TRAINER_SIS_AND_BRO_LIA_LUC",
+        "TRAINER_SIS_AND_BRO_LIA_LUC",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_MALE_BARRY",
+      "canonical_slots": [
+        1167,
+        1167,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "0764ee84699e2a1549572b7f4f9b073e0defa396b5c3773b8f382f5a285e76b5",
+      "reference_row": 138,
+      "symbols": [
+        "TRAINER_SWIMMER_MALE_BARRY",
+        "TRAINER_SWIMMER_MALE_BARRY",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_MALE_DEAN",
+      "canonical_slots": [
+        1168,
+        1168,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "07b9116fab8d6b37f6e78d1174c1f473f4a69ffb58ef8d33a40e59418ee48c10",
+      "reference_row": 139,
+      "symbols": [
+        "TRAINER_SWIMMER_MALE_DEAN",
+        "TRAINER_SWIMMER_MALE_DEAN",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_MALE_DARRIN",
+      "canonical_slots": [
+        1169,
+        65535,
+        65535,
+        65535,
+        65535,
+        1588
+      ],
+      "initializer_sha256": "93a025129ff1ea49e3b874180553bdcf73b489322a8c43b83946753ba629b15f",
+      "reference_row": 140,
+      "symbols": [
+        "TRAINER_SWIMMER_MALE_DARRIN",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_SWIMMER_MALE_DARRIN_2"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_FEMALE_TIFFANY",
+      "canonical_slots": [
+        1194,
+        1194,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "c7b64de1475c923437c56ee7ca4be96b574986d6b706906c7088dfc4b1146e04",
+      "reference_row": 141,
+      "symbols": [
+        "TRAINER_SWIMMER_FEMALE_TIFFANY",
+        "TRAINER_SWIMMER_FEMALE_TIFFANY",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_FEMALE_NORA",
+      "canonical_slots": [
+        1195,
+        1195,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "26d9e8d691b7b27adb821e7b5e91b0a9713b7788a0ed13a9a1f58bd3cff5eee8",
+      "reference_row": 142,
+      "symbols": [
+        "TRAINER_SWIMMER_FEMALE_NORA",
+        "TRAINER_SWIMMER_FEMALE_NORA",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_FEMALE_MELISSA",
+      "canonical_slots": [
+        1196,
+        65535,
+        65535,
+        65535,
+        1639,
+        0
+      ],
+      "initializer_sha256": "3a8ee797bcfe67bfc90a039ce26e9f67a5a9d9f69fcb913e91f24f3ae37d5cb4",
+      "reference_row": 143,
+      "symbols": [
+        "TRAINER_SWIMMER_FEMALE_MELISSA",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_SWIMMER_FEMALE_MELISSA_2",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_FEMALE_SHIRLEY",
+      "canonical_slots": [
+        1203,
+        1203,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "7061b4f7630db6217719ee833a81d1628aa49afabf3c7c35fe66b7cbbd3bffa0",
+      "reference_row": 144,
+      "symbols": [
+        "TRAINER_SWIMMER_FEMALE_SHIRLEY",
+        "TRAINER_SWIMMER_FEMALE_SHIRLEY",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIRD_KEEPER_ROGER",
+      "canonical_slots": [
+        1234,
+        1234,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "98bc1adffe94f4d8d5b22e2def52a130b7cbca996eebcfdd7da477a5ca581211",
+      "reference_row": 145,
+      "symbols": [
+        "TRAINER_BIRD_KEEPER_ROGER",
+        "TRAINER_BIRD_KEEPER_ROGER",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PICNICKER_MISSY",
+      "canonical_slots": [
+        1388,
+        65535,
+        65535,
+        65535,
+        1589,
+        1590
+      ],
+      "initializer_sha256": "385eeb5ef7fc608ac27ef90797e9fc6b9687346d3a64600a86b7f8da07ca9580",
+      "reference_row": 146,
+      "symbols": [
+        "TRAINER_PICNICKER_MISSY",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_PICNICKER_MISSY_2",
+        "TRAINER_PICNICKER_MISSY_3"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PICNICKER_IRENE",
+      "canonical_slots": [
+        1389,
+        1389,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "24541a2a8881eb70e1a1c18f9bc8b25edd54d0598ca13fb9bb7509e035d3f753",
+      "reference_row": 147,
+      "symbols": [
+        "TRAINER_PICNICKER_IRENE",
+        "TRAINER_PICNICKER_IRENE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_FISHERMAN_RONALD",
+      "canonical_slots": [
+        1154,
+        1154,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "53af913bde6d654c639c3ac7d88c57128fdad6281aaf463719d9ac736c3de489",
+      "reference_row": 148,
+      "symbols": [
+        "TRAINER_FISHERMAN_RONALD",
+        "TRAINER_FISHERMAN_RONALD",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_FISHERMAN_CLAUDE",
+      "canonical_slots": [
+        1155,
+        1155,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "f12a14f80ce7bf72cf5dc034ef48f9fccaed8f1332759db36fb7b2ac01422522",
+      "reference_row": 149,
+      "symbols": [
+        "TRAINER_FISHERMAN_CLAUDE",
+        "TRAINER_FISHERMAN_CLAUDE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_FISHERMAN_WADE",
+      "canonical_slots": [
+        1156,
+        65535,
+        65535,
+        65535,
+        1591,
+        0
+      ],
+      "initializer_sha256": "534a9cf931daa53fd2828825ea696f3e3655edd16e90387417a9587f965f0d61",
+      "reference_row": 150,
+      "symbols": [
+        "TRAINER_FISHERMAN_WADE",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_FISHERMAN_WADE_2",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_FISHERMAN_NOLAN",
+      "canonical_slots": [
+        1157,
+        1157,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "49b6a54f86d55da2d5fd257634f85302b2edb31e812bb62458c0284120f4c0c8",
+      "reference_row": 151,
+      "symbols": [
+        "TRAINER_FISHERMAN_NOLAN",
+        "TRAINER_FISHERMAN_NOLAN",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_MALE_SPENCER",
+      "canonical_slots": [
+        1170,
+        1170,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "e2334c32c1f3ba19e034b776dd10816e47f956ff3ef38ca496be01c97dae8736",
+      "reference_row": 152,
+      "symbols": [
+        "TRAINER_SWIMMER_MALE_SPENCER",
+        "TRAINER_SWIMMER_MALE_SPENCER",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_MALE_JACK",
+      "canonical_slots": [
+        1171,
+        65535,
+        65535,
+        65535,
+        1592,
+        0
+      ],
+      "initializer_sha256": "fa4f2c7c176095b62ef20aa1c273b6edbb73a1c2bace759018a68c45bc31c892",
+      "reference_row": 153,
+      "symbols": [
+        "TRAINER_SWIMMER_MALE_JACK",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_SWIMMER_MALE_JACK_2",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_MALE_JEROME",
+      "canonical_slots": [
+        1172,
+        1172,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "61c56bea104e6951fb0293c202b1ff522d799073c36b9052ae1f37feb26ceed6",
+      "reference_row": 154,
+      "symbols": [
+        "TRAINER_SWIMMER_MALE_JEROME",
+        "TRAINER_SWIMMER_MALE_JEROME",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_MALE_ROLAND",
+      "canonical_slots": [
+        1173,
+        1173,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "24ce2c0cb1997e9f413674abd971bf82c10e2bb4ed725391e0b9c24e881b3780",
+      "reference_row": 155,
+      "symbols": [
+        "TRAINER_SWIMMER_MALE_ROLAND",
+        "TRAINER_SWIMMER_MALE_ROLAND",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SIS_AND_BRO_LIL_IAN",
+      "canonical_slots": [
+        1407,
+        65535,
+        65535,
+        65535,
+        1593,
+        1594
+      ],
+      "initializer_sha256": "8c0444055e61cf5c89e1259cba94c28eeb37b97e0dc3025f9cd19c4f4a348197",
+      "reference_row": 156,
+      "symbols": [
+        "TRAINER_SIS_AND_BRO_LIL_IAN",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_SIS_AND_BRO_LIL_IAN_2",
+        "TRAINER_SIS_AND_BRO_LIL_IAN_3"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_FEMALE_MARIA",
+      "canonical_slots": [
+        1452,
+        1452,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "711c78d8d59f9c082da06f04e6fff5f9671610c9d2a5ea393e4e2564eddffae7",
+      "reference_row": 157,
+      "symbols": [
+        "TRAINER_SWIMMER_FEMALE_MARIA",
+        "TRAINER_SWIMMER_FEMALE_MARIA",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_FEMALE_ABIGAIL",
+      "canonical_slots": [
+        1453,
+        1453,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "05f2f08dbca6f003f1b83c70b01e31cb8dfe22642fc9df3fbee934a4cd29ec6d",
+      "reference_row": 158,
+      "symbols": [
+        "TRAINER_SWIMMER_FEMALE_ABIGAIL",
+        "TRAINER_SWIMMER_FEMALE_ABIGAIL",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_MALE_FINN",
+      "canonical_slots": [
+        1454,
+        65535,
+        65535,
+        65535,
+        1595,
+        0
+      ],
+      "initializer_sha256": "c8076df768c111940bb6176559070ab29b6a8bdd1cacaba30c4e55fb5ec79735",
+      "reference_row": 159,
+      "symbols": [
+        "TRAINER_SWIMMER_MALE_FINN",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_SWIMMER_MALE_FINN_2",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_MALE_GARRETT",
+      "canonical_slots": [
+        1455,
+        1455,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "88252833b300bb4339a7e692802442741af98ba3ef8f16d31a79e7c2d842d7fb",
+      "reference_row": 160,
+      "symbols": [
+        "TRAINER_SWIMMER_MALE_GARRETT",
+        "TRAINER_SWIMMER_MALE_GARRETT",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_FISHERMAN_TOMMY",
+      "canonical_slots": [
+        1456,
+        1456,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "1ffb111e42b09408c148ed3112f81efa786f4a4562e61dc26b3359b06ab503c1",
+      "reference_row": 161,
+      "symbols": [
+        "TRAINER_FISHERMAN_TOMMY",
+        "TRAINER_FISHERMAN_TOMMY",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_CRUSH_GIRL_SHARON",
+      "canonical_slots": [
+        1424,
+        65535,
+        65535,
+        65535,
+        1596,
+        1597
+      ],
+      "initializer_sha256": "58fe1eb154825f3e1ed4c607d933d6abac255a4119e8843b52383b30f73ed796",
+      "reference_row": 162,
+      "symbols": [
+        "TRAINER_CRUSH_GIRL_SHARON",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_CRUSH_GIRL_SHARON_2",
+        "TRAINER_CRUSH_GIRL_SHARON_3"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_CRUSH_GIRL_TANYA",
+      "canonical_slots": [
+        1457,
+        65535,
+        65535,
+        65535,
+        1598,
+        1599
+      ],
+      "initializer_sha256": "004b5b6fe8dcd042c1e39c56bb8d6528b74c06748fc4eb4490d6f236e7e2b9a0",
+      "reference_row": 163,
+      "symbols": [
+        "TRAINER_CRUSH_GIRL_TANYA",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_CRUSH_GIRL_TANYA_2",
+        "TRAINER_CRUSH_GIRL_TANYA_3"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BLACK_BELT_SHEA",
+      "canonical_slots": [
+        1458,
+        65535,
+        65535,
+        65535,
+        1600,
+        1601
+      ],
+      "initializer_sha256": "fd2cb3337b52195b42b153a835a9b332ae1662df3fc40763c2616c8084c928b0",
+      "reference_row": 164,
+      "symbols": [
+        "TRAINER_BLACK_BELT_SHEA",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_BLACK_BELT_SHEA_2",
+        "TRAINER_BLACK_BELT_SHEA_3"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BLACK_BELT_HUGH",
+      "canonical_slots": [
+        1459,
+        65535,
+        65535,
+        65535,
+        1602,
+        1603
+      ],
+      "initializer_sha256": "2a5cf47b43a9121b8892606e2961f7b2df8bea7674a10df6248d3ef46eeabd18",
+      "reference_row": 165,
+      "symbols": [
+        "TRAINER_BLACK_BELT_HUGH",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_BLACK_BELT_HUGH_2",
+        "TRAINER_BLACK_BELT_HUGH_3"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_CAMPER_BRYCE",
+      "canonical_slots": [
+        1460,
+        1460,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "620b2d83519f4ef6fbb340a986110a7181d778e5b37b88c407d88a88fb507edf",
+      "reference_row": 166,
+      "symbols": [
+        "TRAINER_CAMPER_BRYCE",
+        "TRAINER_CAMPER_BRYCE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PICNICKER_CLAIRE",
+      "canonical_slots": [
+        1461,
+        1461,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "0bbf4e2c6960d3cf51dd237b03587841fc286e6885e26cbb81f8e011742561e5",
+      "reference_row": 167,
+      "symbols": [
+        "TRAINER_PICNICKER_CLAIRE",
+        "TRAINER_PICNICKER_CLAIRE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_CRUSH_KIN_MIK_KIA",
+      "canonical_slots": [
+        1462,
+        65535,
+        65535,
+        65535,
+        1604,
+        1605
+      ],
+      "initializer_sha256": "c2ca487da317d972759473733b785c8f84e30acfe99e1cc23c0f62514059a3ae",
+      "reference_row": 168,
+      "symbols": [
+        "TRAINER_CRUSH_KIN_MIK_KIA",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_CRUSH_KIN_MIK_KIA_2",
+        "TRAINER_CRUSH_KIN_MIK_KIA_3"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_FEMALE_AMARA",
+      "canonical_slots": [
+        1451,
+        1451,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "af6bccdc3c94767aad530ba8acb6b5bfc71ea1413a3bcf7270f11353586da035",
+      "reference_row": 169,
+      "symbols": [
+        "TRAINER_SWIMMER_FEMALE_AMARA",
+        "TRAINER_SWIMMER_FEMALE_AMARA",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_AROMA_LADY_NIKKI",
+      "canonical_slots": [
+        1429,
+        1429,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "6a1c56c4419dde2fa328558caa53b2ed8adcda9797c6f6d516555083c484e32b",
+      "reference_row": 170,
+      "symbols": [
+        "TRAINER_AROMA_LADY_NIKKI",
+        "TRAINER_AROMA_LADY_NIKKI",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_AROMA_LADY_VIOLET",
+      "canonical_slots": [
+        1463,
+        1463,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "0299eca4ff19fe612d7cf5388a2966e2c575b8e897a0af7470ec100358cf55bd",
+      "reference_row": 171,
+      "symbols": [
+        "TRAINER_AROMA_LADY_VIOLET",
+        "TRAINER_AROMA_LADY_VIOLET",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_TUBER_AMIRA",
+      "canonical_slots": [
+        1425,
+        65535,
+        65535,
+        65535,
+        1606,
+        0
+      ],
+      "initializer_sha256": "48ada90f592697d277aeeeafa01dc0b6d75d5bdcf27a59c26644b79d9cdd0b4a",
+      "reference_row": 172,
+      "symbols": [
+        "TRAINER_TUBER_AMIRA",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_TUBER_AMIRA_2",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_TUBER_ALEXIS",
+      "canonical_slots": [
+        1464,
+        1464,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "6c103ceccccde1768af9ebe93b05ee0e57da13eee917c72e6955e005f8416d9b",
+      "reference_row": 173,
+      "symbols": [
+        "TRAINER_TUBER_ALEXIS",
+        "TRAINER_TUBER_ALEXIS",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_FEMALE_TISHA",
+      "canonical_slots": [
+        1466,
+        1466,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "35f0ada0b230abe5f0eaaf0a06159c17ac701ac28bb29fd4ebcc1e1ef5fa028b",
+      "reference_row": 174,
+      "symbols": [
+        "TRAINER_SWIMMER_FEMALE_TISHA",
+        "TRAINER_SWIMMER_FEMALE_TISHA",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_TWINS_JOY_MEG",
+      "canonical_slots": [
+        1465,
+        65535,
+        65535,
+        65535,
+        1607,
+        0
+      ],
+      "initializer_sha256": "044ff2439421d6b0cfd3e24732d13f827b44fba7f4832c12ac220730fa5ac5c9",
+      "reference_row": 175,
+      "symbols": [
+        "TRAINER_TWINS_JOY_MEG",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_TWINS_JOY_MEG_2",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PAINTER_DAISY",
+      "canonical_slots": [
+        1432,
+        1432,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "f152f74514314f8328caff9c6b089ab68d15d29c9bd02017f5ca6df38178bdd4",
+      "reference_row": 176,
+      "symbols": [
+        "TRAINER_PAINTER_DAISY",
+        "TRAINER_PAINTER_DAISY",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PAINTER_CELINA",
+      "canonical_slots": [
+        1467,
+        1467,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "ad9d7f271f466a5152706c0f3b9c5d75949e96acbf57762d69267eb1c26d603b",
+      "reference_row": 177,
+      "symbols": [
+        "TRAINER_PAINTER_CELINA",
+        "TRAINER_PAINTER_CELINA",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PAINTER_RAYNA",
+      "canonical_slots": [
+        1468,
+        65535,
+        65535,
+        65535,
+        65535,
+        1608
+      ],
+      "initializer_sha256": "916e70e41ca25cb28fb5bf2d3848a3139d8a2137737b2fa5ffc43f2a21eb279b",
+      "reference_row": 178,
+      "symbols": [
+        "TRAINER_PAINTER_RAYNA",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_PAINTER_RAYNA_2"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_LADY_JACKI",
+      "canonical_slots": [
+        1431,
+        1431,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "d03f3c6d9b888514ee0d43427832242f02d1c316054008a65fa3efcd962bc8d4",
+      "reference_row": 179,
+      "symbols": [
+        "TRAINER_LADY_JACKI",
+        "TRAINER_LADY_JACKI",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_LADY_GILLIAN",
+      "canonical_slots": [
+        1469,
+        1469,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "910e6df08af4e32e66ebfa5d8279b4aa7329db2393cedfee985db91d2f4075d0",
+      "reference_row": 180,
+      "symbols": [
+        "TRAINER_LADY_GILLIAN",
+        "TRAINER_LADY_GILLIAN",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_YOUNGSTER_DESTIN",
+      "canonical_slots": [
+        1470,
+        65535,
+        65535,
+        65535,
+        65535,
+        1609
+      ],
+      "initializer_sha256": "65342ae968d20896dfc4490c7ce3f3f6555f821db836a78fa1e2d4f5c0c3acb3",
+      "reference_row": 181,
+      "symbols": [
+        "TRAINER_YOUNGSTER_DESTIN",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_YOUNGSTER_DESTIN_2"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_MALE_TOBY",
+      "canonical_slots": [
+        1471,
+        1471,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "3e25c483e7c8eb1ee2808b92cb70d0133e0fdad5da23c2deaadb208198aaa589",
+      "reference_row": 182,
+      "symbols": [
+        "TRAINER_SWIMMER_MALE_TOBY",
+        "TRAINER_SWIMMER_MALE_TOBY",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PKMN_BREEDER_ALIZE",
+      "canonical_slots": [
+        1426,
+        65535,
+        65535,
+        65535,
+        65535,
+        1610
+      ],
+      "initializer_sha256": "bc043ab1de11fdb6b2633ec388cf88ebfa5db910d08c04d12c69681666b38e00",
+      "reference_row": 183,
+      "symbols": [
+        "TRAINER_PKMN_BREEDER_ALIZE",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_PKMN_BREEDER_ALIZE_2"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIRD_KEEPER_MILO",
+      "canonical_slots": [
+        1475,
+        65535,
+        65535,
+        65535,
+        65535,
+        1613
+      ],
+      "initializer_sha256": "466b720def6ad8c3bbe81e6f1cc30e3a7314b8deaccd929df35f01b648c3a1f1",
+      "reference_row": 184,
+      "symbols": [
+        "TRAINER_BIRD_KEEPER_MILO",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_BIRD_KEEPER_MILO_2"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIRD_KEEPER_CHAZ",
+      "canonical_slots": [
+        1476,
+        65535,
+        65535,
+        65535,
+        65535,
+        1614
+      ],
+      "initializer_sha256": "4c2845cd4b2ef98a4964f3add006ede1e78d8a71b98ba63e4fa17c7e33f536b9",
+      "reference_row": 185,
+      "symbols": [
+        "TRAINER_BIRD_KEEPER_CHAZ",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_BIRD_KEEPER_CHAZ_2"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_BIRD_KEEPER_HAROLD",
+      "canonical_slots": [
+        1477,
+        65535,
+        65535,
+        65535,
+        65535,
+        1615
+      ],
+      "initializer_sha256": "09673096e1fe6d2529447cb7b452aa74c302fcf073d408213d3d0ae2a45571f5",
+      "reference_row": 186,
+      "symbols": [
+        "TRAINER_BIRD_KEEPER_HAROLD",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_BIRD_KEEPER_HAROLD_2"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_FISHERMAN_TYLOR",
+      "canonical_slots": [
+        1478,
+        1478,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "de1ba5edb6e341aa5e8d8cd4bbd9359d4cce49d39598813e0171cfbc75248045",
+      "reference_row": 187,
+      "symbols": [
+        "TRAINER_FISHERMAN_TYLOR",
+        "TRAINER_FISHERMAN_TYLOR",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_MALE_MYMO",
+      "canonical_slots": [
+        1479,
+        1479,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "337fd72ccff5f4edb06981fba1a7ee3d6228258d6e19ca97c69ef3cbc354f415",
+      "reference_row": 188,
+      "symbols": [
+        "TRAINER_SWIMMER_MALE_MYMO",
+        "TRAINER_SWIMMER_MALE_MYMO",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_FEMALE_NICOLE",
+      "canonical_slots": [
+        1480,
+        65535,
+        65535,
+        65535,
+        65535,
+        1616
+      ],
+      "initializer_sha256": "eede5c78878630e5b9eb382d9f8ffe18b4251f8e5f0c13e3cf77d0138c04b5aa",
+      "reference_row": 189,
+      "symbols": [
+        "TRAINER_SWIMMER_FEMALE_NICOLE",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_SWIMMER_FEMALE_NICOLE_2"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SIS_AND_BRO_AVA_GEB",
+      "canonical_slots": [
+        1481,
+        1481,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "e74f284a7b72203f4f26cd2b3388dd484b5f770b3e19c0ae0860908e712d1f58",
+      "reference_row": 190,
+      "symbols": [
+        "TRAINER_SIS_AND_BRO_AVA_GEB",
+        "TRAINER_SIS_AND_BRO_AVA_GEB",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PSYCHIC_JACLYN",
+      "canonical_slots": [
+        1423,
+        65535,
+        65535,
+        65535,
+        65535,
+        1617
+      ],
+      "initializer_sha256": "e0af69eaf0550e05eda0eefcedfecc3dfa007c123d105cb32b5b5cd79361a279",
+      "reference_row": 191,
+      "symbols": [
+        "TRAINER_PSYCHIC_JACLYN",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_PSYCHIC_JACLYN_2"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_AROMA_LADY_ROSE",
+      "canonical_slots": [
+        1482,
+        1482,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "0e5ef94e3f87df7a6e3ce01b4d6b9627a05bd98f665abb24dfa52eedea8f2f5b",
+      "reference_row": 192,
+      "symbols": [
+        "TRAINER_AROMA_LADY_ROSE",
+        "TRAINER_AROMA_LADY_ROSE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_JUGGLER_EDWARD",
+      "canonical_slots": [
+        1215,
+        1215,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "2a0fc55b2a45fcb86f8206680a36c7893bc6d4965cb944ac2628fae7c7be1e74",
+      "reference_row": 193,
+      "symbols": [
+        "TRAINER_JUGGLER_EDWARD",
+        "TRAINER_JUGGLER_EDWARD",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_MALE_SAMIR",
+      "canonical_slots": [
+        1483,
+        65535,
+        65535,
+        65535,
+        65535,
+        1618
+      ],
+      "initializer_sha256": "ab5a6dd9718367e2168359552a6bb80f564fd7280b4f4807e79b683ece74d5a4",
+      "reference_row": 194,
+      "symbols": [
+        "TRAINER_SWIMMER_MALE_SAMIR",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_SWIMMER_MALE_SAMIR_2"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_SWIMMER_FEMALE_DENISE",
+      "canonical_slots": [
+        1484,
+        1484,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "e8ae95635863a1f685bb13ee1fd67d3bda3a3c98c7b12c46cc277667d86b308c",
+      "reference_row": 195,
+      "symbols": [
+        "TRAINER_SWIMMER_FEMALE_DENISE",
+        "TRAINER_SWIMMER_FEMALE_DENISE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_TWINS_MIU_MIA",
+      "canonical_slots": [
+        1485,
+        1485,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "723f117e8618a6cb94bee9fc301058d4ed40f7d4a797160ff30bee1e190fbba2",
+      "reference_row": 196,
+      "symbols": [
+        "TRAINER_TWINS_MIU_MIA",
+        "TRAINER_TWINS_MIU_MIA",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_HIKER_EARL",
+      "canonical_slots": [
+        1486,
+        65535,
+        65535,
+        65535,
+        65535,
+        1619
+      ],
+      "initializer_sha256": "89dcadeb52ebb3d488813e5bab778c8d3a1ef0c7c4907d23a4507c3fe4cf4586",
+      "reference_row": 197,
+      "symbols": [
+        "TRAINER_HIKER_EARL",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_HIKER_EARL_2"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_RUIN_MANIAC_STANLY",
+      "canonical_slots": [
+        1430,
+        1430,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "1555670c8a878431532d75d71e5e22e410c0de711f0ebe568c1e8669a3b7eedb",
+      "reference_row": 198,
+      "symbols": [
+        "TRAINER_RUIN_MANIAC_STANLY",
+        "TRAINER_RUIN_MANIAC_STANLY",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_RUIN_MANIAC_FOSTER",
+      "canonical_slots": [
+        1487,
+        1487,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "ce6477e3c7d95468023c97a9ad31c01b3847ddd7774f7dfd8f4b849d4a53f412",
+      "reference_row": 199,
+      "symbols": [
+        "TRAINER_RUIN_MANIAC_FOSTER",
+        "TRAINER_RUIN_MANIAC_FOSTER",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_RUIN_MANIAC_LARRY",
+      "canonical_slots": [
+        1488,
+        65535,
+        65535,
+        65535,
+        65535,
+        1620
+      ],
+      "initializer_sha256": "35176d8b97a116ba5f3d8167517b4de2d54faa498603cbe143d9628687a93e04",
+      "reference_row": 200,
+      "symbols": [
+        "TRAINER_RUIN_MANIAC_LARRY",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_RUIN_MANIAC_LARRY_2"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_HIKER_DARYL",
+      "canonical_slots": [
+        1489,
+        1489,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "69027ee98b1664354a906f8ce92347f6668b398ef7f6992488edb4e3cbca7fef",
+      "reference_row": 201,
+      "symbols": [
+        "TRAINER_HIKER_DARYL",
+        "TRAINER_HIKER_DARYL",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_POKEMANIAC_HECTOR",
+      "canonical_slots": [
+        1490,
+        65535,
+        65535,
+        65535,
+        65535,
+        1621
+      ],
+      "initializer_sha256": "6523aefbef5c977f89cb5eb363aa1ea75e50ba19cdc4eb8bed629dee2f30c136",
+      "reference_row": 202,
+      "symbols": [
+        "TRAINER_POKEMANIAC_HECTOR",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_POKEMANIAC_HECTOR_2"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PSYCHIC_DARIO",
+      "canonical_slots": [
+        1491,
+        65535,
+        65535,
+        65535,
+        65535,
+        1622
+      ],
+      "initializer_sha256": "7fc26472ddddf942be692c058b5ffabb945aa12c7135100a61f031470bef2725",
+      "reference_row": 203,
+      "symbols": [
+        "TRAINER_PSYCHIC_DARIO",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_PSYCHIC_DARIO_2"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PSYCHIC_RODETTE",
+      "canonical_slots": [
+        1492,
+        65535,
+        65535,
+        65535,
+        65535,
+        1623
+      ],
+      "initializer_sha256": "1da20f5d49361ae3fd5d38f97149b2d1ef7ef390557fb0d11f547169ad629099",
+      "reference_row": 204,
+      "symbols": [
+        "TRAINER_PSYCHIC_RODETTE",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_PSYCHIC_RODETTE_2"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_AROMA_LADY_MIAH",
+      "canonical_slots": [
+        1493,
+        1493,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "0d27d4e0a94da3ed88a4d12a0bd91c473643d23eb547bf68f1cde3afe63d21ee",
+      "reference_row": 205,
+      "symbols": [
+        "TRAINER_AROMA_LADY_MIAH",
+        "TRAINER_AROMA_LADY_MIAH",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_YOUNG_COUPLE_EVE_JON",
+      "canonical_slots": [
+        1494,
+        1494,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "f61af7ad8e516418c17cbea358c2371fe84e27c80440e3a1624153a8d7c2c3c0",
+      "reference_row": 206,
+      "symbols": [
+        "TRAINER_YOUNG_COUPLE_EVE_JON",
+        "TRAINER_YOUNG_COUPLE_EVE_JON",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_JUGGLER_MASON",
+      "canonical_slots": [
+        1495,
+        65535,
+        65535,
+        65535,
+        65535,
+        1624
+      ],
+      "initializer_sha256": "4db49aa1ad5d6203270c99082b1dd242d5158a469c25c3d9865b65efa236f81b",
+      "reference_row": 207,
+      "symbols": [
+        "TRAINER_JUGGLER_MASON",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_JUGGLER_MASON_2"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PKMN_RANGER_NICOLAS",
+      "canonical_slots": [
+        1427,
+        65535,
+        65535,
+        65535,
+        65535,
+        1625
+      ],
+      "initializer_sha256": "c4b4d8f1da59cca9dc8ca27f885f04fe15d871afd83f1bf44002c04763bb6bd1",
+      "reference_row": 208,
+      "symbols": [
+        "TRAINER_PKMN_RANGER_NICOLAS",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_PKMN_RANGER_NICOLAS_2"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PKMN_RANGER_MADELINE",
+      "canonical_slots": [
+        1428,
+        65535,
+        65535,
+        65535,
+        65535,
+        1626
+      ],
+      "initializer_sha256": "131394145378f19627c113d1680ce8bfee8bc6cd3eeb1000d251c563a5841271",
+      "reference_row": 209,
+      "symbols": [
+        "TRAINER_PKMN_RANGER_MADELINE",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_PKMN_RANGER_MADELINE_2"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_CRUSH_GIRL_CYNDY",
+      "canonical_slots": [
+        1496,
+        65535,
+        65535,
+        65535,
+        65535,
+        1627
+      ],
+      "initializer_sha256": "0c20627c4c51d6abfad33769f266ec1197091e66c11ef8e511a3e03b162ae7ce",
+      "reference_row": 210,
+      "symbols": [
+        "TRAINER_CRUSH_GIRL_CYNDY",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_CRUSH_GIRL_CYNDY_2"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_TAMER_EVAN",
+      "canonical_slots": [
+        1498,
+        65535,
+        65535,
+        65535,
+        65535,
+        1628
+      ],
+      "initializer_sha256": "d84865fd5c7e898d44257a4bdc3c4d99dfcb8d7ab00cdf8ae3bf09f943b244e6",
+      "reference_row": 211,
+      "symbols": [
+        "TRAINER_TAMER_EVAN",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_TAMER_EVAN_2"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PKMN_RANGER_JACKSON",
+      "canonical_slots": [
+        1501,
+        65535,
+        65535,
+        65535,
+        65535,
+        1629
+      ],
+      "initializer_sha256": "1abe594db3a3f1695b0c155d052d0306756afdb75f9969558ecd77872314360e",
+      "reference_row": 212,
+      "symbols": [
+        "TRAINER_PKMN_RANGER_JACKSON",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_PKMN_RANGER_JACKSON_2"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PKMN_RANGER_KATELYN",
+      "canonical_slots": [
+        1503,
+        65535,
+        65535,
+        65535,
+        65535,
+        1630
+      ],
+      "initializer_sha256": "3acac9927e9241f61583a347824e79a2b2f4e075aa58f69688d344b49c7304f0",
+      "reference_row": 213,
+      "symbols": [
+        "TRAINER_PKMN_RANGER_KATELYN",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_PKMN_RANGER_KATELYN_2"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_COOLTRAINER_LEROY",
+      "canonical_slots": [
+        1504,
+        65535,
+        65535,
+        65535,
+        65535,
+        1631
+      ],
+      "initializer_sha256": "028f283b541f393892c967d2b0dc6bc74a1b5fc285c9ddff67a331d7418ca0f7",
+      "reference_row": 214,
+      "symbols": [
+        "TRAINER_COOLTRAINER_LEROY",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_COOLTRAINER_LEROY_2"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_COOLTRAINER_MICHELLE",
+      "canonical_slots": [
+        1505,
+        65535,
+        65535,
+        65535,
+        65535,
+        1632
+      ],
+      "initializer_sha256": "c4836992036ff1a34b0517cc05db6092a5926b3e3a4fa8dc49712f7a641529ce",
+      "reference_row": 215,
+      "symbols": [
+        "TRAINER_COOLTRAINER_MICHELLE",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_COOLTRAINER_MICHELLE_2"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_COOL_COUPLE_LEX_NYA",
+      "canonical_slots": [
+        1506,
+        65535,
+        65535,
+        65535,
+        65535,
+        1633
+      ],
+      "initializer_sha256": "d38d63976bee0d31a95b3a066acf0fd522cd3730db07ac896722b818a5a8c361",
+      "reference_row": 216,
+      "symbols": [
+        "TRAINER_COOL_COUPLE_LEX_NYA",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "SKIP",
+        "TRAINER_COOL_COUPLE_LEX_NYA_2"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_RUIN_MANIAC_BRANDON",
+      "canonical_slots": [
+        1507,
+        1507,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "be747ce4c08114d3060aed5648f6ba8532c9d9b35686c9346d8acf1b03adf902",
+      "reference_row": 217,
+      "symbols": [
+        "TRAINER_RUIN_MANIAC_BRANDON",
+        "TRAINER_RUIN_MANIAC_BRANDON",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_RUIN_MANIAC_BENJAMIN",
+      "canonical_slots": [
+        1508,
+        1508,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "8a12e43a0e144bd973fd9886805a98f21e8327b1520e4e321b202b09d8d942b1",
+      "reference_row": 218,
+      "symbols": [
+        "TRAINER_RUIN_MANIAC_BENJAMIN",
+        "TRAINER_RUIN_MANIAC_BENJAMIN",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_PAINTER_EDNA",
+      "canonical_slots": [
+        1509,
+        1509,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "0fabec06781362daa4e5d3a23dc87ab234ea6b06b9a16c24f9f37711bc23b14b",
+      "reference_row": 219,
+      "symbols": [
+        "TRAINER_PAINTER_EDNA",
+        "TRAINER_PAINTER_EDNA",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    },
+    {
+      "base_symbol": "TRAINER_GENTLEMAN_CLIFFORD",
+      "canonical_slots": [
+        1510,
+        1510,
+        0,
+        0,
+        0,
+        0
+      ],
+      "initializer_sha256": "ea83e5e4f36afdb1c740cf2249c5b01e62db376af8d7afe454d4db6da9b448f1",
+      "reference_row": 220,
+      "symbols": [
+        "TRAINER_GENTLEMAN_CLIFFORD",
+        "TRAINER_GENTLEMAN_CLIFFORD",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE",
+        "TRAINER_NONE"
+      ]
+    }
+  ],
+  "skip_positions": 240,
+  "slot_count": 6,
+  "source_commit": "c5f026363afda6dd56225bebb2f2d2cdcd9d84f0",
+  "trainer_lock_sha256": "703ce3ae593e7e22704ba2ee38dc11d66c00391e0a2a454824f25c9c260229cb"
+}

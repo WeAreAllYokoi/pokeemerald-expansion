@@ -1,4 +1,6 @@
 #include "global.h"
+#include "admg_state.h"
+#include "admg_state.h"
 #include "battle_tent.h"
 #include "overworld.h"
 #include "event_data.h"
@@ -134,7 +136,11 @@ static void SetVerdanturfTentTrainerGfx(void)
 static void BufferVerdanturfTentTrainerIntro(void)
 {
     if (TRAINER_BATTLE_PARAM.opponentA < FRONTIER_TRAINERS_COUNT)
-        FrontierSpeechToString(gFacilityTrainers[TRAINER_BATTLE_PARAM.opponentA].speechBefore);
+    {
+        const struct BattleFrontierTrainer *trainer;
+        if (!ADMG_TryGetActiveFacilityTrainerRow(TRAINER_BATTLE_PARAM.opponentA, &trainer)) return;
+        FrontierSpeechToString(trainer->speechBefore);
+    }
 }
 
 static void SaveVerdanturfTentChallenge(void)
@@ -289,6 +295,56 @@ bool8 InSlateportBattleTent(void)
            && (gMapHeader.mapLayoutId == LAYOUT_BATTLE_TENT_CORRIDOR || gMapHeader.mapLayoutId == LAYOUT_BATTLE_TENT_BATTLE_ROOM);
 }
 
+static bool8 ADMG_TryPrepareSlateportMons(struct SaveBlock2 **save,
+    const struct TrainerMon **mons, u32 *count)
+{
+    if (gSaveBlock2Ptr == NULL)
+    { ADMG_StateAccessRejected(0, __func__); return FALSE; }
+    if (!ADMG_TryGetFacilityMonTableCount(gSlateportBattleTentMons, count)) return FALSE;
+    if (*count < NUM_SLATEPORT_TENT_MONS || ARRAY_COUNT(gSaveBlock2Ptr->frontier.rentalMons) < PARTY_SIZE)
+    { ADMG_StateAccessRejected(*count, __func__); return FALSE; }
+    *save = gSaveBlock2Ptr;
+    *mons = gSlateportBattleTentMons;
+    return TRUE;
+}
+
+struct ADMG_TentMonChoices { const u16 *set; u32 count; };
+
+static bool8 ADMG_TryPrepareSlateportOpponent(struct SaveBlock2 *save,
+    const struct TrainerMon *mons, u32 monCount, struct ADMG_TentMonChoices *choices,
+    enum Species *rentalSpecies, u16 *history, u32 *historyCount)
+{
+    u32 count = save->frontier.curChallengeBattleNum;
+    if (count > ARRAY_COUNT(save->frontier.trainerIds))
+    { ADMG_StateAccessRejected(count, __func__); return FALSE; }
+    for (u32 i = 0; i < count; ++i) history[i] = save->frontier.trainerIds[i];
+    for (u32 i = 0; i < ARRAY_COUNT(save->frontier.rentalMons); ++i)
+    {
+        const struct TrainerMon *mon;
+        if (!ADMG_TryGetFacilityMonRowFromTable(mons, monCount, save->frontier.rentalMons[i].monId, &mon)) return FALSE;
+        rentalSpecies[i] = mon->species;
+    }
+    bool8 available = FALSE;
+    for (u32 trainer = 0; trainer < NUM_BATTLE_TENT_TRAINERS; ++trainer)
+    {
+        const struct TrainerMon *selectedMons;
+        if (!ADMG_TryGetFacilityTrainerMonSet(gSlateportBattleTentTrainers, trainer,
+            &selectedMons, &choices[trainer].set, &choices[trainer].count)) return FALSE;
+        if (selectedMons != mons)
+        { ADMG_StateAccessRejected(trainer, __func__); return FALSE; }
+        if (choices[trainer].count > 8)
+        {
+            u32 i;
+            for (i = 0; i < count; ++i) if (history[i] == trainer) break;
+            if (i == count) available = TRUE;
+        }
+    }
+    if (!available)
+    { ADMG_StateAccessRejected(count, __func__); return FALSE; }
+    *historyCount = count;
+    return TRUE;
+}
+
 static void GenerateInitialRentalMons(void)
 {
     s32 i, j;
@@ -299,6 +355,10 @@ static void GenerateInitialRentalMons(void)
     u16 monIds[PARTY_SIZE];
     enum Item heldItems[PARTY_SIZE];
 
+    struct SaveBlock2 *save;
+    const struct TrainerMon *mons;
+    u32 monCount;
+    if (!ADMG_TryPrepareSlateportMons(&save, &mons, &monCount)) return;
     firstMonId = 0;
     gFacilityTrainers = gSlateportBattleTentTrainers;
     for (i = 0; i < PARTY_SIZE; i++)
@@ -318,10 +378,10 @@ static void GenerateInitialRentalMons(void)
         {
             if (monIds[j] == monSetId)
                 break;
-            if (species[j] == gFacilityTrainerMons[monSetId].species)
+            if (species[j] == mons[monSetId].species)
             {
                 if (currSpecies == SPECIES_NONE)
-                    currSpecies = gFacilityTrainerMons[monSetId].species;
+                    currSpecies = mons[monSetId].species;
                 else
                     break;
             }
@@ -332,9 +392,9 @@ static void GenerateInitialRentalMons(void)
         // Cannot have two same held items.
         for (j = firstMonId; j < i + firstMonId; j++)
         {
-            if (heldItems[j] != 0 && heldItems[j] == gFacilityTrainerMons[monSetId].heldItem)
+            if (heldItems[j] != 0 && heldItems[j] == mons[monSetId].heldItem)
             {
-                if (gFacilityTrainerMons[monSetId].species == currSpecies)
+                if (mons[monSetId].species == currSpecies)
                     currSpecies = SPECIES_NONE;
                 break;
             }
@@ -342,9 +402,9 @@ static void GenerateInitialRentalMons(void)
         if (j != i + firstMonId)
             continue;
 
-        gSaveBlock2Ptr->frontier.rentalMons[i].monId = monSetId;
-        species[i] = gFacilityTrainerMons[monSetId].species;
-        heldItems[i] = gFacilityTrainerMons[monSetId].heldItem;
+        save->frontier.rentalMons[i].monId = monSetId;
+        species[i] = mons[monSetId].species;
+        heldItems[i] = mons[monSetId].heldItem;
         monIds[i] = monSetId;
         i++;
     }
@@ -357,7 +417,16 @@ static void GenerateOpponentMons(void)
     const u16 *monSet;
     enum Species species[FRONTIER_PARTY_SIZE];
     enum Item heldItems[FRONTIER_PARTY_SIZE];
-    s32 numMons = 0;
+    u32 numMons;
+    struct SaveBlock2 *save;
+    const struct TrainerMon *mons;
+    u32 monCount, historyCount;
+    struct ADMG_TentMonChoices choices[NUM_BATTLE_TENT_TRAINERS];
+    enum Species rentalSpecies[ARRAY_COUNT(((struct SaveBlock2 *)0)->frontier.rentalMons)];
+    u16 history[ARRAY_COUNT(((struct SaveBlock2 *)0)->frontier.trainerIds)];
+    u16 selectedParty[FRONTIER_PARTY_SIZE];
+    if (!ADMG_TryPrepareSlateportMons(&save, &mons, &monCount)
+     || !ADMG_TryPrepareSlateportOpponent(save, mons, monCount, choices, rentalSpecies, history, &historyCount)) return;
 
     gFacilityTrainers = gSlateportBattleTentTrainers;
     gFacilityTrainerMons = gSlateportBattleTentMons;
@@ -368,44 +437,36 @@ static void GenerateOpponentMons(void)
         {
             // Choose a random trainer, ensuring no repeats in this challenge
             trainerId = Random() % NUM_BATTLE_TENT_TRAINERS;
-            for (i = 0; i < gSaveBlock2Ptr->frontier.curChallengeBattleNum; i++)
+            for (i = 0; i < historyCount; i++)
             {
-                if (gSaveBlock2Ptr->frontier.trainerIds[i] == trainerId)
+                if (history[i] == trainerId)
                     break;
             }
-        } while (i != gSaveBlock2Ptr->frontier.curChallengeBattleNum);
+        } while (i != historyCount);
 
-        TRAINER_BATTLE_PARAM.opponentA = trainerId;
-        monSet = gFacilityTrainers[TRAINER_BATTLE_PARAM.opponentA].monSet;
-        while (monSet[numMons] != 0xFFFF)
-            numMons++;
-        if (numMons > 8)
-            break;
-        numMons = 0;
+        monSet = choices[trainerId].set;
+        numMons = choices[trainerId].count;
+        if (numMons > 8) break;
     }
 
-    if (gSaveBlock2Ptr->frontier.curChallengeBattleNum < TENT_STAGES_PER_CHALLENGE - 1)
-        gSaveBlock2Ptr->frontier.trainerIds[gSaveBlock2Ptr->frontier.curChallengeBattleNum] = TRAINER_BATTLE_PARAM.opponentA;
-
-    monSet = gFacilityTrainers[TRAINER_BATTLE_PARAM.opponentA].monSet;
     i = 0;
     while (i != FRONTIER_PARTY_SIZE)
     {
         sRandMonId = monSet[Random() % numMons];
 
         // Ensure none of the opponent's Pokémon are the same as the potential rental Pokémon for the player
-        for (j = 0; j < (int)ARRAY_COUNT(gSaveBlock2Ptr->frontier.rentalMons); j++)
+        for (j = 0; j < (int)ARRAY_COUNT(rentalSpecies); j++)
         {
-            if (gFacilityTrainerMons[sRandMonId].species == gFacilityTrainerMons[gSaveBlock2Ptr->frontier.rentalMons[j].monId].species)
+            if (mons[sRandMonId].species == rentalSpecies[j])
                 break;
         }
-        if (j != (int)ARRAY_COUNT(gSaveBlock2Ptr->frontier.rentalMons))
+        if (j != (int)ARRAY_COUNT(rentalSpecies))
             continue;
 
         // Ensure this species hasn't already been chosen for the opponent
         for (k = 0; k < i; k++)
         {
-            if (species[k] == gFacilityTrainerMons[sRandMonId].species)
+            if (species[k] == mons[sRandMonId].species)
                 break;
         }
         if (k != i)
@@ -414,16 +475,22 @@ static void GenerateOpponentMons(void)
         // Ensure held items don't repeat on the opponent's team
         for (k = 0; k < i; k++)
         {
-            if (heldItems[k] != ITEM_NONE && heldItems[k] == gFacilityTrainerMons[sRandMonId].heldItem)
+            if (heldItems[k] != ITEM_NONE && heldItems[k] == mons[sRandMonId].heldItem)
                 break;
         }
         if (k != i)
             continue;
 
         // Successful selection
-        species[i] = gFacilityTrainerMons[sRandMonId].species;
-        heldItems[i] = gFacilityTrainerMons[sRandMonId].heldItem;
-        gFrontierTempParty[i] = sRandMonId;
+        species[i] = mons[sRandMonId].species;
+        heldItems[i] = mons[sRandMonId].heldItem;
+        selectedParty[i] = sRandMonId;
         i++;
     }
+    if (gSaveBlock2Ptr != save || save->frontier.curChallengeBattleNum != historyCount)
+    { ADMG_StateAccessRejected(trainerId, __func__); return; }
+    TRAINER_BATTLE_PARAM.opponentA = trainerId;
+    if (historyCount < TENT_STAGES_PER_CHALLENGE - 1)
+        save->frontier.trainerIds[historyCount] = trainerId;
+    for (u32 slot = 0; slot < FRONTIER_PARTY_SIZE; ++slot) gFrontierTempParty[slot] = selectedParty[slot];
 }

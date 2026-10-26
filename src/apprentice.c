@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_state.h"
 #include "apprentice.h"
 #include "battle.h"
 #include "battle_tower.h"
@@ -119,6 +120,11 @@ static void ShiftSavedApprentices(void);
 
 void BufferApprenticeChallengeText(u8 saveApprenticeId)
 {
+    if (gSaveBlock2Ptr == NULL || saveApprenticeId >= APPRENTICE_COUNT)
+    { ADMG_StateAccessRejected(saveApprenticeId, __func__); return; }
+    if (gSaveBlock2Ptr->apprentices[saveApprenticeId].id >= NUM_APPRENTICES)
+    { ADMG_StateAccessRejected(gSaveBlock2Ptr->apprentices[saveApprenticeId].id, __func__); return; }
+
     u8 i, num;
     const u8 *challengeText;
 
@@ -1239,6 +1245,9 @@ static void GetShouldApprenticeLeave(void)
 
 const u8 *GetApprenticeNameInLanguage(u32 apprenticeId, enum Language language)
 {
+    if (apprenticeId >= NUM_APPRENTICES)
+    { ADMG_StateAccessRejected(apprenticeId, __func__); return gText_EmptyString2; }
+
     const struct ApprenticeTrainer *apprentice = &gApprentices[apprenticeId];
 
     switch (language)

@@ -1,5 +1,7 @@
 #include "global.h"
+#include "vs_seeker.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "pokedex.h"
 
 #define SPECIAL_FLAGS_SIZE  (NUM_SPECIAL_FLAGS / 8)  // 8 flags per byte
@@ -53,6 +55,8 @@ void InitEventData(void)
     memset(gSaveBlock1Ptr->flags, 0, sizeof(gSaveBlock1Ptr->flags));
     memset(gSaveBlock1Ptr->vars, 0, sizeof(gSaveBlock1Ptr->vars));
     memset(sSpecialFlags, 0, sizeof(sSpecialFlags));
+    ADMG_InitRegionalEventData();
+    ADMG_InitializeNativeRematchGameState();
 }
 
 void ClearTempFieldEventData(void)
@@ -69,11 +73,14 @@ void ClearTempFieldEventData(void)
 void ClearDailyFlags(void)
 {
     memset(&gSaveBlock1Ptr->flags[DAILY_FLAGS_START / 8], 0, DAILY_FLAGS_SIZE);
+    ADMG_ClearRegionalDailyFlags();
 }
 
 void DisableNationalPokedex(void)
 {
-    u16 *nationalDexVar = GetVarPointer(VAR_NATIONAL_DEX);
+    if (gSaveBlock2Ptr == NULL)
+        return;
+    u16 *nationalDexVar = ADMG_REQUIRE_VAR_SPAN(VAR_NATIONAL_DEX, 1);
     gSaveBlock2Ptr->pokedex.nationalMagic = 0;
     *nationalDexVar = 0;
     FlagClear(FLAG_SYS_NATIONAL_DEX);
@@ -81,7 +88,9 @@ void DisableNationalPokedex(void)
 
 void EnableNationalPokedex(void)
 {
-    u16 *nationalDexVar = GetVarPointer(VAR_NATIONAL_DEX);
+    if (gSaveBlock2Ptr == NULL)
+        return;
+    u16 *nationalDexVar = ADMG_REQUIRE_VAR_SPAN(VAR_NATIONAL_DEX, 1);
     gSaveBlock2Ptr->pokedex.nationalMagic = 0xDA;
     *nationalDexVar = 0x302;
     FlagSet(FLAG_SYS_NATIONAL_DEX);
@@ -162,23 +171,27 @@ bool32 CanResetRTC(void)
 
 u16 *GetVarPointer(u16 id)
 {
-    if (id < VARS_START)
-        return NULL;
-    else if (id < SPECIAL_VARS_START)
-        return &gSaveBlock1Ptr->vars[id - VARS_START];
-#if TESTING
-    else if (id >= TESTING_VARS_START)
-        return &sTestVars[id - TESTING_VARS_START];
-#endif // TESTING
-    else
+    if (id >= VARS_START && id <= VARS_END)
+        return gSaveBlock1Ptr != NULL ? &gSaveBlock1Ptr->vars[id - VARS_START] : NULL;
+    if (id >= SPECIAL_VARS_START && id <= SPECIAL_VARS_END)
         return gSpecialVars[id - SPECIAL_VARS_START];
+#if TESTING
+    if (id >= TESTING_VARS_START && id < TESTING_VARS_START + TEST_VARS_SIZE)
+        return &sTestVars[id - TESTING_VARS_START];
+#endif
+    return ADMG_GetRegionalVarPointer(id);
 }
 
 u16 VarGet(u16 id)
 {
     u16 *ptr = GetVarPointer(id);
     if (!ptr)
-        return id;
+    {
+        if (id < VARS_START)
+            return id;
+        ADMG_StateAccessRejected(id, "VarGet");
+        return 65535;
+    }
     return *ptr;
 }
 
@@ -186,7 +199,11 @@ u16 VarGetIfExist(u16 id)
 {
     u16 *ptr = GetVarPointer(id);
     if (!ptr)
+    {
+        if (id >= VARS_START)
+            ADMG_StateAccessRejected(id, "VarGetIfExist");
         return 65535;
+    }
     return *ptr;
 }
 
@@ -194,13 +211,22 @@ bool8 VarSet(u16 id, u16 value)
 {
     u16 *ptr = GetVarPointer(id);
     if (!ptr)
+    {
+        if (id >= VARS_START)
+            ADMG_StateAccessRejected(id, "VarSet");
         return FALSE;
+    }
     *ptr = value;
     return TRUE;
 }
 
 u16 VarGetObjectEventGraphicsId(u8 id)
 {
+    if (id >= 16)
+    {
+        ADMG_StateAccessRejected(id, "object graphics slot");
+        return 65535;
+    }
     return VarGet(VAR_OBJ_GFX_ID_0 + id);
 }
 
@@ -208,14 +234,15 @@ u8 *GetFlagPointer(u16 id)
 {
     if (id == 0)
         return NULL;
-    else if (id < SPECIAL_FLAGS_START)
-        return &gSaveBlock1Ptr->flags[id / 8];
-#if TESTING
-    else if (id >= TESTING_FLAGS_START)
-        return &sTestFlags[(id - TESTING_FLAGS_START) / 8];
-#endif // TESTING
-    else
+    if (id < FLAGS_COUNT)
+        return gSaveBlock1Ptr != NULL ? &gSaveBlock1Ptr->flags[id / 8] : NULL;
+    if (id >= SPECIAL_FLAGS_START && id <= SPECIAL_FLAGS_END)
         return &sSpecialFlags[(id - SPECIAL_FLAGS_START) / 8];
+#if TESTING
+    if (id >= TESTING_FLAGS_START && id < TESTING_FLAGS_START + TEST_FLAGS_SIZE * 8)
+        return &sTestFlags[(id - TESTING_FLAGS_START) / 8];
+#endif
+    return ADMG_GetRegionalFlagPointer(id);
 }
 
 u8 FlagSet(u16 id)
@@ -223,6 +250,8 @@ u8 FlagSet(u16 id)
     u8 *ptr = GetFlagPointer(id);
     if (ptr)
         *ptr |= 1 << (id & 7);
+    else if (id != 0)
+        ADMG_StateAccessRejected(id, "FlagSet");
     return 0;
 }
 
@@ -231,6 +260,8 @@ u8 FlagToggle(u16 id)
     u8 *ptr = GetFlagPointer(id);
     if (ptr)
         *ptr ^= 1 << (id & 7);
+    else if (id != 0)
+        ADMG_StateAccessRejected(id, "FlagToggle");
     return 0;
 }
 
@@ -239,6 +270,8 @@ u8 FlagClear(u16 id)
     u8 *ptr = GetFlagPointer(id);
     if (ptr)
         *ptr &= ~(1 << (id & 7));
+    else if (id != 0)
+        ADMG_StateAccessRejected(id, "FlagClear");
     return 0;
 }
 
@@ -247,7 +280,11 @@ bool8 FlagGet(u16 id)
     u8 *ptr = GetFlagPointer(id);
 
     if (!ptr)
+    {
+        if (id != 0)
+            ADMG_StateAccessRejected(id, "FlagGet");
         return FALSE;
+    }
 
     if (!(((*ptr) >> (id & 7)) & 1))
         return FALSE;

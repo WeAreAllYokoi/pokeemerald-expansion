@@ -16,3 +16,7 @@
 	.include "data/maps/headers.inc"
 	.include "data/maps/groups.inc"
 	.include "data/maps/connections.inc"
+
+	.include "data/maps/admg_aux_headers.inc"
+	.include "data/maps/admg_aux_connections.inc"
+	.include "data/maps/admg_roots.inc"

@@ -13,6 +13,7 @@
 #include "menu.h"
 #include "text.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "easy_chat.h"
 #include "money.h"
 #include "strings.h"
@@ -826,6 +827,8 @@ void CopyTrainerCardData(struct TrainerCard *dst, struct TrainerCard *src, u8 ga
 
 static void SetDataFromTrainerCard(void)
 {
+    ADMG_REQUIRE_FLAG_RANGE(FLAG_BADGE01_GET, NUM_BADGES, 1);
+
     u8 i;
     u32 badgeFlag;
 

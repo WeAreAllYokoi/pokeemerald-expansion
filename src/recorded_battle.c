@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_trainer_actor.h"
 #include "battle.h"
 #include "battle_anim.h"
 #include "battle_controllers.h"
@@ -19,6 +20,7 @@
 #include "battle_setup.h"
 #include "frontier_util.h"
 #include "constants/trainers.h"
+#include "constants/apprentice.h"
 #include "constants/rgb.h"
 
 struct PlayerInfo
@@ -152,12 +154,19 @@ void RecordedBattle_SetTrainerInfo(void)
 
 void RecordedBattle_SetBattlerAction(enum BattlerId battler, u8 action)
 {
+    if ((u32)battler >= MAX_BATTLERS_COUNT) { ADMG_StateAccessRejected((u32)battler, __func__); return; }
+
     if (sBattlerRecordSizes[battler] < BATTLER_RECORD_SIZE && sRecordMode != B_RECORD_MODE_PLAYBACK)
         sBattleRecords[battler][sBattlerRecordSizes[battler]++] = action;
 }
 
 void RecordedBattle_ClearBattlerAction(enum BattlerId battler, u8 bytesToClear)
 {
+    if ((u32)battler >= MAX_BATTLERS_COUNT) { ADMG_StateAccessRejected((u32)battler, __func__); return; }
+
+    if (sBattlerRecordSizes[battler] > BATTLER_RECORD_SIZE)
+    { ADMG_StateAccessRejected(sBattlerRecordSizes[battler], __func__); return; }
+    if (sBattlerRecordSizes[battler] == 0) return;
     s32 i;
 
     for (i = 0; i < bytesToClear; i++)
@@ -171,6 +180,8 @@ void RecordedBattle_ClearBattlerAction(enum BattlerId battler, u8 bytesToClear)
 
 u8 RecordedBattle_GetBattlerAction(u32 actionType, enum BattlerId battler)
 {
+    if ((u32)battler >= MAX_BATTLERS_COUNT) { ADMG_StateAccessRejected((u32)battler, __func__); return B_ACTION_NONE; }
+
     if (gTestRunnerEnabled)
         TestRunner_Battle_CheckBattleRecordActionType(battler, sBattlerRecordSizes[battler], actionType);
 
@@ -189,58 +200,129 @@ u8 RecordedBattle_GetBattlerAction(u32 actionType, enum BattlerId battler)
     }
 }
 
+static bool8 ADMG_RecordedActionPositionsValid(const u16 *positions)
+{
+    for (u32 battler = 0; battler < MAX_BATTLERS_COUNT; ++battler)
+        if (sBattlerRecordSizes[battler] > BATTLER_RECORD_SIZE
+         || positions[battler] > sBattlerRecordSizes[battler])
+        { ADMG_StateAccessRejected(battler, __func__); return FALSE; }
+    return TRUE;
+}
+
+/* The original transfer buffer is 256 bytes. Both original envelopes fit
+ * when each payload is at most 250 bytes; all cursors stay full width. */
+static u32 ADMG_PackRecordedActionChunk(u8 *dst, u16 *positions)
+{
+    u32 length = 0;
+    for (u32 battler = 0; battler < MAX_BATTLERS_COUNT; ++battler)
+    {
+        u32 pending = sBattlerRecordSizes[battler] - positions[battler];
+        if (pending == 0 || length + 2 >= ADMG_RECORDED_ACTION_PAYLOAD) continue;
+        u32 count = ADMG_RECORDED_ACTION_PAYLOAD - length - 2;
+        if (count > pending) count = pending;
+        if (dst != NULL)
+        {
+            dst[length] = battler;
+            dst[length + 1] = count;
+            for (u32 action = 0; action < count; ++action)
+                dst[length + 2 + action] = sBattleRecords[battler][positions[battler] + action];
+        }
+        positions[battler] += count;
+        length += count + 2;
+    }
+    return length;
+}
+
+bool8 ADMG_TryPlanRecordedActionChunks(u16 *sizes, u32 capacity, u32 *count)
+{
+    if (sizes == NULL || count == NULL || capacity < ADMG_RECORDED_ACTION_CHUNKS)
+    { ADMG_StateAccessRejected(capacity, __func__); return FALSE; }
+    u16 positions[MAX_BATTLERS_COUNT];
+    memcpy(positions, sBattlerPrevRecordSizes, sizeof(positions));
+    if (!ADMG_RecordedActionPositionsValid(positions)) return FALSE;
+    u32 chunks = 0, length;
+    while ((length = ADMG_PackRecordedActionChunk(NULL, positions)) != 0)
+    {
+        if (chunks >= capacity) { ADMG_StateAccessRejected(chunks, __func__); return FALSE; }
+        sizes[chunks++] = length;
+    }
+    if (chunks == 0) sizes[chunks++] = 0;
+    *count = chunks;
+    return TRUE;
+}
+
 u8 RecordedBattle_BufferNewBattlerData(u8 *dst)
 {
-    u8 i, j;
-    u8 idx = 0;
-
-    for (i = 0; i < MAX_BATTLERS_COUNT; i++)
-    {
-        if (sBattlerRecordSizes[i] != sBattlerPrevRecordSizes[i])
-        {
-            dst[idx++] = i;
-            dst[idx++] = sBattlerRecordSizes[i] - sBattlerPrevRecordSizes[i];
-
-            for (j = 0; j < sBattlerRecordSizes[i] - sBattlerPrevRecordSizes[i]; j++)
-                dst[idx++] = sBattleRecords[i][sBattlerPrevRecordSizes[i] + j];
-
-            sBattlerPrevRecordSizes[i] = sBattlerRecordSizes[i];
-        }
-    }
-
-    return idx;
+    if (dst == NULL) { ADMG_StateAccessRejected(0, __func__); return 0; }
+    u16 positions[MAX_BATTLERS_COUNT];
+    memcpy(positions, sBattlerPrevRecordSizes, sizeof(positions));
+    if (!ADMG_RecordedActionPositionsValid(positions)) return 0;
+    u32 length = ADMG_PackRecordedActionChunk(dst, positions);
+    memcpy(sBattlerPrevRecordSizes, positions, sizeof(positions));
+    return length;
 }
 
 void RecordedBattle_RecordAllBattlerData(u8 *src)
 {
-    s32 i;
-    u8 idx = 2;
-    u8 size;
+    if (!(gBattleTypeFlags & BATTLE_TYPE_LINK)) return;
+    u32 players = GetLinkPlayerCount();
+    if (src == NULL || players > MAX_LINK_PLAYERS)
+    { ADMG_StateAccessRejected(players, __func__); return; }
+    for (u32 player = 0; player < players; ++player)
+        if ((gLinkPlayers[player].version & 0xFF) != VERSION_EMERALD) return;
+    if (gBattleTypeFlags & BATTLE_TYPE_IS_MASTER) return;
 
-    if (!(gBattleTypeFlags & BATTLE_TYPE_LINK))
-        return;
-
-    for (i = 0; i < GetLinkPlayerCount(); i++)
+    /* The established byte-length envelope is retained. Validate all actor,
+     * group and aggregate append bounds before writing any recorded state. */
+    u32 length = src[0], cursor = 2, remaining = length;
+    u16 projected[MAX_BATTLERS_COUNT];
+    u8 snapshot[257];
+    memcpy(snapshot, src, length + 2);
+    for (u32 battler = 0; battler < MAX_BATTLERS_COUNT; ++battler)
     {
-        if ((gLinkPlayers[i].version & 0xFF) != VERSION_EMERALD)
-            return;
+        projected[battler] = sBattlerSavedRecordSizes[battler];
+        if (projected[battler] > BATTLER_RECORD_SIZE)
+        { ADMG_StateAccessRejected(projected[battler], __func__); return; }
     }
-
-    if (!(gBattleTypeFlags & BATTLE_TYPE_IS_MASTER))
+    while (remaining != 0)
     {
-        for (size = *src; size != 0;)
+        if (remaining < 2) { ADMG_StateAccessRejected(remaining, __func__); return; }
+        u32 battler = snapshot[cursor++], count = snapshot[cursor++];
+        remaining -= 2;
+        if (battler >= MAX_BATTLERS_COUNT || count > remaining
+         || count > BATTLER_RECORD_SIZE - projected[battler])
+        { ADMG_StateAccessRejected(battler, __func__); return; }
+        projected[battler] += count;
+        cursor += count;
+        remaining -= count;
+    }
+    cursor = 2; remaining = length;
+    while (remaining != 0)
+    {
+        u32 battler = snapshot[cursor++], count = snapshot[cursor++];
+        remaining -= 2;
+        for (u32 action = 0; action < count; ++action)
         {
-            enum BattlerId battler = GetNextRecordedDataByte(src, &idx, &size);
-            u8 numActions = GetNextRecordedDataByte(src, &idx, &size);
-
-            for (i = 0; i < numActions; i++)
-                sBattleRecords[battler][sBattlerSavedRecordSizes[battler]++] = GetNextRecordedDataByte(src, &idx, &size);
+            u8 value;
+            if (cursor <= 255)
+            {
+                /* Preserve the named byte-reader hook on its original domain;
+                 * the full envelope cursor itself must not narrow or wrap. */
+                u8 byteCursor = cursor, byteRemaining = remaining;
+                value = GetNextRecordedDataByte(snapshot, &byteCursor, &byteRemaining);
+            }
+            else value = snapshot[cursor];
+            sBattleRecords[battler][sBattlerSavedRecordSizes[battler]++] = value;
+            ++cursor; --remaining;
         }
     }
 }
 
 static u8 GetNextRecordedDataByte(u8 *data, u8 *idx, u8 *size)
 {
+    if (data == NULL || idx == NULL || size == NULL || *size == 0)
+    { ADMG_StateAccessRejected(0, __func__); return 0; }
+
     (*size)--;
     return data[(*idx)++];
 }
@@ -253,8 +335,32 @@ bool32 CanCopyRecordedBattleSaveData(void)
     return ret;
 }
 
+
+static bool8 RecordedTrainerActorsValid(const struct RecordedBattleSave *save)
+{
+    if (save == NULL || !ADMG_TryValidateBattleTrainerActors(save->battleFlags,
+            save->opponentA, save->opponentB, save->partnerId)) return FALSE;
+    if ((ADMG_IsBattleFacilityActor(save->battleFlags, ADMG_ACTOR_OPPONENT, save->opponentA, ADMG_ACTOR_APPRENTICE)
+      || ADMG_IsBattleFacilityActor(save->battleFlags,
+            save->battleFlags & BATTLE_TYPE_TWO_OPPONENTS && save->opponentB != 0xFFFF ? ADMG_ACTOR_OPPONENT : ADMG_ACTOR_UNUSED,
+            save->opponentB, ADMG_ACTOR_APPRENTICE)
+      || ADMG_IsBattleFacilityActor(save->battleFlags, ADMG_ACTOR_PARTNER, save->partnerId, ADMG_ACTOR_APPRENTICE))
+     && save->apprenticeId >= NUM_APPRENTICES)
+    { ADMG_StateAccessRejected(save->apprenticeId, __func__); return FALSE; }
+    if ((ADMG_IsBattleFacilityActor(save->battleFlags, ADMG_ACTOR_OPPONENT, save->opponentA, ADMG_ACTOR_RECORD_FRIEND)
+      || ADMG_IsBattleFacilityActor(save->battleFlags,
+            save->battleFlags & BATTLE_TYPE_TWO_OPPONENTS && save->opponentB != 0xFFFF ? ADMG_ACTOR_OPPONENT : ADMG_ACTOR_UNUSED,
+            save->opponentB, ADMG_ACTOR_RECORD_FRIEND)
+      || ADMG_IsBattleFacilityActor(save->battleFlags, ADMG_ACTOR_PARTNER, save->partnerId, ADMG_ACTOR_RECORD_FRIEND))
+     && save->recordMixFriendClass >= FACILITY_CLASSES_COUNT)
+    { ADMG_StateAccessRejected(save->recordMixFriendClass, __func__); return FALSE; }
+    return TRUE;
+}
+
 static bool32 IsRecordedBattleSaveValid(struct RecordedBattleSave *save)
 {
+    if (!RecordedTrainerActorsValid(save)) return FALSE;
+
     if (save->battleFlags == 0)
         return FALSE;
     if (save->battleFlags & BATTLE_TYPE_RECORDED_INVALID)
@@ -267,6 +373,8 @@ static bool32 IsRecordedBattleSaveValid(struct RecordedBattleSave *save)
 
 static bool32 RecordedBattleToSave(struct RecordedBattleSave *battleSave, struct RecordedBattleSave *saveSector)
 {
+    if (battleSave == NULL || saveSector == NULL || !RecordedTrainerActorsValid(battleSave)) return FALSE;
+
     memset(saveSector, 0, SECTOR_SIZE);
     memcpy(saveSector, battleSave, sizeof(*battleSave));
 
@@ -280,6 +388,16 @@ static bool32 RecordedBattleToSave(struct RecordedBattleSave *battleSave, struct
 
 bool32 MoveRecordedBattleToSaveData(void)
 {
+    if (gSaveBlock2Ptr == NULL || !ADMG_TryValidateBattleTrainerActors(sBattleFlags,
+            TRAINER_BATTLE_PARAM.opponentA, TRAINER_BATTLE_PARAM.opponentB, gPartnerTrainerId)) return FALSE;
+
+    /* Validate original bit-packed actor transport before narrowing/indexing. */
+    if (gRecordedBattleMultiplayerId >= MAX_LINK_PLAYERS)
+    { ADMG_StateAccessRejected(gRecordedBattleMultiplayerId, __func__); return FALSE; }
+    for (u32 player = 0; player < MAX_LINK_PLAYERS; ++player)
+        if (sPlayers[player].battler >= MAX_BATTLERS_COUNT)
+        { ADMG_StateAccessRejected(sPlayers[player].battler, __func__); return FALSE; }
+
     s32 i, j;
     bool32 ret;
     struct RecordedBattleSave *battleSave, *savSection;
@@ -288,6 +406,14 @@ bool32 MoveRecordedBattleToSaveData(void)
     saveAttempts = 0;
     battleSave = AllocZeroed(sizeof(struct RecordedBattleSave));
     savSection = AllocZeroed(SECTOR_SIZE);
+    if (battleSave == NULL || savSection == NULL)
+    {
+        if (battleSave != NULL) Free(battleSave);
+        if (savSection != NULL) Free(savSection);
+        ADMG_StateAccessRejected(0, __func__);
+        return FALSE;
+    }
+
 
     memcpy(battleSave->parties, gParties, sizeof(struct Pokemon[MAX_BATTLE_TRAINERS][PARTY_SIZE]));
 
@@ -351,7 +477,7 @@ bool32 MoveRecordedBattleToSaveData(void)
     battleSave->battleScene = gSaveBlock2Ptr->optionsBattleSceneOff;
     battleSave->textSpeed = gSaveBlock2Ptr->optionsTextSpeed;
 
-    if (TRAINER_BATTLE_PARAM.opponentA >= TRAINER_RECORD_MIXING_FRIEND && TRAINER_BATTLE_PARAM.opponentA < TRAINER_RECORD_MIXING_APPRENTICE)
+    if (ADMG_IsBattleFacilityActor(sBattleFlags, ADMG_ACTOR_OPPONENT, TRAINER_BATTLE_PARAM.opponentA, ADMG_ACTOR_RECORD_FRIEND))
     {
         for (i = 0; i < PLAYER_NAME_LENGTH + 1; i++)
             battleSave->recordMixFriendName[i] = gSaveBlock2Ptr->frontier.towerRecords[TRAINER_BATTLE_PARAM.opponentA - TRAINER_RECORD_MIXING_FRIEND].name[i];
@@ -369,7 +495,7 @@ bool32 MoveRecordedBattleToSaveData(void)
         }
         battleSave->recordMixFriendLanguage = gSaveBlock2Ptr->frontier.towerRecords[TRAINER_BATTLE_PARAM.opponentA - TRAINER_RECORD_MIXING_FRIEND].language;
     }
-    else if (TRAINER_BATTLE_PARAM.opponentB >= TRAINER_RECORD_MIXING_FRIEND && TRAINER_BATTLE_PARAM.opponentB < TRAINER_RECORD_MIXING_APPRENTICE)
+    else if (ADMG_IsBattleFacilityActor(sBattleFlags, (sBattleFlags & BATTLE_TYPE_TWO_OPPONENTS && TRAINER_BATTLE_PARAM.opponentB != 0xFFFF ? ADMG_ACTOR_OPPONENT : ADMG_ACTOR_UNUSED), TRAINER_BATTLE_PARAM.opponentB, ADMG_ACTOR_RECORD_FRIEND))
     {
         for (i = 0; i < PLAYER_NAME_LENGTH + 1; i++)
             battleSave->recordMixFriendName[i] = gSaveBlock2Ptr->frontier.towerRecords[TRAINER_BATTLE_PARAM.opponentB - TRAINER_RECORD_MIXING_FRIEND].name[i];
@@ -387,7 +513,7 @@ bool32 MoveRecordedBattleToSaveData(void)
         }
         battleSave->recordMixFriendLanguage = gSaveBlock2Ptr->frontier.towerRecords[TRAINER_BATTLE_PARAM.opponentB - TRAINER_RECORD_MIXING_FRIEND].language;
     }
-    else if (gPartnerTrainerId >= TRAINER_RECORD_MIXING_FRIEND && gPartnerTrainerId < TRAINER_RECORD_MIXING_APPRENTICE)
+    else if (ADMG_IsBattleFacilityActor(sBattleFlags, ADMG_ACTOR_PARTNER, gPartnerTrainerId, ADMG_ACTOR_RECORD_FRIEND))
     {
         for (i = 0; i < PLAYER_NAME_LENGTH + 1; i++)
             battleSave->recordMixFriendName[i] = gSaveBlock2Ptr->frontier.towerRecords[gPartnerTrainerId - TRAINER_RECORD_MIXING_FRIEND].name[i];
@@ -396,21 +522,21 @@ bool32 MoveRecordedBattleToSaveData(void)
         battleSave->recordMixFriendLanguage = gSaveBlock2Ptr->frontier.towerRecords[gPartnerTrainerId - TRAINER_RECORD_MIXING_FRIEND].language;
     }
 
-    if (TRAINER_BATTLE_PARAM.opponentA >= TRAINER_RECORD_MIXING_APPRENTICE)
+    if (ADMG_IsBattleFacilityActor(sBattleFlags, ADMG_ACTOR_OPPONENT, TRAINER_BATTLE_PARAM.opponentA, ADMG_ACTOR_APPRENTICE))
     {
         battleSave->apprenticeId = gSaveBlock2Ptr->apprentices[TRAINER_BATTLE_PARAM.opponentA - TRAINER_RECORD_MIXING_APPRENTICE].id;
         for (i = 0; i < EASY_CHAT_BATTLE_WORDS_COUNT; i++)
             battleSave->easyChatSpeech[i] = gSaveBlock2Ptr->apprentices[TRAINER_BATTLE_PARAM.opponentA - TRAINER_RECORD_MIXING_APPRENTICE].speechWon[i];
         battleSave->apprenticeLanguage = gSaveBlock2Ptr->apprentices[TRAINER_BATTLE_PARAM.opponentA - TRAINER_RECORD_MIXING_APPRENTICE].language;
     }
-    else if (TRAINER_BATTLE_PARAM.opponentB >= TRAINER_RECORD_MIXING_APPRENTICE)
+    else if (ADMG_IsBattleFacilityActor(sBattleFlags, (sBattleFlags & BATTLE_TYPE_TWO_OPPONENTS && TRAINER_BATTLE_PARAM.opponentB != 0xFFFF ? ADMG_ACTOR_OPPONENT : ADMG_ACTOR_UNUSED), TRAINER_BATTLE_PARAM.opponentB, ADMG_ACTOR_APPRENTICE))
     {
         battleSave->apprenticeId = gSaveBlock2Ptr->apprentices[TRAINER_BATTLE_PARAM.opponentB - TRAINER_RECORD_MIXING_APPRENTICE].id;
         for (i = 0; i < EASY_CHAT_BATTLE_WORDS_COUNT; i++)
             battleSave->easyChatSpeech[i] = gSaveBlock2Ptr->apprentices[TRAINER_BATTLE_PARAM.opponentB - TRAINER_RECORD_MIXING_APPRENTICE].speechWon[i];
         battleSave->apprenticeLanguage = gSaveBlock2Ptr->apprentices[TRAINER_BATTLE_PARAM.opponentB - TRAINER_RECORD_MIXING_APPRENTICE].language;
     }
-    else if (gPartnerTrainerId >= TRAINER_RECORD_MIXING_APPRENTICE)
+    else if (ADMG_IsBattleFacilityActor(sBattleFlags, ADMG_ACTOR_PARTNER, gPartnerTrainerId, ADMG_ACTOR_APPRENTICE))
     {
         battleSave->apprenticeId = gSaveBlock2Ptr->apprentices[gPartnerTrainerId - TRAINER_RECORD_MIXING_APPRENTICE].id;
 
@@ -420,6 +546,9 @@ bool32 MoveRecordedBattleToSaveData(void)
     for (i = 0; i < MAX_BATTLERS_COUNT; i++)
         for (j = 0; j < BATTLER_RECORD_SIZE; j++)
             battleSave->battleRecord[i][j] = sBattleRecords[i][j];
+
+    if (!RecordedTrainerActorsValid(battleSave))
+    { Free(battleSave); Free(savSection); return FALSE; }
 
     while (1)
     {
@@ -438,6 +567,8 @@ bool32 MoveRecordedBattleToSaveData(void)
 
 static bool32 TryCopyRecordedBattleSaveData(struct RecordedBattleSave *dst, struct SaveSector *saveBuffer)
 {
+    if (dst == NULL || saveBuffer == NULL) { ADMG_StateAccessRejected(0, __func__); return FALSE; }
+
     if (TryReadSpecialSaveSector(SECTOR_ID_RECORDED_BATTLE, (void *)(saveBuffer)) != SAVE_STATUS_OK)
         return FALSE;
 
@@ -451,7 +582,9 @@ static bool32 TryCopyRecordedBattleSaveData(struct RecordedBattleSave *dst, stru
 
 static bool32 CopyRecordedBattleFromSave(struct RecordedBattleSave *dst)
 {
+    if (dst == NULL) { ADMG_StateAccessRejected(0, __func__); return FALSE; }
     struct SaveSector *savBuffer = AllocZeroed(SECTOR_SIZE);
+    if (savBuffer == NULL) { ADMG_StateAccessRejected(0, __func__); return FALSE; }
     bool32 ret = TryCopyRecordedBattleSaveData(dst, savBuffer);
     Free(savBuffer);
 
@@ -485,6 +618,8 @@ static void Task_StartAfterCountdown(u8 taskId)
 
 void SetPartiesFromRecordedSave(struct RecordedBattleSave *src)
 {
+    if (!RecordedTrainerActorsValid(src)) return;
+
     for (enum BattleTrainer trainer = B_TRAINER_PLAYER; trainer < MAX_BATTLE_TRAINERS; trainer++)
     {
         ZeroPartyMons(gParties[trainer]);
@@ -495,10 +630,14 @@ void SetPartiesFromRecordedSave(struct RecordedBattleSave *src)
 
 void SetVariablesForRecordedBattle(struct RecordedBattleSave *src)
 {
+    if (gSaveBlock2Ptr == NULL || !RecordedTrainerActorsValid(src)) return;
+
     bool8 var;
     s32 i, j;
 
+    u64 admission = ADMG_BeginStateAccessCheck();
     SetPartiesFromRecordedSave(src);
+    if (!ADMG_EndStateAccessCheck(admission)) return;
     for (i = 0; i < MAX_LINK_PLAYERS; i++)
     {
         for (var = FALSE, j = 0; j < PLAYER_NAME_LENGTH + 1; j++)
@@ -549,15 +688,23 @@ void SetVariablesForRecordedBattle(struct RecordedBattleSave *src)
 
 void PlayRecordedBattle(void (*CB2_After)(void))
 {
+    if (gSaveBlock2Ptr == NULL) { ADMG_StateAccessRejected(0, __func__); return; }
     struct RecordedBattleSave *battleSave = AllocZeroed(sizeof(struct RecordedBattleSave));
+    if (battleSave == NULL) { ADMG_StateAccessRejected(0, __func__); return; }
     if (CopyRecordedBattleFromSave(battleSave) == TRUE)
     {
         u8 taskId;
 
+        u64 admission = ADMG_BeginStateAccessCheck();
         RecordedBattle_SaveParties();
+        if (!ADMG_EndStateAccessCheck(admission)) { Free(battleSave); return; }
         SetVariablesForRecordedBattle(battleSave);
+        if (!ADMG_EndStateAccessCheck(admission))
+        { RecordedBattle_RestoreSavedParties(); Free(battleSave); return; }
 
         taskId = CreateTask(Task_StartAfterCountdown, 1);
+        if (taskId >= NUM_TASKS)
+        { ADMG_StateAccessRejected(taskId, __func__); RecordedBattle_RestoreSavedParties(); Free(battleSave); return; }
         gTasks[taskId].tFramesToWait = 128;
 
         sCallback2_AfterRecordedBattle = CB2_After;
@@ -589,6 +736,7 @@ u8 GetRecordedBattleFronterBrainSymbol(void)
 void RecordedBattle_SaveParties(void)
 {
     sSavedParties = AllocZeroed(sizeof(struct Pokemon[MAX_BATTLE_TRAINERS][PARTY_SIZE]));
+    if (sSavedParties == NULL) { ADMG_StateAccessRejected(0, __func__); return; }
 
     memcpy(sSavedParties, gParties, sizeof(struct Pokemon[MAX_BATTLE_TRAINERS][PARTY_SIZE]));
 }
@@ -644,6 +792,8 @@ u8 GetTextSpeedInRecordedBattle(void)
 
 void RecordedBattle_CopyBattlerMoves(enum BattlerId battler)
 {
+    if ((u32)battler >= MAX_BATTLERS_COUNT) { ADMG_StateAccessRejected((u32)battler, __func__); return; }
+
     s32 i;
 
     if (!IsOnPlayerSide(battler))
@@ -661,12 +811,62 @@ void RecordedBattle_CopyBattlerMoves(enum BattlerId battler)
 // It shares a value with B_ACTION_SAFARI_POKEBLOCK, which can never occur in a recorded battle.
 #define ACTION_MOVE_CHANGE 6
 
+static bool8 ADMG_RecordedMovesetFramesValid(u8 mode)
+{
+    if (gBattlersCount > MAX_BATTLERS_COUNT
+     || (mode != B_RECORD_MODE_RECORDING && mode != B_RECORD_MODE_PLAYBACK))
+    { ADMG_StateAccessRejected(mode, __func__); return FALSE; }
+    for (u32 battler = 0; battler < gBattlersCount; ++battler)
+    {
+        if ((u32)GetBattlerPosition(battler) >= (u32)MAX_BATTLERS_COUNT)
+        { ADMG_StateAccessRejected(battler, __func__); return FALSE; }
+        if (!IsOnPlayerSide(battler)) continue;
+        u32 cursor = sBattlerRecordSizes[battler];
+        if (cursor > BATTLER_RECORD_SIZE)
+        { ADMG_StateAccessRejected(cursor, __func__); return FALSE; }
+        if (mode == B_RECORD_MODE_RECORDING)
+        {
+            bool8 changed = FALSE;
+            for (u32 move = 0; move < MAX_MON_MOVES; ++move)
+                if (gBattleMons[battler].moves[move] != sPlayerMonMoves[battler / 2][move]) changed = TRUE;
+            if (!changed) continue;
+            if (cursor > BATTLER_RECORD_SIZE - (MAX_MON_MOVES + 1))
+            { ADMG_StateAccessRejected(cursor, __func__); return FALSE; }
+            for (u32 move = 0; move < MAX_MON_MOVES; ++move)
+            {
+                bool8 found = FALSE;
+                for (u32 slot = 0; slot < MAX_MON_MOVES; ++slot)
+                    if (gBattleMons[battler].moves[move] == sPlayerMonMoves[battler / 2][slot]) { found = TRUE; break; }
+                if (!found) { ADMG_StateAccessRejected(move, __func__); return FALSE; }
+            }
+        }
+        else
+        {
+            /* A consumed record ends in the existing action reader. Do not
+             * peek beyond the record while merely checking for a change. */
+            if (cursor == BATTLER_RECORD_SIZE || sBattleRecords[battler][cursor] != ACTION_MOVE_CHANGE) continue;
+            if (cursor > BATTLER_RECORD_SIZE - (MAX_MON_MOVES + 1))
+            { ADMG_StateAccessRejected(cursor, __func__); return FALSE; }
+            for (u32 move = 0; move < MAX_MON_MOVES; ++move)
+                if (sBattleRecords[battler][cursor + 1 + move] >= MAX_MON_MOVES)
+                { ADMG_StateAccessRejected(sBattleRecords[battler][cursor + 1 + move], __func__); return FALSE; }
+            if (gBattleStruct == NULL || gBattleStruct->chosenMovePositions[battler] >= MAX_MON_MOVES
+             || (!gBattleMons[battler].volatiles.transformed && gBattlerPartyIndexes[battler] >= PARTY_SIZE))
+            { ADMG_StateAccessRejected(battler, __func__); return FALSE; }
+        }
+    }
+    return TRUE;
+}
+
 void RecordedBattle_CheckMovesetChanges(u8 mode)
 {
+    if (gBattlersCount > MAX_BATTLERS_COUNT) { ADMG_StateAccessRejected(gBattlersCount, __func__); return; }
+
     s32 j, k;
 
     if (gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK))
         return;
+    if (!ADMG_RecordedMovesetFramesValid(mode)) return;
 
     for (enum BattlerId battler = 0; battler < gBattlersCount; battler++)
     {
@@ -700,7 +900,7 @@ void RecordedBattle_CheckMovesetChanges(u8 mode)
             }
             else // B_RECORD_MODE_PLAYBACK
             {
-                if (sBattleRecords[battler][sBattlerRecordSizes[battler]] == ACTION_MOVE_CHANGE)
+                if (sBattlerRecordSizes[battler] < BATTLER_RECORD_SIZE && sBattleRecords[battler][sBattlerRecordSizes[battler]] == ACTION_MOVE_CHANGE)
                 {
                     u8 ppBonuses[MAX_MON_MOVES];
                     u8 moveSlots[MAX_MON_MOVES];
@@ -718,6 +918,8 @@ void RecordedBattle_CheckMovesetChanges(u8 mode)
                     for (j = 0; j < MAX_MON_MOVES; j++)
                     {
                         moveSlots[j] = RecordedBattle_GetBattlerAction(RECORDED_BYTE, battler);
+                        if (moveSlots[j] >= MAX_MON_MOVES)
+                        { ADMG_StateAccessRejected(moveSlots[j], __func__); return; }
                         movePP.moves[j] = gBattleMons[battler].moves[moveSlots[j]];
                         movePP.currentPP[j] = gBattleMons[battler].pp[moveSlots[j]];
                         movePP.maxPP[j] = ppBonuses[moveSlots[j]];
@@ -768,6 +970,8 @@ void RecordedBattle_CheckMovesetChanges(u8 mode)
 
 u64 GetAiScriptsInRecordedBattle(enum BattlerId battler)
 {
+    if ((u32)battler >= MAX_BATTLERS_COUNT) { ADMG_StateAccessRejected((u32)battler, __func__); return 0; }
+
     return sAI_Scripts[battler];
 }
 
@@ -785,6 +989,8 @@ bool8 RecordedBattle_CanStopPlayback(void)
 void GetRecordedBattleRecordMixFriendName(u8 *dst)
 {
     s32 i;
+    if (dst == NULL) { ADMG_StateAccessRejected(0, __func__); return; }
+    if (!ADMG_TryValidateTrainerText(sRecordMixFriendName, sizeof(sRecordMixFriendName), 0, NULL)) return;
 
     for (i = 0; i < PLAYER_NAME_LENGTH + 1; i++)
         dst[i] = sRecordMixFriendName[i];

@@ -1,5 +1,6 @@
 #include "global.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "constants/region_map_sections.h"
 
 struct Landmark
@@ -364,7 +365,10 @@ const u8 *GetLandmarkName(mapsec_u8_t mapSection, u8 id, u8 count)
     {
         const struct Landmark *landmark = *landmarks;
 
-        if (landmark->flag == 0xFFFF || FlagGet(landmark->flag) == TRUE)
+        bool8 discovered = FALSE;
+        if (landmark->flag != 0xFFFF && !ADMG_TryReadFlag(landmark->flag, &discovered))
+            return NULL;
+        if (landmark->flag == 0xFFFF || discovered == TRUE)
         {
             if (count == 0)
                 break;

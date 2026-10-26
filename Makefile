@@ -208,6 +208,8 @@ override CFLAGS += -O0
 endif
 
 # Variable filled out in other make files
+PYTHON ?= python3
+
 AUTO_GEN_TARGETS :=
 include make_tools.mk
 # Tool executables
@@ -250,7 +252,7 @@ AUTO_GEN_TARGETS += $(DATA_SRC_SUBDIR)/wild_encounters.h
 MISC_TOOL_DIR := $(TOOLS_DIR)/misc
 AUTO_GEN_TARGETS +=  $(INCLUDE_DIRS)/constants/script_commands.h
 
-$(DATA_SRC_SUBDIR)/wild_encounters.h: $(DATA_SRC_SUBDIR)/wild_encounters.json $(WILD_ENCOUNTERS_TOOL_DIR)/wild_encounters_to_header.py $(INCLUDE_DIRS)/config/overworld.h $(INCLUDE_DIRS)/config/dexnav.h
+$(DATA_SRC_SUBDIR)/wild_encounters.h: $(DATA_SRC_SUBDIR)/wild_encounters.json $(WILD_ENCOUNTERS_TOOL_DIR)/wild_encounters_to_header.py $(INCLUDE_DIRS)/config/overworld.h $(INCLUDE_DIRS)/config/dexnav.h $(INCLUDE_DIRS)/constants/rtc.h
 	python3 $(WILD_ENCOUNTERS_TOOL_DIR)/wild_encounters_to_header.py
 
 $(INCLUDE_DIRS)/constants/script_commands.h: $(MISC_TOOL_DIR)/make_scr_cmd_constants.py $(DATA_ASM_SUBDIR)/script_cmd_table.inc
@@ -306,6 +308,12 @@ endif
 C_SRCS_IN := $(wildcard $(C_SUBDIR)/*.c $(C_SUBDIR)/*/*.c $(C_SUBDIR)/*/*/*.c)
 C_SRCS := $(foreach src,$(C_SRCS_IN),$(if $(findstring .inc.c,$(src)),,$(src)))
 C_OBJS := $(patsubst $(C_SUBDIR)/%.c,$(C_BUILDDIR)/%.o,$(C_SRCS))
+
+# Project-owned passive retention scaffolding; gameplay/profile switches are unchanged.
+ADMG_INTEGRATION_OBJS := $(C_BUILDDIR)/admg_native.o $(C_BUILDDIR)/admg_exports.o
+$(ADMG_INTEGRATION_OBJS): include/admg_native.h include/admg_retention.h
+$(ADMG_INTEGRATION_OBJS): override CPPFLAGS += -DADMG_INTEGRATION_RECIPE_VERSION=34
+$(ADMG_INTEGRATION_OBJS): override CFLAGS += -ffunction-sections -fdata-sections
 
 TEST_SRCS_IN := $(wildcard $(TEST_SUBDIR)/*.c $(TEST_SUBDIR)/*/*.c $(TEST_SUBDIR)/*/*/*.c)
 TEST_SRCS := $(foreach src,$(TEST_SRCS_IN),$(if $(findstring .inc.c,$(src)),,$(src)))
@@ -416,6 +424,51 @@ include trainer_rules.mk
 
 # NOTE: Tools must have been built prior (FIXME)
 # so you can't really call this rule directly
+
+# Project-owned, derived retention roots. No regional gameplay selector is added.
+ADMG_ROOT_TOOL := tools/admg101/generate_regional_roots.py
+ADMG_ROOT_CATALOG := tools/admg101/required-resources.json
+ADMG_ROOT_OUTPUTS := src/data/admg_tileset_roots.h src/data/admg_object_roots.h data/maps/admg_roots.inc data/maps/admg_aux_headers.inc data/maps/admg_aux_connections.inc data/maps/admg_aux_events.inc data/maps/admg_aux_scripts.inc
+AUTO_GEN_TARGETS += $(ADMG_ROOT_OUTPUTS)
+$(ADMG_ROOT_OUTPUTS) &: $(ADMG_ROOT_TOOL) $(ADMG_ROOT_CATALOG) $(MAP_JSONS) $(LAYOUTS_DIR)/layouts.json src/data/tilesets/headers.h data/event_scripts.s
+	python3 $(ADMG_ROOT_TOOL)
+$(C_BUILDDIR)/tilesets.o: src/data/admg_tileset_roots.h
+$(C_BUILDDIR)/event_object_movement.o: src/data/admg_object_roots.h
+$(DATA_ASM_BUILDDIR)/maps.o: data/maps/admg_roots.inc data/maps/admg_aux_headers.inc data/maps/admg_aux_connections.inc
+$(DATA_ASM_BUILDDIR)/map_events.o: data/maps/admg_aux_events.inc
+$(DATA_ASM_BUILDDIR)/event_scripts.o: data/maps/admg_aux_scripts.inc
+
+# Reviewed state namespace inputs; no source-local allocation or game selector.
+ADMG_STATE_TOOL := tools/admg101/generate_state_namespace.py
+ADMG_STATE_INPUTS := tools/admg101/namespace-lock.json tools/admg101/state-semantics.json tools/admg101/source-ownership.json
+ADMG_STATE_OUTPUTS := include/constants/admg_state_ids.h src/data/admg_state_routes.h tools/admg101/state-operands.json
+AUTO_GEN_TARGETS += $(ADMG_STATE_OUTPUTS)
+$(ADMG_STATE_OUTPUTS) &: $(ADMG_STATE_TOOL) $(ADMG_STATE_INPUTS) $(wildcard data/maps/*/map.json)
+	$(PYTHON) $(ADMG_STATE_TOOL) --registry tools/admg101/state-semantics.json --lock tools/admg101/namespace-lock.json --source . --emit-directory .
+$(C_OBJS) $(DATA_ASM_OBJS): include/constants/admg_state_ids.h
+$(C_BUILDDIR)/admg_state.o: src/data/admg_state_routes.h
+$(DATA_ASM_OBJS): tools/admg101/state-operands.json tools/admg101/rewrite_state_operands.py
+
+# Declaration-derived facility mon-set bounds; original lists and layouts stay intact.
+ADMG_FACILITY_MON_TOOL := tools/admg101/generate_facility_mon_extents.py
+ADMG_FACILITY_MON_INPUTS := src/data/battle_frontier/battle_frontier_trainers.h src/data/battle_frontier/battle_tent.h
+ADMG_FACILITY_MON_OUTPUTS := src/data/admg_facility_mon_extents.h tools/admg101/facility-mon-extents.json
+AUTO_GEN_TARGETS += $(ADMG_FACILITY_MON_OUTPUTS)
+$(ADMG_FACILITY_MON_OUTPUTS) &: $(ADMG_FACILITY_MON_TOOL) $(ADMG_FACILITY_MON_INPUTS)
+	$(PYTHON) $(ADMG_FACILITY_MON_TOOL) --source . --emit-directory .
+$(C_BUILDDIR)/battle_tower.o: src/data/admg_facility_mon_extents.h
+
+# Reviewed C2 trainer namespace; no runtime region or campaign selector.
+ADMG_TRAINER_TOOL := tools/admg101/generate_trainer_namespace.py
+ADMG_TRAINER_INPUT := tools/admg101/trainer-lock.json
+ADMG_TRAINER_OUTPUTS := include/constants/admg_trainer_ids.h tools/admg101/trainer-operands.json
+AUTO_GEN_TARGETS += $(ADMG_TRAINER_OUTPUTS)
+$(ADMG_TRAINER_OUTPUTS) &: $(ADMG_TRAINER_TOOL) $(ADMG_TRAINER_INPUT) include/constants/opponents.h
+	$(PYTHON) $(ADMG_TRAINER_TOOL) --lock $(ADMG_TRAINER_INPUT) --source . --emit-directory .
+$(C_BUILDDIR)/data.o: src/data/trainers.h src/data/trainers_frlg.h include/constants/admg_trainer_ids.h
+$(C_OBJS) $(DATA_ASM_OBJS): include/constants/admg_trainer_ids.h
+$(C_BUILDDIR)/admg_trainer.o: include/admg_trainer.h include/admg_state.h
+
 generated: $(AUTO_GEN_TARGETS)
 	@: # Silence the "Nothing to be done for `generated'" message, which some people were confusing for an error.
 
@@ -521,7 +574,7 @@ ifneq ($(NODEP),1)
 endif
 
 $(DATA_ASM_BUILDDIR)/%.o: $(DATA_ASM_SUBDIR)/%.s
-	$(PREPROC) -s $< charmap.txt | $(CPP) $(CPPFLAGS) $(INCLUDE_SCANINC_ARGS) - | $(PREPROC) -ie $< charmap.txt | $(AS) $(ASFLAGS) -o $@
+	$(PREPROC) -s $< charmap.txt | $(PYTHON) tools/admg101/rewrite_state_operands.py --source $< | $(CPP) $(CPPFLAGS) $(INCLUDE_SCANINC_ARGS) - | $(PREPROC) -ie $< charmap.txt | $(AS) $(ASFLAGS) -o $@
 
 $(DATA_ASM_BUILDDIR)/%.d: $(DATA_ASM_SUBDIR)/%.s
 	$(SCANINC) -M $@ -g $(ASSETS_DIR_NAME) $(INCLUDE_SCANINC_ARGS) -I "" $<
@@ -595,3 +648,22 @@ leafgreen: all
 # Symbol file (`make syms`)
 $(SYM): $(ELF)
 	$(OBJDUMP) -t $< | sort -u | grep -E "^0[2389]" | $(PERL) -p -e 's/^(\w{8}) (\w).{6} \S+\t(\w{8}) (\S+)$$/\1 \2 \3 \4/g' > $@
+
+
+# Passive native rematch data: generation retains capability without selecting it.
+ADMG_REMATCH_TOOL := tools/admg101/generate_rematch_families.py
+ADMG_REMATCH_INPUTS := tools/admg101/rematch-authority.json tools/admg101/trainer-lock.json
+ADMG_REMATCH_OUTPUTS := include/data/admg_rematch_families.h tools/admg101/rematch-operands.json
+AUTO_GEN_TARGETS += $(ADMG_REMATCH_OUTPUTS)
+$(ADMG_REMATCH_OUTPUTS) &: $(ADMG_REMATCH_TOOL) $(ADMG_REMATCH_INPUTS)
+	$(PYTHON) $(ADMG_REMATCH_TOOL) --authority tools/admg101/rematch-authority.json --lock tools/admg101/trainer-lock.json --emit-directory .
+$(C_BUILDDIR)/admg_rematch.o: include/data/admg_rematch_families.h
+
+ADMG_REMATCH_GRAPHICS_TOOL := tools/admg101/generate_rematch_graphics.py
+ADMG_REMATCH_GRAPHICS_INPUT := tools/admg101/native-rematch-graphics.json
+ADMG_REMATCH_GRAPHICS_OUTPUTS := include/data/admg_rematch_graphics.h tools/admg101/native-rematch-graphics-operands.json
+AUTO_GEN_TARGETS += $(ADMG_REMATCH_GRAPHICS_OUTPUTS)
+$(ADMG_REMATCH_GRAPHICS_OUTPUTS) &: $(ADMG_REMATCH_GRAPHICS_TOOL) $(ADMG_REMATCH_GRAPHICS_INPUT) src/data/object_events/object_event_graphics_info.h src/data/object_events/object_event_pic_tables.h src/data/object_events/object_event_graphics_info_pointers.h $(wildcard graphics/object_events/pics/people/*.png)
+	$(PYTHON) $(ADMG_REMATCH_GRAPHICS_TOOL) --source . --output .
+$(C_BUILDDIR)/event_object_movement.o: include/data/admg_rematch_graphics.h
+generated: $(ADMG_REMATCH_OUTPUTS) $(ADMG_REMATCH_GRAPHICS_OUTPUTS)

@@ -1,4 +1,6 @@
 #include "global.h"
+#include "admg_state.h"
+#include "admg_trainer.h"
 #include "frontier_util.h"
 #include "battle_setup.h"
 #include "battle_util.h"
@@ -13,6 +15,7 @@
 #include "decoration.h"
 #include "decoration_inventory.h"
 #include "event_data.h"
+#include "admg_script.h"
 #include "field_door.h"
 #include "field_effect.h"
 #include "field_move.h"
@@ -83,6 +86,7 @@ static u8 sBrailleWindowId;
 static bool8 sIsScriptedWildDouble;
 
 extern const SpecialFunc gSpecials[];
+extern const SpecialFunc gSpecialsEnd[];
 extern const u8 *gStdScripts[];
 extern const u8 *gStdScripts_End[];
 
@@ -139,10 +143,23 @@ bool8 ScrCmd_special(struct ScriptContext *ctx)
 {
     u16 index = ScriptReadHalfword(ctx);
 
+    if (index >= (u32)(gSpecialsEnd - gSpecials))
+    {
+        ADMG_StateAccessRejected(index, "script special");
+        ADMG_StopInvalidStateCommand(ctx);
+        return FALSE;
+    }
+
     Script_RequestEffects(SCREFF_V1);
     Script_CheckEffectInstrumentedSpecial(index);
 
+    u64 generation = ADMG_BeginStateAccessCheck();
     gSpecials[index]();
+    if (!ADMG_EndStateAccessCheck(generation))
+    {
+        ADMG_StopInvalidStateCommand(ctx);
+        return FALSE;
+    }
     return FALSE;
 }
 
@@ -150,13 +167,28 @@ bool8 ScrCmd_specialvar(struct ScriptContext *ctx)
 {
     u32 varId = ScriptReadHalfword(ctx);
     u16 index = ScriptReadHalfword(ctx);
-    u16 *ptr = GetVarPointer(varId);
+    u16 *ptr = ADMG_SCRIPT_POINTER(ctx, varId, FALSE);
+
+    if (index >= (u32)(gSpecialsEnd - gSpecials))
+    {
+        ADMG_StateAccessRejected(index, "script special");
+        ADMG_StopInvalidStateCommand(ctx);
+        return FALSE;
+    }
 
     Script_RequestEffects(SCREFF_V1);
     Script_RequestWriteVar(varId);
     Script_CheckEffectInstrumentedSpecial(index);
 
-    *ptr = gSpecials[index]();
+    u64 generation = ADMG_BeginStateAccessCheck();
+    u16 value = gSpecials[index]();
+    if (!ADMG_EndStateAccessCheck(generation))
+    {
+        ADMG_StopInvalidStateCommand(ctx);
+        return FALSE;
+    }
+    ptr = ADMG_SCRIPT_POINTER(ctx, varId, FALSE);
+    *ptr = value;
     return FALSE;
 }
 
@@ -448,7 +480,7 @@ bool8 ScrCmd_copybyte(struct ScriptContext *ctx)
 bool8 ScrCmd_setvar(struct ScriptContext *ctx)
 {
     u32 varId = ScriptReadHalfword(ctx);
-    u16 *ptr = GetVarPointer(varId);
+    u16 *ptr = ADMG_SCRIPT_POINTER(ctx, varId, FALSE);
 
     Script_RequestEffects(SCREFF_V1);
     Script_RequestWriteVar(varId);
@@ -460,24 +492,26 @@ bool8 ScrCmd_setvar(struct ScriptContext *ctx)
 bool8 ScrCmd_copyvar(struct ScriptContext *ctx)
 {
     u32 varId = ScriptReadHalfword(ctx);
-    u16 *ptr = GetVarPointer(varId);
+    u16 *ptr = ADMG_SCRIPT_POINTER(ctx, varId, FALSE);
+    const u16 *source = ADMG_SCRIPT_POINTER(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
     Script_RequestWriteVar(varId);
 
-    *ptr = *GetVarPointer(ScriptReadHalfword(ctx));
+    *ptr = *source;
     return FALSE;
 }
 
 bool8 ScrCmd_setorcopyvar(struct ScriptContext *ctx)
 {
     u32 varId = ScriptReadHalfword(ctx);
-    u16 *ptr = GetVarPointer(varId);
+    u16 *ptr = ADMG_SCRIPT_POINTER(ctx, varId, FALSE);
+    u16 value = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
     Script_RequestWriteVar(varId);
 
-    *ptr = VarGet(ScriptReadHalfword(ctx));
+    *ptr = value;
     return FALSE;
 }
 
@@ -558,7 +592,7 @@ bool8 ScrCmd_compare_ptr_to_ptr(struct ScriptContext *ctx)
 
 bool8 ScrCmd_compare_var_to_value(struct ScriptContext *ctx)
 {
-    const u16 value1 = *GetVarPointer(ScriptReadHalfword(ctx));
+    const u16 value1 = *ADMG_SCRIPT_POINTER(ctx, ScriptReadHalfword(ctx), FALSE);
     const u16 value2 = ScriptReadHalfword(ctx);
 
     Script_RequestEffects(SCREFF_V1);
@@ -569,8 +603,8 @@ bool8 ScrCmd_compare_var_to_value(struct ScriptContext *ctx)
 
 bool8 ScrCmd_compare_var_to_var(struct ScriptContext *ctx)
 {
-    const u16 *ptr1 = GetVarPointer(ScriptReadHalfword(ctx));
-    const u16 *ptr2 = GetVarPointer(ScriptReadHalfword(ctx));
+    const u16 *ptr1 = ADMG_SCRIPT_POINTER(ctx, ScriptReadHalfword(ctx), FALSE);
+    const u16 *ptr2 = ADMG_SCRIPT_POINTER(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -584,7 +618,7 @@ bool8 ScrCmd_compare_var_to_var(struct ScriptContext *ctx)
 bool8 ScrCmd_addvar(struct ScriptContext *ctx)
 {
     u32 varId = ScriptReadHalfword(ctx);
-    u16 *ptr = GetVarPointer(varId);
+    u16 *ptr = ADMG_SCRIPT_POINTER(ctx, varId, FALSE);
 
     Script_RequestEffects(SCREFF_V1);
     Script_RequestWriteVar(varId);
@@ -596,18 +630,19 @@ bool8 ScrCmd_addvar(struct ScriptContext *ctx)
 bool8 ScrCmd_subvar(struct ScriptContext *ctx)
 {
     u32 varId = ScriptReadHalfword(ctx);
-    u16 *ptr = GetVarPointer(varId);
+    u16 *ptr = ADMG_SCRIPT_POINTER(ctx, varId, FALSE);
+    u16 value = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
     Script_RequestWriteVar(varId);
 
-    *ptr -= VarGet(ScriptReadHalfword(ctx));
+    *ptr -= value;
     return FALSE;
 }
 
 bool8 ScrCmd_random(struct ScriptContext *ctx)
 {
-    u16 max = VarGet(ScriptReadHalfword(ctx));
+    u16 max = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -617,8 +652,8 @@ bool8 ScrCmd_random(struct ScriptContext *ctx)
 
 bool8 ScrCmd_additem(struct ScriptContext *ctx)
 {
-    enum Item itemId = VarGet(ScriptReadHalfword(ctx));
-    u32 quantity = VarGet(ScriptReadHalfword(ctx));
+    enum Item itemId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u32 quantity = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -628,8 +663,8 @@ bool8 ScrCmd_additem(struct ScriptContext *ctx)
 
 bool8 ScrCmd_removeitem(struct ScriptContext *ctx)
 {
-    enum Item itemId = VarGet(ScriptReadHalfword(ctx));
-    u32 quantity = VarGet(ScriptReadHalfword(ctx));
+    enum Item itemId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u32 quantity = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -639,8 +674,8 @@ bool8 ScrCmd_removeitem(struct ScriptContext *ctx)
 
 bool8 ScrCmd_checkitemspace(struct ScriptContext *ctx)
 {
-    enum Item itemId = VarGet(ScriptReadHalfword(ctx));
-    u32 quantity = VarGet(ScriptReadHalfword(ctx));
+    enum Item itemId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u32 quantity = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -650,8 +685,8 @@ bool8 ScrCmd_checkitemspace(struct ScriptContext *ctx)
 
 bool8 ScrCmd_checkitem(struct ScriptContext *ctx)
 {
-    enum Item itemId = VarGet(ScriptReadHalfword(ctx));
-    u32 quantity = VarGet(ScriptReadHalfword(ctx));
+    enum Item itemId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u32 quantity = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -661,7 +696,7 @@ bool8 ScrCmd_checkitem(struct ScriptContext *ctx)
 
 bool8 ScrCmd_checkitemtype(struct ScriptContext *ctx)
 {
-    enum Item itemId = VarGet(ScriptReadHalfword(ctx));
+    enum Item itemId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -671,8 +706,8 @@ bool8 ScrCmd_checkitemtype(struct ScriptContext *ctx)
 
 bool8 ScrCmd_addpcitem(struct ScriptContext *ctx)
 {
-    enum Item itemId = VarGet(ScriptReadHalfword(ctx));
-    u16 quantity = VarGet(ScriptReadHalfword(ctx));
+    enum Item itemId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 quantity = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -682,8 +717,8 @@ bool8 ScrCmd_addpcitem(struct ScriptContext *ctx)
 
 bool8 ScrCmd_checkpcitem(struct ScriptContext *ctx)
 {
-    enum Item itemId = VarGet(ScriptReadHalfword(ctx));
-    u16 quantity = VarGet(ScriptReadHalfword(ctx));
+    enum Item itemId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 quantity = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -693,7 +728,7 @@ bool8 ScrCmd_checkpcitem(struct ScriptContext *ctx)
 
 bool8 ScrCmd_adddecoration(struct ScriptContext *ctx)
 {
-    u32 decorId = VarGet(ScriptReadHalfword(ctx));
+    u32 decorId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -703,7 +738,7 @@ bool8 ScrCmd_adddecoration(struct ScriptContext *ctx)
 
 bool8 ScrCmd_removedecoration(struct ScriptContext *ctx)
 {
-    u32 decorId = VarGet(ScriptReadHalfword(ctx));
+    u32 decorId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -713,7 +748,7 @@ bool8 ScrCmd_removedecoration(struct ScriptContext *ctx)
 
 bool8 ScrCmd_checkdecorspace(struct ScriptContext *ctx)
 {
-    u32 decorId = VarGet(ScriptReadHalfword(ctx));
+    u32 decorId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -723,7 +758,7 @@ bool8 ScrCmd_checkdecorspace(struct ScriptContext *ctx)
 
 bool8 ScrCmd_checkdecor(struct ScriptContext *ctx)
 {
-    u32 decorId = VarGet(ScriptReadHalfword(ctx));
+    u32 decorId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -733,7 +768,7 @@ bool8 ScrCmd_checkdecor(struct ScriptContext *ctx)
 
 bool8 ScrCmd_setflag(struct ScriptContext *ctx)
 {
-    u32 flagId = ScriptReadHalfword(ctx);
+    u32 flagId = ADMG_SCRIPT_FLAG_ID(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -743,7 +778,7 @@ bool8 ScrCmd_setflag(struct ScriptContext *ctx)
 
 bool8 ScrCmd_clearflag(struct ScriptContext *ctx)
 {
-    u32 flagId = ScriptReadHalfword(ctx);
+    u32 flagId = ADMG_SCRIPT_FLAG_ID(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -753,9 +788,10 @@ bool8 ScrCmd_clearflag(struct ScriptContext *ctx)
 
 bool8 ScrCmd_checkflag(struct ScriptContext *ctx)
 {
+    bool8 value = ADMG_SCRIPT_FLAG(ctx, ScriptReadHalfword(ctx), FALSE);
     Script_RequestEffects(SCREFF_V1);
 
-    ctx->comparisonResult = FlagGet(ScriptReadHalfword(ctx));
+    ctx->comparisonResult = value;
     return FALSE;
 }
 
@@ -782,7 +818,7 @@ bool8 ScrCmd_animateflash(struct ScriptContext *ctx)
 
 bool8 ScrCmd_setflashlevel(struct ScriptContext *ctx)
 {
-    u32 level = VarGet(ScriptReadHalfword(ctx));
+    u32 level = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE | SCREFF_HARDWARE);
 
@@ -870,8 +906,8 @@ bool8 ScrCmd_delay(struct ScriptContext *ctx)
 
 bool8 ScrCmd_initclock(struct ScriptContext *ctx)
 {
-    u8 hour = VarGet(ScriptReadHalfword(ctx));
-    u8 minute = VarGet(ScriptReadHalfword(ctx));
+    u8 hour = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u8 minute = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -908,7 +944,7 @@ bool8 ScrCmd_gettimeofday(struct ScriptContext *ctx)
 
 bool8 ScrCmd_setweather(struct ScriptContext *ctx)
 {
-    u16 weather = VarGet(ScriptReadHalfword(ctx));
+    u16 weather = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -944,7 +980,7 @@ bool8 ScrCmd_setstepcallback(struct ScriptContext *ctx)
 
 bool8 ScrCmd_setmaplayoutindex(struct ScriptContext *ctx)
 {
-    u16 value = VarGet(ScriptReadHalfword(ctx));
+    u16 value = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE | SCREFF_HARDWARE);
 
@@ -957,8 +993,8 @@ bool8 ScrCmd_warp(struct ScriptContext *ctx)
     u8 mapGroup = ScriptReadByte(ctx);
     u8 mapNum = ScriptReadByte(ctx);
     u8 warpId = ScriptReadByte(ctx);
-    u16 x = VarGet(ScriptReadHalfword(ctx));
-    u16 y = VarGet(ScriptReadHalfword(ctx));
+    u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE | SCREFF_HARDWARE);
 
@@ -973,8 +1009,8 @@ bool8 ScrCmd_warpsilent(struct ScriptContext *ctx)
     u8 mapGroup = ScriptReadByte(ctx);
     u8 mapNum = ScriptReadByte(ctx);
     u8 warpId = ScriptReadByte(ctx);
-    u16 x = VarGet(ScriptReadHalfword(ctx));
-    u16 y = VarGet(ScriptReadHalfword(ctx));
+    u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE | SCREFF_HARDWARE);
 
@@ -989,8 +1025,8 @@ bool8 ScrCmd_warpdoor(struct ScriptContext *ctx)
     u8 mapGroup = ScriptReadByte(ctx);
     u8 mapNum = ScriptReadByte(ctx);
     u8 warpId = ScriptReadByte(ctx);
-    u16 x = VarGet(ScriptReadHalfword(ctx));
-    u16 y = VarGet(ScriptReadHalfword(ctx));
+    u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE | SCREFF_HARDWARE);
 
@@ -1025,8 +1061,8 @@ bool8 ScrCmd_warpteleport(struct ScriptContext *ctx)
     u8 mapGroup = ScriptReadByte(ctx);
     u8 mapNum = ScriptReadByte(ctx);
     u8 warpId = ScriptReadByte(ctx);
-    u16 x = VarGet(ScriptReadHalfword(ctx));
-    u16 y = VarGet(ScriptReadHalfword(ctx));
+    u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE | SCREFF_HARDWARE);
 
@@ -1041,8 +1077,8 @@ bool8 ScrCmd_warpmossdeepgym(struct ScriptContext *ctx)
     u8 mapGroup = ScriptReadByte(ctx);
     u8 mapNum = ScriptReadByte(ctx);
     u8 warpId = ScriptReadByte(ctx);
-    u16 x = VarGet(ScriptReadHalfword(ctx));
-    u16 y = VarGet(ScriptReadHalfword(ctx));
+    u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE | SCREFF_HARDWARE);
 
@@ -1057,8 +1093,8 @@ bool8 ScrCmd_setwarp(struct ScriptContext *ctx)
     u8 mapGroup = ScriptReadByte(ctx);
     u8 mapNum = ScriptReadByte(ctx);
     u8 warpId = ScriptReadByte(ctx);
-    u16 x = VarGet(ScriptReadHalfword(ctx));
-    u16 y = VarGet(ScriptReadHalfword(ctx));
+    u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -1071,8 +1107,8 @@ bool8 ScrCmd_setdynamicwarp(struct ScriptContext *ctx)
     u8 mapGroup = ScriptReadByte(ctx);
     u8 mapNum = ScriptReadByte(ctx);
     u8 warpId = ScriptReadByte(ctx);
-    u16 x = VarGet(ScriptReadHalfword(ctx));
-    u16 y = VarGet(ScriptReadHalfword(ctx));
+    u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -1085,8 +1121,8 @@ bool8 ScrCmd_setdivewarp(struct ScriptContext *ctx)
     u8 mapGroup = ScriptReadByte(ctx);
     u8 mapNum = ScriptReadByte(ctx);
     u8 warpId = ScriptReadByte(ctx);
-    u16 x = VarGet(ScriptReadHalfword(ctx));
-    u16 y = VarGet(ScriptReadHalfword(ctx));
+    u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -1099,8 +1135,8 @@ bool8 ScrCmd_setholewarp(struct ScriptContext *ctx)
     u8 mapGroup = ScriptReadByte(ctx);
     u8 mapNum = ScriptReadByte(ctx);
     u8 warpId = ScriptReadByte(ctx);
-    u16 x = VarGet(ScriptReadHalfword(ctx));
-    u16 y = VarGet(ScriptReadHalfword(ctx));
+    u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -1113,8 +1149,8 @@ bool8 ScrCmd_setescapewarp(struct ScriptContext *ctx)
     u8 mapGroup = ScriptReadByte(ctx);
     u8 mapNum = ScriptReadByte(ctx);
     u8 warpId = ScriptReadByte(ctx);
-    u16 x = VarGet(ScriptReadHalfword(ctx));
-    u16 y = VarGet(ScriptReadHalfword(ctx));
+    u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -1126,8 +1162,8 @@ bool8 ScrCmd_getplayerxy(struct ScriptContext *ctx)
 {
     u32 varIdX = ScriptReadHalfword(ctx);
     u32 varIdY = ScriptReadHalfword(ctx);
-    u16 *pX = GetVarPointer(varIdX);
-    u16 *pY = GetVarPointer(varIdY);
+    u16 *pX = ADMG_SCRIPT_POINTER(ctx, varIdX, FALSE);
+    u16 *pY = ADMG_SCRIPT_POINTER(ctx, varIdY, FALSE);
 
     Script_RequestEffects(SCREFF_V1);
     Script_RequestWriteVar(varIdX);
@@ -1266,6 +1302,12 @@ struct ObjectEvent *ScriptHideFollower(void)
     if (obj == NULL || obj->invisible)
         return NULL;
 
+    if (obj->spriteId >= MAX_SPRITES)
+    {
+        ADMG_StateAccessRejected(obj->spriteId, __func__);
+        return NULL;
+    }
+
     ClearObjectEventMovement(obj, &gSprites[obj->spriteId]);
     gSprites[obj->spriteId].animCmdIndex = 0; // Reset start frame of animation
     // Note: ScriptMovement_ returns TRUE on error
@@ -1276,26 +1318,42 @@ struct ObjectEvent *ScriptHideFollower(void)
 
 bool8 ScrCmd_applymovement(struct ScriptContext *ctx)
 {
-    u16 localId = VarGet(ScriptReadHalfword(ctx));
+    u16 localId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     const u8 *movementScript = (const u8 *)ScriptReadWord(ctx);
     struct ObjectEvent *objEvent;
+    u32 objectId = ADMG_SCRIPT_OBJECT_ID(ctx, localId, FALSE);
+    ADMG_SCRIPT_REQUIRE_BACKING(ctx, gSaveBlock1Ptr, FALSE);
+    if (IS_OW_MON_OBJ(&gObjectEvents[objectId])
+     || (localId == OBJ_EVENT_ID_FOLLOWER && gObjectEvents[objectId].frozen))
+        ADMG_SCRIPT_REQUIRE_INDEX(ctx, gObjectEvents[objectId].spriteId, MAX_SPRITES, FALSE);
+    bool8 safeFollowerMovement = FALSE;
+    if (localId != OBJ_EVENT_ID_FOLLOWER)
+        safeFollowerMovement = ADMG_SCRIPT_FLAG(ctx, FLAG_SAFE_FOLLOWER_MOVEMENT, FALSE);
+    bool8 hideFollower = localId != OBJ_EVENT_ID_FOLLOWER
+        && !safeFollowerMovement
+        && (movementScript < Common_Movement_FollowerSafeStart || movementScript > Common_Movement_FollowerSafeEnd);
+    if (hideFollower)
+    {
+        struct ObjectEvent *follower = GetFollowerObject();
+        if (follower != NULL && !follower->invisible)
+            ADMG_SCRIPT_REQUIRE_INDEX(ctx, follower->spriteId, MAX_SPRITES, FALSE);
+    }
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
 
     // When applying script movements to follower, it may have frozen animation that must be cleared
     if ((localId == OBJ_EVENT_ID_FOLLOWER && (objEvent = GetFollowerObject()) && objEvent->frozen)
-            || ((objEvent = &gObjectEvents[GetObjectEventIdByLocalId(localId)]) && IS_OW_MON_OBJ(objEvent)))
+            || ((objEvent = &gObjectEvents[objectId]) && IS_OW_MON_OBJ(objEvent)))
     {
+        ADMG_SCRIPT_REQUIRE_INDEX(ctx, objEvent->spriteId, MAX_SPRITES, FALSE);
         ClearObjectEventMovement(objEvent, &gSprites[objEvent->spriteId]);
         gSprites[objEvent->spriteId].animCmdIndex = 0; // Reset start frame of animation
     }
 
-    gObjectEvents[GetObjectEventIdByLocalId(localId)].directionOverwrite = DIR_NONE;
+    gObjectEvents[objectId].directionOverwrite = DIR_NONE;
     ScriptMovement_StartObjectMovementScript(localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, movementScript);
     sMovingNpcId = localId;
-    if (localId != OBJ_EVENT_ID_FOLLOWER
-     && !FlagGet(FLAG_SAFE_FOLLOWER_MOVEMENT)
-     && (movementScript < Common_Movement_FollowerSafeStart || movementScript > Common_Movement_FollowerSafeEnd))
+    if (hideFollower)
     {
         ScriptHideFollower();
     }
@@ -1304,7 +1362,7 @@ bool8 ScrCmd_applymovement(struct ScriptContext *ctx)
 
 bool8 ScrCmd_applymovementat(struct ScriptContext *ctx)
 {
-    u16 localId = VarGet(ScriptReadHalfword(ctx));
+    u16 localId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     const void *movementScript = (const void *)ScriptReadWord(ctx);
     u8 mapGroup = ScriptReadByte(ctx);
     u8 mapNum = ScriptReadByte(ctx);
@@ -1333,7 +1391,7 @@ static bool8 WaitForMovementFinish(void)
 
 bool8 ScrCmd_waitmovement(struct ScriptContext *ctx)
 {
-    u16 localId = VarGet(ScriptReadHalfword(ctx));
+    u16 localId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
 
@@ -1347,7 +1405,7 @@ bool8 ScrCmd_waitmovement(struct ScriptContext *ctx)
 
 bool8 ScrCmd_waitmovementat(struct ScriptContext *ctx)
 {
-    u16 localId = VarGet(ScriptReadHalfword(ctx));
+    u16 localId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u8 mapGroup;
     u8 mapNum;
 
@@ -1377,7 +1435,7 @@ void Script_waitmovementall(struct ScriptContext *ctx)
 
 bool8 ScrCmd_removeobject(struct ScriptContext *ctx)
 {
-    u16 localId = VarGet(ScriptReadHalfword(ctx));
+    u16 localId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE | SCREFF_HARDWARE);
 
@@ -1387,7 +1445,7 @@ bool8 ScrCmd_removeobject(struct ScriptContext *ctx)
 
 bool8 ScrCmd_removeobjectat(struct ScriptContext *ctx)
 {
-    u16 objectId = VarGet(ScriptReadHalfword(ctx));
+    u16 objectId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u8 mapGroup = ScriptReadByte(ctx);
     u8 mapNum = ScriptReadByte(ctx);
 
@@ -1399,7 +1457,7 @@ bool8 ScrCmd_removeobjectat(struct ScriptContext *ctx)
 
 bool8 ScrCmd_addobject(struct ScriptContext *ctx)
 {
-    u16 objectId = VarGet(ScriptReadHalfword(ctx));
+    u16 objectId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
 
@@ -1409,7 +1467,7 @@ bool8 ScrCmd_addobject(struct ScriptContext *ctx)
 
 bool8 ScrCmd_addobjectat(struct ScriptContext *ctx)
 {
-    u16 objectId = VarGet(ScriptReadHalfword(ctx));
+    u16 objectId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u8 mapGroup = ScriptReadByte(ctx);
     u8 mapNum = ScriptReadByte(ctx);
 
@@ -1421,9 +1479,9 @@ bool8 ScrCmd_addobjectat(struct ScriptContext *ctx)
 
 bool8 ScrCmd_setobjectxy(struct ScriptContext *ctx)
 {
-    u16 localId = VarGet(ScriptReadHalfword(ctx));
-    u16 x = VarGet(ScriptReadHalfword(ctx));
-    u16 y = VarGet(ScriptReadHalfword(ctx));
+    u16 localId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
 
@@ -1437,9 +1495,9 @@ bool8 ScrCmd_setobjectxy(struct ScriptContext *ctx)
 
 bool8 ScrCmd_setobjectxyperm(struct ScriptContext *ctx)
 {
-    u16 localId = VarGet(ScriptReadHalfword(ctx));
-    u16 x = VarGet(ScriptReadHalfword(ctx));
-    u16 y = VarGet(ScriptReadHalfword(ctx));
+    u16 localId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -1449,7 +1507,7 @@ bool8 ScrCmd_setobjectxyperm(struct ScriptContext *ctx)
 
 bool8 ScrCmd_copyobjectxytoperm(struct ScriptContext *ctx)
 {
-    u16 localId = VarGet(ScriptReadHalfword(ctx));
+    u16 localId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -1459,7 +1517,7 @@ bool8 ScrCmd_copyobjectxytoperm(struct ScriptContext *ctx)
 
 bool8 ScrCmd_showobjectat(struct ScriptContext *ctx)
 {
-    u16 localId = VarGet(ScriptReadHalfword(ctx));
+    u16 localId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u8 mapGroup = ScriptReadByte(ctx);
     u8 mapNum = ScriptReadByte(ctx);
 
@@ -1471,7 +1529,7 @@ bool8 ScrCmd_showobjectat(struct ScriptContext *ctx)
 
 bool8 ScrCmd_hideobjectat(struct ScriptContext *ctx)
 {
-    u16 localId = VarGet(ScriptReadHalfword(ctx));
+    u16 localId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u8 mapGroup = ScriptReadByte(ctx);
     u8 mapNum = ScriptReadByte(ctx);
 
@@ -1483,7 +1541,7 @@ bool8 ScrCmd_hideobjectat(struct ScriptContext *ctx)
 
 bool8 ScrCmd_setobjectsubpriority(struct ScriptContext *ctx)
 {
-    u16 localId = VarGet(ScriptReadHalfword(ctx));
+    u16 localId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u8 mapGroup = ScriptReadByte(ctx);
     u8 mapNum = ScriptReadByte(ctx);
     u8 priority = ScriptReadByte(ctx);
@@ -1496,7 +1554,7 @@ bool8 ScrCmd_setobjectsubpriority(struct ScriptContext *ctx)
 
 bool8 ScrCmd_resetobjectsubpriority(struct ScriptContext *ctx)
 {
-    u16 localId = VarGet(ScriptReadHalfword(ctx));
+    u16 localId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u8 mapGroup = ScriptReadByte(ctx);
     u8 mapNum = ScriptReadByte(ctx);
 
@@ -1541,7 +1599,7 @@ bool8 ScrCmd_faceplayer(struct ScriptContext *ctx)
 
 bool8 ScrCmd_turnobject(struct ScriptContext *ctx)
 {
-    u16 localId = VarGet(ScriptReadHalfword(ctx));
+    u16 localId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     enum Direction direction = ScriptReadByte(ctx);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
@@ -1552,7 +1610,7 @@ bool8 ScrCmd_turnobject(struct ScriptContext *ctx)
 
 bool8 ScrCmd_setobjectmovementtype(struct ScriptContext *ctx)
 {
-    u16 localId = VarGet(ScriptReadHalfword(ctx));
+    u16 localId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u8 movementType = ScriptReadByte(ctx);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
@@ -1565,8 +1623,8 @@ bool8 ScrCmd_createvobject(struct ScriptContext *ctx)
 {
     u16 graphicsId = ScriptReadHalfword(ctx);
     u8 virtualObjId = ScriptReadByte(ctx);
-    u16 x = VarGet(ScriptReadHalfword(ctx));
-    u16 y = VarGet(ScriptReadHalfword(ctx));
+    u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u8 elevation = ScriptReadByte(ctx);
     enum Direction direction = ScriptReadByte(ctx);
 
@@ -1807,12 +1865,12 @@ static void DynamicMultichoiceSortList(struct ListMenuItem *items, u32 count)
 bool8 ScrCmd_dynmultichoice(struct ScriptContext *ctx)
 {
     u32 i;
-    u32 left = VarGet(ScriptReadHalfword(ctx));
-    u32 top = VarGet(ScriptReadHalfword(ctx));
+    u32 left = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u32 top = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     bool32 ignoreBPress = ScriptReadByte(ctx);
     u32 maxBeforeScroll = ScriptReadByte(ctx);
     bool32 shouldSort = ScriptReadByte(ctx);
-    u32 initialSelected = VarGet(ScriptReadHalfword(ctx));
+    u32 initialSelected = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u32 callbackSet = ScriptReadByte(ctx);
     u32 initialRow = 0;
     // Read vararg
@@ -1871,7 +1929,7 @@ bool8 ScrCmd_dynmultichoice(struct ScriptContext *ctx)
 bool8 ScrCmd_dynmultipush(struct ScriptContext *ctx)
 {
     const u8 *name = (const u8*) ScriptReadWord(ctx);
-    u32 id = VarGet(ScriptReadHalfword(ctx));
+    u32 id = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
 
@@ -1985,7 +2043,7 @@ bool8 ScrCmd_drawboxtext(struct ScriptContext *ctx)
 
 bool8 ScrCmd_showmonpic(struct ScriptContext *ctx)
 {
-    enum Species species = VarGet(ScriptReadHalfword(ctx));
+    enum Species species = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u8 x = ScriptReadByte(ctx);
     u8 y = ScriptReadByte(ctx);
 
@@ -2102,7 +2160,7 @@ bool8 ScrCmd_vmessage(struct ScriptContext *ctx)
 bool8 ScrCmd_bufferspeciesname(struct ScriptContext *ctx)
 {
     u8 stringVarIndex = ScriptReadByte(ctx);
-    enum Species species = VarGet(ScriptReadHalfword(ctx)) & OBJ_EVENT_MON_SPECIES_MASK; // ignore possible shiny / form bits
+    enum Species species = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE) & OBJ_EVENT_MON_SPECIES_MASK; // ignore possible shiny / form bits
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -2136,7 +2194,7 @@ void BufferFirstLiveMonNickname(struct ScriptContext *ctx)
 bool8 ScrCmd_bufferpartymonnick(struct ScriptContext *ctx)
 {
     u8 stringVarIndex = ScriptReadByte(ctx);
-    u16 partyIndex = VarGet(ScriptReadHalfword(ctx));
+    u16 partyIndex = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -2148,7 +2206,7 @@ bool8 ScrCmd_bufferpartymonnick(struct ScriptContext *ctx)
 bool8 ScrCmd_bufferitemname(struct ScriptContext *ctx)
 {
     u8 stringVarIndex = ScriptReadByte(ctx);
-    enum Item itemId = VarGet(ScriptReadHalfword(ctx));
+    enum Item itemId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -2159,8 +2217,8 @@ bool8 ScrCmd_bufferitemname(struct ScriptContext *ctx)
 bool8 ScrCmd_bufferitemnameplural(struct ScriptContext *ctx)
 {
     u8 stringVarIndex = ScriptReadByte(ctx);
-    enum Item itemId = VarGet(ScriptReadHalfword(ctx));
-    u16 quantity = VarGet(ScriptReadHalfword(ctx));
+    enum Item itemId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 quantity = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -2171,7 +2229,7 @@ bool8 ScrCmd_bufferitemnameplural(struct ScriptContext *ctx)
 bool8 ScrCmd_bufferdecorationname(struct ScriptContext *ctx)
 {
     u8 stringVarIndex = ScriptReadByte(ctx);
-    u16 decorId = VarGet(ScriptReadHalfword(ctx));
+    u16 decorId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -2182,7 +2240,7 @@ bool8 ScrCmd_bufferdecorationname(struct ScriptContext *ctx)
 bool8 ScrCmd_buffermovename(struct ScriptContext *ctx)
 {
     u8 stringVarIndex = ScriptReadByte(ctx);
-    enum Move move = VarGet(ScriptReadHalfword(ctx));
+    enum Move move = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -2193,7 +2251,7 @@ bool8 ScrCmd_buffermovename(struct ScriptContext *ctx)
 bool8 ScrCmd_buffernumberstring(struct ScriptContext *ctx)
 {
     u8 stringVarIndex = ScriptReadByte(ctx);
-    u16 num = VarGet(ScriptReadHalfword(ctx));
+    u16 num = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u8 numDigits = CountDigits(num);
 
     Script_RequestEffects(SCREFF_V1);
@@ -2205,7 +2263,7 @@ bool8 ScrCmd_buffernumberstring(struct ScriptContext *ctx)
 bool8 ScrCmd_bufferstdstring(struct ScriptContext *ctx)
 {
     u8 stringVarIndex = ScriptReadByte(ctx);
-    u16 index = VarGet(ScriptReadHalfword(ctx));
+    u16 index = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -2216,7 +2274,7 @@ bool8 ScrCmd_bufferstdstring(struct ScriptContext *ctx)
 bool8 ScrCmd_buffercontestname(struct ScriptContext *ctx)
 {
     u8 stringVarIndex = ScriptReadByte(ctx);
-    u16 category = VarGet(ScriptReadHalfword(ctx));
+    u16 category = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -2261,7 +2319,7 @@ bool8 ScrCmd_vbufferstring(struct ScriptContext *ctx)
 bool8 ScrCmd_bufferboxname(struct ScriptContext *ctx)
 {
     u8 stringVarIndex = ScriptReadByte(ctx);
-    u16 boxId = VarGet(ScriptReadHalfword(ctx));
+    u16 boxId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -2271,7 +2329,7 @@ bool8 ScrCmd_bufferboxname(struct ScriptContext *ctx)
 
 bool8 ScrCmd_giveegg(struct ScriptContext *ctx)
 {
-    enum Species species = VarGet(ScriptReadHalfword(ctx));
+    enum Species species = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -2439,7 +2497,13 @@ bool8 ScrCmd_gotobeatenscript(struct ScriptContext *ctx)
 
 bool8 ScrCmd_checktrainerflag(struct ScriptContext *ctx)
 {
-    u16 index = VarGet(ScriptReadHalfword(ctx));
+    u16 index = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 flagId;
+    if (!ADMG_TryGetTrainerDefeatFlagId(index, &flagId))
+    {
+        ADMG_StopInvalidStateCommand(ctx);
+        return FALSE;
+    }
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -2449,7 +2513,13 @@ bool8 ScrCmd_checktrainerflag(struct ScriptContext *ctx)
 
 bool8 ScrCmd_settrainerflag(struct ScriptContext *ctx)
 {
-    u16 index = VarGet(ScriptReadHalfword(ctx));
+    u16 index = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 flagId;
+    if (!ADMG_TryGetTrainerDefeatFlagId(index, &flagId))
+    {
+        ADMG_StopInvalidStateCommand(ctx);
+        return FALSE;
+    }
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -2459,7 +2529,13 @@ bool8 ScrCmd_settrainerflag(struct ScriptContext *ctx)
 
 bool8 ScrCmd_cleartrainerflag(struct ScriptContext *ctx)
 {
-    u16 index = VarGet(ScriptReadHalfword(ctx));
+    u16 index = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 flagId;
+    if (!ADMG_TryGetTrainerDefeatFlagId(index, &flagId))
+    {
+        ADMG_StopInvalidStateCommand(ctx);
+        return FALSE;
+    }
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -2542,7 +2618,7 @@ bool8 ScrCmd_pokemartdecoration2(struct ScriptContext *ctx)
 
 bool8 ScrCmd_playslotmachine(struct ScriptContext *ctx)
 {
-    u8 machineId = VarGet(ScriptReadHalfword(ctx));
+    u8 machineId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
 
@@ -2565,7 +2641,7 @@ bool8 ScrCmd_setberrytree(struct ScriptContext *ctx)
 
 bool8 ScrCmd_getpokenewsactive(struct ScriptContext *ctx)
 {
-    u16 newsKind = VarGet(ScriptReadHalfword(ctx));
+    u16 newsKind = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -2612,7 +2688,7 @@ bool8 ScrCmd_contestlinktransfer(struct ScriptContext *ctx)
 
 bool8 ScrCmd_dofieldeffect(struct ScriptContext *ctx)
 {
-    u16 effectId = VarGet(ScriptReadHalfword(ctx));
+    u16 effectId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
 
@@ -2624,10 +2700,11 @@ bool8 ScrCmd_dofieldeffect(struct ScriptContext *ctx)
 bool8 ScrCmd_setfieldeffectargument(struct ScriptContext *ctx)
 {
     u8 argNum = ScriptReadByte(ctx);
+    u16 value = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 
-    gFieldEffectArguments[argNum] = (s16)VarGet(ScriptReadHalfword(ctx));
+    gFieldEffectArguments[argNum] = (s16)value;
     return FALSE;
 }
 
@@ -2641,7 +2718,7 @@ static bool8 WaitForFieldEffectFinish(void)
 
 bool8 ScrCmd_waitfieldeffect(struct ScriptContext *ctx)
 {
-    u32 scriptId = VarGet(ScriptReadHalfword(ctx));
+    u32 scriptId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
 
@@ -2652,7 +2729,7 @@ bool8 ScrCmd_waitfieldeffect(struct ScriptContext *ctx)
 
 bool8 ScrCmd_setrespawn(struct ScriptContext *ctx)
 {
-    u16 healLocationId = VarGet(ScriptReadHalfword(ctx));
+    u16 healLocationId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -2670,8 +2747,8 @@ bool8 ScrCmd_checkplayergender(struct ScriptContext *ctx)
 
 bool8 ScrCmd_playmoncry(struct ScriptContext *ctx)
 {
-    enum Species species = VarGet(ScriptReadHalfword(ctx));
-    u16 mode = VarGet(ScriptReadHalfword(ctx));
+    enum Species species = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 mode = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
 
@@ -2696,10 +2773,10 @@ bool8 ScrCmd_waitmoncry(struct ScriptContext *ctx)
 
 bool8 ScrCmd_setmetatile(struct ScriptContext *ctx)
 {
-    u16 x = VarGet(ScriptReadHalfword(ctx));
-    u16 y = VarGet(ScriptReadHalfword(ctx));
-    u16 metatileId = VarGet(ScriptReadHalfword(ctx));
-    bool16 isImpassable = VarGet(ScriptReadHalfword(ctx));
+    u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 metatileId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    bool16 isImpassable = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -2718,7 +2795,7 @@ void NativeFunc_SetMetatileInRange(struct ScriptContext *ctx)
     u8 ymin = ScriptReadByte(ctx);
     u8 xmax = ScriptReadByte(ctx);
     u8 ymax = ScriptReadByte(ctx);
-    u16 metatileId = VarGet(ScriptReadHalfword(ctx));
+    u16 metatileId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
     bool8 hasCollision = ScriptReadByte(ctx);
     u8 elevation = ScriptReadByte(ctx);
     u32 temp;
@@ -2750,8 +2827,8 @@ void NativeFunc_SetMetatileInRange(struct ScriptContext *ctx)
 
 bool8 ScrCmd_opendoor(struct ScriptContext *ctx)
 {
-    u16 x = VarGet(ScriptReadHalfword(ctx));
-    u16 y = VarGet(ScriptReadHalfword(ctx));
+    u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE | SCREFF_HARDWARE);
 
@@ -2764,8 +2841,8 @@ bool8 ScrCmd_opendoor(struct ScriptContext *ctx)
 
 bool8 ScrCmd_closedoor(struct ScriptContext *ctx)
 {
-    u16 x = VarGet(ScriptReadHalfword(ctx));
-    u16 y = VarGet(ScriptReadHalfword(ctx));
+    u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE | SCREFF_HARDWARE);
 
@@ -2793,8 +2870,8 @@ bool8 ScrCmd_waitdooranim(struct ScriptContext *ctx)
 
 bool8 ScrCmd_setdooropen(struct ScriptContext *ctx)
 {
-    u16 x = VarGet(ScriptReadHalfword(ctx));
-    u16 y = VarGet(ScriptReadHalfword(ctx));
+    u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE | SCREFF_HARDWARE);
 
@@ -2806,8 +2883,8 @@ bool8 ScrCmd_setdooropen(struct ScriptContext *ctx)
 
 bool8 ScrCmd_setdoorclosed(struct ScriptContext *ctx)
 {
-    u16 x = VarGet(ScriptReadHalfword(ctx));
-    u16 y = VarGet(ScriptReadHalfword(ctx));
+    u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE | SCREFF_HARDWARE);
 
@@ -2821,9 +2898,9 @@ bool8 ScrCmd_setdoorclosed(struct ScriptContext *ctx)
 bool8 ScrCmd_addelevmenuitem(struct ScriptContext *ctx)
 {
     u8 UNUSED v3 = ScriptReadByte(ctx);
-    u16 UNUSED v5 = VarGet(ScriptReadHalfword(ctx));
-    u16 UNUSED v7 = VarGet(ScriptReadHalfword(ctx));
-    u16 UNUSED v9 = VarGet(ScriptReadHalfword(ctx));
+    u16 UNUSED v5 = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 UNUSED v7 = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 UNUSED v9 = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     //ScriptAddElevatorMenuItem(v3, v5, v7, v9);
     return FALSE;
@@ -2840,7 +2917,7 @@ bool8 ScrCmd_showelevmenu(struct ScriptContext *ctx)
 bool8 ScrCmd_checkcoins(struct ScriptContext *ctx)
 {
     u32 varId = ScriptReadHalfword(ctx);
-    u16 *ptr = GetVarPointer(varId);
+    u16 *ptr = ADMG_SCRIPT_POINTER(ctx, varId, FALSE);
 
     Script_RequestEffects(SCREFF_V1);
     Script_RequestWriteVar(varId);
@@ -2851,7 +2928,7 @@ bool8 ScrCmd_checkcoins(struct ScriptContext *ctx)
 
 bool8 ScrCmd_addcoins(struct ScriptContext *ctx)
 {
-    u16 coins = VarGet(ScriptReadHalfword(ctx));
+    u16 coins = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -2864,7 +2941,7 @@ bool8 ScrCmd_addcoins(struct ScriptContext *ctx)
 
 bool8 ScrCmd_removecoins(struct ScriptContext *ctx)
 {
-    u16 coins = VarGet(ScriptReadHalfword(ctx));
+    u16 coins = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -2877,7 +2954,7 @@ bool8 ScrCmd_removecoins(struct ScriptContext *ctx)
 
 bool8 ScrCmd_moverotatingtileobjects(struct ScriptContext *ctx)
 {
-    u16 puzzleNumber = VarGet(ScriptReadHalfword(ctx));
+    u16 puzzleNumber = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -2895,7 +2972,7 @@ bool8 ScrCmd_turnrotatingtileobjects(struct ScriptContext *ctx)
 
 bool8 ScrCmd_initrotatingtilepuzzle(struct ScriptContext *ctx)
 {
-    u16 isTrickHouse = VarGet(ScriptReadHalfword(ctx));
+    u16 isTrickHouse = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
 
@@ -2942,7 +3019,7 @@ bool8 ScrCmd_lockfortrainer(struct ScriptContext *ctx)
 bool8 ScrCmd_setmodernfatefulencounter(struct ScriptContext *ctx)
 {
     bool8 isModernFatefulEncounter = TRUE;
-    u16 partyIndex = VarGet(ScriptReadHalfword(ctx));
+    u16 partyIndex = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -2952,7 +3029,7 @@ bool8 ScrCmd_setmodernfatefulencounter(struct ScriptContext *ctx)
 
 bool8 ScrCmd_checkmodernfatefulencounter(struct ScriptContext *ctx)
 {
-    u16 partyIndex = VarGet(ScriptReadHalfword(ctx));
+    u16 partyIndex = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -2981,8 +3058,8 @@ bool8 ScrCmd_warpspinenter(struct ScriptContext *ctx)
     u8 mapGroup = ScriptReadByte(ctx);
     u8 mapNum = ScriptReadByte(ctx);
     u8 warpId = ScriptReadByte(ctx);
-    u16 x = VarGet(ScriptReadHalfword(ctx));
-    u16 y = VarGet(ScriptReadHalfword(ctx));
+    u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE | SCREFF_HARDWARE);
 
@@ -2995,7 +3072,7 @@ bool8 ScrCmd_warpspinenter(struct ScriptContext *ctx)
 
 bool8 ScrCmd_setmonmetlocation(struct ScriptContext *ctx)
 {
-    u16 partyIndex = VarGet(ScriptReadHalfword(ctx));
+    u16 partyIndex = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u8 location = ScriptReadByte(ctx);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
@@ -3013,23 +3090,47 @@ static void CloseBrailleWindow(void)
 
 bool8 ScrCmd_buffertrainerclassname(struct ScriptContext *ctx)
 {
+    if (ctx == NULL || ctx->scriptPtr == NULL)
+    { ADMG_StateAccessRejected(0, __func__); ADMG_StopInvalidStateCommand(ctx); return FALSE; }
     u8 stringVarIndex = ScriptReadByte(ctx);
-    enum TrainerClassID trainerClassId = VarGet(ScriptReadHalfword(ctx));
-
+    u32 trainerId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    ADMG_SCRIPT_REQUIRE_INDEX(ctx, stringVarIndex, 3, FALSE);
+    /* Generic canonical metadata, not an active opponent selection. Keep
+     * named partners and the existing zero-row query available. */
+    struct ADMG_TrainerRef ref;
+    if (!ADMG_TryResolveTrainer(trainerId, &ref))
+    { ADMG_StopInvalidStateCommand(ctx); return FALSE; }
+    u64 generation = ADMG_BeginStateAccessCheck();
+    const u8 *name = GetTrainerClassNameFromId(trainerId);
+    if (!ADMG_EndStateAccessCheck(generation))
+    { ADMG_StopInvalidStateCommand(ctx); return FALSE; }
+    if (name == NULL)
+    { ADMG_StateAccessRejected(trainerId, __func__); ADMG_StopInvalidStateCommand(ctx); return FALSE; }
     Script_RequestEffects(SCREFF_V1);
-
-    StringCopy(GetStringVar(stringVarIndex), GetTrainerClassNameFromId(trainerClassId));
+    StringCopy(GetStringVar(stringVarIndex), name);
     return FALSE;
 }
 
 bool8 ScrCmd_buffertrainername(struct ScriptContext *ctx)
 {
+    if (ctx == NULL || ctx->scriptPtr == NULL)
+    { ADMG_StateAccessRejected(0, __func__); ADMG_StopInvalidStateCommand(ctx); return FALSE; }
     u8 stringVarIndex = ScriptReadByte(ctx);
-    enum TrainerClassID trainerClassId = VarGet(ScriptReadHalfword(ctx));
-
+    u32 trainerId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    ADMG_SCRIPT_REQUIRE_INDEX(ctx, stringVarIndex, 3, FALSE);
+    /* Generic canonical metadata, not an active opponent selection. Keep
+     * named partners and the existing zero-row query available. */
+    struct ADMG_TrainerRef ref;
+    if (!ADMG_TryResolveTrainer(trainerId, &ref))
+    { ADMG_StopInvalidStateCommand(ctx); return FALSE; }
+    u64 generation = ADMG_BeginStateAccessCheck();
+    const u8 *name = GetTrainerNameFromId(trainerId);
+    if (!ADMG_EndStateAccessCheck(generation))
+    { ADMG_StopInvalidStateCommand(ctx); return FALSE; }
+    if (name == NULL)
+    { ADMG_StateAccessRejected(trainerId, __func__); ADMG_StopInvalidStateCommand(ctx); return FALSE; }
     Script_RequestEffects(SCREFF_V1);
-
-    StringCopy(GetStringVar(stringVarIndex), GetTrainerNameFromId(trainerClassId));
+    StringCopy(GetStringVar(stringVarIndex), name);
     return FALSE;
 }
 
@@ -3043,8 +3144,8 @@ bool8 ScrCmd_warpwhitefade(struct ScriptContext *ctx)
     u8 mapGroup = ScriptReadByte(ctx);
     u8 mapNum = ScriptReadByte(ctx);
     u8 warpId = ScriptReadByte(ctx);
-    u16 x = VarGet(ScriptReadHalfword(ctx));
-    u16 y = VarGet(ScriptReadHalfword(ctx));
+    u16 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u16 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE | SCREFF_HARDWARE);
 
@@ -3063,7 +3164,7 @@ void ScriptSetDoubleBattleFlag(struct ScriptContext *ctx)
 
 bool8 ScrCmd_removeallitem(struct ScriptContext *ctx)
 {
-    enum Item itemId = VarGet(ScriptReadHalfword(ctx));
+    enum Item itemId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -3076,17 +3177,17 @@ bool8 ScrCmd_removeallitem(struct ScriptContext *ctx)
 
 bool8 ScrCmd_getobjectxy(struct ScriptContext *ctx)
 {
-    u32 localId = VarGet(ScriptReadHalfword(ctx));
-    u32 useTemplate = VarGet(ScriptReadHalfword(ctx));
+    u32 localId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
+    u32 useTemplate = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u32 varIdX = ScriptReadHalfword(ctx);
     u32 varIdY = ScriptReadHalfword(ctx);
+    u16 *pX = ADMG_SCRIPT_POINTER(ctx, varIdX, FALSE);
+    u16 *pY = ADMG_SCRIPT_POINTER(ctx, varIdY, FALSE);
 
     Script_RequestEffects(SCREFF_V1);
     Script_RequestWriteVar(varIdX);
     Script_RequestWriteVar(varIdY);
 
-    u16 *pX = GetVarPointer(varIdX);
-    u16 *pY = GetVarPointer(varIdY);
     GetObjectPosition(pX, pY, localId, useTemplate);
 
     return FALSE;
@@ -3094,14 +3195,13 @@ bool8 ScrCmd_getobjectxy(struct ScriptContext *ctx)
 
 bool8 ScrCmd_checkobjectat(struct ScriptContext *ctx)
 {
-    u32 x = VarGet(ScriptReadHalfword(ctx)) + MAP_OFFSET;
-    u32 y = VarGet(ScriptReadHalfword(ctx)) + MAP_OFFSET;
+    u32 x = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE) + MAP_OFFSET;
+    u32 y = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE) + MAP_OFFSET;
     u32 varId = ScriptReadHalfword(ctx);
+    u16 *varPointer = ADMG_SCRIPT_POINTER(ctx, varId, FALSE);
 
     Script_RequestEffects(SCREFF_V1);
     Script_RequestWriteVar(varId);
-
-    u16 *varPointer = GetVarPointer(varId);
 
     *varPointer = CheckObjectAtXY(x, y);
 
@@ -3110,8 +3210,8 @@ bool8 ScrCmd_checkobjectat(struct ScriptContext *ctx)
 
 bool8 Scrcmd_getsetpokedexflag(struct ScriptContext *ctx)
 {
-    enum NationalDexOrder speciesId = SpeciesToNationalPokedexNum(VarGet(ScriptReadHalfword(ctx)));
-    u32 desiredFlag = VarGet(ScriptReadHalfword(ctx));
+    enum NationalDexOrder speciesId = SpeciesToNationalPokedexNum(ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE));
+    u32 desiredFlag = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     if (desiredFlag == FLAG_SET_CAUGHT || desiredFlag == FLAG_SET_SEEN)
         Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
@@ -3128,7 +3228,7 @@ bool8 Scrcmd_getsetpokedexflag(struct ScriptContext *ctx)
 
 bool8 Scrcmd_checkspecies(struct ScriptContext *ctx)
 {
-    enum Species givenSpecies = VarGet(ScriptReadHalfword(ctx));
+    enum Species givenSpecies = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -3139,7 +3239,7 @@ bool8 Scrcmd_checkspecies(struct ScriptContext *ctx)
 
 bool8 Scrcmd_checkspecies_choose(struct ScriptContext *ctx)
 {
-    enum Species givenSpecies = VarGet(ScriptReadHalfword(ctx));
+    enum Species givenSpecies = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -3150,13 +3250,12 @@ bool8 Scrcmd_checkspecies_choose(struct ScriptContext *ctx)
 
 bool8 Scrcmd_getobjectfacingdirection(struct ScriptContext *ctx)
 {
-    u32 objectId = VarGet(ScriptReadHalfword(ctx));
+    u32 objectId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     u32 varId = ScriptReadHalfword(ctx);
+    u16 *varPointer = ADMG_SCRIPT_POINTER(ctx, varId, FALSE);
 
     Script_RequestEffects(SCREFF_V1);
     Script_RequestWriteVar(varId);
-
-    u16 *varPointer = GetVarPointer(varId);
 
     *varPointer = gObjectEvents[GetObjectEventIdByLocalId(objectId)].facingDirection;
 
@@ -3165,12 +3264,23 @@ bool8 Scrcmd_getobjectfacingdirection(struct ScriptContext *ctx)
 
 bool8 ScrCmd_hidefollower(struct ScriptContext *ctx)
 {
-    bool16 wait = VarGet(ScriptReadHalfword(ctx));
+    bool16 wait = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
     struct ObjectEvent *obj;
+    ADMG_SCRIPT_FLAG_ID(ctx, FLAG_SAFE_FOLLOWER_MOVEMENT, FALSE);
+    struct ObjectEvent *follower = GetFollowerObject();
+    if (follower != NULL && !follower->invisible)
+        ADMG_SCRIPT_REQUIRE_INDEX(ctx, follower->spriteId, MAX_SPRITES, FALSE);
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
 
-    if ((obj = ScriptHideFollower()) != NULL && wait)
+    u64 generation = ADMG_BeginStateAccessCheck();
+    obj = ScriptHideFollower();
+    if (!ADMG_EndStateAccessCheck(generation))
+    {
+        ADMG_StopInvalidStateCommand(ctx);
+        return FALSE;
+    }
+    if (obj != NULL && wait)
     {
         sMovingNpcId = obj->localId;
         sMovingNpcMapGroup = obj->mapGroup;
@@ -3330,7 +3440,7 @@ void Script_EndTrainerCanSeeIf(struct ScriptContext *ctx)
 
 bool8 ScrCmd_setmoverelearnerstate(struct ScriptContext *ctx)
 {
-    enum MoveRelearnerStates state = VarGet(ScriptReadHalfword(ctx));
+    enum MoveRelearnerStates state = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx), FALSE);
 
     Script_RequestEffects(SCREFF_V1);
 

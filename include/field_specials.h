@@ -1,6 +1,8 @@
 #ifndef GUARD_FIELD_SPECIALS_H
 #define GUARD_FIELD_SPECIALS_H
 
+#include "admg_native.h"
+
 #include "constants/species.h"
 
 extern bool8 gBikeCyclingChallenge;
@@ -22,6 +24,7 @@ bool32 ShouldDoRoxanneCall(void);
 bool32 ShouldDoRivalRayquazaCall(void);
 bool32 CountSSTidalStep(u16 delta);
 enum SSTidalLocation GetSSTidalLocation(s8 *mapGroup, s8 *mapNum, s16 *x, s16 *y);
+ADMG_NATIVE_ENTRY bool8 ADMG_TryGetSSTidalLocation(s8 *mapGroup, s8 *mapNum, s16 *x, s16 *y, enum SSTidalLocation *location);
 void ShowScrollableMultichoice(void);
 void FrontierGamblerSetWonOrLost(bool8 won);
 u8 TryGainNewFanFromCounter(u8 incrementId);

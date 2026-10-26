@@ -11,6 +11,7 @@
 #include "coins.h"
 #include "data.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "event_object_lock.h"
 #include "event_object_movement.h"
 #include "event_scripts.h"
@@ -440,6 +441,7 @@ static void Task_CloseItemfinderMessage(u8 taskId)
 bool8 ItemfinderCheckForHiddenItems(const struct MapEvents *events, u8 taskId)
 {
     s16 playerX, playerY, i, distanceX, distanceY;
+    bool8 collected;
     PlayerGetDestCoords(&playerX, &playerY);
     if (I_ORAS_DOWSING_FLAG != 0)
         gSprites[gObjectEvents[gPlayerAvatar.objectEventId].fieldEffectSpriteId].tItemFound = FALSE;
@@ -449,7 +451,7 @@ bool8 ItemfinderCheckForHiddenItems(const struct MapEvents *events, u8 taskId)
     for (i = 0; i < events->bgEventCount; i++)
     {
         // Check if there are any hidden items on the current map that haven't been picked up
-        if (events->bgEvents[i].kind == BG_EVENT_HIDDEN_ITEM && !FlagGet(events->bgEvents[i].bgUnion.hiddenItem.hiddenItemId + FLAG_HIDDEN_ITEMS_START))
+        if (events->bgEvents[i].kind == BG_EVENT_HIDDEN_ITEM && ADMG_ReadHiddenItemFlag(events->bgEvents[i].bgUnion.hiddenItem.hiddenItemId, &collected) && !collected)
         {
             distanceX = events->bgEvents[i].x + MAP_OFFSET - playerX;
             distanceY = events->bgEvents[i].y + MAP_OFFSET - playerY;
@@ -478,10 +480,8 @@ static bool8 IsHiddenItemPresentAtCoords(const struct MapEvents *events, s16 x, 
     {
         if (bgEvent[i].kind == BG_EVENT_HIDDEN_ITEM && x == bgEvent[i].x && y == bgEvent[i].y) // hidden item and coordinates matches x and y passed?
         {
-            if (!FlagGet(bgEvent[i].bgUnion.hiddenItem.hiddenItemId + FLAG_HIDDEN_ITEMS_START))
-                return TRUE;
-            else
-                return FALSE;
+            bool8 collected;
+            return ADMG_ReadHiddenItemFlag(bgEvent[i].bgUnion.hiddenItem.hiddenItemId, &collected) && !collected;
         }
     }
     return FALSE;
@@ -965,6 +965,8 @@ static void RemoveUsedItem(void)
 
 void ItemUseOutOfBattle_Repel(u8 taskId)
 {
+    ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1);
+
     if (REPEL_STEP_COUNT == 0)
         gTasks[taskId].func = Task_StartUseRepel;
     else if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)
@@ -1003,6 +1005,8 @@ static void Task_UseRepel(u8 taskId)
 
 void ItemUseOutOfBattle_Lure(u8 taskId)
 {
+    ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1);
+
     if (LURE_STEP_COUNT == 0)
         gTasks[taskId].func = Task_StartUseLure;
     else if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)

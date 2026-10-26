@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_state.h"
 #include "malloc.h"
 #include "battle.h"
 #include "battle_tower.h"
@@ -310,52 +311,138 @@ static u8 GetFloorId(void)
     return gMapHeader.mapLayoutId - LAYOUT_TRAINER_HILL_1F;
 }
 
+/* Hill ordinals belong to this explicit service, not a content namespace. */
+static bool8 ADMG_TryHillTrainerSlot(u32 identifier, u32 *slot)
+{
+    if (slot == NULL || identifier == 0 || identifier > HILL_TRAINERS_PER_FLOOR)
+    { ADMG_StateAccessRejected(identifier, __func__); return FALSE; }
+    *slot = identifier - 1;
+    return TRUE;
+}
+
+static bool8 ADMG_TryHillTrainerData(void)
+{
+    u64 generation = ADMG_BeginStateAccessCheck();
+    typeof(sHillData) previous = sHillData;
+    struct SaveBlock1 *save = gSaveBlock1Ptr;
+    u32 layout = gMapHeader.mapLayoutId;
+#if FREE_TRAINER_HILL == FALSE
+    u32 mode = save == NULL ? NUM_TRAINER_HILL_MODES : save->trainerHill.mode;
+#endif
+    if (sHillData == NULL)
+    {
+#if FREE_TRAINER_HILL == FALSE
+        if (save == NULL || mode >= ARRAY_COUNT(sChallengeData)
+            || mode >= ARRAY_COUNT(sFloorData)
+            || layout < LAYOUT_TRAINER_HILL_1F || layout - LAYOUT_TRAINER_HILL_1F >= NUM_TRAINER_HILL_FLOORS)
+        { ADMG_StateAccessRejected(layout, __func__); return FALSE; }
+#else
+        ADMG_StateAccessRejected(0, __func__); return FALSE;
+#endif
+    }
+    SetUpDataStruct();
+    if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+    if (gSaveBlock1Ptr != save || gMapHeader.mapLayoutId != layout
+        || (previous != NULL && sHillData != previous)
+#if FREE_TRAINER_HILL == FALSE
+        || (previous == NULL && save->trainerHill.mode != mode)
+#endif
+        )
+    { ADMG_StateAccessRejected(0, __func__); return FALSE; }
+    if (sHillData == NULL || sHillData->floorId >= ARRAY_COUNT(sHillData->floors))
+    { ADMG_StateAccessRejected(0, __func__); return FALSE; }
+    return TRUE;
+}
+
+static bool8 ADMG_TryHillTrainerFacilityClass(u32 identifier, u32 *facilityClass)
+{
+    u32 slot;
+    if (facilityClass == NULL || !ADMG_TryHillTrainerSlot(identifier, &slot)) return FALSE;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    if (!ADMG_TryHillTrainerData()) return FALSE;
+    u32 value = sHillData->floors[sHillData->floorId].trainers[slot].facilityClass;
+    FreeDataStruct();
+    if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+    if (value >= FACILITY_CLASSES_COUNT)
+    { ADMG_StateAccessRejected(value, __func__); return FALSE; }
+    *facilityClass = value;
+    return TRUE;
+}
+
 enum TrainerClassID GetTrainerHillOpponentClass(u16 trainerId)
 {
-    u8 id = trainerId - 1;
-
-    return gFacilityClassToTrainerClass[sFloorTrainers->facilityClass[id]];
+    u32 slot;
+    if (!ADMG_TryHillTrainerSlot(trainerId, &slot)) return TRAINER_CLASS_PKMN_TRAINER_1;
+    if (sFloorTrainers == NULL || sFloorTrainers->facilityClass[slot] >= FACILITY_CLASSES_COUNT)
+    { ADMG_StateAccessRejected(trainerId, __func__); return TRAINER_CLASS_PKMN_TRAINER_1; }
+    return gFacilityClassToTrainerClass[sFloorTrainers->facilityClass[slot]];
 }
 
 void GetTrainerHillTrainerName(u8 *dst, u16 trainerId)
 {
-    s32 i;
-    u8 id = trainerId - 1;
-
-    for (i = 0; i < TRAINER_NAME_LENGTH + 1; i++)
-        dst[i] = sFloorTrainers->name[id][i];
+    u32 slot;
+    if (dst == NULL || !ADMG_TryHillTrainerSlot(trainerId, &slot))
+    { if (dst == NULL) ADMG_StateAccessRejected(trainerId, __func__); return; }
+    if (sFloorTrainers == NULL)
+    { ADMG_StateAccessRejected(trainerId, __func__); return; }
+    for (u32 i = 0; i < sizeof(sFloorTrainers->name[slot]); i++)
+        dst[i] = sFloorTrainers->name[slot][i];
 }
 
 u8 GetTrainerHillTrainerFrontSpriteId(u16 trainerId)
 {
-    u8 id, facilityClass;
-
-    SetUpDataStruct();
-    id = trainerId - 1;
-    facilityClass = sHillData->floors[sHillData->floorId].trainers[id].facilityClass;
-    FreeDataStruct();
-
+    u32 facilityClass;
+    if (!ADMG_TryHillTrainerFacilityClass(trainerId, &facilityClass)) return TRAINER_PIC_HIKER;
     return gFacilityClassToPicIndex[facilityClass];
 }
 
 void InitTrainerHillBattleStruct(void)
 {
-    s32 i, j;
-
-    SetUpDataStruct();
-    sFloorTrainers = AllocZeroed(sizeof(*sFloorTrainers));
-
-    for (i = 0; i < HILL_TRAINERS_PER_FLOOR; i++)
+    struct SaveBlock1 *save = gSaveBlock1Ptr;
+    if (save == NULL)
+    { ADMG_StateAccessRejected(0, __func__); return; }
+    u32 layout = gMapHeader.mapLayoutId;
+    typeof(sHillData) previousData = sHillData;
+    struct FloorTrainers *originalCache = sFloorTrainers;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    if (!ADMG_TryHillTrainerData()) return;
+    typeof(sHillData) data = sHillData;
+    struct FloorTrainers staged;
+    for (u32 i = 0; i < HILL_TRAINERS_PER_FLOOR; i++)
     {
-        for (j = 0; j < TRAINER_NAME_LENGTH + 1; j++)
-            sFloorTrainers->name[i][j] = sHillData->floors[sHillData->floorId].trainers[i].name[j];
-
-        sFloorTrainers->facilityClass[i] = sHillData->floors[sHillData->floorId].trainers[i].facilityClass;
+        const struct TrainerHillTrainer *trainer = &data->floors[data->floorId].trainers[i];
+        if (trainer->facilityClass >= FACILITY_CLASSES_COUNT)
+        { ADMG_StateAccessRejected(trainer->facilityClass, __func__); goto ADMG_reject_data; }
+        staged.facilityClass[i] = trainer->facilityClass;
+        for (u32 j = 0; j < sizeof(staged.name[i]); j++) staged.name[i][j] = trainer->name[j];
     }
+    struct FloorTrainers *created = AllocZeroed(sizeof(*created));
+    if (created == NULL)
+    { ADMG_StateAccessRejected(0, __func__); goto ADMG_reject_data; }
+    if (!ADMG_EndStateAccessCheck(generation) || sFloorTrainers != originalCache || sHillData != data
+        || gSaveBlock1Ptr != save || gMapHeader.mapLayoutId != layout)
+    { ADMG_StateAccessRejected(0, __func__); Free(created); goto ADMG_reject_data; }
+    *created = staged;
+    struct FloorTrainers *previous = originalCache;
+    u32 *previousCounter = gTrainerHillVBlankCounter;
+    sFloorTrainers = created;
 #if FREE_TRAINER_HILL == FALSE
-    SetTrainerHillVBlankCounter(&gSaveBlock1Ptr->trainerHill.timer);
-#endif //FREE_TRAINER_HILL
+    SetTrainerHillVBlankCounter(&save->trainerHill.timer);
+#endif
+    if (!ADMG_EndStateAccessCheck(generation) || sFloorTrainers != created || sHillData != data
+        || gSaveBlock1Ptr != save || gMapHeader.mapLayoutId != layout) goto ADMG_reject_cache;
     FreeDataStruct();
+    if (!ADMG_EndStateAccessCheck(generation) || sFloorTrainers != created
+        || gSaveBlock1Ptr != save || gMapHeader.mapLayoutId != layout) goto ADMG_reject_cache;
+    if (previous != NULL && previous != created) Free(previous);
+    return;
+ADMG_reject_cache:
+    ADMG_StateAccessRejected(0, __func__);
+    if (sFloorTrainers == created) sFloorTrainers = previous;
+    gTrainerHillVBlankCounter = previousCounter;
+    Free(created);
+ADMG_reject_data:
+    if (previousData == NULL && sHillData == data) FreeDataStruct();
 }
 
 void FreeTrainerHillBattleStruct(void)
@@ -367,12 +454,30 @@ static void SetUpDataStruct(void)
 {
 #if FREE_TRAINER_HILL == FALSE
     if (sHillData != NULL) return;
-
+    struct SaveBlock1 *save = gSaveBlock1Ptr;
+    if (save == NULL || save->trainerHill.mode >= ARRAY_COUNT(sChallengeData)
+        || save->trainerHill.mode >= ARRAY_COUNT(sFloorData))
+    { ADMG_StateAccessRejected(0, __func__); return; }
+    u32 mode = save->trainerHill.mode, layout = gMapHeader.mapLayoutId;
+    u64 generation = ADMG_BeginStateAccessCheck();
     sHillData = AllocZeroed(sizeof(*sHillData));
-    sHillData->floorId = gMapHeader.mapLayoutId - LAYOUT_TRAINER_HILL_1F;
-
-    CpuCopy32(sChallengeData[gSaveBlock1Ptr->trainerHill.mode], &sHillData->challenge, sizeof(sHillData->challenge));
-    CpuCopy32(sFloorData[gSaveBlock1Ptr->trainerHill.mode], &sHillData->floors, sizeof(sHillData->floors));
+    typeof(sHillData) allocated = sHillData;
+    if (allocated == NULL)
+    { ADMG_StateAccessRejected(0, __func__); return; }
+    if (!ADMG_EndStateAccessCheck(generation) || gSaveBlock1Ptr != save
+        || save->trainerHill.mode != mode || gMapHeader.mapLayoutId != layout) goto ADMG_reject;
+    allocated->floorId = layout - LAYOUT_TRAINER_HILL_1F;
+    CpuCopy32(sChallengeData[mode], &allocated->challenge, sizeof(allocated->challenge));
+    if (!ADMG_EndStateAccessCheck(generation) || sHillData != allocated || gSaveBlock1Ptr != save
+        || save->trainerHill.mode != mode || gMapHeader.mapLayoutId != layout) goto ADMG_reject;
+    CpuCopy32(sFloorData[mode], &allocated->floors, sizeof(allocated->floors));
+    if (!ADMG_EndStateAccessCheck(generation) || sHillData != allocated || gSaveBlock1Ptr != save
+        || save->trainerHill.mode != mode || gMapHeader.mapLayoutId != layout) goto ADMG_reject;
+    return;
+ADMG_reject:
+    ADMG_StateAccessRejected(0, __func__);
+    if (sHillData == allocated) sHillData = NULL;
+    Free(allocated);
 #endif // FREE_TRAINER_HILL
 }
 
@@ -383,29 +488,33 @@ static void FreeDataStruct(void)
 
 void CopyTrainerHillTrainerText(u8 which, u16 localId)
 {
-    u8 id, floorId;
-
-    SetUpDataStruct();
-    floorId = GetFloorId();
-    id = localId - 1;
-
-    switch (which)
+    u32 slot;
+    if (!ADMG_TryHillTrainerSlot(localId, &slot)) return;
+    if (which < TRAINER_HILL_TEXT_INTRO || which > TRAINER_HILL_TEXT_AFTER)
+    { ADMG_StateAccessRejected(which, __func__); return; }
+    u32 layout = gMapHeader.mapLayoutId;
+    if (layout < LAYOUT_TRAINER_HILL_1F || layout - LAYOUT_TRAINER_HILL_1F >= NUM_TRAINER_HILL_FLOORS)
+    { ADMG_StateAccessRejected(layout, __func__); return; }
+    typeof(sHillData) previous = sHillData;
+    struct SaveBlock1 *save = gSaveBlock1Ptr;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    if (!ADMG_TryHillTrainerData()) return;
+    typeof(sHillData) data = sHillData;
+    const struct TrainerHillTrainer *trainer = &data->floors[layout - LAYOUT_TRAINER_HILL_1F].trainers[slot];
+    const u16 *speech = which == TRAINER_HILL_TEXT_INTRO ? trainer->speechBefore
+        : which == TRAINER_HILL_TEXT_PLAYER_LOST ? trainer->speechWin
+        : which == TRAINER_HILL_TEXT_PLAYER_WON ? trainer->speechLose : trainer->speechAfter;
+    FrontierSpeechToString(speech);
+    if (!ADMG_EndStateAccessCheck(generation) || sHillData != data
+        || gSaveBlock1Ptr != save || gMapHeader.mapLayoutId != layout)
     {
-    case TRAINER_HILL_TEXT_INTRO:
-        FrontierSpeechToString(sHillData->floors[floorId].trainers[id].speechBefore);
-        break;
-    case TRAINER_HILL_TEXT_PLAYER_LOST:
-        FrontierSpeechToString(sHillData->floors[floorId].trainers[id].speechWin);
-        break;
-    case TRAINER_HILL_TEXT_PLAYER_WON:
-        FrontierSpeechToString(sHillData->floors[floorId].trainers[id].speechLose);
-        break;
-    case TRAINER_HILL_TEXT_AFTER:
-        FrontierSpeechToString(sHillData->floors[floorId].trainers[id].speechAfter);
-        break;
+        ADMG_StateAccessRejected(localId, __func__);
+        if (previous == NULL && sHillData == data) FreeDataStruct();
+        return;
     }
-
     FreeDataStruct();
+    if (gSaveBlock1Ptr != save || gMapHeader.mapLayoutId != layout)
+        ADMG_StateAccessRejected(localId, __func__);
 }
 
 static void TrainerHillStartChallenge(void)
@@ -840,44 +949,66 @@ const struct WarpEvent* SetWarpDestinationTrainerHillFinalFloor(u8 warpEventId)
     return &header->events->warps[0];
 }
 
+static bool8 ADMG_TryHillMapSlot(u32 localId, u32 *slot, u32 *bit)
+{
+    if (gSaveBlock2Ptr == NULL || bit == NULL || !ADMG_TryHillTrainerSlot(localId, slot))
+    { if (gSaveBlock2Ptr == NULL || bit == NULL) ADMG_StateAccessRejected(localId, __func__); return FALSE; }
+    u32 layout = gMapHeader.mapLayoutId;
+    if (layout < LAYOUT_TRAINER_HILL_1F || layout - LAYOUT_TRAINER_HILL_1F >= NUM_TRAINER_HILL_FLOORS)
+    { ADMG_StateAccessRejected(layout, __func__); return FALSE; }
+    *bit = (layout - LAYOUT_TRAINER_HILL_1F) * HILL_TRAINERS_PER_FLOOR + *slot;
+    if (*bit >= sizeof(gSaveBlock2Ptr->frontier.trainerFlags) * CHAR_BIT)
+    { ADMG_StateAccessRejected(*bit, __func__); return FALSE; }
+    return TRUE;
+}
+
 u16 LocalIdToHillTrainerId(u8 localId)
 {
-    return gSaveBlock2Ptr->frontier.trainerIds[localId - 1];
+    u32 slot;
+    if (gSaveBlock2Ptr == NULL || !ADMG_TryHillTrainerSlot(localId, &slot))
+    { if (gSaveBlock2Ptr == NULL) ADMG_StateAccessRejected(localId, __func__); return 0; }
+    u16 identity = gSaveBlock2Ptr->frontier.trainerIds[slot];
+    u32 nativeSlot;
+    if (!ADMG_TryHillTrainerSlot(identity, &nativeSlot)) return 0;
+    return identity;
 }
 
 bool8 GetHillTrainerFlag(u8 objectEventId)
 {
-    u32 trainerIndexStart = GetFloorId() * HILL_TRAINERS_PER_FLOOR;
-    u8 bitId = gObjectEvents[objectEventId].localId - 1 + trainerIndexStart;
+    if ((u32)objectEventId >= OBJECT_EVENTS_COUNT)
+    { ADMG_StateAccessRejected(objectEventId, __func__); return FALSE; }
+    u32 slot, bit;
+    if (!ADMG_TryHillMapSlot(gObjectEvents[objectEventId].localId, &slot, &bit)) return FALSE;
+    return gSaveBlock2Ptr->frontier.trainerFlags & (1u << bit);
+}
 
-    return gSaveBlock2Ptr->frontier.trainerFlags & (1u << bitId);
+/* One native authority for first-match Hill marking and owned rollback bits. */
+ADMG_NATIVE_ENTRY bool8 ADMG_TryGetHillTrainerFlagMask(u32 actorA, u32 actorB, bool8 second, u8 *mask)
+{
+    u32 slot, bit, nativeSlot;
+    if (mask == NULL)
+    { ADMG_StateAccessRejected(actorA, __func__); return FALSE; }
+    if (!ADMG_TryHillMapSlot(1, &slot, &bit)
+        || !ADMG_TryHillTrainerSlot(actorA, &nativeSlot)
+        || (second && !ADMG_TryHillTrainerSlot(actorB, &nativeSlot))) return FALSE;
+    u32 value = 0;
+    for (u32 i = 0; i < HILL_TRAINERS_PER_FLOOR; i++)
+        if (gSaveBlock2Ptr->frontier.trainerIds[i] == actorA)
+        { value |= 1u << (bit + i); break; }
+    if (second)
+        for (u32 i = 0; i < HILL_TRAINERS_PER_FLOOR; i++)
+            if (gSaveBlock2Ptr->frontier.trainerIds[i] == actorB)
+            { value |= 1u << (bit + i); break; }
+    *mask = value;
+    return TRUE;
 }
 
 void SetHillTrainerFlag(void)
 {
-    u8 i;
-    u8 trainerIndexStart = GetFloorId() * HILL_TRAINERS_PER_FLOOR;
-
-    for (i = 0; i < HILL_TRAINERS_PER_FLOOR; i++)
-    {
-        if (gSaveBlock2Ptr->frontier.trainerIds[i] == TRAINER_BATTLE_PARAM.opponentA)
-        {
-            gSaveBlock2Ptr->frontier.trainerFlags |= 1u << (trainerIndexStart + i);
-            break;
-        }
-    }
-
-    if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS)
-    {
-        for (i = 0; i < HILL_TRAINERS_PER_FLOOR; i++)
-        {
-            if (gSaveBlock2Ptr->frontier.trainerIds[i] == TRAINER_BATTLE_PARAM.opponentB)
-            {
-                gSaveBlock2Ptr->frontier.trainerFlags |= 1u << (trainerIndexStart + i);
-                break;
-            }
-        }
-    }
+    u8 mask;
+    if (!ADMG_TryGetHillTrainerFlagMask(TRAINER_BATTLE_PARAM.opponentA, TRAINER_BATTLE_PARAM.opponentB,
+        (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS) != 0, &mask)) return;
+    gSaveBlock2Ptr->frontier.trainerFlags |= mask;
 }
 
 const u8 *GetTrainerHillTrainerScript(void)
@@ -887,73 +1018,206 @@ const u8 *GetTrainerHillTrainerScript(void)
 
 static void ShowTrainerHillPostBattleText(void)
 {
+    u16 localId = gSpecialVar_LastTalked;
+    u64 generation = ADMG_BeginStateAccessCheck();
     CopyTrainerHillTrainerText(TRAINER_HILL_TEXT_AFTER, gSpecialVar_LastTalked);
+    if (!ADMG_EndStateAccessCheck(generation)) return;
+    if (gSpecialVar_LastTalked != localId)
+    { ADMG_StateAccessRejected(localId, __func__); return; }
     ShowFieldMessageFromBuffer();
+}
+
+static void CreateNPCTrainerHillParty(u16 trainerId, enum BattleTrainer trainer);
+
+/* This scope is transient call state, never a save/persistence record. */
+struct ADMG_HillPartyScope
+{
+    typeof(sHillData) data;
+    struct SaveBlock1 *save;
+    u64 generation;
+    u32 layout, floor, flags, actorA, actorB;
+    bool8 bound, second;
+};
+static const struct ADMG_HillPartyScope *sADMG_BorrowedHillParty;
+
+static bool8 ADMG_HillPartyCurrent(const struct ADMG_HillPartyScope *scope, bool8 live)
+{
+    if (!ADMG_EndStateAccessCheck(scope->generation)) return FALSE;
+    if (sADMG_BorrowedHillParty != scope || gSaveBlock1Ptr != scope->save
+        || gMapHeader.mapLayoutId != scope->layout || gBattleTypeFlags != scope->flags
+        || (live && (sHillData != scope->data || scope->data->floorId != scope->floor))
+        || (!live && sHillData != NULL)
+        || (scope->bound && (TRAINER_BATTLE_PARAM.opponentA != scope->actorA
+            || (scope->second && TRAINER_BATTLE_PARAM.opponentB != scope->actorB))))
+    { ADMG_StateAccessRejected(scope->actorA, __func__); return FALSE; }
+    return TRUE;
+}
+
+ADMG_NATIVE_ENTRY bool8 ADMG_TryAdmitHillParty(u32 identifier, u32 target)
+{
+    u32 slot;
+    if (!ADMG_TryHillTrainerSlot(identifier, &slot)) return FALSE;
+    if (target >= ARRAY_COUNT(gParties)
+        || MULTI_PARTY_SIZE > ARRAY_COUNT(sTrainerPartySlots[slot]))
+    { ADMG_StateAccessRejected(target, __func__); return FALSE; }
+    u32 layout = gMapHeader.mapLayoutId;
+    if (layout < LAYOUT_TRAINER_HILL_1F || layout - LAYOUT_TRAINER_HILL_1F >= NUM_TRAINER_HILL_FLOORS)
+    { ADMG_StateAccessRejected(layout, __func__); return FALSE; }
+    for (u32 i = 0; i < MULTI_PARTY_SIZE; i++)
+        if (sTrainerPartySlots[slot][i] >= PARTY_SIZE)
+        { ADMG_StateAccessRejected(sTrainerPartySlots[slot][i], __func__); return FALSE; }
+    return TRUE;
+}
+
+static bool8 ADMG_CaptureHillPartyScope(struct ADMG_HillPartyScope *scope, bool8 bound, bool8 second)
+{
+    typeof(sHillData) previousData = sHillData;
+    scope->save = gSaveBlock1Ptr; scope->layout = gMapHeader.mapLayoutId;
+    scope->flags = gBattleTypeFlags; scope->generation = ADMG_BeginStateAccessCheck();
+    scope->bound = bound; scope->second = second;
+    scope->actorA = bound ? TRAINER_BATTLE_PARAM.opponentA : 0;
+    scope->actorB = bound && second ? TRAINER_BATTLE_PARAM.opponentB : 0;
+    if (!ADMG_TryHillTrainerData() || !ADMG_EndStateAccessCheck(scope->generation)) goto ADMG_reject;
+    scope->data = sHillData; scope->floor = sHillData->floorId;
+    if (gSaveBlock1Ptr != scope->save || gMapHeader.mapLayoutId != scope->layout
+        || gBattleTypeFlags != scope->flags
+        || (bound && (TRAINER_BATTLE_PARAM.opponentA != scope->actorA
+            || (second && TRAINER_BATTLE_PARAM.opponentB != scope->actorB))))
+    { ADMG_StateAccessRejected(scope->actorA, __func__); goto ADMG_reject; }
+    return TRUE;
+ADMG_reject:
+    if (previousData == NULL && sHillData != NULL) FreeDataStruct();
+    return FALSE;
+}
+
+static bool8 ADMG_RunHillPartyConstructor(u16 trainerId, enum BattleTrainer trainer,
+    const struct ADMG_HillPartyScope *scope)
+{
+    if (!ADMG_TryAdmitHillParty(trainerId, trainer) || !ADMG_HillPartyCurrent(scope, TRUE)) return FALSE;
+    u32 slot = trainerId - 1;
+    u32 floor = scope->layout - LAYOUT_TRAINER_HILL_1F;
+    u32 level = GetHighestLevelInPlayerParty();
+    if (!ADMG_HillPartyCurrent(scope, TRUE)) return FALSE;
+    if (level > MAX_LEVEL)
+    { ADMG_StateAccessRejected(level, __func__); return FALSE; }
+    for (u32 i = 0; i < MULTI_PARTY_SIZE; i++)
+    {
+        u32 index = sTrainerPartySlots[slot][i];
+        struct Pokemon *mon = &gParties[trainer][i];
+        CreateBattleTowerMon(mon, &scope->data->floors[floor].trainers[slot].mons[index]);
+        if (!ADMG_HillPartyCurrent(scope, TRUE)) return FALSE;
+        SetTrainerHillMonLevel(mon, level);
+        if (!ADMG_HillPartyCurrent(scope, TRUE)) return FALSE;
+    }
+    return TRUE;
 }
 
 static void CreateNPCTrainerHillParty(u16 trainerId, enum BattleTrainer trainer)
 {
-    u8 trId, level;
-    s32 i, floorId, partySlot;
-
-    if (trainerId == 0 || trainerId > HILL_TRAINERS_PER_FLOOR)
-        return;
-
-    trId = trainerId - 1;
-    SetUpDataStruct();
-    level = GetHighestLevelInPlayerParty();
-    floorId = GetFloorId();
-    for (i = 0, partySlot = 0; i < MULTI_PARTY_SIZE; i++, partySlot++)
+    if (!ADMG_TryAdmitHillParty(trainerId, trainer)) return;
+    const struct ADMG_HillPartyScope *previous = sADMG_BorrowedHillParty;
+    if (previous != NULL && previous->bound
+        && ((trainer == B_TRAINER_OPPONENT_A && trainerId == previous->actorA)
+            || (previous->second && trainer == B_TRAINER_OPPONENT_B && trainerId == previous->actorB)))
     {
-        u8 id = sTrainerPartySlots[trId][partySlot];
-        struct Pokemon *mon = &gParties[trainer][i];
-
-        CreateBattleTowerMon(mon, &sHillData->floors[floorId].trainers[trId].mons[id]);
-        SetTrainerHillMonLevel(mon, level);
+        ADMG_RunHillPartyConstructor(trainerId, trainer, previous);
+        return;
     }
+    struct ADMG_HillPartyScope scope;
+    if (!ADMG_CaptureHillPartyScope(&scope, FALSE, FALSE)) return;
+    sADMG_BorrowedHillParty = &scope;
+    struct Pokemon saved[PARTY_SIZE];
+    memcpy(saved, gParties[trainer], sizeof(saved));
+    bool8 okay = ADMG_RunHillPartyConstructor(trainerId, trainer, &scope);
+    if (previous == NULL && sHillData == scope.data)
+    {
+        FreeDataStruct();
+        if (!ADMG_HillPartyCurrent(&scope, FALSE)) okay = FALSE;
+    }
+    if (!okay) memcpy(gParties[trainer], saved, sizeof(saved));
+    sADMG_BorrowedHillParty = previous;
+}
 
-    FreeDataStruct();
+static void ADMG_FillHillParties(bool8 second)
+{
+    u32 actorA = TRAINER_BATTLE_PARAM.opponentA;
+    u32 actorB = second ? TRAINER_BATTLE_PARAM.opponentB : 0;
+    if (!ADMG_TryAdmitHillParty(actorA, B_TRAINER_OPPONENT_A)
+        || (second && !ADMG_TryAdmitHillParty(actorB, B_TRAINER_OPPONENT_B))) return;
+    const struct ADMG_HillPartyScope *previous = sADMG_BorrowedHillParty;
+    struct ADMG_HillPartyScope scope;
+    if (!ADMG_CaptureHillPartyScope(&scope, TRUE, second)) return;
+    sADMG_BorrowedHillParty = &scope;
+    struct Pokemon savedA[PARTY_SIZE], savedB[PARTY_SIZE];
+    memcpy(savedA, gParties[B_TRAINER_OPPONENT_A], sizeof(savedA));
+    memcpy(savedB, gParties[B_TRAINER_OPPONENT_B], sizeof(savedB));
+    u32 countA = gPartiesCount[B_TRAINER_OPPONENT_A], countB = gPartiesCount[B_TRAINER_OPPONENT_B];
+    bool8 okay = ADMG_HillPartyCurrent(&scope, TRUE);
+    if (okay)
+    {
+        ZeroEnemyPartyMons();
+        okay = ADMG_HillPartyCurrent(&scope, TRUE);
+    }
+    if (okay)
+    {
+        CreateNPCTrainerHillParty(actorA, B_TRAINER_OPPONENT_A);
+        okay = ADMG_HillPartyCurrent(&scope, TRUE);
+    }
+    if (okay && second)
+    {
+        CreateNPCTrainerHillParty(actorB, B_TRAINER_OPPONENT_B);
+        okay = ADMG_HillPartyCurrent(&scope, TRUE);
+    }
+    if (previous == NULL && sHillData == scope.data)
+    {
+        FreeDataStruct();
+        if (!ADMG_HillPartyCurrent(&scope, FALSE)) okay = FALSE;
+    }
+    if (!okay)
+    {
+        memcpy(gParties[B_TRAINER_OPPONENT_A], savedA, sizeof(savedA));
+        memcpy(gParties[B_TRAINER_OPPONENT_B], savedB, sizeof(savedB));
+        gPartiesCount[B_TRAINER_OPPONENT_A] = countA;
+        gPartiesCount[B_TRAINER_OPPONENT_B] = countB;
+    }
+    sADMG_BorrowedHillParty = previous;
 }
 
 void FillHillTrainerParty(void)
 {
-    ZeroEnemyPartyMons();
-    CreateNPCTrainerHillParty(TRAINER_BATTLE_PARAM.opponentA, B_TRAINER_OPPONENT_A);
+    ADMG_FillHillParties(FALSE);
 }
 
 void FillHillTrainersParties(void)
 {
-    ZeroEnemyPartyMons();
-    CreateNPCTrainerHillParty(TRAINER_BATTLE_PARAM.opponentA, B_TRAINER_OPPONENT_A);
-    CreateNPCTrainerHillParty(TRAINER_BATTLE_PARAM.opponentB, B_TRAINER_OPPONENT_B);
+    ADMG_FillHillParties(TRUE);
 }
 
 u8 GetTrainerEncounterMusicIdInTrainerHill(u16 trainerId)
 {
-    s32 i;
-    u8 trId, facilityClass;
-
-    SetUpDataStruct();
-    trId = trainerId - 1;
-    facilityClass = sHillData->floors[sHillData->floorId].trainers[trId].facilityClass;
-    FreeDataStruct();
-
-    for (i = 0; i < ARRAY_COUNT(sTrainerClassesAndMusic); i++)
-    {
+    u32 facilityClass;
+    if (!ADMG_TryHillTrainerFacilityClass(trainerId, &facilityClass)) return 0;
+    for (u32 i = 0; i < ARRAY_COUNT(sTrainerClassesAndMusic); i++)
         if (sTrainerClassesAndMusic[i].trainerClass == gFacilityClassToTrainerClass[facilityClass])
             return sTrainerClassesAndMusic[i].musicId;
-    }
-
     return 0;
 }
 
 static void SetTrainerHillMonLevel(struct Pokemon *mon, u8 level)
 {
-    enum Species species = GetMonData(mon, MON_DATA_SPECIES);
+    if (mon == NULL || level > MAX_LEVEL)
+    { ADMG_StateAccessRejected(level, __func__); return; }
+    u64 generation = ADMG_BeginStateAccessCheck();
+    u32 species = GetMonData(mon, MON_DATA_SPECIES);
+    if (!ADMG_EndStateAccessCheck(generation)) return;
+    if (species >= NUM_SPECIES || gSpeciesInfo[species].growthRate >= gADMG_ExperienceTableCount)
+    { ADMG_StateAccessRejected(species, __func__); return; }
     u32 exp = gExperienceTables[gSpeciesInfo[species].growthRate][level];
 
     SetMonData(mon, MON_DATA_EXP, &exp);
+    if (!ADMG_EndStateAccessCheck(generation)) return;
     SetMonData(mon, MON_DATA_LEVEL, &level);
+    if (!ADMG_EndStateAccessCheck(generation)) return;
     CalculateMonStats(mon);
 }
 

@@ -2,6 +2,7 @@
 #include "bg.h"
 #include "decompress.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "gpu_regs.h"
 #include "graphics.h"
 #include "international_string_util.h"
@@ -386,6 +387,12 @@ static void SetAreaHasMon(u16 mapGroup, u16 mapNum)
 
 static void SetSpecialMapHasMon(u16 mapGroup, u16 mapNum)
 {
+    if (!ADMG_IsMapIdValid(mapGroup, mapNum))
+    {
+        ADMG_StateAccessRejected(((u32)mapGroup << 16) | mapNum, __func__);
+        return;
+    }
+
     int i;
 
     if (sPokedexAreaScreen->numSpecialAreas < MAX_AREA_MARKERS)
@@ -403,8 +410,12 @@ static void SetSpecialMapHasMon(u16 mapGroup, u16 mapNum)
             // Don't highlight the area if it's an undiscovered landmark (e.g. Sky Pillar)
             for (i = 0; sLandmarkData[i][0] != MAPSEC_NONE; i++)
             {
-                if (regionMapSectionId == sLandmarkData[i][0] && !FlagGet(sLandmarkData[i][1]))
-                    return;
+                if (regionMapSectionId == sLandmarkData[i][0])
+                {
+                    bool8 discovered;
+                    if (!ADMG_TryReadFlag(sLandmarkData[i][1], &discovered) || !discovered)
+                        return;
+                }
             }
 
             // Check if this special area is already being tracked

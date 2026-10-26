@@ -65,6 +65,10 @@ void RecordedBattle_SetTrainerInfo(void);
 void RecordedBattle_SetBattlerAction(enum BattlerId battler, u8 action);
 void RecordedBattle_ClearBattlerAction(enum BattlerId battler, u8 bytesToClear);
 u8 RecordedBattle_GetBattlerAction(u32 actionType, enum BattlerId battler);
+/* Internal byte-transport capacities; the save packet is unchanged. */
+#define ADMG_RECORDED_ACTION_PAYLOAD 250
+#define ADMG_RECORDED_ACTION_CHUNKS 8
+bool8 ADMG_TryPlanRecordedActionChunks(u16 *sizes, u32 capacity, u32 *count);
 u8 RecordedBattle_BufferNewBattlerData(u8 *dst);
 void RecordedBattle_RecordAllBattlerData(u8 *src);
 bool32 CanCopyRecordedBattleSaveData(void);

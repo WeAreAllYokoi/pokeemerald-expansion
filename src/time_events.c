@@ -1,6 +1,7 @@
 #include "global.h"
 #include "time_events.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "field_weather.h"
 #include "pokemon.h"
 #include "random.h"
@@ -110,12 +111,12 @@ void WaitWeather(void)
 
 void InitBirchState(void)
 {
-    *GetVarPointer(VAR_BIRCH_STATE) = 0;
+    *ADMG_REQUIRE_VAR_SPAN(VAR_BIRCH_STATE, 1) = 0;
 }
 
 void UpdateBirchState(u16 days)
 {
-    u16 *state = GetVarPointer(VAR_BIRCH_STATE);
+    u16 *state = ADMG_REQUIRE_VAR_SPAN(VAR_BIRCH_STATE, 1);
     *state += days;
     *state %= 7;
 }

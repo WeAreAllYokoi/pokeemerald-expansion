@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_trainer.h"
 #include "battle.h"
 #include "battle_setup.h"
 #include "berry.h"
@@ -12,6 +13,7 @@
 #include "decoration.h"
 #include "decoration_inventory.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "event_object_movement.h"
 #include "event_scripts.h"
 #include "field_message_box.h"
@@ -1529,9 +1531,33 @@ static const u16 sLocationFlags[] =
     FLAG_WORLD_MAP_ROUTE10_POKEMON_CENTER_1F,
 };
 
+static bool8 ADMG_DebugTaskValid(u32 taskId)
+{
+    if (taskId < NUM_TASKS)
+        return TRUE;
+    ADMG_StateAccessRejected(taskId, "debug task");
+    return FALSE;
+}
+
+static bool8 ADMG_DebugFlagTableValid(const u16 *flags, u32 count)
+{
+    if (flags == NULL)
+        return FALSE;
+    for (u32 i = 0; i < count; ++i)
+    {
+        if (!ADMG_IsFlagIdValid(flags[i]))
+        {
+            ADMG_StateAccessRejected(flags[i], "debug flag table");
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
+
 static u32 Debug_CheckToggleFlags(u8 id)
 {
     u32 result = FALSE;
+    u64 generation = ADMG_BeginStateAccessCheck();
 
     switch (id)
     {
@@ -1603,6 +1629,8 @@ static u32 Debug_CheckToggleFlags(u8 id)
         break;
     }
 
+    if (!ADMG_EndStateAccessCheck(generation))
+        return id == DEBUG_FLAGVAR_MENU_ITEM_TOGGLE_BAG_USE ? NO_BAG_INVALID_VALUE : DEBUG_OPTION_CANT_BE_TOGGLED;
     return result;
 }
 
@@ -2431,33 +2459,47 @@ static void DebugAction_Trainers_SwitchDoublesFlag(u8 taskId)
 
 static void DebugAction_Trainers_SetRematch(u8 taskId)
 {
-    s32 rematchId = sDebugMenuListData->data[1];
-
+    s32 rematchId;
+    u16 flagIds[REMATCHES_COUNT];
+    u32 count = 0;
+    if (sDebugMenuListData == NULL)
+        return;
+    rematchId = sDebugMenuListData->data[1];
     if (rematchId == -1)
     {
-        FlagToggle(TRAINER_FLAGS_START + sDebugMenuListData->data[0]);
+        u16 flagId;
+        if (ADMG_TryGetTrainerDefeatFlagId((u32)sDebugMenuListData->data[0], &flagId))
+            FlagToggle(flagId);
         return;
     }
-
-    for (u32 i = 0; i < REMATCHES_COUNT; i++)
+    if (rematchId < 0 || rematchId >= REMATCH_TABLE_ENTRIES)
     {
-        if (gRematchTable[rematchId].trainerIds[i] == 0)
+        ADMG_StateAccessRejected((u32)rematchId, __func__);
+        return;
+    }
+    // Preflight the whole original row before any toggle; preserve the zero end.
+    for (; count < REMATCHES_COUNT; ++count)
+    {
+        u16 trainer = gRematchTable[rematchId].trainerIds[count];
+        if (trainer == 0)
             break;
-
-        if (!HasTrainerBeenFought(gRematchTable[rematchId].trainerIds[i]))
+        if (!ADMG_TryGetTrainerDefeatFlagId(trainer, &flagIds[count]))
+            return;
+    }
+    for (u32 i = 0; i < count; ++i)
+    {
+        u64 generation = ADMG_BeginStateAccessCheck();
+        bool8 fought = HasTrainerBeenFought(gRematchTable[rematchId].trainerIds[i]);
+        if (!ADMG_EndStateAccessCheck(generation))
+            return;
+        if (!fought)
         {
-            FlagToggle(TRAINER_FLAGS_START + gRematchTable[rematchId].trainerIds[i]);
+            FlagToggle(flagIds[i]);
             return;
         }
     }
-
-    for (u32 i = 0; i < REMATCHES_COUNT; i++)
-    {
-        if (gRematchTable[rematchId].trainerIds[i] == 0)
-            break;
-
-        FlagToggle(TRAINER_FLAGS_START + gRematchTable[rematchId].trainerIds[i]);
-    }
+    for (u32 i = 0; i < count; ++i)
+        FlagToggle(flagIds[i]);
 }
 
 static void DebugAction_Trainers_SetRematchReadiness(u8 taskId)
@@ -2472,27 +2514,44 @@ static void DebugAction_Trainers_SetRematchReadiness(u8 taskId)
 
 static void DebugAction_Trainers_TryBattle(u8 taskId)
 {
+    const struct Trainer *first, *second = NULL, *partner = NULL;
     s32 trainer1Id = sDebugMenuListData->data[0];
     s32 trainer2Id = sDebugMenuListData->data[2];
     s32 partnerId = sDebugMenuListData->data[4];
     s32 rematchId = sDebugMenuListData->data[1];
     if (sDebugMenuListData->data[1] != -1)
     {
+        if (rematchId < 0 || rematchId >= REMATCH_TABLE_ENTRIES)
+        { ADMG_StateAccessRejected((u32)rematchId, __func__); return; }
         s32 lastMatch = CountBattledRematchTeams(rematchId);
+        if (lastMatch < 0 || lastMatch > REMATCHES_COUNT)
+        { ADMG_StateAccessRejected((u32)lastMatch, __func__); return; }
         if (lastMatch == REMATCHES_COUNT || gRematchTable[rematchId].trainerIds[lastMatch] == 0)
             lastMatch -= 1;
+        if (lastMatch < 0)
+        { ADMG_StateAccessRejected((u32)lastMatch, __func__); return; }
         trainer1Id = gRematchTable[rematchId].trainerIds[lastMatch];
+    }
+    if (!ADMG_TryGetTrainerStruct((u32)trainer1Id, &first)
+     || (trainer2Id != TRAINER_NONE && !ADMG_TryGetTrainerStruct((u32)trainer2Id, &second)))
+        return;
+    if (partnerId != PARTNER_NONE)
+    {
+        if (partnerId <= PARTNER_NONE || partnerId >= PARTNER_COUNT || gSaveBlock2Ptr == NULL)
+        { ADMG_StateAccessRejected((u32)partnerId, __func__); return; }
+        if (!ADMG_TryGetOwnedTrainer(ADMG_TRAINER_PARTNER, partnerId, DIFFICULTY_NORMAL, &partner))
+            return;
     }
     gBattleTypeFlags = BATTLE_TYPE_TRAINER;
     TRAINER_BATTLE_PARAM.opponentA = trainer1Id;
     TRAINER_BATTLE_PARAM.opponentB = 0xFFFF;
-    CreateNPCTrainerPartyFromTrainer(gParties[B_TRAINER_OPPONENT_A], GetTrainerStructFromId(trainer1Id));
+    CreateNPCTrainerPartyFromTrainer(gParties[B_TRAINER_OPPONENT_A], first);
     if (sDebugMenuListData->data[5] || partnerId != PARTNER_NONE || trainer2Id != TRAINER_NONE)
         gBattleTypeFlags |= BATTLE_TYPE_DOUBLE;
     if (trainer2Id != TRAINER_NONE)
     {
         TRAINER_BATTLE_PARAM.opponentB = trainer2Id;
-        CreateNPCTrainerPartyFromTrainer(gParties[B_TRAINER_OPPONENT_B], GetTrainerStructFromId(trainer2Id));
+        CreateNPCTrainerPartyFromTrainer(gParties[B_TRAINER_OPPONENT_B], second);
         gBattleTypeFlags |= BATTLE_TYPE_TWO_OPPONENTS;
     }
     if (partnerId != PARTNER_NONE)
@@ -2806,20 +2865,33 @@ static const struct DebugSelection sStaticMassOutbreakSelection = {
 
 static void DebugSelectionStep_UpdateFlag(u8 taskId, u8 digits, u32 min, u32 max)
 {
-    u32 flag = gTasks[taskId].tInput;
+    bool8 value;
+    u16 flag;
+    if (!ADMG_DebugTaskValid(taskId))
+        return;
+    // Task data is a signed word container; identifiers use its unsigned bits.
+    flag = (u16)gTasks[taskId].tInput;
+    if (!ADMG_TryReadFlag(flag, &value))
+        return;
     ConvertIntToDecimalStringN(gStringVar1, flag, STR_CONV_MODE_LEADING_ZEROS, digits);
     ConvertIntToHexStringN(gStringVar3, flag, STR_CONV_MODE_LEFT_ALIGN, 3);
     StringExpandPlaceholders(gStringVar2, COMPOUND_STRING("0x{STR_VAR_3}"));
-    if (FlagGet(flag))
-        StringCopy(gStringVar3, sDebugText_True);
-    else
-        StringCopy(gStringVar3, sDebugText_False);
+    StringCopy(gStringVar3, value ? sDebugText_True : sDebugText_False);
     DebugNativeStep_PrintWindowSelection(taskId);
 }
 
 static bool32 DebugSelection_ToggleFlag_Complete(u8 taskId)
 {
-    FlagToggle(gTasks[taskId].tInput);
+    u16 flag;
+    if (!ADMG_DebugTaskValid(taskId))
+        return FALSE;
+    flag = (u16)gTasks[taskId].tInput;
+    if (!ADMG_IsFlagIdValid(flag))
+    {
+        ADMG_StateAccessRejected(flag, __func__);
+        return FALSE;
+    }
+    FlagToggle(flag);
     gTasks[taskId].tStep = 0;
     gTasks[taskId].tStepsDataIndex = 0;
     return FALSE;
@@ -2844,24 +2916,42 @@ static const struct DebugSelection sToggleFlagSelection = {
 static void DebugSelectionStep_PrepareVarDisplay(u32 varId)
 {
     u8 *end;
+    u16 value;
+    if (!ADMG_TryReadVar(varId, &value, TRUE))
+        return;
     end = StringCopy(gStringVar1, COMPOUND_STRING("Var: 0x"));
     ConvertIntToHexStringN(end, varId, STR_CONV_MODE_LEFT_ALIGN, 4);
     end = StringCopy(gStringVar2, COMPOUND_STRING("Val: "));
-    ConvertIntToDecimalStringN(end, VarGet(varId), STR_CONV_MODE_LEADING_ZEROS, 5);
+    ConvertIntToDecimalStringN(end, value, STR_CONV_MODE_LEADING_ZEROS, 5);
 }
 
 static void DebugSelectionStep_UpdateVarId(u8 taskId, u8 digits, u32 min, u32 max)
 {
-    DebugSelectionStep_PrepareVarDisplay(gTasks[taskId].tInput);
+    u16 value, varId;
+    u64 generation;
+    if (!ADMG_DebugTaskValid(taskId))
+        return;
+    varId = (u16)gTasks[taskId].tInput;
+    generation = ADMG_BeginStateAccessCheck();
+    DebugSelectionStep_PrepareVarDisplay(varId);
+    if (!ADMG_EndStateAccessCheck(generation)
+        || !ADMG_TryReadVar(varId, &value, TRUE))
+        return;
     StringCopy(gStringVar3, COMPOUND_STRING(""));
     DebugNativeStep_PrintWindowSelection(taskId);
-    DebugSelection_SetData(taskId, gTasks[taskId].tStep + 1, VarGet(gTasks[taskId].tInput));
+    DebugSelection_SetData(taskId, gTasks[taskId].tStep + 1, value);
 }
 
 static void DebugSelectionStep_UpdateVarValue(u8 taskId, u8 digits, u32 min, u32 max)
 {
     u8 *end;
+    u64 generation;
+    if (!ADMG_DebugTaskValid(taskId))
+        return;
+    generation = ADMG_BeginStateAccessCheck();
     DebugSelectionStep_PrepareVarDisplay(DebugSelection_GetData(taskId, gTasks[taskId].tStep - 1));
+    if (!ADMG_EndStateAccessCheck(generation))
+        return;
     end = StringCopy(gStringVar3, COMPOUND_STRING("New: "));
     ConvertIntToDecimalStringN(end, gTasks[taskId].tInput, STR_CONV_MODE_LEADING_ZEROS, 5);
     DebugNativeStep_PrintWindowSelection(taskId);
@@ -2869,9 +2959,18 @@ static void DebugSelectionStep_UpdateVarValue(u8 taskId, u8 digits, u32 min, u32
 
 static bool32 DebugSelection_SetVar_Complete(u8 taskId)
 {
-    u32 varId = DebugSelection_GetData(taskId, 0);
-    u32 varValue = DebugSelection_GetData(taskId, 1);
-    VarSet(varId, varValue);
+    u32 varId, varValue;
+    if (!ADMG_DebugTaskValid(taskId))
+        return FALSE;
+    varId = DebugSelection_GetData(taskId, 0);
+    varValue = DebugSelection_GetData(taskId, 1);
+    if (ADMG_GetVarSpan(varId, 1) == NULL)
+    {
+        ADMG_StateAccessRejected(varId, __func__);
+        return FALSE;
+    }
+    if (!VarSet(varId, varValue))
+        return FALSE;
     gTasks[taskId].tStep = 0;
     gTasks[taskId].tStepsDataIndex = 0;
     return FALSE;
@@ -3009,8 +3108,11 @@ static void DebugAction_FlagsVars_RunningShoes(u8 taskId)
 
 static void DebugAction_FlagsVars_ToggleFlyFlags(u8 taskId)
 {
-    u32 checkedFlag = sLocationFlags[0] == 0 ? sLocationFlags[ARRAY_COUNT(sLocationFlags) - 1] : sLocationFlags[0];
-    if (FlagGet(checkedFlag))
+    bool8 enabled;
+    if (!ADMG_DebugFlagTableValid(sLocationFlags, ARRAY_COUNT(sLocationFlags))
+        || !ADMG_TryReadFlag(sLocationFlags[0] == 0 ? sLocationFlags[ARRAY_COUNT(sLocationFlags) - 1] : sLocationFlags[0], &enabled))
+        return;
+    if (enabled)
     {
         PlaySE(SE_PC_OFF);
         for (u32 i = 0; i < ARRAY_COUNT(sLocationFlags); i++)
@@ -3026,7 +3128,11 @@ static void DebugAction_FlagsVars_ToggleFlyFlags(u8 taskId)
 
 static void DebugAction_FlagsVars_ToggleBadgeFlags(u8 taskId)
 {
-    if (FlagGet(gBadgeFlags[ARRAY_COUNT(gBadgeFlags) - 1]))
+    bool8 enabled;
+    if (!ADMG_DebugFlagTableValid(gBadgeFlags, ARRAY_COUNT(gBadgeFlags))
+        || !ADMG_TryReadFlag(gBadgeFlags[ARRAY_COUNT(gBadgeFlags) - 1], &enabled))
+        return;
+    if (enabled)
     {
         PlaySE(SE_PC_OFF);
         for (u32 i = 0; i < ARRAY_COUNT(gBadgeFlags); i++)

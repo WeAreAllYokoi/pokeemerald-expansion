@@ -1,4 +1,7 @@
 #include "global.h"
+#include "admg_trainer_actor.h"
+#include "admg_state.h"
+#include "admg_trainer.h"
 #include "battle.h"
 #include "battle_anim.h"
 #include "battle_controllers.h"
@@ -196,14 +199,34 @@ void RecordedPartnerBufferExecCompleted(enum BattlerId battler)
 
 static enum TrainerPicID RecordedPartnerGetTrainerBackPicId(enum DifficultyLevel difficulty)
 {
-    enum TrainerPicID trainerPicId;
-
+    const struct Trainer *trainer;
     if (gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER)
-        trainerPicId = gBattlePartners[difficulty][gPartnerTrainerId - TRAINER_PARTNER(PARTNER_NONE)].trainerPic;
-    else
-        trainerPicId = GetPlayerTrainerPic(gSaveBlock2Ptr->playerGender, GAME_VERSION);
+    {
+        if (!IsPartnerTrainerId(gPartnerTrainerId))
+        {
+            if (IsAiVsAiBattle() || ADMG_IsKantoPartnerActor(gBattleTypeFlags, gPartnerTrainerId))
+            {
+                if (!ADMG_TryGetTrainerStruct(gPartnerTrainerId, &trainer)) return TRAINER_PIC_NONE;
+                return trainer->trainerPic;
+            }
+            /* Raw facility partners use the retained front-picture provider. */
+            return GetFrontierTrainerFrontSpriteId(gPartnerTrainerId);
+        }
 
-    return trainerPicId;
+        if (!IsPartnerTrainerId(gPartnerTrainerId)
+         || !ADMG_TryGetTrainerRow(gPartnerTrainerId, difficulty, &trainer))
+        {
+            ADMG_StateAccessRejected(gPartnerTrainerId, __func__);
+            return TRAINER_PIC_NONE;
+        }
+        return trainer->trainerPic;
+    }
+    if (gSaveBlock2Ptr == NULL)
+    {
+        ADMG_StateAccessRejected(gPartnerTrainerId, __func__);
+        return TRAINER_PIC_NONE;
+    }
+    return GetPlayerTrainerPic(gSaveBlock2Ptr->playerGender, GAME_VERSION);
 }
 
 // some explanation here
@@ -215,15 +238,34 @@ static void RecordedPartnerHandleDrawTrainerPic(enum BattlerId battler)
     s16 xPos, yPos;
     enum TrainerPicID trainerPicId;
 
-    enum DifficultyLevel difficulty = GetBattlePartnerDifficultyLevel(gPartnerTrainerId);
+    const struct Trainer *trainer;
+    enum DifficultyLevel difficulty = DIFFICULTY_NORMAL;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    if ((u32)battler >= MAX_BATTLERS_COUNT
+     || (!ADMG_IsPartnerPictureIdentity(gPartnerTrainerId, FALSE)
+      && !(IsAiVsAiBattle() && ADMG_IsPartnerPictureIdentity(gPartnerTrainerId, TRUE))))
+    { ADMG_StateAccessRejected(gPartnerTrainerId, __func__); return; }
 
-    if (gPartnerTrainerId > TRAINER_PARTNER(PARTNER_NONE))
+    if (IsPartnerTrainerId(gPartnerTrainerId))
     {
-        trainerPicId = gBattlePartners[difficulty][gPartnerTrainerId - TRAINER_PARTNER(PARTNER_NONE)].trainerPic;
+        difficulty = GetBattlePartnerDifficultyLevel(gPartnerTrainerId);
+        if (!ADMG_TryGetTrainerRow(gPartnerTrainerId, difficulty, &trainer)
+         || !ADMG_EndStateAccessCheck(generation))
+            return;
+    }
+    else if ((IsAiVsAiBattle() || ADMG_IsKantoPartnerActor(gBattleTypeFlags, gPartnerTrainerId)))
+    {
+        if (!ADMG_TryGetTrainerStruct(gPartnerTrainerId, &trainer))
+            return;
+    }
+
+    if (IsPartnerTrainerId(gPartnerTrainerId))
+    {
+        trainerPicId = trainer->trainerPic;
         xPos = 90;
         yPos = (8 - GetTrainerBackPicCoords(trainerPicId)->size) * 4 + 80;
     }
-    else if (IsAiVsAiBattle())
+    else if ((IsAiVsAiBattle() || ADMG_IsKantoPartnerActor(gBattleTypeFlags, gPartnerTrainerId)))
     {
         trainerPicId = GetTrainerPicFromId(gPartnerTrainerId);
         xPos = 60;
@@ -231,24 +273,38 @@ static void RecordedPartnerHandleDrawTrainerPic(enum BattlerId battler)
     }
     else
     {
+        if (gPartnerTrainerId > TRAINER_FRONTIER_BRAIN || gSaveBlock2Ptr == NULL)
+        {
+            ADMG_StateAccessRejected(gPartnerTrainerId, __func__);
+            return;
+        }
         trainerPicId = GetFrontierTrainerFrontSpriteId(gPartnerTrainerId);
         xPos = 32;
         yPos = 80;
     }
 
     // Use back pic only if the partner Steven or is custom.
-    if (gPartnerTrainerId > TRAINER_PARTNER(PARTNER_NONE))
+    if (IsPartnerTrainerId(gPartnerTrainerId))
         isFrontPic = FALSE;
     else
         isFrontPic = TRUE;
 
+    if (!ADMG_EndStateAccessCheck(generation))
+        return;
     BtlController_HandleDrawTrainerPic(battler, trainerPicId, isFrontPic, xPos, yPos, -1);
 }
 
 static void RecordedPartnerHandleTrainerSlide(enum BattlerId battler)
 {
-    enum DifficultyLevel difficulty = GetBattlePartnerDifficultyLevel(gPartnerTrainerId);
-    enum TrainerPicID trainerPicId = RecordedPartnerGetTrainerBackPicId(difficulty);
+    if ((u32)battler >= MAX_BATTLERS_COUNT) { ADMG_StateAccessRejected((u32)battler, __func__); return; }
+    u64 generation = ADMG_BeginStateAccessCheck();
+    enum DifficultyLevel difficulty = DIFFICULTY_NORMAL;
+    enum TrainerPicID trainerPicId;
+    if (gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER && IsPartnerTrainerId(gPartnerTrainerId))
+        difficulty = GetBattlePartnerDifficultyLevel(gPartnerTrainerId);
+    trainerPicId = RecordedPartnerGetTrainerBackPicId(difficulty);
+    if (!ADMG_EndStateAccessCheck(generation))
+        return;
     BtlController_HandleTrainerSlide(battler, trainerPicId);
 }
 
@@ -288,15 +344,43 @@ static void RecordedPartnerHandleChoosePokemon(enum BattlerId battler)
 static void RecordedPartnerHandleIntroTrainerBallThrow(enum BattlerId battler)
 {
     const u16 *trainerPal;
-    enum DifficultyLevel difficulty = GetBattlePartnerDifficultyLevel(gPartnerTrainerId);
+    const struct Trainer *trainer;
+    enum DifficultyLevel difficulty = DIFFICULTY_NORMAL;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    if ((u32)battler >= MAX_BATTLERS_COUNT
+     || (!ADMG_IsPartnerPictureIdentity(gPartnerTrainerId, FALSE)
+      && !(IsAiVsAiBattle() && ADMG_IsPartnerPictureIdentity(gPartnerTrainerId, TRUE))))
+    { ADMG_StateAccessRejected(gPartnerTrainerId, __func__); return; }
 
-    if (gPartnerTrainerId > TRAINER_PARTNER(PARTNER_NONE))
-        trainerPal = GetTrainerBackPicPalette(gBattlePartners[difficulty][gPartnerTrainerId - TRAINER_PARTNER(PARTNER_NONE)].trainerPic);
-    else if (IsAiVsAiBattle())
+    if (IsPartnerTrainerId(gPartnerTrainerId))
+    {
+        difficulty = GetBattlePartnerDifficultyLevel(gPartnerTrainerId);
+        if (!ADMG_TryGetTrainerRow(gPartnerTrainerId, difficulty, &trainer)
+         || !ADMG_EndStateAccessCheck(generation))
+            return;
+    }
+    else if ((IsAiVsAiBattle() || ADMG_IsKantoPartnerActor(gBattleTypeFlags, gPartnerTrainerId)))
+    {
+        if (!ADMG_TryGetTrainerStruct(gPartnerTrainerId, &trainer))
+            return;
+    }
+
+    if (IsPartnerTrainerId(gPartnerTrainerId))
+        trainerPal = GetTrainerBackPicPalette(trainer->trainerPic);
+    else if ((IsAiVsAiBattle() || ADMG_IsKantoPartnerActor(gBattleTypeFlags, gPartnerTrainerId)))
         trainerPal = GetTrainerFrontPicPalette(GetTrainerPicFromId(gPartnerTrainerId));
     else
-        trainerPal = GetTrainerFrontPicPalette(GetFrontierTrainerFrontSpriteId(gPartnerTrainerId)); // 2 vs 2 multi battle in Battle Frontier, load front sprite and pal.
+    {
+        if (gPartnerTrainerId > TRAINER_FRONTIER_BRAIN || gSaveBlock2Ptr == NULL)
+        {
+            ADMG_StateAccessRejected(gPartnerTrainerId, __func__);
+            return;
+        }
+        trainerPal = GetTrainerFrontPicPalette(GetFrontierTrainerFrontSpriteId(gPartnerTrainerId));
+    } // 2 vs 2 multi battle in Battle Frontier, load front sprite and pal.
 
+    if (!ADMG_EndStateAccessCheck(generation))
+        return;
     BtlController_HandleIntroTrainerBallThrow(battler, 0xD6F9, trainerPal, 24, Controller_RecordedPartnerShowIntroHealthbox);
 }
 

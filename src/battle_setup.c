@@ -1,4 +1,9 @@
 #include "global.h"
+#include "admg_script.h"
+#include "admg_trainer_actor.h"
+#include "admg_rematch.h"
+#include "admg_rematch_battle.h"
+#include "admg_trainer.h"
 #include "data.h"
 #include "main.h"
 #include "battle.h"
@@ -11,6 +16,7 @@
 #include "battle_tower.h"
 #include "battle_transition.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "event_object_movement.h"
 #include "event_scripts.h"
 #include "fieldmap.h"
@@ -85,15 +91,16 @@ static void SaveChangesToPlayerParty(void);
 static void HandleBattleVariantEndParty(void);
 static void CB2_EndTrainerBattle(void);
 static bool32 IsPlayerDefeated(u32 battleOutcome);
-#if FREE_MATCH_CALL == FALSE
-static u16 GetRematchTrainerId(u16 trainerId);
-#endif //FREE_MATCH_CALL
+u16 GetRematchTrainerId(u16 trainerId);
 static void RegisterTrainerInMatchCall(void);
 static void HandleRematchVarsOnBattleEnd(void);
 static const u8 *GetIntroSpeechOfApproachingTrainer(void);
 static const u8 *GetTrainerCantBattleSpeech(void);
 static void CreateNPCTrainerParty(struct Pokemon *party, u16 trainerNum);
 static void DoTrainerBattle(void);
+static bool8 IsNativeTrainerContent(u32 trainerId);
+static bool8 IsNativeTrainerBattleContent(u32 trainerId);
+static bool8 NativeBattleDefeatPairValid(void);
 
 EWRAM_DATA TrainerBattleParameter gTrainerBattleParameter = {0};
 EWRAM_DATA u16 gPartnerTrainerId = 0;
@@ -101,7 +108,7 @@ EWRAM_DATA static u8 *sTrainerBattleEndScript = NULL;
 EWRAM_DATA static bool8 sShouldCheckTrainerBScript = FALSE;
 EWRAM_DATA static u8 sNoOfPossibleTrainerRetScripts = 0;
 
-// The first transition is used if the enemy Pokémon are lower level than our Pokémon.
+// The first transition is used if the enemy PokÃ©mon are lower level than our PokÃ©mon.
 // Otherwise, the second transition is used.
 static const u8 sBattleTransitionTable_Wild[][2] =
 {
@@ -243,76 +250,210 @@ const struct RematchTrainer gRematchTable[REMATCH_TABLE_ENTRIES] =
 #define tState data[0]
 #define tTransition data[1]
 
+/* Original task state/transition stay in data[0..1]; the rest is transient. */
+enum ADMG_FieldBattleTaskData
+{
+    ADMG_FB_FLAGS = 2, ADMG_FB_A = 4, ADMG_FB_B, ADMG_FB_PARTNER,
+    ADMG_FB_USES, ADMG_FB_SAVED_CALLBACK, ADMG_FB_TAG = 10,
+};
+
+static void Task_BattleStart(u8 taskId);
+static void Task_BattleStart_Debug(u8 taskId);
+
+static bool8 ADMG_TrySelectFieldBattlePartner(bool8 prepareFollower, u16 *identity, bool8 *deferred)
+{
+    *deferred = prepareFollower && (gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER)
+        && FollowerNPCIsBattlePartner();
+    *identity = gPartnerTrainerId;
+    if (*deferred)
+    {
+        u32 partner = GetFollowerNPCData(FNPC_DATA_BATTLE_PARTNER);
+        if (partner <= PARTNER_NONE || partner >= PARTNER_COUNT)
+        { ADMG_StateAccessRejected(partner, __func__); return FALSE; }
+        *identity = TRAINER_PARTNER(partner);
+    }
+    return TRUE;
+}
+
+static bool8 ADMG_FieldBattleActorsCurrent(const struct ADMG_BattleTrainerActors *snapshot)
+{
+    u16 partner; bool8 deferred;
+    if (!ADMG_TrySelectFieldBattlePartner(TRUE, &partner, &deferred)) return FALSE;
+    return ADMG_BattleTrainerActorsCurrent(snapshot, gBattleTypeFlags,
+        TRAINER_BATTLE_PARAM.opponentA, TRAINER_BATTLE_PARAM.opponentB, partner);
+}
+
+static bool8 ADMG_FieldBattleTaskOwned(u8 taskId)
+{
+    return taskId < NUM_TASKS && gTasks[taskId].isActive
+        && (gTasks[taskId].func == Task_BattleStart || gTasks[taskId].func == Task_BattleStart_Debug)
+        && (u16)gTasks[taskId].data[ADMG_FB_TAG] == 0x4B35;
+}
+
+static bool8 ADMG_FieldBattleContextCurrent(u8 taskId, u64 generation)
+{
+    if (!ADMG_FieldBattleTaskOwned(taskId))
+    { ADMG_StateAccessRejected(taskId, __func__); return FALSE; }
+    const s16 *data = gTasks[taskId].data;
+    if (data[0] < 0 || data[0] > 1)
+    { ADMG_StateAccessRejected((u16)data[0], __func__); return FALSE; }
+    struct ADMG_BattleTrainerActors snapshot;
+    snapshot.flags = GetWordTaskArg(taskId, ADMG_FB_FLAGS);
+    snapshot.opponentA = data[ADMG_FB_A]; snapshot.opponentB = data[ADMG_FB_B];
+    snapshot.partner = data[ADMG_FB_PARTNER]; snapshot.uses = data[ADMG_FB_USES] & 7;
+    u16 partner; bool8 deferred;
+    if (!ADMG_TrySelectFieldBattlePartner(gTasks[taskId].func == Task_BattleStart, &partner, &deferred)) return FALSE;
+    if (deferred != ((data[ADMG_FB_USES] & 8) != 0)
+     || (deferred && partner != snapshot.partner)
+     || (u32)gMain.savedCallback != GetWordTaskArg(taskId, ADMG_FB_SAVED_CALLBACK))
+    { ADMG_StateAccessRejected(partner, __func__); return FALSE; }
+    if (!deferred || (data[ADMG_FB_USES] & 16)) partner = gPartnerTrainerId;
+    return ADMG_EndStateAccessCheck(generation)
+        && ADMG_BattleTrainerActorsCurrent(&snapshot, gBattleTypeFlags,
+            TRAINER_BATTLE_PARAM.opponentA, TRAINER_BATTLE_PARAM.opponentB, partner);
+}
+
+static void ADMG_RejectFieldBattleTask(u8 taskId)
+{
+    if (!ADMG_FieldBattleTaskOwned(taskId)) return;
+    DestroyTask(taskId);
+    ADMG_DiscardNativeBattleAssociation();
+    SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);
+}
+
+static bool8 ADMG_QueueFieldBattleTask(TaskFunc func, enum BattleTransition transition, u16 song)
+{
+    u64 generation = ADMG_BeginStateAccessCheck();
+    struct ADMG_BattleTrainerActors snapshot;
+    u16 partner; bool8 deferred;
+    if (!ADMG_TrySelectFieldBattlePartner(func == Task_BattleStart, &partner, &deferred)
+     || !ADMG_TryCaptureBattleTrainerActors(gBattleTypeFlags, TRAINER_BATTLE_PARAM.opponentA,
+        TRAINER_BATTLE_PARAM.opponentB, partner, &snapshot)
+     || !ADMG_EndStateAccessCheck(generation)) return FALSE;
+    u32 freeSlot;
+    for (freeSlot = 0; freeSlot < NUM_TASKS && gTasks[freeSlot].isActive; ++freeSlot) {}
+    if (freeSlot == NUM_TASKS)
+    { ADMG_StateAccessRejected(freeSlot, __func__); return FALSE; }
+    u8 taskId = CreateTask(func, 1);
+    if (taskId != freeSlot || !gTasks[taskId].isActive || gTasks[taskId].func != func)
+    { ADMG_StateAccessRejected(taskId, __func__); return FALSE; }
+    gTasks[taskId].tTransition = transition;
+    SetWordTaskArg(taskId, ADMG_FB_FLAGS, snapshot.flags);
+    gTasks[taskId].data[ADMG_FB_A] = snapshot.opponentA;
+    gTasks[taskId].data[ADMG_FB_B] = snapshot.opponentB;
+    gTasks[taskId].data[ADMG_FB_PARTNER] = snapshot.partner;
+    gTasks[taskId].data[ADMG_FB_USES] = snapshot.uses | (deferred << 3);
+    SetWordTaskArg(taskId, ADMG_FB_SAVED_CALLBACK, (u32)gMain.savedCallback);
+    gTasks[taskId].data[ADMG_FB_TAG] = 0x4B35;
+    PlayMapChosenOrBattleBGM(song);
+    if (!ADMG_FieldBattleContextCurrent(taskId, generation))
+    { ADMG_RejectFieldBattleTask(taskId); return FALSE; }
+    return TRUE;
+}
+
 static void Task_BattleStart(u8 taskId)
 {
+    if (taskId >= NUM_TASKS || !gTasks[taskId].isActive
+     || gTasks[taskId].func != Task_BattleStart)
+    { ADMG_StateAccessRejected(taskId, __func__); return; }
+    u64 generation = ADMG_BeginStateAccessCheck();
+    if (!ADMG_FieldBattleContextCurrent(taskId, generation)) goto rejected;
     s16 *data = gTasks[taskId].data;
 
     switch (tState)
     {
     case 0:
-        if (!FldEffPoison_IsActive()) // is poison not active?
+        bool8 poison = FldEffPoison_IsActive();
+        if (!ADMG_FieldBattleContextCurrent(taskId, generation)) goto rejected;
+        if (!poison) // is poison not active?
         {
             BattleTransition_StartOnField(tTransition);
+            if (!ADMG_FieldBattleContextCurrent(taskId, generation)) goto rejected;
             ClearMirageTowerPulseBlendEffect();
+            if (!ADMG_FieldBattleContextCurrent(taskId, generation)) goto rejected;
             tState++; // go to case 1.
         }
         break;
     case 1:
-        if (IsBattleTransitionDone() == TRUE)
+        bool8 done = IsBattleTransitionDone();
+        if (!ADMG_FieldBattleContextCurrent(taskId, generation)) goto rejected;
+        if (done == TRUE)
         {
             PrepareForFollowerNPCBattle();
+            data[ADMG_FB_USES] |= 16;
+            if (!ADMG_FieldBattleContextCurrent(taskId, generation)) goto rejected;
             CleanupOverworldWindowsAndTilemaps();
+            if (!ADMG_FieldBattleContextCurrent(taskId, generation)) goto rejected;
             SetMainCallback2(CB2_InitBattle);
+            if (!ADMG_FieldBattleContextCurrent(taskId, generation)) goto rejected;
             RestartWildEncounterImmunitySteps();
+            if (!ADMG_FieldBattleContextCurrent(taskId, generation)) goto rejected;
             ClearPoisonStepCounter();
+            if (!ADMG_FieldBattleContextCurrent(taskId, generation)) goto rejected;
             DespawnOWEOnBattleStart();
+            if (!ADMG_FieldBattleContextCurrent(taskId, generation)) goto rejected;
             DestroyTask(taskId);
         }
         break;
     }
+    return;
+rejected:
+    ADMG_RejectFieldBattleTask(taskId);
 }
 
 static void CreateBattleStartTask(enum BattleTransition transition, u16 song)
 {
-    u8 taskId = CreateTask(Task_BattleStart, 1);
-
-    gTasks[taskId].tTransition = transition;
-    PlayMapChosenOrBattleBGM(song);
+    (void)ADMG_QueueFieldBattleTask(Task_BattleStart, transition, song);
 }
 
 static void Task_BattleStart_Debug(u8 taskId)
 {
+    if (taskId >= NUM_TASKS || !gTasks[taskId].isActive
+     || gTasks[taskId].func != Task_BattleStart_Debug)
+    { ADMG_StateAccessRejected(taskId, __func__); return; }
+    u64 generation = ADMG_BeginStateAccessCheck();
+    if (!ADMG_FieldBattleContextCurrent(taskId, generation)) goto rejected;
     s16 *data = gTasks[taskId].data;
 
     switch (tState)
     {
     case 0:
-        if (!FldEffPoison_IsActive()) // is poison not active?
+        bool8 poison = FldEffPoison_IsActive();
+        if (!ADMG_FieldBattleContextCurrent(taskId, generation)) goto rejected;
+        if (!poison) // is poison not active?
         {
             BattleTransition_StartOnField(tTransition);
+            if (!ADMG_FieldBattleContextCurrent(taskId, generation)) goto rejected;
             ClearMirageTowerPulseBlendEffect();
+            if (!ADMG_FieldBattleContextCurrent(taskId, generation)) goto rejected;
             tState++; // go to case 1.
         }
         break;
     case 1:
-        if (IsBattleTransitionDone() == TRUE)
+        bool8 done = IsBattleTransitionDone();
+        if (!ADMG_FieldBattleContextCurrent(taskId, generation)) goto rejected;
+        if (done == TRUE)
         {
             CleanupOverworldWindowsAndTilemaps();
+            if (!ADMG_FieldBattleContextCurrent(taskId, generation)) goto rejected;
             SetMainCallback2(CB2_InitBattle);
+            if (!ADMG_FieldBattleContextCurrent(taskId, generation)) goto rejected;
             RestartWildEncounterImmunitySteps();
+            if (!ADMG_FieldBattleContextCurrent(taskId, generation)) goto rejected;
             ClearPoisonStepCounter();
+            if (!ADMG_FieldBattleContextCurrent(taskId, generation)) goto rejected;
             DestroyTask(taskId);
         }
         break;
     }
+    return;
+rejected:
+    ADMG_RejectFieldBattleTask(taskId);
 }
 
 static void CreateBattleStartTask_Debug(u8 transition, u16 song)
 {
-    u8 taskId = CreateTask(Task_BattleStart_Debug, 1);
-
-    gTasks[taskId].tTransition = transition;
-    PlayMapChosenOrBattleBGM(song);
+    (void)ADMG_QueueFieldBattleTask(Task_BattleStart_Debug, transition, song);
 }
 
 #undef tState
@@ -374,7 +515,7 @@ void BattleSetup_StartMultiBattle(void)
 
     if (gSpecialVar_0x8005 & MULTI_BATTLE_2_VS_WILD)
     {
-        CreateBattleStartTask(GetWildBattleTransition(), 0);
+        { u64 queued = ADMG_BeginStateAccessCheck(); CreateBattleStartTask(GetWildBattleTransition(), 0); if (!ADMG_EndStateAccessCheck(queued)) return; }
         IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
         IncrementGameStat(GAME_STAT_WILD_BATTLES);
         IncrementDailyWildBattles();
@@ -410,7 +551,7 @@ static void DoStandardWildBattle(bool32 isDouble)
         VarSet(VAR_TEMP_E, 0);
         gBattleTypeFlags |= BATTLE_TYPE_PYRAMID;
     }
-    CreateBattleStartTask(GetWildBattleTransition(), 0);
+    { u64 queued = ADMG_BeginStateAccessCheck(); CreateBattleStartTask(GetWildBattleTransition(), 0); if (!ADMG_EndStateAccessCheck(queued)) return; }
     IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
     IncrementGameStat(GAME_STAT_WILD_BATTLES);
     IncrementDailyWildBattles();
@@ -429,7 +570,7 @@ void DoStandardWildBattle_Debug(void)
         VarSet(VAR_TEMP_PLAYING_PYRAMID_MUSIC, 0);
         gBattleTypeFlags |= BATTLE_TYPE_PYRAMID;
     }
-    CreateBattleStartTask_Debug(GetWildBattleTransition(), 0);
+    { u64 queued = ADMG_BeginStateAccessCheck(); CreateBattleStartTask_Debug(GetWildBattleTransition(), 0); if (!ADMG_EndStateAccessCheck(queued)) return; }
     //IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
     //IncrementGameStat(GAME_STAT_WILD_BATTLES);
     //IncrementDailyWildBattles();
@@ -443,7 +584,7 @@ void BattleSetup_StartRoamerBattle(void)
     StopPlayerAvatar();
     gMain.savedCallback = CB2_EndWildBattle;
     gBattleTypeFlags = BATTLE_TYPE_ROAMER;
-    CreateBattleStartTask(GetWildBattleTransition(), 0);
+    { u64 queued = ADMG_BeginStateAccessCheck(); CreateBattleStartTask(GetWildBattleTransition(), 0); if (!ADMG_EndStateAccessCheck(queued)) return; }
     IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
     IncrementGameStat(GAME_STAT_WILD_BATTLES);
     IncrementDailyWildBattles();
@@ -457,7 +598,7 @@ static void DoSafariBattle(void)
     StopPlayerAvatar();
     gMain.savedCallback = CB2_EndSafariBattle;
     gBattleTypeFlags = BATTLE_TYPE_SAFARI;
-    CreateBattleStartTask(GetWildBattleTransition(), 0);
+    { u64 queued = ADMG_BeginStateAccessCheck(); CreateBattleStartTask(GetWildBattleTransition(), 0); if (!ADMG_EndStateAccessCheck(queued)) return; }
 }
 
 static void DoGhostBattle(void)
@@ -467,7 +608,7 @@ static void DoGhostBattle(void)
     StopPlayerAvatar();
     gMain.savedCallback = CB2_EndWildBattle;
     gBattleTypeFlags = BATTLE_TYPE_GHOST;
-    CreateBattleStartTask(GetWildBattleTransition(), 0);
+    { u64 queued = ADMG_BeginStateAccessCheck(); CreateBattleStartTask(GetWildBattleTransition(), 0); if (!ADMG_EndStateAccessCheck(queued)) return; }
     SetMonData(&gParties[B_TRAINER_OPPONENT_A][0], MON_DATA_NICKNAME, gText_Ghost);
     IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
     IncrementGameStat(GAME_STAT_WILD_BATTLES);
@@ -480,7 +621,7 @@ static void DoBattlePikeWildBattle(void)
     StopPlayerAvatar();
     gMain.savedCallback = CB2_EndWildBattle;
     gBattleTypeFlags = BATTLE_TYPE_PIKE;
-    CreateBattleStartTask(GetWildBattleTransition(), 0);
+    { u64 queued = ADMG_BeginStateAccessCheck(); CreateBattleStartTask(GetWildBattleTransition(), 0); if (!ADMG_EndStateAccessCheck(queued)) return; }
     IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
     IncrementGameStat(GAME_STAT_WILD_BATTLES);
     IncrementDailyWildBattles();
@@ -489,21 +630,41 @@ static void DoBattlePikeWildBattle(void)
 
 static void DoTrainerBattle(void)
 {
+    u64 generation = ADMG_BeginStateAccessCheck();
+    struct ADMG_BattleTrainerActors snapshot;
+    u16 partner; bool8 deferred;
+    if (!ADMG_TrySelectFieldBattlePartner(TRUE, &partner, &deferred)
+     || !ADMG_TryCaptureBattleTrainerActors(gBattleTypeFlags, TRAINER_BATTLE_PARAM.opponentA,
+        TRAINER_BATTLE_PARAM.opponentB, partner, &snapshot)
+     || !ADMG_EndStateAccessCheck(generation)) goto rejected;
+
+    if (IsNativeTrainerBattleContent(TRAINER_BATTLE_PARAM.opponentA))
+        ADMG_BeginNativeTrainerBattle(TRAINER_BATTLE_PARAM.opponentA);
+    else ADMG_DiscardNativeBattleAssociation();
+    if (!ADMG_EndStateAccessCheck(generation) || !ADMG_FieldBattleActorsCurrent(&snapshot)) goto rejected;
+
     CreateNPCTrainerParty(&gParties[B_TRAINER_OPPONENT_A][0], TRAINER_BATTLE_PARAM.opponentA);
+    if (!ADMG_EndStateAccessCheck(generation) || !ADMG_FieldBattleActorsCurrent(&snapshot)) goto rejected;
     if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS && !BATTLE_TWO_VS_ONE_OPPONENT)
         CreateNPCTrainerParty(&gParties[B_TRAINER_OPPONENT_B][0], TRAINER_BATTLE_PARAM.opponentB);
-    CreateBattleStartTask(GetTrainerBattleTransition(), 0);
+    if (!ADMG_EndStateAccessCheck(generation) || !ADMG_FieldBattleActorsCurrent(&snapshot)) goto rejected;
+    enum BattleTransition transition = GetTrainerBattleTransition();
+    if (!ADMG_EndStateAccessCheck(generation) || !ADMG_FieldBattleActorsCurrent(&snapshot)) goto rejected;
+    { u64 queued = ADMG_BeginStateAccessCheck(); CreateBattleStartTask(transition, 0); if (!ADMG_EndStateAccessCheck(queued)) goto rejected; }
     IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
     IncrementGameStat(GAME_STAT_TRAINER_BATTLES);
     TryUpdateGymLeaderRematchFromTrainer();
+    return;
+rejected:
+    ADMG_DiscardNativeBattleAssociation();
 }
 
 static void DoBattlePyramidTrainerHillBattle(void)
 {
     if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
-        CreateBattleStartTask(GetSpecialBattleTransition(B_TRANSITION_GROUP_B_PYRAMID), 0);
+        { u64 queued = ADMG_BeginStateAccessCheck(); CreateBattleStartTask(GetSpecialBattleTransition(B_TRANSITION_GROUP_B_PYRAMID), 0); if (!ADMG_EndStateAccessCheck(queued)) return; }
     else
-        CreateBattleStartTask(GetSpecialBattleTransition(B_TRANSITION_GROUP_TRAINER_HILL), 0);
+        { u64 queued = ADMG_BeginStateAccessCheck(); CreateBattleStartTask(GetSpecialBattleTransition(B_TRANSITION_GROUP_TRAINER_HILL), 0); if (!ADMG_EndStateAccessCheck(queued)) return; }
 
     IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
     IncrementGameStat(GAME_STAT_TRAINER_BATTLES);
@@ -517,7 +678,7 @@ void StartWallyTutorialBattle(void)
     LockPlayerFieldControls();
     gMain.savedCallback = CB2_ReturnToFieldContinueScriptPlayMapMusic;
     gBattleTypeFlags = BATTLE_TYPE_CATCH_TUTORIAL;
-    CreateBattleStartTask(B_TRANSITION_SLICE, 0);
+    { u64 queued = ADMG_BeginStateAccessCheck(); CreateBattleStartTask(B_TRANSITION_SLICE, 0); if (!ADMG_EndStateAccessCheck(queued)) return; }
 }
 
 void StartOldManTutorialBattle(void)
@@ -526,7 +687,7 @@ void StartOldManTutorialBattle(void)
     LockPlayerFieldControls();
     gMain.savedCallback = CB2_ReturnToFieldContinueScriptPlayMapMusic;
     gBattleTypeFlags = BATTLE_TYPE_CATCH_TUTORIAL;
-    CreateBattleStartTask(B_TRANSITION_SLICE, 0);
+    { u64 queued = ADMG_BeginStateAccessCheck(); CreateBattleStartTask(B_TRANSITION_SLICE, 0); if (!ADMG_EndStateAccessCheck(queued)) return; }
 }
 
 void BattleSetup_StartScriptedWildBattle(void)
@@ -534,7 +695,7 @@ void BattleSetup_StartScriptedWildBattle(void)
     LockPlayerFieldControls();
     gMain.savedCallback = CB2_EndScriptedWildBattle;
     gBattleTypeFlags = 0;
-    CreateBattleStartTask(GetWildBattleTransition(), 0);
+    { u64 queued = ADMG_BeginStateAccessCheck(); CreateBattleStartTask(GetWildBattleTransition(), 0); if (!ADMG_EndStateAccessCheck(queued)) return; }
     IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
     IncrementGameStat(GAME_STAT_WILD_BATTLES);
     IncrementDailyWildBattles();
@@ -546,7 +707,7 @@ void BattleSetup_StartScriptedDoubleWildBattle(void)
     LockPlayerFieldControls();
     gMain.savedCallback = CB2_EndScriptedWildBattle;
     gBattleTypeFlags = BATTLE_TYPE_DOUBLE;
-    CreateBattleStartTask(GetWildBattleTransition(), 0);
+    { u64 queued = ADMG_BeginStateAccessCheck(); CreateBattleStartTask(GetWildBattleTransition(), 0); if (!ADMG_EndStateAccessCheck(queued)) return; }
     IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
     IncrementGameStat(GAME_STAT_WILD_BATTLES);
     IncrementDailyWildBattles();
@@ -566,7 +727,7 @@ void StartMarowakBattle(void)
         CreateMonWithIVsPersonality(&gParties[B_TRAINER_OPPONENT_A][0], SPECIES_MAROWAK, 30, 31, personality);
     }
 
-    CreateBattleStartTask(GetWildBattleTransition(), 0);
+    { u64 queued = ADMG_BeginStateAccessCheck(); CreateBattleStartTask(GetWildBattleTransition(), 0); if (!ADMG_EndStateAccessCheck(queued)) return; }
     SetMonData(&gParties[B_TRAINER_OPPONENT_A][0], MON_DATA_NICKNAME, gText_Ghost);
     IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
     IncrementGameStat(GAME_STAT_WILD_BATTLES);
@@ -577,7 +738,7 @@ void BattleSetup_StartLatiBattle(void)
     LockPlayerFieldControls();
     gMain.savedCallback = CB2_EndScriptedWildBattle;
     gBattleTypeFlags = BATTLE_TYPE_LEGENDARY;
-    CreateBattleStartTask(GetWildBattleTransition(), 0);
+    { u64 queued = ADMG_BeginStateAccessCheck(); CreateBattleStartTask(GetWildBattleTransition(), 0); if (!ADMG_EndStateAccessCheck(queued)) return; }
     IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
     IncrementGameStat(GAME_STAT_WILD_BATTLES);
     IncrementDailyWildBattles();
@@ -594,29 +755,29 @@ void BattleSetup_StartLegendaryBattle(void)
     {
     case SPECIES_GROUDON:
     case SPECIES_GROUDON_PRIMAL:
-        CreateBattleStartTask(B_TRANSITION_GROUDON, MUS_VS_KYOGRE_GROUDON);
+        { u64 queued = ADMG_BeginStateAccessCheck(); CreateBattleStartTask(B_TRANSITION_GROUDON, MUS_VS_KYOGRE_GROUDON); if (!ADMG_EndStateAccessCheck(queued)) return; }
         break;
     case SPECIES_KYOGRE:
     case SPECIES_KYOGRE_PRIMAL:
-        CreateBattleStartTask(B_TRANSITION_KYOGRE, MUS_VS_KYOGRE_GROUDON);
+        { u64 queued = ADMG_BeginStateAccessCheck(); CreateBattleStartTask(B_TRANSITION_KYOGRE, MUS_VS_KYOGRE_GROUDON); if (!ADMG_EndStateAccessCheck(queued)) return; }
         break;
     case SPECIES_RAYQUAZA:
     case SPECIES_RAYQUAZA_MEGA:
-        CreateBattleStartTask(B_TRANSITION_RAYQUAZA, MUS_VS_RAYQUAZA);
+        { u64 queued = ADMG_BeginStateAccessCheck(); CreateBattleStartTask(B_TRANSITION_RAYQUAZA, MUS_VS_RAYQUAZA); if (!ADMG_EndStateAccessCheck(queued)) return; }
         break;
     case SPECIES_DEOXYS_NORMAL:
     case SPECIES_DEOXYS_ATTACK:
     case SPECIES_DEOXYS_DEFENSE:
     case SPECIES_DEOXYS_SPEED:
-        CreateBattleStartTask(B_TRANSITION_BLUR, MUS_RG_VS_DEOXYS);
+        { u64 queued = ADMG_BeginStateAccessCheck(); CreateBattleStartTask(B_TRANSITION_BLUR, MUS_RG_VS_DEOXYS); if (!ADMG_EndStateAccessCheck(queued)) return; }
         break;
     case SPECIES_LUGIA:
     case SPECIES_HO_OH:
     default:
-        CreateBattleStartTask(B_TRANSITION_BLUR, MUS_RG_VS_LEGEND);
+        { u64 queued = ADMG_BeginStateAccessCheck(); CreateBattleStartTask(B_TRANSITION_BLUR, MUS_RG_VS_LEGEND); if (!ADMG_EndStateAccessCheck(queued)) return; }
         break;
     case SPECIES_MEW:
-        CreateBattleStartTask(B_TRANSITION_GRID_SQUARES, MUS_VS_MEW);
+        { u64 queued = ADMG_BeginStateAccessCheck(); CreateBattleStartTask(B_TRANSITION_GRID_SQUARES, MUS_VS_MEW); if (!ADMG_EndStateAccessCheck(queued)) return; }
         break;
     }
 
@@ -668,7 +829,7 @@ void StartRegiBattle(void)
         transitionId = B_TRANSITION_GRID_SQUARES;
         break;
     }
-    CreateBattleStartTask(transitionId, MUS_VS_REGI);
+    { u64 queued = ADMG_BeginStateAccessCheck(); CreateBattleStartTask(transitionId, MUS_VS_REGI); if (!ADMG_EndStateAccessCheck(queued)) return; }
 
     IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
     IncrementGameStat(GAME_STAT_WILD_BATTLES);
@@ -932,7 +1093,7 @@ enum BattleTransition GetTrainerBattleTransition(void)
         minPartyCount = 1;
         break;
     case TRAINER_BATTLE_TYPE_DOUBLES:
-        minPartyCount = 2; // double battles always at least have 2 Pokémon.
+        minPartyCount = 2; // double battles always at least have 2 PokÃ©mon.
         break;
     }
 
@@ -1008,7 +1169,7 @@ static void CB2_GiveStarter(void)
 {
     u16 starterMon;
 
-    *GetVarPointer(VAR_STARTER_MON) = gSpecialVar_Result;
+    *ADMG_REQUIRE_VAR_SPAN(VAR_STARTER_MON, 1) = gSpecialVar_Result;
     starterMon = GetStarterPokemon(gSpecialVar_Result);
     ScriptGiveMon(starterMon, 5, ITEM_NONE);
     ResetTasks();
@@ -1058,12 +1219,14 @@ static void TryUpdateGymLeaderRematchFromTrainer(void)
 
 static u16 GetTrainerAFlag(void)
 {
-    return TRAINER_FLAGS_START + TRAINER_BATTLE_PARAM.opponentA;
+    u16 id;
+    return ADMG_TryGetTrainerDefeatFlagId(TRAINER_BATTLE_PARAM.opponentA, &id) ? id : 0xFFFF;
 }
 
 static u16 GetTrainerBFlag(void)
 {
-    return TRAINER_FLAGS_START + TRAINER_BATTLE_PARAM.opponentB;
+    u16 id;
+    return ADMG_TryGetTrainerDefeatFlagId(TRAINER_BATTLE_PARAM.opponentB, &id) ? id : 0xFFFF;
 }
 
 static bool32 IsPlayerDefeated(u32 battleOutcome)
@@ -1093,15 +1256,24 @@ void InitTrainerBattleParameter(void)
 
 void TrainerBattleLoadArgs(const u8 *data)
 {
+    TrainerBattleParameter decoded;
+    if (data == NULL) { ADMG_StateAccessRejected(0, __func__); return; }
+    memcpy(decoded.data, data, sizeof(decoded));
+    if (!ADMG_TryValidateOrdinaryTrainerOperands(decoded.params.opponentA, decoded.params.opponentB)) return;
     InitTrainerBattleParameter();
-    memcpy(gTrainerBattleParameter.data, data, sizeof(TrainerBattleParameter));
+    memcpy(gTrainerBattleParameter.data, decoded.data, sizeof(decoded));
     sTrainerBattleEndScript = (u8*)data + sizeof(TrainerBattleParameter);
 }
 
 // loads trainer A parameter to trainer B. Used for second trainer in trainer_see.c
 void TrainerBattleLoadArgsSecondTrainer(const u8 *data)
 {
-    TrainerBattleParameter *temp = (TrainerBattleParameter*)data;
+    if (data == NULL) { ADMG_StateAccessRejected(0, __func__); return; }
+    TrainerBattleParameter decoded;
+    memcpy(decoded.data, data, sizeof(decoded));
+    TrainerBattleParameter *temp = &decoded;
+    if (!ADMG_TryValidateOrdinaryTrainerOperands(temp->params.opponentA, TRAINER_NONE)
+     || !ADMG_TryValidateOrdinaryTrainerOperands(TRAINER_BATTLE_PARAM.opponentA, temp->params.opponentA)) return;
 
     TRAINER_BATTLE_PARAM.playMusicB = temp->params.playMusicA;
     TRAINER_BATTLE_PARAM.objEventLocalIdB = temp->params.objEventLocalIdA;
@@ -1172,13 +1344,16 @@ static void BattleSetup_ConfigureApproachingFacilityTrainerBattle(TrainerBattleP
 
 static void BattleSetup_ConfigureFacilityTrainerBattle(TrainerBattleParameter *battleParams, struct ScriptStack *scrStack)
 {
+    bool8 defeated;
+    if (!ADMG_TryReadCurrentTrainerFlag(&defeated))
+        return;
     SetMapVarsToTrainerA();
 
     PUSH(EventSnippet_Lock)
     PUSH(EventSnippet_FacePlayer)
     PUSH(EventSnippet_RevealTrainer)
 
-    if (GetTrainerFlag()) {
+    if (defeated) {
         PUSH(EventSnippet_GotoPostBattleScript)
         return;
     }
@@ -1194,6 +1369,13 @@ static void BattleSetup_ConfigureFacilityTrainerBattle(TrainerBattleParameter *b
 
 static void BattleSetup_ConfigureApproachingTrainerBattle(TrainerBattleParameter *battleParams, struct ScriptStack *scrStack)
 {
+    const struct Trainer *checked;
+    if (!ADMG_TryGetTrainerStruct(battleParams->params.opponentA, &checked)
+     || (battleParams->params.opponentB != TRAINER_NONE
+      && battleParams->params.opponentB != 0xFFFF
+      && !ADMG_TryGetTrainerStruct(battleParams->params.opponentB, &checked)))
+        return;
+
     SetMapVarsToTrainerA();
 
     PUSH       (EventSnippet_StartTrainerApproach)
@@ -1218,13 +1400,25 @@ static void BattleSetup_ConfigureApproachingTrainerBattle(TrainerBattleParameter
 
 static void BattleSetup_ConfigureTrainerBattle(TrainerBattleParameter *battleParams, struct ScriptStack *scrStack)
 {
+    ADMG_DiscardNativeBattleAssociation();
+
+    const struct Trainer *checked;
+    if (!ADMG_TryGetTrainerStruct(battleParams->params.opponentA, &checked)
+     || (battleParams->params.opponentB != TRAINER_NONE
+      && battleParams->params.opponentB != 0xFFFF
+      && !ADMG_TryGetTrainerStruct(battleParams->params.opponentB, &checked)))
+        return;
+
+    bool8 defeated = FALSE;
+    if (!battleParams->params.skipFlagCheck && !ADMG_TryReadCurrentTrainerFlag(&defeated))
+        return;
     SetMapVarsToTrainerA();
 
     PUSH       (EventSnippet_Lock)
     PUSH_IF_SET(EventSnippet_FacePlayer, battleParams->params.facePlayer)
     PUSH       (EventSnippet_RevealTrainer)
 
-    bool32 isTrainerDefeated = !battleParams->params.skipFlagCheck && GetTrainerFlag();
+    bool32 isTrainerDefeated = !battleParams->params.skipFlagCheck && defeated;
 
     if ((isTrainerDefeated && !battleParams->params.isRematch)
     || (!IsTrainerReadyForRematch() && battleParams->params.isRematch)) {
@@ -1244,11 +1438,33 @@ static void BattleSetup_ConfigureTrainerBattle(TrainerBattleParameter *battlePar
     }
     
 #if FREE_MATCH_CALL == FALSE
-    if (battleParams->params.isRematch)
+    if (battleParams->params.isRematch && !IsNativeTrainerContent(battleParams->params.opponentA))
     {
         battleParams->params.opponentA = GetRematchTrainerId(battleParams->params.opponentA);
     }
 #endif //FREE_MATCH_CALL
+    if (IsNativeTrainerContent(battleParams->params.opponentA))
+    {
+        if (battleParams->params.isRematch)
+        {
+            u16 selected = GetRematchTrainerId(battleParams->params.opponentA);
+            if (selected == TRAINER_NONE)
+            {
+                PUSH(EventSnippet_GotoPostBattleScript)
+                return;
+            }
+            battleParams->params.opponentA = selected;
+        }
+        /* Association comes from the explicit configured NPC operand.
+         * A direct battle never silently borrows ambient LastTalked state. */
+        if (battleParams->params.objEventLocalIdA != LOCALID_NONE)
+        {
+            struct ADMG_RematchContext context;
+            if (ADMG_TryCaptureNativeRematchContext(&context))
+                (void)ADMG_TryBindNativeBattleNpc(&context,
+                    battleParams->params.opponentA, battleParams->params.objEventLocalIdA);
+        }
+    }
     
     PUSH_IF_SET(EventSnippet_PlayTrainerEncounterMusic, battleParams->params.playMusicA)
     PUSH_IF_SET(EventSnippet_SetTrainerFacingDirection, battleParams->params.facePlayer);
@@ -1261,6 +1477,11 @@ static void BattleSetup_ConfigureTrainerBattle(TrainerBattleParameter *battlePar
 
 void ConfigureTrainerBattle(struct ScriptContext *ctx)
 {
+    TrainerBattleParameter decoded;
+    if (ctx == NULL || ctx->scriptPtr == NULL) { ADMG_StateAccessRejected(0, __func__); return; }
+    memcpy(decoded.data, ctx->scriptPtr, sizeof(decoded));
+    if (!ADMG_TryValidateOrdinaryTrainerOperands(decoded.params.opponentA, decoded.params.opponentB)) return;
+
     InitTrainerBattleParameter();
 
     struct ScriptStack trainerBattleScriptStack;
@@ -1276,6 +1497,20 @@ void ConfigureTrainerBattle(struct ScriptContext *ctx)
 
 void ConfigureApproachingTrainerBattle(struct ApproachingTrainer *approachingTrainer)
 {
+    TrainerBattleParameter first, second;
+    if (approachingTrainer == NULL || gNoOfApproachingTrainers == 0
+     || gNoOfApproachingTrainers > NUM_APPROACHING_TRAINER || approachingTrainer[0].trainerScriptPtr == NULL)
+    { ADMG_StateAccessRejected(gNoOfApproachingTrainers, __func__); return; }
+    memcpy(first.data, approachingTrainer[0].trainerScriptPtr + TRAINERBATTLE_OPCODE_OFFSET, sizeof(first));
+    if (!ADMG_TryValidateOrdinaryTrainerOperands(first.params.opponentA, first.params.opponentB)) return;
+    if (gNoOfApproachingTrainers > 1)
+    {
+        if (approachingTrainer[1].trainerScriptPtr == NULL) { ADMG_StateAccessRejected(1, __func__); return; }
+        memcpy(second.data, approachingTrainer[1].trainerScriptPtr + TRAINERBATTLE_OPCODE_OFFSET, sizeof(second));
+        if (!ADMG_TryValidateOrdinaryTrainerOperands(second.params.opponentA, TRAINER_NONE)
+         || !ADMG_TryValidateOrdinaryTrainerOperands(first.params.opponentA, second.params.opponentA)) return;
+    }
+
     InitTrainerBattleParameter();
 
     struct ScriptStack trainerBattleScriptStack;
@@ -1297,6 +1532,7 @@ void ConfigureApproachingTrainerBattle(struct ApproachingTrainer *approachingTra
 
 static void SetFacilityOpponent(u8 facility, u8 localId, bool8 isTrainerA)
 {
+    u64 generation = ADMG_BeginStateAccessCheck();
     u16 trainerId = TRAINER_NONE;
 
     switch (facility) {
@@ -1308,7 +1544,16 @@ static void SetFacilityOpponent(u8 facility, u8 localId, bool8 isTrainerA)
             break;
         default:
             errorf("Invalid facility: %d", facility);
+            ADMG_StateAccessRejected(facility, __func__);
+            return;
     } 
+
+    if (!ADMG_EndStateAccessCheck(generation)) return;
+    if (facility == FACILITY_BATTLE_PYRAMID)
+    {
+        const struct BattleFrontierTrainer *trainer;
+        if (!ADMG_TryGetActiveFacilityTrainerRow(trainerId, &trainer)) return;
+    }
 
     if (isTrainerA) {
         TRAINER_BATTLE_PARAM.opponentA = trainerId;
@@ -1322,22 +1567,65 @@ static void SetFacilityOpponent(u8 facility, u8 localId, bool8 isTrainerA)
 
 void ConfigureFacilityTrainerBattle(u8 facility, const u8* scriptEndPtr)
 {
+    if (gSpecialVar_LastTalked > UCHAR_MAX)
+    { ADMG_StateAccessRejected(gSpecialVar_LastTalked, __func__); return; }
+    TrainerBattleParameter previous = gTrainerBattleParameter;
+    const u8 *previousEnd = sTrainerBattleEndScript;
+    struct SaveBlock1 *save1 = gSaveBlock1Ptr;
+    struct SaveBlock2 *save2 = gSaveBlock2Ptr;
+    const struct BattleFrontierTrainer *table = gFacilityTrainers;
+    u16 inputLocalId = gSpecialVar_LastTalked;
+    u8 selectedObject = gSelectedObjectEvent;
+    u8 selectedLocal = selectedObject < OBJECT_EVENTS_COUNT ? gObjectEvents[selectedObject].localId : 0;
+    u64 generation = ADMG_BeginStateAccessCheck();
     InitTrainerBattleParameter();
 
     struct ScriptStack trainerBattleScriptStack;
     InitScriptStack(&trainerBattleScriptStack);
 
     SetFacilityOpponent(facility, gSpecialVar_LastTalked, TRUE);
+    if (!ADMG_EndStateAccessCheck(generation)) goto ADMG_reject;
+    if (gSaveBlock1Ptr != save1 || gSaveBlock2Ptr != save2 || gSpecialVar_LastTalked != inputLocalId
+        || gSelectedObjectEvent != selectedObject
+        || (selectedObject < OBJECT_EVENTS_COUNT && gObjectEvents[selectedObject].localId != selectedLocal)
+        || (facility == FACILITY_BATTLE_PYRAMID && gFacilityTrainers != table))
+    { ADMG_StateAccessRejected(inputLocalId, __func__); goto ADMG_reject; }
 
     sTrainerBattleEndScript = (u8*)scriptEndPtr;
 
     BattleSetup_ConfigureFacilityTrainerBattle(&gTrainerBattleParameter, &trainerBattleScriptStack);
+    if (!ADMG_EndStateAccessCheck(generation)) goto ADMG_reject;
     ScriptContext_SetupGlobalContextFromStack(&trainerBattleScriptStack);
     ScriptContext_Enable();
+    return;
+ADMG_reject:
+    gTrainerBattleParameter = previous;
+    sTrainerBattleEndScript = (u8 *)previousEnd;
 }
 
 void ConfigureApproachingFacilityTrainerBattle(struct ApproachingTrainer *approachingTrainer)
 {
+    if (approachingTrainer == NULL || gNoOfApproachingTrainers > NUM_APPROACHING_TRAINER
+        || approachingTrainer[0].trainerScriptPtr == NULL
+        || approachingTrainer[0].objectEventId >= OBJECT_EVENTS_COUNT
+        || (gNoOfApproachingTrainers > 1 && (approachingTrainer[1].trainerScriptPtr == NULL
+            || approachingTrainer[1].objectEventId >= OBJECT_EVENTS_COUNT
+            || gApproachingTrainerId + 1 >= NUM_APPROACHING_TRAINER)))
+    { ADMG_StateAccessRejected(gNoOfApproachingTrainers, __func__); return; }
+    TrainerBattleParameter previous = gTrainerBattleParameter;
+    const u8 *previousEnd = sTrainerBattleEndScript;
+    u8 previousApproaching = gApproachingTrainerId;
+    u8 inputCount = gNoOfApproachingTrainers;
+    u8 used = inputCount > 1 ? 2 : 1;
+    const u8 *scripts[NUM_APPROACHING_TRAINER];
+    u8 objects[NUM_APPROACHING_TRAINER], locals[NUM_APPROACHING_TRAINER];
+    for (u32 i = 0; i < used; i++)
+    {
+        scripts[i] = approachingTrainer[i].trainerScriptPtr;
+        objects[i] = approachingTrainer[i].objectEventId;
+        locals[i] = gObjectEvents[objects[i]].localId;
+    }
+    u64 generation = ADMG_BeginStateAccessCheck();
     u8 facility, localId;
     const u8 *scriptEndPtr;
 
@@ -1351,8 +1639,17 @@ void ConfigureApproachingFacilityTrainerBattle(struct ApproachingTrainer *approa
     scriptEndPtr = approachingTrainer[0].trainerScriptPtr + FACILITYBATTLE_OPCODE_OFFSET + 1; 
 
     SetFacilityOpponent(facility, localId, TRUE);
+    if (!ADMG_EndStateAccessCheck(generation)) goto ADMG_reject;
+    if (gNoOfApproachingTrainers != inputCount || gApproachingTrainerId != previousApproaching)
+    { ADMG_StateAccessRejected(inputCount, __func__); goto ADMG_reject; }
+    for (u32 i = 0; i < used; i++)
+    {
+        if (approachingTrainer[i].trainerScriptPtr != scripts[i] || approachingTrainer[i].objectEventId != objects[i]
+            || gObjectEvents[objects[i]].localId != locals[i])
+        { ADMG_StateAccessRejected(objects[i], __func__); goto ADMG_reject; }
+    }
     
-    if (gNoOfApproachingTrainers > 1)
+    if (inputCount > 1)
     {
         gApproachingTrainerId++;
         facility = *(approachingTrainer[1].trainerScriptPtr + FACILITYBATTLE_OPCODE_OFFSET);
@@ -1360,20 +1657,38 @@ void ConfigureApproachingFacilityTrainerBattle(struct ApproachingTrainer *approa
         scriptEndPtr = approachingTrainer[1].trainerScriptPtr + FACILITYBATTLE_OPCODE_OFFSET + 1; 
 
         SetFacilityOpponent(facility, localId, FALSE);
+        if (!ADMG_EndStateAccessCheck(generation)) goto ADMG_reject;
+        if (gNoOfApproachingTrainers != inputCount || gApproachingTrainerId != previousApproaching + 1)
+        { ADMG_StateAccessRejected(inputCount, __func__); goto ADMG_reject; }
+        for (u32 i = 0; i < used; i++)
+        {
+            if (approachingTrainer[i].trainerScriptPtr != scripts[i] || approachingTrainer[i].objectEventId != objects[i]
+                || gObjectEvents[objects[i]].localId != locals[i])
+            { ADMG_StateAccessRejected(objects[i], __func__); goto ADMG_reject; }
+        }
     }
 
     sTrainerBattleEndScript = (u8*)scriptEndPtr;
     gApproachingTrainerId = 0;
 
     BattleSetup_ConfigureApproachingFacilityTrainerBattle(&gTrainerBattleParameter, &trainerBattleScriptStack);
+    if (!ADMG_EndStateAccessCheck(generation)) goto ADMG_reject;
     ScriptContext_SetupGlobalContextFromStack(&trainerBattleScriptStack);
     ScriptContext_Enable();
+    return;
+ADMG_reject:
+    gTrainerBattleParameter = previous;
+    sTrainerBattleEndScript = (u8 *)previousEnd;
+    gApproachingTrainerId = previousApproaching;
 }
 
 bool32 GetTrainerFlagFromScriptPointer(const u8 *data)
 {
     TrainerBattleParameter *temp = (TrainerBattleParameter*)(data + TRAINERBATTLE_OPCODE_OFFSET);
-    return FlagGet(TRAINER_FLAGS_START + temp->params.opponentA);
+    u16 id;
+    if (!ADMG_TryGetTrainerDefeatFlagId(temp->params.opponentA, &id))
+        return FALSE;
+    return FlagGet(id);
 }
 
 bool32 GetRematchFromScriptPointer(const u8 *data)
@@ -1416,9 +1731,16 @@ bool8 GetTrainerFlag(void)
 
 static void SetBattledTrainersFlags(void)
 {
-    if (TRAINER_BATTLE_PARAM.opponentB != 0)
-        FlagSet(GetTrainerBFlag());
-    FlagSet(GetTrainerAFlag());
+    u16 first = GetTrainerAFlag();
+    u16 second = 0;
+    /* 65535 is the existing partner sentinel, not a second trainer flag. */
+    if (TRAINER_BATTLE_PARAM.opponentB != 0 && TRAINER_BATTLE_PARAM.opponentB != 0xFFFF)
+        second = GetTrainerBFlag();
+    if (!ADMG_IsFlagIdValid(first) || !ADMG_IsFlagIdValid(second))
+        return;
+    if (second != 0)
+        FlagSet(second);
+    FlagSet(first);
 }
 
 static void UNUSED SetBattledTrainerFlag(void)
@@ -1428,52 +1750,349 @@ static void UNUSED SetBattledTrainerFlag(void)
 
 bool8 HasTrainerBeenFought(u16 trainerId)
 {
-    return FlagGet(TRAINER_FLAGS_START + trainerId);
+    u16 id;
+    if (!ADMG_TryGetTrainerDefeatFlagId(trainerId, &id))
+        return FALSE;
+    return FlagGet(id);
 }
 
 void SetTrainerFlag(u16 trainerId)
 {
-    FlagSet(TRAINER_FLAGS_START + trainerId);
+    u16 id;
+    if (ADMG_TryGetTrainerDefeatFlagId(trainerId, &id))
+        FlagSet(id);
 }
 
 void ClearTrainerFlag(u16 trainerId)
 {
-    FlagClear(TRAINER_FLAGS_START + trainerId);
+    u16 id;
+    if (ADMG_TryGetTrainerDefeatFlagId(trainerId, &id))
+        FlagClear(id);
 }
 
-void BattleSetup_StartTrainerBattle(void)
+bool8 ADMG_TryReadLegacyTrainerFlag(u32 trainerId, bool8 *value)
 {
+    u16 id;
+    if (value == NULL || !ADMG_TryGetTrainerDefeatFlagId(trainerId, &id))
+        return FALSE;
+    *value = HasTrainerBeenFought((u16)trainerId);
+    return TRUE;
+}
+
+bool8 ADMG_TryReadCurrentTrainerFlag(bool8 *value)
+{
+    u16 id;
+    if (value == NULL)
+        return FALSE;
+    /* Existing facility dispatch owns its separate flag domain. */
+    if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE && !InTrainerHill()
+     && !ADMG_TryGetTrainerDefeatFlagId(TRAINER_BATTLE_PARAM.opponentA, &id))
+        return FALSE;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    struct SaveBlock1 *save1 = gSaveBlock1Ptr;
+    struct SaveBlock2 *save2 = gSaveBlock2Ptr;
+    u16 identity = TRAINER_BATTLE_PARAM.opponentA;
+    u16 localId = TRAINER_BATTLE_PARAM.objEventLocalIdA;
+    u8 selected = gSelectedObjectEvent;
+    u8 selectedLocal = selected < OBJECT_EVENTS_COUNT ? gObjectEvents[selected].localId : 0;
+    bool8 result = GetTrainerFlag();
+    if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+    if (gSaveBlock1Ptr != save1 || gSaveBlock2Ptr != save2 || TRAINER_BATTLE_PARAM.opponentA != identity
+        || TRAINER_BATTLE_PARAM.objEventLocalIdA != localId || gSelectedObjectEvent != selected
+        || (selected < OBJECT_EVENTS_COUNT && gObjectEvents[selected].localId != selectedLocal))
+    { ADMG_StateAccessRejected(identity, __func__); return FALSE; }
+    *value = result;
+    return TRUE;
+}
+
+bool8 ADMG_TryReadTrainerFlagFromScript(const u8 *data, bool8 *value)
+{
+    const TrainerBattleParameter *params;
+    u16 id;
+    if (data == NULL || value == NULL)
+        return FALSE;
+    params = (const TrainerBattleParameter *)(data + TRAINERBATTLE_OPCODE_OFFSET);
+    if (!ADMG_TryGetTrainerDefeatFlagId(params->params.opponentA, &id))
+        return FALSE;
+    *value = GetTrainerFlagFromScriptPointer(data);
+    return TRUE;
+}
+
+/* Transient caller ownership only; no game-state or save schema change. */
+struct ADMG_PyramidTrainerBattleInput
+{
+    struct SaveBlock1 *save1;
+    struct SaveBlock2 *save2;
+    u64 generation;
+    u32 mode, previousFlags;
+    u16 a, b, lastTalked;
+    u8 count, selectedA, selectedCurrent, localA, approachB, localB;
+    bool8 actorsReady, countersPublished, musicTouched, bPublished, marked;
+    struct ADMG_BattleTrainerActors actors;
+    u16 *music;
+    u16 previousMusic;
+    struct Pokemon parties[2][PARTY_SIZE];
+    u8 partyCounts[2];
+    u8 movement[OBJECT_EVENTS_COUNT];
+    typeof(gObjectEvents[0].initialCoords) coords[OBJECT_EVENTS_COUNT];
+    u8 templateMovement;
+    typeof(gSaveBlock2Ptr->frontier.pyramidTrainerFlags) pyramidFlags;
+    u8 previousRetScripts;
+    bool8 previousCheckB;
+    u16 previousFace;
+    MainCallback previousCallback;
+};
+
+static bool8 ADMG_PyramidTrainerBattleCurrent(const struct ADMG_PyramidTrainerBattleInput *input)
+{
+    if (gSaveBlock1Ptr != input->save1 || gSaveBlock2Ptr != input->save2
+        || input->save2->frontier.lvlMode != input->mode
+        || TRAINER_BATTLE_PARAM.opponentA != input->a
+        || (input->count == 2 && TRAINER_BATTLE_PARAM.opponentB != input->b)
+        || gNoOfApproachingTrainers != (input->countersPublished ? 0 : input->count)
+        || gSpecialVar_LastTalked != input->lastTalked || gSelectedObjectEvent != input->selectedCurrent
+        || gObjectEvents[input->selectedA].localId != input->localA
+        || (input->count == 2 && (gApproachingTrainers[1].objectEventId != input->approachB
+            || (input->approachB < OBJECT_EVENTS_COUNT && gObjectEvents[input->approachB].localId != input->localB)))
+        || CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)
+    { ADMG_StateAccessRejected(input->a, __func__); return FALSE; }
+    return (!input->actorsReady || ADMG_FieldBattleActorsCurrent(&input->actors))
+        && ADMG_EndStateAccessCheck(input->generation);
+}
+
+static bool8 ADMG_TryAdmitPyramidTrainerBattle(struct ADMG_PyramidTrainerBattleInput *input)
+{
+    memset(input, 0, sizeof(*input));
+    input->save1 = gSaveBlock1Ptr; input->save2 = gSaveBlock2Ptr;
+    input->a = TRAINER_BATTLE_PARAM.opponentA; input->b = TRAINER_BATTLE_PARAM.opponentB;
+    input->count = gNoOfApproachingTrainers;
+    input->selectedA = input->selectedCurrent = gSelectedObjectEvent;
+    input->lastTalked = gSpecialVar_LastTalked;
+    input->generation = ADMG_BeginStateAccessCheck();
+    if (input->count > NUM_APPROACHING_TRAINER || !ADMG_TryAdmitPyramidTrainerMarking(input->count == 2)) return FALSE;
+    input->mode = input->save2->frontier.lvlMode;
+    input->localA = gObjectEvents[input->selectedA].localId;
+    input->approachB = gApproachingTrainers[1].objectEventId;
+    input->localB = input->approachB < OBJECT_EVENTS_COUNT ? gObjectEvents[input->approachB].localId : 0;
+    struct ADMG_FacilityPartyInput party;
+    if (!ADMG_TryAdmitFacilityParty(input->a, B_TRAINER_OPPONENT_A, 1, FALSE, 0, &party)
+        || (input->count == 2 && !ADMG_TryAdmitFacilityParty(input->b, B_TRAINER_OPPONENT_B, 1, FALSE, 0, &party))
+        || !ADMG_PyramidTrainerBattleCurrent(input)) return FALSE;
+    input->music = GetVarPointer(VAR_TEMP_PLAYING_PYRAMID_MUSIC);
+    if (!ADMG_PyramidTrainerBattleCurrent(input)) return FALSE;
+    if (input->music == NULL)
+    { ADMG_StateAccessRejected(VAR_TEMP_PLAYING_PYRAMID_MUSIC, __func__); return FALSE; }
+    input->previousMusic = *input->music;
+    input->previousFlags = gBattleTypeFlags;
+    memcpy(input->parties[0], gParties[B_TRAINER_OPPONENT_A], sizeof(input->parties[0]));
+    memcpy(input->parties[1], gParties[B_TRAINER_OPPONENT_B], sizeof(input->parties[1]));
+    input->partyCounts[0] = gPartiesCount[B_TRAINER_OPPONENT_A]; input->partyCounts[1] = gPartiesCount[B_TRAINER_OPPONENT_B];
+    for (u32 i = 0; i < OBJECT_EVENTS_COUNT; i++)
+    { input->movement[i] = gObjectEvents[i].movementType; input->coords[i] = gObjectEvents[i].initialCoords; }
+    input->templateMovement = input->save1->objectEventTemplates[input->lastTalked - 1].movementType;
+    input->pyramidFlags = input->save2->frontier.pyramidTrainerFlags;
+    input->previousRetScripts = sNoOfPossibleTrainerRetScripts;
+    input->previousCheckB = sShouldCheckTrainerBScript;
+    input->previousFace = gWhichTrainerToFaceAfterBattle;
+    input->previousCallback = gMain.savedCallback;
+    return TRUE;
+}
+
+static void ADMG_RestorePyramidTrainerBattle(struct ADMG_PyramidTrainerBattleInput *input)
+{
+    gBattleTypeFlags = input->previousFlags;
+    if (input->bPublished) TRAINER_BATTLE_PARAM.opponentB = input->b;
+    if (input->musicTouched) *input->music = input->previousMusic;
+    memcpy(gParties[B_TRAINER_OPPONENT_A], input->parties[0], sizeof(input->parties[0]));
+    memcpy(gParties[B_TRAINER_OPPONENT_B], input->parties[1], sizeof(input->parties[1]));
+    gPartiesCount[B_TRAINER_OPPONENT_A] = input->partyCounts[0]; gPartiesCount[B_TRAINER_OPPONENT_B] = input->partyCounts[1];
+    input->save2->frontier.pyramidTrainerFlags = input->pyramidFlags;
+    input->save1->objectEventTemplates[input->lastTalked - 1].movementType = input->templateMovement;
+    gObjectEvents[input->selectedA].movementType = input->movement[input->selectedA];
+    gObjectEvents[input->selectedA].initialCoords = input->coords[input->selectedA];
+    if (input->marked)
+    {
+        gObjectEvents[input->selectedCurrent].movementType = input->movement[input->selectedCurrent];
+        gObjectEvents[input->selectedCurrent].initialCoords = input->coords[input->selectedCurrent];
+    }
+    gSelectedObjectEvent = input->selectedA;
+    if (input->countersPublished)
+    {
+        sNoOfPossibleTrainerRetScripts = input->previousRetScripts;
+        sShouldCheckTrainerBScript = input->previousCheckB;
+        gWhichTrainerToFaceAfterBattle = input->previousFace;
+        gMain.savedCallback = input->previousCallback;
+        gNoOfApproachingTrainers = input->count;
+    }
+}
+
+struct ADMG_HillTrainerBattleInput
+{
+    struct SaveBlock1 *save1;
+    struct SaveBlock2 *save2;
+    u64 generation;
+    u32 layout, previousFlags, currentFlags;
+    u16 a, b;
+    u8 count, previousTrainerFlags, markMask;
+    bool8 bPublished, marked, countersPublished, actorsReady;
+    struct ADMG_BattleTrainerActors actors;
+    struct Pokemon parties[2][PARTY_SIZE];
+    u8 partyCounts[2], previousRetScripts;
+    bool8 previousCheckB;
+    u16 previousFace;
+    MainCallback previousCallback;
+};
+static struct ADMG_HillTrainerBattleInput *sADMG_HillTrainerBattle;
+
+static bool8 ADMG_HillTrainerBattleCurrent(const struct ADMG_HillTrainerBattleInput *input)
+{
+    if (!ADMG_EndStateAccessCheck(input->generation)) return FALSE;
+    if (sADMG_HillTrainerBattle != input || gSaveBlock1Ptr != input->save1
+        || gSaveBlock2Ptr != input->save2 || gMapHeader.mapLayoutId != input->layout
+        || gBattleTypeFlags != input->currentFlags
+        || TRAINER_BATTLE_PARAM.opponentA != input->a
+        || (input->count == 2 && TRAINER_BATTLE_PARAM.opponentB != input->b)
+        || (input->bPublished && TRAINER_BATTLE_PARAM.opponentB != 0xFFFF)
+        || gNoOfApproachingTrainers != (input->countersPublished ? 0 : input->count)
+        || CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE || !InTrainerHillChallenge())
+    { ADMG_StateAccessRejected(input->a, __func__); return FALSE; }
+    u8 mask;
+    if (!ADMG_TryGetHillTrainerFlagMask(input->a, input->b, input->count == 2, &mask)) return FALSE;
+    if (mask != input->markMask)
+    { ADMG_StateAccessRejected(input->a, __func__); return FALSE; }
+    return (!input->actorsReady || ADMG_FieldBattleActorsCurrent(&input->actors))
+        && ADMG_EndStateAccessCheck(input->generation);
+}
+
+static bool8 ADMG_TryAdmitHillTrainerBattle(struct ADMG_HillTrainerBattleInput *input)
+{
+    memset(input, 0, sizeof(*input));
+    input->save1 = gSaveBlock1Ptr; input->save2 = gSaveBlock2Ptr;
+    input->a = TRAINER_BATTLE_PARAM.opponentA; input->b = TRAINER_BATTLE_PARAM.opponentB;
+    input->layout = gMapHeader.mapLayoutId; input->count = gNoOfApproachingTrainers;
+    input->generation = ADMG_BeginStateAccessCheck();
+    if (input->count > NUM_APPROACHING_TRAINER || input->save2 == NULL)
+    { ADMG_StateAccessRejected(input->count, __func__); return FALSE; }
+    if (!ADMG_TryAdmitHillParty(input->a, B_TRAINER_OPPONENT_A)
+        || (input->count == 2 && !ADMG_TryAdmitHillParty(input->b, B_TRAINER_OPPONENT_B))
+        || !ADMG_TryGetHillTrainerFlagMask(input->a, input->b, input->count == 2, &input->markMask)) return FALSE;
+    input->previousFlags = input->currentFlags = gBattleTypeFlags;
+    input->previousTrainerFlags = input->save2->frontier.trainerFlags;
+    memcpy(input->parties[0], gParties[B_TRAINER_OPPONENT_A], sizeof(input->parties[0]));
+    memcpy(input->parties[1], gParties[B_TRAINER_OPPONENT_B], sizeof(input->parties[1]));
+    input->partyCounts[0] = gPartiesCount[B_TRAINER_OPPONENT_A]; input->partyCounts[1] = gPartiesCount[B_TRAINER_OPPONENT_B];
+    input->previousRetScripts = sNoOfPossibleTrainerRetScripts;
+    input->previousCheckB = sShouldCheckTrainerBScript;
+    input->previousFace = gWhichTrainerToFaceAfterBattle;
+    input->previousCallback = gMain.savedCallback;
+    return ADMG_EndStateAccessCheck(input->generation);
+}
+
+static void ADMG_RestoreHillTrainerBattle(struct ADMG_HillTrainerBattleInput *input)
+{
+    gBattleTypeFlags = input->previousFlags;
+    if (input->bPublished) TRAINER_BATTLE_PARAM.opponentB = input->b;
+    memcpy(gParties[B_TRAINER_OPPONENT_A], input->parties[0], sizeof(input->parties[0]));
+    memcpy(gParties[B_TRAINER_OPPONENT_B], input->parties[1], sizeof(input->parties[1]));
+    gPartiesCount[B_TRAINER_OPPONENT_A] = input->partyCounts[0]; gPartiesCount[B_TRAINER_OPPONENT_B] = input->partyCounts[1];
+    if (input->marked)
+        input->save2->frontier.trainerFlags = (input->save2->frontier.trainerFlags & ~input->markMask)
+            | (input->previousTrainerFlags & input->markMask);
+    if (input->countersPublished)
+    {
+        sNoOfPossibleTrainerRetScripts = input->previousRetScripts;
+        sShouldCheckTrainerBScript = input->previousCheckB;
+        gWhichTrainerToFaceAfterBattle = input->previousFace;
+        gMain.savedCallback = input->previousCallback;
+        gNoOfApproachingTrainers = input->count;
+    }
+}
+
+static void ADMG_StartHillTrainerBattle(void) __attribute__((noinline));
+
+static void ADMG_RunTrainerBattleStart(struct ADMG_PyramidTrainerBattleInput *admitted)
+{
+    struct ADMG_HillTrainerBattleInput *hill = admitted == NULL ? sADMG_HillTrainerBattle : NULL;
+    if (hill != NULL && !ADMG_HillTrainerBattleCurrent(hill)) return;
+    if (admitted != NULL && !ADMG_PyramidTrainerBattleCurrent(admitted)) return;
+    const struct Trainer *checked;
+    if (hill == NULL && CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE && !InTrainerHillChallenge())
+    {
+        if (!ADMG_TryGetTrainerStruct(TRAINER_BATTLE_PARAM.opponentA, &checked)
+         || (gNoOfApproachingTrainers == 2
+          && !ADMG_TryGetTrainerStruct(TRAINER_BATTLE_PARAM.opponentB, &checked)))
+            return;
+    }
+
+    if (hill != NULL && !ADMG_HillTrainerBattleCurrent(hill)) return;
+
     if (gNoOfApproachingTrainers == 2)
     {
         if (FollowerNPCIsBattlePartner())
-            gBattleTypeFlags = (BATTLE_TYPE_MULTI | BATTLE_TYPE_DOUBLE | BATTLE_TYPE_INGAME_PARTNER | BATTLE_TYPE_TWO_OPPONENTS | BATTLE_TYPE_TRAINER);
+            {
+                gBattleTypeFlags = (BATTLE_TYPE_MULTI | BATTLE_TYPE_DOUBLE | BATTLE_TYPE_INGAME_PARTNER | BATTLE_TYPE_TWO_OPPONENTS | BATTLE_TYPE_TRAINER);
+                if (hill != NULL) hill->currentFlags = (BATTLE_TYPE_MULTI | BATTLE_TYPE_DOUBLE | BATTLE_TYPE_INGAME_PARTNER | BATTLE_TYPE_TWO_OPPONENTS | BATTLE_TYPE_TRAINER);
+            }
         else
-            gBattleTypeFlags = (BATTLE_TYPE_DOUBLE | BATTLE_TYPE_TWO_OPPONENTS | BATTLE_TYPE_TRAINER);
+            {
+                gBattleTypeFlags = (BATTLE_TYPE_DOUBLE | BATTLE_TYPE_TWO_OPPONENTS | BATTLE_TYPE_TRAINER);
+                if (hill != NULL) hill->currentFlags = (BATTLE_TYPE_DOUBLE | BATTLE_TYPE_TWO_OPPONENTS | BATTLE_TYPE_TRAINER);
+            }
     }
     else
     {
         if (FollowerNPCIsBattlePartner())
         {
-            gBattleTypeFlags = (BATTLE_TYPE_MULTI | BATTLE_TYPE_INGAME_PARTNER | BATTLE_TYPE_DOUBLE | BATTLE_TYPE_TRAINER);
+            {
+                gBattleTypeFlags = (BATTLE_TYPE_MULTI | BATTLE_TYPE_INGAME_PARTNER | BATTLE_TYPE_DOUBLE | BATTLE_TYPE_TRAINER);
+                if (hill != NULL) hill->currentFlags = (BATTLE_TYPE_MULTI | BATTLE_TYPE_INGAME_PARTNER | BATTLE_TYPE_DOUBLE | BATTLE_TYPE_TRAINER);
+            }
             TRAINER_BATTLE_PARAM.opponentB = 0xFFFF;
+            if (admitted != NULL) admitted->bPublished = TRUE;
+            if (hill != NULL) hill->bPublished = TRUE;
         }
         else
         {
-            gBattleTypeFlags = (BATTLE_TYPE_TRAINER);
+            {
+                gBattleTypeFlags = (BATTLE_TYPE_TRAINER);
+                if (hill != NULL) hill->currentFlags = (BATTLE_TYPE_TRAINER);
+            }
         }
     }
 
     if (TRAINER_BATTLE_PARAM.earlyRival && GetRivalBattleFlags() & RIVAL_BATTLE_TUTORIAL)
-        gBattleTypeFlags |= BATTLE_TYPE_FIRST_BATTLE;
+        {
+            gBattleTypeFlags |= BATTLE_TYPE_FIRST_BATTLE;
+            if (hill != NULL) hill->currentFlags |= BATTLE_TYPE_FIRST_BATTLE;
+        }
 
-    if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
+    if (admitted != NULL && !ADMG_PyramidTrainerBattleCurrent(admitted)) goto ADMG_reject;
+    if (hill != NULL && !ADMG_HillTrainerBattleCurrent(hill)) goto ADMG_reject;
+
+    if (hill == NULL && CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
     {
-        VarSet(VAR_TEMP_PLAYING_PYRAMID_MUSIC, 0);
-        gBattleTypeFlags |= BATTLE_TYPE_PYRAMID;
+        if (admitted != NULL) admitted->musicTouched = TRUE;
+        bool8 musicSet = VarSet(VAR_TEMP_PLAYING_PYRAMID_MUSIC, 0);
+        if (admitted != NULL && (!musicSet || !ADMG_PyramidTrainerBattleCurrent(admitted)))
+        { if (!musicSet) ADMG_StateAccessRejected(VAR_TEMP_PLAYING_PYRAMID_MUSIC, __func__); goto ADMG_reject; }
+        {
+            gBattleTypeFlags |= BATTLE_TYPE_PYRAMID;
+            if (hill != NULL) hill->currentFlags |= BATTLE_TYPE_PYRAMID;
+        }
+        if (admitted != NULL)
+        {
+            u16 partner; bool8 deferred;
+            if (!ADMG_TrySelectFieldBattlePartner(TRUE, &partner, &deferred)
+                || !ADMG_TryCaptureBattleTrainerActors(gBattleTypeFlags, TRAINER_BATTLE_PARAM.opponentA,
+                    TRAINER_BATTLE_PARAM.opponentB, partner, &admitted->actors)) goto ADMG_reject;
+            admitted->actorsReady = TRUE;
+            if (!ADMG_PyramidTrainerBattleCurrent(admitted)) goto ADMG_reject;
+        }
 
         if (gNoOfApproachingTrainers == 2)
         {
             FillFrontierTrainersParties(1);
+            if (admitted != NULL && !ADMG_PyramidTrainerBattleCurrent(admitted)) goto ADMG_reject;
             ZeroMonData(&gParties[B_TRAINER_OPPONENT_A][1]);
             ZeroMonData(&gParties[B_TRAINER_OPPONENT_A][2]);
             ZeroMonData(&gParties[B_TRAINER_OPPONENT_B][1]);
@@ -1482,40 +2101,118 @@ void BattleSetup_StartTrainerBattle(void)
         else
         {
             FillFrontierTrainerParty(1);
+            if (admitted != NULL && !ADMG_PyramidTrainerBattleCurrent(admitted)) goto ADMG_reject;
             ZeroMonData(&gParties[B_TRAINER_OPPONENT_A][1]);
             ZeroMonData(&gParties[B_TRAINER_OPPONENT_A][2]);
         }
 
+        if (admitted != NULL && !ADMG_PyramidTrainerBattleCurrent(admitted)) goto ADMG_reject;
         MarkApproachingPyramidTrainersAsBattled();
+        if (admitted != NULL)
+        {
+            if (!ADMG_EndStateAccessCheck(admitted->generation)) goto ADMG_reject;
+            if (gSelectedObjectEvent >= OBJECT_EVENTS_COUNT)
+            { ADMG_StateAccessRejected(gSelectedObjectEvent, __func__); goto ADMG_reject; }
+            admitted->selectedCurrent = gSelectedObjectEvent;
+            admitted->marked = TRUE;
+            if (!ADMG_PyramidTrainerBattleCurrent(admitted)) goto ADMG_reject;
+        }
     }
-    else if (InTrainerHillChallenge())
+    else if (hill != NULL || InTrainerHillChallenge())
     {
-        gBattleTypeFlags |= BATTLE_TYPE_TRAINER_HILL;
+        {
+            gBattleTypeFlags |= BATTLE_TYPE_TRAINER_HILL;
+            if (hill != NULL) hill->currentFlags |= BATTLE_TYPE_TRAINER_HILL;
+        }
+
+        if (hill != NULL)
+        {
+            u16 partner; bool8 deferred;
+            if (!ADMG_TrySelectFieldBattlePartner(TRUE, &partner, &deferred)
+                || !ADMG_TryCaptureBattleTrainerActors(gBattleTypeFlags, TRAINER_BATTLE_PARAM.opponentA,
+                    TRAINER_BATTLE_PARAM.opponentB, partner, &hill->actors)) goto ADMG_reject;
+            hill->actorsReady = TRUE;
+            if (!ADMG_HillTrainerBattleCurrent(hill)) goto ADMG_reject;
+        }
 
         if (gNoOfApproachingTrainers == 2)
             FillHillTrainersParties();
         else
             FillHillTrainerParty();
 
+        if (hill != NULL)
+        {
+            if (!ADMG_HillTrainerBattleCurrent(hill)) goto ADMG_reject;
+            hill->marked = TRUE;
+        }
         SetHillTrainerFlag();
+        if (hill != NULL && !ADMG_HillTrainerBattleCurrent(hill)) goto ADMG_reject;
     }
     else if (GetTrainerBattleType(TRAINER_BATTLE_PARAM.opponentA) == TRAINER_BATTLE_TYPE_DOUBLES)
     {
-        gBattleTypeFlags |= BATTLE_TYPE_DOUBLE;
+        {
+            gBattleTypeFlags |= BATTLE_TYPE_DOUBLE;
+            if (hill != NULL) hill->currentFlags |= BATTLE_TYPE_DOUBLE;
+        }
     }
 
+    if (admitted != NULL)
+    {
+        if (!ADMG_PyramidTrainerBattleCurrent(admitted)) goto ADMG_reject;
+        admitted->countersPublished = TRUE;
+    }
+    if (hill != NULL)
+    {
+        if (!ADMG_HillTrainerBattleCurrent(hill)) goto ADMG_reject;
+        hill->countersPublished = TRUE;
+    }
     sNoOfPossibleTrainerRetScripts = gNoOfApproachingTrainers;
     gNoOfApproachingTrainers = 0;
     sShouldCheckTrainerBScript = FALSE;
     gWhichTrainerToFaceAfterBattle = 0;
     gMain.savedCallback = CB2_EndTrainerBattle;
 
-    if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE || InTrainerHillChallenge())
+    if (hill != NULL || CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE || InTrainerHillChallenge())
         DoBattlePyramidTrainerHillBattle();
     else
         DoTrainerBattle();
 
+    if (admitted != NULL && !ADMG_PyramidTrainerBattleCurrent(admitted)) goto ADMG_reject;
+    if (hill != NULL && !ADMG_HillTrainerBattleCurrent(hill)) goto ADMG_reject;
+
     ScriptContext_Stop();
+    return;
+ADMG_reject:
+    if (admitted != NULL) ADMG_RestorePyramidTrainerBattle(admitted);
+    else if (hill != NULL) ADMG_RestoreHillTrainerBattle(hill);
+}
+
+/* Keep the larger owned snapshot off the ordinary caller's stack. */
+static void ADMG_StartPyramidTrainerBattle(void) __attribute__((noinline));
+static void ADMG_StartPyramidTrainerBattle(void)
+{
+    struct ADMG_PyramidTrainerBattleInput admitted;
+    if (!ADMG_TryAdmitPyramidTrainerBattle(&admitted)) return;
+    ADMG_RunTrainerBattleStart(&admitted);
+}
+
+static void ADMG_StartHillTrainerBattle(void)
+{
+    struct ADMG_HillTrainerBattleInput admitted;
+    if (!ADMG_TryAdmitHillTrainerBattle(&admitted)) return;
+    struct ADMG_HillTrainerBattleInput *previous = sADMG_HillTrainerBattle;
+    sADMG_HillTrainerBattle = &admitted;
+    ADMG_RunTrainerBattleStart(NULL);
+    sADMG_HillTrainerBattle = previous;
+}
+
+void BattleSetup_StartTrainerBattle(void)
+{
+    if (gNoOfApproachingTrainers > NUM_APPROACHING_TRAINER)
+    { ADMG_StateAccessRejected(gNoOfApproachingTrainers, __func__); return; }
+    if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE) ADMG_StartPyramidTrainerBattle();
+    else if (InTrainerHillChallenge()) ADMG_StartHillTrainerBattle();
+    else ADMG_RunTrainerBattleStart(NULL);
 }
 
 static void CB2_EndDebugBattle(void)
@@ -1541,7 +2238,7 @@ void BattleSetup_StartTrainerBattle_Debug(void)
     gWhichTrainerToFaceAfterBattle = 0;
     gMain.savedCallback = CB2_EndDebugBattle;
 
-    CreateBattleStartTask_Debug(GetWildBattleTransition(), 0);
+    { u64 queued = ADMG_BeginStateAccessCheck(); CreateBattleStartTask_Debug(GetWildBattleTransition(), 0); if (!ADMG_EndStateAccessCheck(queued)) return; }
 
     ScriptContext_Stop();
 }
@@ -1583,6 +2280,31 @@ static void CB2_EndTrainerBattle(void)
             HealPlayerParty();
     }
 
+
+    if (!TRAINER_BATTLE_PARAM.earlyRival && IsNativeTrainerBattleContent(TRAINER_BATTLE_PARAM.opponentA))
+    {
+        if (IsPlayerDefeated(gBattleOutcome))
+        {
+            (void)ADMG_TryCompleteNativeBattleNpc(TRAINER_BATTLE_PARAM.opponentA, FALSE);
+            SetMainCallback2(CB2_WhiteOut);
+        }
+        else
+        {
+            SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);
+            if (!NativeBattleDefeatPairValid())
+            {
+                ADMG_DiscardNativeBattleAssociation();
+                DowngradeBadPoison();
+                return;
+            }
+            SetBattledTrainersFlags();
+            ADMG_DiscardNativeBattleAssociation();
+            DowngradeBadPoison();
+        }
+        return;
+    }
+    if (TRAINER_BATTLE_PARAM.earlyRival && IsNativeTrainerBattleContent(TRAINER_BATTLE_PARAM.opponentA))
+        ADMG_DiscardNativeBattleAssociation();
     if (TRAINER_BATTLE_PARAM.earlyRival)
     {
         if (IsPlayerDefeated(gBattleOutcome) == TRUE)
@@ -1632,6 +2354,30 @@ static void CB2_EndTrainerBattle(void)
 
 static void CB2_EndRematchBattle(void)
 {
+    if (IsNativeTrainerBattleContent(TRAINER_BATTLE_PARAM.opponentA))
+    {
+        if (IsPlayerDefeated(gBattleOutcome))
+        {
+            (void)ADMG_TryCompleteNativeBattleNpc(TRAINER_BATTLE_PARAM.opponentA, FALSE);
+            SetMainCallback2(CB2_WhiteOut);
+        }
+        else
+        {
+            SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);
+            if (!NativeBattleDefeatPairValid())
+            {
+                ADMG_DiscardNativeBattleAssociation();
+                DowngradeBadPoison();
+                return;
+            }
+            SetBattledTrainersFlags();
+            (void)ADMG_TryCompleteNativeBattleNpc(TRAINER_BATTLE_PARAM.opponentA, TRUE);
+            SetBattledTrainersFlags();
+            DowngradeBadPoison();
+        }
+        return;
+    }
+
     if (TRAINER_BATTLE_PARAM.opponentA == TRAINER_SECRET_BASE)
     {
         DowngradeBadPoison();
@@ -1666,20 +2412,63 @@ void ShowTrainerIntroSpeech(void)
 {
     if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
     {
-        if (gNoOfApproachingTrainers == 0 || gNoOfApproachingTrainers == 1)
-            CopyPyramidTrainerSpeechBefore(LocalIdToPyramidTrainerId(gSpecialVar_LastTalked));
+        if (gNoOfApproachingTrainers > NUM_APPROACHING_TRAINER)
+        { ADMG_StateAccessRejected(gNoOfApproachingTrainers, __func__); return; }
+        u32 localId;
+        if (gNoOfApproachingTrainers <= 1)
+            localId = gSpecialVar_LastTalked;
         else
-            CopyPyramidTrainerSpeechBefore(LocalIdToPyramidTrainerId(gObjectEvents[gApproachingTrainers[gApproachingTrainerId].objectEventId].localId));
+        {
+            if (gApproachingTrainerId >= NUM_APPROACHING_TRAINER
+                || gApproachingTrainers[gApproachingTrainerId].objectEventId >= OBJECT_EVENTS_COUNT)
+            { ADMG_StateAccessRejected(gApproachingTrainerId, __func__); return; }
+            localId = gObjectEvents[gApproachingTrainers[gApproachingTrainerId].objectEventId].localId;
+        }
+        if (localId > UCHAR_MAX)
+        { ADMG_StateAccessRejected(localId, __func__); return; }
+        u64 generation = ADMG_BeginStateAccessCheck();
+        u16 trainerId = LocalIdToPyramidTrainerId(localId);
+        if (!ADMG_EndStateAccessCheck(generation)) return;
+        CopyPyramidTrainerSpeechBefore(trainerId);
+        if (!ADMG_EndStateAccessCheck(generation)) return;
 
         ShowFieldMessageFromBuffer();
     }
     else if (InTrainerHillChallenge())
     {
-        if (gNoOfApproachingTrainers == 0 || gNoOfApproachingTrainers == 1)
-            CopyTrainerHillTrainerText(TRAINER_HILL_TEXT_INTRO, LocalIdToHillTrainerId(gSpecialVar_LastTalked));
+        if (gNoOfApproachingTrainers > NUM_APPROACHING_TRAINER)
+        { ADMG_StateAccessRejected(gNoOfApproachingTrainers, __func__); return; }
+        u32 count = gNoOfApproachingTrainers;
+        u32 approach = gApproachingTrainerId, object = 0;
+        u32 localId;
+        if (gNoOfApproachingTrainers <= 1) localId = gSpecialVar_LastTalked;
         else
-            CopyTrainerHillTrainerText(TRAINER_HILL_TEXT_INTRO, LocalIdToHillTrainerId(gObjectEvents[gApproachingTrainers[gApproachingTrainerId].objectEventId].localId));
-
+        {
+            if (gApproachingTrainerId >= NUM_APPROACHING_TRAINER
+                || gApproachingTrainers[gApproachingTrainerId].objectEventId >= OBJECT_EVENTS_COUNT)
+            { ADMG_StateAccessRejected(gApproachingTrainerId, __func__); return; }
+            localId = gObjectEvents[gApproachingTrainers[gApproachingTrainerId].objectEventId].localId;
+            object = gApproachingTrainers[gApproachingTrainerId].objectEventId;
+        }
+        if (localId > UCHAR_MAX)
+        { ADMG_StateAccessRejected(localId, __func__); return; }
+        u64 generation = ADMG_BeginStateAccessCheck();
+        u16 trainerId = LocalIdToHillTrainerId(localId);
+        if (!ADMG_EndStateAccessCheck(generation)) return;
+        if (gNoOfApproachingTrainers != count
+            || (count <= 1 && gSpecialVar_LastTalked != localId)
+            || (count > 1 && (gApproachingTrainerId != approach
+                || gApproachingTrainers[approach].objectEventId != object
+                || gObjectEvents[object].localId != localId)))
+        { ADMG_StateAccessRejected(localId, __func__); return; }
+        CopyTrainerHillTrainerText(TRAINER_HILL_TEXT_INTRO, trainerId);
+        if (!ADMG_EndStateAccessCheck(generation)) return;
+        if (gNoOfApproachingTrainers != count
+            || (count <= 1 && gSpecialVar_LastTalked != localId)
+            || (count > 1 && (gApproachingTrainerId != approach
+                || gApproachingTrainers[approach].objectEventId != object
+                || gObjectEvents[object].localId != localId)))
+        { ADMG_StateAccessRejected(localId, __func__); return; }
         ShowFieldMessageFromBuffer();
     }
     else
@@ -1734,7 +2523,10 @@ void PlayTrainerEncounterMusic(void)
     else
         trainerId = TRAINER_BATTLE_PARAM.opponentB;
 
-    switch (GetTrainerEncounterMusicId(trainerId))
+    u64 generation = ADMG_BeginStateAccessCheck();
+    u32 encounterMusic = GetTrainerEncounterMusicId(trainerId);
+    if (!ADMG_EndStateAccessCheck(generation)) return;
+    switch (encounterMusic)
     {
     case TRAINER_ENCOUNTER_MUSIC_MALE:
         music = MUS_ENCOUNTER_MALE;
@@ -1906,7 +2698,13 @@ static inline bool32 DoesCurrentMapMatchRematchTrainerMap(s32 i, const struct Re
 
 bool32 TrainerIsMatchCallRegistered(s32 i)
 {
-    return FlagGet(TRAINER_REGISTERED_FLAGS_START + i);
+    u16 flagId;
+    bool8 registered;
+    if (!ADMG_TryGetIndexedFlagId(TRAINER_REGISTERED_FLAGS_START, (u32)i,
+            REMATCH_TABLE_ENTRIES, 1, &flagId)
+     || !ADMG_TryReadFlag(flagId, &registered))
+        return FALSE;
+    return registered;
 }
 
 #if FREE_MATCH_CALL == FALSE
@@ -2031,6 +2829,8 @@ static void ClearTrainerWantRematchState(const struct RematchTrainer *table, u16
 
 void ClearCurrentTrainerWantRematchVsSeeker(void)
 {
+    if (IsNativeTrainerBattleContent(TRAINER_BATTLE_PARAM.opponentA)) return;
+
 #if FREE_MATCH_CALL == FALSE
     if ((gBattleTypeFlags & BATTLE_TYPE_TRAINER) && FlagGet(I_VS_SEEKER_CHARGING) && (I_VS_SEEKER_CHARGING != 0))
     {
@@ -2136,15 +2936,23 @@ void TryUpdateRandomTrainerRematches(u16 mapGroup, u16 mapNum)
 }
 #endif //FREE_MATCH_CALL
 
-#if FREE_MATCH_CALL == FALSE
-static u16 GetRematchTrainerId(u16 trainerId)
+ADMG_NATIVE_ENTRY u16 GetRematchTrainerId(u16 trainerId)
 {
+    struct ADMG_TrainerRef ref;
+    u16 selected;
+    if (!ADMG_TryResolveTrainer(trainerId, &ref))
+        return 0;
+    if (ref.owner == ADMG_TRAINER_KANTO)
+        return ADMG_TryGetNativeRematchTrainer(trainerId, &selected) ? selected : 0;
+    if (ref.owner != ADMG_TRAINER_HOENN)
+    {
+        ADMG_StateAccessRejected(trainerId, __func__);
+        return 0;
+    }
     if (FlagGet(I_VS_SEEKER_CHARGING) && (I_VS_SEEKER_CHARGING != 0))
         return GetRematchTrainerIdVSSeeker(trainerId);
-    else
-        return GetRematchTrainerIdFromTable(gRematchTable, trainerId);
+    return GetRematchTrainerIdFromTable(gRematchTable, trainerId);
 }
-#endif //FREE_MATCH_CALL
 
 u16 GetLastBeatenRematchTrainerId(u16 trainerId)
 {
@@ -2158,6 +2966,25 @@ bool8 ShouldTryRematchBattle(void)
 
 bool8 ShouldTryRematchBattleForTrainerId(u16 trainerId)
 {
+    struct ADMG_TrainerRef ref;
+    struct ADMG_RematchContext context;
+    bool8 result;
+
+    if (!ADMG_TryResolveTrainer(trainerId, &ref))
+        return FALSE;
+    if (ref.owner == ADMG_TRAINER_KANTO)
+    {
+        if (!ADMG_TryCaptureNativeRematchContext(&context))
+            return FALSE;
+        return ADMG_TryShouldRematchNativeNpc(&context,
+            trainerId, gSpecialVar_LastTalked, &result) && result;
+    }
+    if (ref.owner != ADMG_TRAINER_HOENN)
+    {
+        ADMG_StateAccessRejected(trainerId, __func__);
+        return FALSE;
+    }
+
     if (IsFirstTrainerIdReadyForRematch(gRematchTable, trainerId))
         return TRUE;
 
@@ -2166,6 +2993,26 @@ bool8 ShouldTryRematchBattleForTrainerId(u16 trainerId)
 
 bool8 IsTrainerReadyForRematch(void)
 {
+    struct ADMG_TrainerRef ref;
+    struct ADMG_RematchContext context;
+    bool8 result;
+    u16 trainerId = TRAINER_BATTLE_PARAM.opponentA;
+
+    if (!ADMG_TryResolveTrainer(trainerId, &ref))
+        return FALSE;
+    if (ref.owner == ADMG_TRAINER_KANTO)
+    {
+        if (!ADMG_TryCaptureNativeRematchContext(&context))
+            return FALSE;
+        return ADMG_TryIsNativeNpcReady(&context,
+            trainerId, gSpecialVar_LastTalked, &result) && result;
+    }
+    if (ref.owner != ADMG_TRAINER_HOENN)
+    {
+        ADMG_StateAccessRejected(trainerId, __func__);
+        return FALSE;
+    }
+
     return IsTrainerReadyForRematch_(gRematchTable, TRAINER_BATTLE_PARAM.opponentA);
 }
 
@@ -2221,6 +3068,18 @@ u16 CountBattledRematchTeams(u16 trainerId)
 
 void SetMultiTrainerBattle(struct ScriptContext *ctx)
 {
+    if (ctx == NULL || ctx->scriptPtr == NULL)
+    { ADMG_StateAccessRejected(0, __func__); ADMG_StopInvalidStateCommand(ctx); return; }
+    /* event.inc writes two halfword/word pairs followed by a partner ordinal.
+     * The battle mode is assigned afterwards; trainer words remain transport
+     * until the existing mode-aware consumer admits their used roles. */
+    const u32 partnerOffset = 2 * sizeof(u16) + 2 * sizeof(u32);
+    struct ScriptContext partnerContext = *ctx;
+    partnerContext.scriptPtr += partnerOffset;
+    u32 partnerOrdinal = ScriptPeekHalfword(&partnerContext);
+    if (partnerOrdinal >= PARTNER_COUNT)
+    { ADMG_StateAccessRejected(partnerOrdinal, __func__); ADMG_StopInvalidStateCommand(ctx); return; }
+
     InitTrainerBattleParameter();
 
     TRAINER_BATTLE_PARAM.opponentA = ScriptReadHalfword(ctx);
@@ -2259,28 +3118,77 @@ void CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Traine
 
 static void CreateNPCTrainerParty(struct Pokemon *party, u16 trainerNum)
 {
-    if (!GetTrainerStructFromId(trainerNum)->overrideTrainer)
+    const struct Trainer *trainer, *origTrainer;
+    struct Trainer tempTrainer;
+    if (!ADMG_TryGetTrainerStruct(trainerNum, &trainer))
+        return;
+    if (!trainer->overrideTrainer)
     {
-        CreateNPCTrainerPartyFromTrainer(party, GetTrainerStructFromId(trainerNum));
+        CreateNPCTrainerPartyFromTrainer(party, trainer);
         return;
     }
-
-    struct Trainer tempTrainer;
-    memcpy(&tempTrainer, GetTrainerStructFromId(trainerNum), sizeof(struct Trainer));
-    const struct Trainer *origTrainer = GetTrainerStructFromId(tempTrainer.overrideTrainer);
-
+    if (!ADMG_TryGetTrainerStruct(trainer->overrideTrainer, &origTrainer))
+        return;
+    memcpy(&tempTrainer, trainer, sizeof(struct Trainer));
     tempTrainer.party = origTrainer->party;
-
     tempTrainer.poolSize = origTrainer->poolSize;
     if (tempTrainer.partySize == 0)
         tempTrainer.partySize = origTrainer->partySize;
-    CreateNPCTrainerPartyFromTrainer(party, (const struct Trainer *)(&tempTrainer));
+    CreateNPCTrainerPartyFromTrainer(party, &tempTrainer);
 }
 
 void CreateTrainerPartyForPlayer(void)
 {
+    const struct Trainer *trainer;
+    if (!ADMG_TryGetTrainerStruct(gSpecialVar_0x8004, &trainer))
+        return;
     Script_RequestEffects(SCREFF_V1);
-
     gPartnerTrainerId = gSpecialVar_0x8004;
-    CreateNPCTrainerPartyFromTrainer(gParties[B_TRAINER_PLAYER], GetTrainerStructFromId(gSpecialVar_0x8004));
+    CreateNPCTrainerPartyFromTrainer(gParties[B_TRAINER_PLAYER], trainer);
+}
+
+static bool8 IsNativeTrainerContent(u32 trainerId)
+{
+    struct ADMG_TrainerRef ref;
+    if (trainerId < ADMG_KANTO_TRAINER_FIRST || trainerId > ADMG_KANTO_TRAINER_LAST)
+        return FALSE;
+    return ADMG_TryResolveTrainer(trainerId, &ref) && ref.owner == ADMG_TRAINER_KANTO;
+}
+
+/* Indexed facility/network actors retain their existing identity domains.
+ * Configuration classifies the canonical operand independently of old flags. */
+static bool8 IsNativeTrainerBattleContent(u32 trainerId)
+{
+    if (gBattleTypeFlags & (BATTLE_TYPE_FRONTIER | BATTLE_TYPE_LINK
+        | BATTLE_TYPE_RECORDED_LINK | BATTLE_TYPE_EREADER_TRAINER | BATTLE_TYPE_TRAINER_HILL))
+        return FALSE;
+    return IsNativeTrainerContent(trainerId);
+}
+
+/* The existing defeat writer preflights both actors. Completion must use the
+ * same validation boundary before changing the captured NPC's readiness. */
+static bool8 NativeBattleDefeatPairValid(void)
+{
+    u16 first, second = 0;
+    if (!ADMG_TryGetTrainerDefeatFlagId(TRAINER_BATTLE_PARAM.opponentA, &first))
+        return FALSE;
+    if (TRAINER_BATTLE_PARAM.opponentB != TRAINER_NONE && TRAINER_BATTLE_PARAM.opponentB != 0xFFFF
+     && !ADMG_TryGetTrainerDefeatFlagId(TRAINER_BATTLE_PARAM.opponentB, &second))
+        return FALSE;
+    if (!ADMG_IsFlagIdValid(first) || !ADMG_IsFlagIdValid(second))
+    {
+        ADMG_StateAccessRejected(TRAINER_BATTLE_PARAM.opponentA, __func__);
+        return FALSE;
+    }
+    return TRUE;
+}
+
+ADMG_NATIVE_ENTRY void ADMG_ClearNativeTrainerBattleRematches(void)
+{
+    struct ADMG_RematchContext context;
+    u32 localId;
+    if ((gBattleTypeFlags & BATTLE_TYPE_TRAINER)
+     && IsNativeTrainerBattleContent(TRAINER_BATTLE_PARAM.opponentA)
+     && ADMG_TryGetNativeBattleNpc(TRAINER_BATTLE_PARAM.opponentA, &context, &localId))
+        (void)ADMG_TryClearNativeRematchFamilyMovement(TRAINER_BATTLE_PARAM.opponentA);
 }

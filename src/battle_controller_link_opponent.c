@@ -1,4 +1,6 @@
 #include "global.h"
+#include "admg_trainer_actor.h"
+#include "admg_state.h"
 #include "battle.h"
 #include "battle_anim.h"
 #include "battle_controllers.h"
@@ -273,12 +275,28 @@ void LinkOpponentBufferExecCompleted(enum BattlerId battler)
     }
 }
 
-static void LinkOpponentHandleDrawTrainerPic(enum BattlerId battler)
+static bool8 ADMG_TryGetLinkOpponentPicture(enum BattlerId battler, enum TrainerPicID *picture, s16 *x)
 {
     s16 xPos;
     enum TrainerPicID trainerPicId;
+    if (picture == NULL || x == NULL || (u32)battler >= MAX_BATTLERS_COUNT)
+    { ADMG_StateAccessRejected((u32)battler, __func__); return FALSE; }
+    struct ADMG_BattleTrainerActors snapshot;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    if (!ADMG_TryCaptureBattleTrainerActors(gBattleTypeFlags, TRAINER_BATTLE_PARAM.opponentA,
+        TRAINER_BATTLE_PARAM.opponentB, gPartnerTrainerId, &snapshot)) return FALSE;
     enum BattlerPosition position = GetBattlerPosition(battler);
+    if ((u32)position >= MAX_BATTLERS_COUNT)
+    { ADMG_StateAccessRejected((u32)position, __func__); return FALSE; }
 
+    bool8 facility = (gBattleTypeFlags & BATTLE_TYPE_MULTI) && (gBattleTypeFlags & BATTLE_TYPE_BATTLE_TOWER);
+    u16 identity = position == B_POSITION_OPPONENT_LEFT
+        ? TRAINER_BATTLE_PARAM.opponentA : TRAINER_BATTLE_PARAM.opponentB;
+    if (facility)
+    {
+        struct ADMG_TrainerActorRef actor;
+        if (!ADMG_TryClassifyTrainerActor(identity, ADMG_ACTOR_FACILITY, ADMG_ACTOR_OPPONENT, &actor)) return FALSE;
+    }
     if (gBattleTypeFlags & BATTLE_TYPE_MULTI)
     {
         if ((position & BIT_FLANK) != 0) // second mon
@@ -295,25 +313,28 @@ static void LinkOpponentHandleDrawTrainerPic(enum BattlerId battler)
         }
         else
         {
-            if ((gLinkPlayers[GetBattlerMultiplayerId(battler)].version & 0xFF) == VERSION_FIRE_RED
-            || (gLinkPlayers[GetBattlerMultiplayerId(battler)].version & 0xFF) == VERSION_LEAF_GREEN)
+            s32 player = GetBattlerMultiplayerId(battler);
+            if ((u32)player >= MAX_LINK_PLAYERS)
+            { ADMG_StateAccessRejected((u32)player, __func__); return FALSE; }
+            if ((gLinkPlayers[player].version & 0xFF) == VERSION_FIRE_RED
+            || (gLinkPlayers[player].version & 0xFF) == VERSION_LEAF_GREEN)
             {
-                if (gLinkPlayers[GetBattlerMultiplayerId(battler)].gender != MALE)
+                if (gLinkPlayers[player].gender != MALE)
                     trainerPicId = gFacilityClassToPicIndex[FACILITY_CLASS_LEAF];
                 else
                     trainerPicId = gFacilityClassToPicIndex[FACILITY_CLASS_RED];
             }
-            else if ((gLinkPlayers[GetBattlerMultiplayerId(battler)].version & 0xFF) == VERSION_RUBY
-                     || (gLinkPlayers[GetBattlerMultiplayerId(battler)].version & 0xFF) == VERSION_SAPPHIRE)
+            else if ((gLinkPlayers[player].version & 0xFF) == VERSION_RUBY
+                     || (gLinkPlayers[player].version & 0xFF) == VERSION_SAPPHIRE)
             {
-                if (gLinkPlayers[GetBattlerMultiplayerId(battler)].gender != MALE)
+                if (gLinkPlayers[player].gender != MALE)
                     trainerPicId = gFacilityClassToPicIndex[FACILITY_CLASS_RS_MAY];
                 else
                     trainerPicId = gFacilityClassToPicIndex[FACILITY_CLASS_RS_BRENDAN];
             }
             else
             {
-                trainerPicId = PlayerGenderToFrontTrainerPicId(gLinkPlayers[GetBattlerMultiplayerId(battler)].gender);
+                trainerPicId = PlayerGenderToFrontTrainerPicId(gLinkPlayers[player].gender);
             }
         }
     }
@@ -324,41 +345,62 @@ static void LinkOpponentHandleDrawTrainerPic(enum BattlerId battler)
         {
             trainerPicId = GetUnionRoomTrainerPic();
         }
-        else if ((gLinkPlayers[GetMultiplayerId() ^ BIT_SIDE].version & 0xFF) == VERSION_FIRE_RED
-                 || (gLinkPlayers[GetMultiplayerId() ^ BIT_SIDE].version & 0xFF) == VERSION_LEAF_GREEN)
-        {
-            if (gLinkPlayers[GetMultiplayerId() ^ BIT_SIDE].gender != MALE)
-                trainerPicId = gFacilityClassToPicIndex[FACILITY_CLASS_LEAF];
-            else
-                trainerPicId = gFacilityClassToPicIndex[FACILITY_CLASS_RED];
-        }
-        else if ((gLinkPlayers[GetMultiplayerId() ^ BIT_SIDE].version & 0xFF) == VERSION_RUBY
-                 || (gLinkPlayers[GetMultiplayerId() ^ BIT_SIDE].version & 0xFF) == VERSION_SAPPHIRE)
-        {
-            if (gLinkPlayers[GetMultiplayerId() ^ BIT_SIDE].gender != MALE)
-                trainerPicId = gFacilityClassToPicIndex[FACILITY_CLASS_RS_MAY];
-            else
-                trainerPicId = gFacilityClassToPicIndex[FACILITY_CLASS_RS_BRENDAN];
-        }
         else
         {
-            trainerPicId = PlayerGenderToFrontTrainerPicId(gLinkPlayers[GetMultiplayerId() ^ BIT_SIDE].gender);
+            u32 player = GetMultiplayerId();
+            if (player >= MAX_LINK_PLAYERS)
+            { ADMG_StateAccessRejected(player, __func__); return FALSE; }
+            player ^= BIT_SIDE;
+            if ((gLinkPlayers[player].version & 0xFF) == VERSION_FIRE_RED
+                     || (gLinkPlayers[player].version & 0xFF) == VERSION_LEAF_GREEN)
+            {
+                if (gLinkPlayers[player].gender != MALE)
+                    trainerPicId = gFacilityClassToPicIndex[FACILITY_CLASS_LEAF];
+                else
+                    trainerPicId = gFacilityClassToPicIndex[FACILITY_CLASS_RED];
+            }
+            else if ((gLinkPlayers[player].version & 0xFF) == VERSION_RUBY
+                     || (gLinkPlayers[player].version & 0xFF) == VERSION_SAPPHIRE)
+            {
+                if (gLinkPlayers[player].gender != MALE)
+                    trainerPicId = gFacilityClassToPicIndex[FACILITY_CLASS_RS_MAY];
+                else
+                    trainerPicId = gFacilityClassToPicIndex[FACILITY_CLASS_RS_BRENDAN];
+            }
+            else
+            {
+                trainerPicId = PlayerGenderToFrontTrainerPicId(gLinkPlayers[player].gender);
+            }
         }
     }
 
+    if (!ADMG_EndStateAccessCheck(generation)
+     || !ADMG_BattleTrainerActorsCurrent(&snapshot, gBattleTypeFlags,
+        TRAINER_BATTLE_PARAM.opponentA, TRAINER_BATTLE_PARAM.opponentB, gPartnerTrainerId)) return FALSE;
+    if (position != GetBattlerPosition(battler)
+     || (facility && identity != (position == B_POSITION_OPPONENT_LEFT
+        ? TRAINER_BATTLE_PARAM.opponentA : TRAINER_BATTLE_PARAM.opponentB)))
+    { ADMG_StateAccessRejected(identity, __func__); return FALSE; }
+    if ((u32)trainerPicId >= TRAINER_PIC_COUNT)
+    { ADMG_StateAccessRejected((u32)trainerPicId, __func__); return FALSE; }
+    *picture = trainerPicId; *x = xPos;
+    return TRUE;
+}
+
+static void LinkOpponentHandleDrawTrainerPic(enum BattlerId battler)
+{
+    enum TrainerPicID trainerPicId; s16 xPos;
+    if (!ADMG_TryGetLinkOpponentPicture(battler, &trainerPicId, &xPos)) return;
     BtlController_HandleDrawTrainerPic(battler, trainerPicId, TRUE, xPos, 40, -1);
 }
 
 static void LinkOpponentHandleTrainerSlide(enum BattlerId battler)
 {
-    enum TrainerPicID trainerPicId;
-
-    if (GetBattlerPosition(battler) == B_POSITION_OPPONENT_LEFT)
-        trainerPicId = GetFrontierTrainerFrontSpriteId(TRAINER_BATTLE_PARAM.opponentA);
-    else
-        trainerPicId = GetFrontierTrainerFrontSpriteId(TRAINER_BATTLE_PARAM.opponentB);
-
+    enum TrainerPicID trainerPicId; s16 xPos;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    if (!ADMG_TryGetLinkOpponentPicture(battler, &trainerPicId, &xPos)) return;
     BtlController_HandleTrainerSlide(battler, trainerPicId);
+    if (!ADMG_EndStateAccessCheck(generation)) return;
     BtlController_Complete(battler); // Possibly a bug, because execution should be completed after the slide in finishes. See Controller_WaitForTrainerPic.
 }
 
@@ -379,13 +421,23 @@ static void LinkOpponentHandleDrawPartyStatusSummary(enum BattlerId battler)
 
 static void LinkOpponentHandleLinkStandbyMsg(enum BattlerId battler)
 {
+    if ((u32)battler >= MAX_BATTLERS_COUNT || gBattleResources == NULL )
+    { ADMG_StateAccessRejected((u32)battler, __func__); return; }
+    u64 generation = ADMG_BeginStateAccessCheck();
+
     RecordedBattle_RecordAllBattlerData(&gBattleResources->bufferA[battler][2]);
+    if (!ADMG_EndStateAccessCheck(generation)) return;
     BtlController_Complete(battler);
 }
 
 static void LinkOpponentHandleEndLinkBattle(enum BattlerId battler)
 {
+    if ((u32)battler >= MAX_BATTLERS_COUNT || gBattleResources == NULL || gSaveBlock2Ptr == NULL )
+    { ADMG_StateAccessRejected((u32)battler, __func__); return; }
+    u64 generation = ADMG_BeginStateAccessCheck();
+
     RecordedBattle_RecordAllBattlerData(&gBattleResources->bufferA[battler][4]);
+    if (!ADMG_EndStateAccessCheck(generation)) return;
 
     if (gBattleResources->bufferA[battler][1] == B_OUTCOME_DREW)
         gBattleOutcome = gBattleResources->bufferA[battler][1];

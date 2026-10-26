@@ -2,6 +2,7 @@
 #include "battle_setup.h"
 #include "data.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "string_util.h"
 #include "battle.h"
 #include "gym_leader_rematch.h"
@@ -715,6 +716,8 @@ static u32 MatchCallGetFunctionIndex(match_call_t matchCall)
 
 u32 GetTrainerIdxByRematchIdx(u32 rematchIdx)
 {
+    if (rematchIdx >= REMATCH_TABLE_ENTRIES)
+    { ADMG_StateAccessRejected(rematchIdx, __func__); return TRAINER_NONE; }
     return gRematchTable[rematchIdx].trainerIds[0];
 }
 
@@ -744,37 +747,51 @@ bool32 MatchCall_GetEnabled(u32 idx)
 
 static bool32 MatchCall_GetEnabled_NPC(match_call_t matchCall)
 {
+    bool8 enabled;
+    if (matchCall.npc == NULL)
+        return FALSE;
     if (matchCall.npc->flag == 0xFFFF)
         return TRUE;
-    return FlagGet(matchCall.npc->flag);
+    return ADMG_TryReadFlag(matchCall.npc->flag, &enabled) && enabled;
 }
 
 static bool32 MatchCall_GetEnabled_Trainer(match_call_t matchCall)
 {
+    bool8 enabled;
+    if (matchCall.trainer == NULL)
+        return FALSE;
     if (matchCall.trainer->flag == 0xFFFF)
         return TRUE;
-    return FlagGet(matchCall.trainer->flag);
+    return ADMG_TryReadFlag(matchCall.trainer->flag, &enabled) && enabled;
 }
 
 static bool32 MatchCall_GetEnabled_Wally(match_call_t matchCall)
 {
+    bool8 enabled;
+    if (matchCall.wally == NULL)
+        return FALSE;
     if (matchCall.wally->flag == 0xFFFF)
         return TRUE;
-    return FlagGet(matchCall.wally->flag);
+    return ADMG_TryReadFlag(matchCall.wally->flag, &enabled) && enabled;
 }
 
 static bool32 MatchCall_GetEnabled_Rival(match_call_t matchCall)
 {
+    bool8 enabled;
+    if (matchCall.rival == NULL || gSaveBlock2Ptr == NULL)
+        return FALSE;
     if (matchCall.rival->playerGender != gSaveBlock2Ptr->playerGender)
         return FALSE;
     if (matchCall.rival->flag == 0xFFFF)
         return TRUE;
-    return FlagGet(matchCall.rival->flag);
+    return ADMG_TryReadFlag(matchCall.rival->flag, &enabled) && enabled;
 }
 
 static bool32 MatchCall_GetEnabled_Birch(match_call_t matchCall)
 {
-    return FlagGet(matchCall.birch->flag);
+    bool8 enabled;
+    return matchCall.birch != NULL
+        && ADMG_TryReadFlag(matchCall.birch->flag, &enabled) && enabled;
 }
 
 mapsec_u8_t MatchCall_GetMapSec(u32 idx)
@@ -802,10 +819,14 @@ static mapsec_u8_t MatchCall_GetMapSec_Trainer(match_call_t matchCall)
 static mapsec_u8_t MatchCall_GetMapSec_Wally(match_call_t matchCall)
 {
     s32 i;
-
+    bool8 enabled;
+    if (matchCall.wally == NULL || matchCall.wally->locationData == NULL)
+        return MAPSEC_NONE;
     for (i = 0; matchCall.wally->locationData[i].flag != 0xFFFF; i++)
     {
-        if (!FlagGet(matchCall.wally->locationData[i].flag))
+        if (!ADMG_TryReadFlag(matchCall.wally->locationData[i].flag, &enabled))
+            return MAPSEC_NONE;
+        if (!enabled)
             break;
     }
     return matchCall.wally->locationData[i].mapSec;
@@ -981,18 +1002,33 @@ static void MatchCall_GetMessage_Birch(match_call_t matchCall, u8 *dest)
 static void MatchCall_BufferCallMessageText(const match_call_text_data_t *textData, u8 *dest)
 {
     u32 i;
+    bool8 available;
+    if (textData == NULL || dest == NULL || textData[0].text == NULL)
+        return;
     for (i = 0; textData[i].text != NULL; i++)
         ;
     if (i)
         i--;
     while (i)
     {
-        if (textData[i].availabilityFlag != ALWAYS_AVAILABLE && FlagGet(textData[i].availabilityFlag) == TRUE)
-            break;
+        if (textData[i].availabilityFlag != ALWAYS_AVAILABLE)
+        {
+            if (!ADMG_TryReadFlag(textData[i].availabilityFlag, &available))
+                return;
+            if (available)
+                break;
+        }
         i--;
     }
     if (textData[i].flagToSetOnCompletion != NO_FLAG_TO_SET)
+    {
+        if (!ADMG_IsFlagIdValid(textData[i].flagToSetOnCompletion))
+        {
+            ADMG_StateAccessRejected(textData[i].flagToSetOnCompletion, __func__);
+            return;
+        }
         FlagSet(textData[i].flagToSetOnCompletion);
+    }
     StringExpandPlaceholders(dest, textData[i].text);
 }
 
@@ -1000,38 +1036,57 @@ static void MatchCall_BufferCallMessageTextByRematchTeam(const match_call_text_d
 {
 #if FREE_MATCH_CALL == FALSE
     u32 i;
+    bool8 available, gameClear;
+    u64 generation;
+    if (textData == NULL || dest == NULL || textData[0].text == NULL
+        || idx >= REMATCH_TABLE_ENTRIES
+        || idx >= ARRAY_COUNT(gSaveBlock1Ptr->trainerRematches))
+        return;
     for (i = 0; textData[i].text != NULL; i++)
     {
         if (textData[i].availabilityFlag == REMATCH_CALL_START)
             break;
-        if (textData[i].availabilityFlag != ALWAYS_AVAILABLE && !FlagGet(textData[i].availabilityFlag))
-            break;
+        if (textData[i].availabilityFlag != ALWAYS_AVAILABLE)
+        {
+            if (!ADMG_TryReadFlag(textData[i].availabilityFlag, &available))
+                return;
+            if (!available)
+                break;
+        }
     }
     if (textData[i].availabilityFlag != REMATCH_CALL_START)
     {
         if (i)
             i--;
         if (textData[i].flagToSetOnCompletion != NO_FLAG_TO_SET)
+        {
+            if (!ADMG_IsFlagIdValid(textData[i].flagToSetOnCompletion))
+            {
+                ADMG_StateAccessRejected(textData[i].flagToSetOnCompletion, __func__);
+                return;
+            }
             FlagSet(textData[i].flagToSetOnCompletion);
+        }
         StringExpandPlaceholders(dest, textData[i].text);
     }
     else
     {
-        if (FlagGet(FLAG_SYS_GAME_CLEAR))
+        if (!ADMG_TryReadFlag(FLAG_SYS_GAME_CLEAR, &gameClear))
+            return;
+        if (gameClear)
         {
-            do
+            // Preserve the original rematch-ready and previously-battled order.
+            if (gSaveBlock1Ptr->trainerRematches[idx])
+                i += 2;
+            else
             {
-                // If the rematch is ready, advance to the rematch call.
-                if (gSaveBlock1Ptr->trainerRematches[idx]) i += 2;
-                // No rematch ready, but if the player has defeated them in
-                // a rematch before, advance to the final call.
-                // Note: The 2 "rematch" teams battled includes the first non-rematch battle.
-                else if (CountBattledRematchTeams(idx) >= 2) i += 3; 
-                // No rematch ready and never defeated in a rematch, advance to congratulations call.
-                else i++;
-            } while (0);
+                generation = ADMG_BeginStateAccessCheck();
+                u32 teams = CountBattledRematchTeams(idx);
+                if (!ADMG_EndStateAccessCheck(generation))
+                    return;
+                i += teams >= 2 ? 3 : 1;
+            }
         }
-        // If the game hasn't been cleared yet, the index remains on the basic "preparing for rematch" call.
         StringExpandPlaceholders(dest, textData[i].text);
     }
 #endif //FREE_MATCH_CALL
@@ -1085,22 +1140,34 @@ static void MatchCall_GetNameAndDesc_Birch(match_call_t matchCall, const u8 **de
 
 static void MatchCall_GetNameAndDescByRematchIdx(u32 idx, const u8 **desc, const u8 **name)
 {
-    const struct Trainer *trainer = GetTrainerStructFromId(GetTrainerIdxByRematchIdx(idx));
-    *desc = gTrainerClasses[trainer->trainerClass].name;
-    *name = trainer->trainerName;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    u32 trainerId = GetTrainerIdxByRematchIdx(idx);
+    if (!ADMG_EndStateAccessCheck(generation)) return;
+    const u8 *className = GetTrainerClassNameFromId(trainerId);
+    const u8 *trainerName = GetTrainerNameFromId(trainerId);
+    if (!ADMG_EndStateAccessCheck(generation)) return;
+    *desc = className;
+    *name = trainerName;
 }
 
 const u8 *MatchCall_GetOverrideFlavorText(u32 idx, u32 offset)
 {
     u32 i;
-
+    bool8 enabled;
+    if (offset >= CHECK_PAGE_ENTRY_COUNT)
+        return NULL;
     for (i = 0; i < ARRAY_COUNT(sCheckPageOverrides); i++)
     {
         if (sCheckPageOverrides[i].idx == idx)
         {
-            for (; i + 1 < ARRAY_COUNT(sCheckPageOverrides) &&
-                sCheckPageOverrides[i + 1].idx == idx &&
-                FlagGet(sCheckPageOverrides[i + 1].flag); i++);
+            for (; i + 1 < ARRAY_COUNT(sCheckPageOverrides)
+                && sCheckPageOverrides[i + 1].idx == idx; i++)
+            {
+                if (!ADMG_TryReadFlag(sCheckPageOverrides[i + 1].flag, &enabled))
+                    return NULL;
+                if (!enabled)
+                    break;
+            }
             return sCheckPageOverrides[i].flavorTexts[offset];
         }
     }
@@ -1135,6 +1202,8 @@ bool32 MatchCall_HasRematchId(u32 idx)
 void SetMatchCallRegisteredFlag(void)
 {
     int index = GetRematchIdxByTrainerIdx(gSpecialVar_0x8004);
-    if (index >= 0)
-        FlagSet(TRAINER_REGISTERED_FLAGS_START + index);
+    u16 flagId;
+    if (index >= 0 && ADMG_TryGetIndexedFlagId(TRAINER_REGISTERED_FLAGS_START,
+            (u32)index, REMATCH_TABLE_ENTRIES, 1, &flagId))
+        FlagSet(flagId);
 }

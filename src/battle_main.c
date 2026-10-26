@@ -1,4 +1,6 @@
 #include "global.h"
+#include "admg_state.h"
+#include "admg_trainer_actor.h"
 #include "battle.h"
 #include "battle_anim.h"
 #include "battle_ai_main.h"
@@ -24,6 +26,7 @@
 #include "dexnav.h"
 #include "dma3.h"
 #include "event_data.h"
+#include "admg_script.h"
 #include "evolution_scene.h"
 #include "frontier_util.h"
 #include "field_weather.h"
@@ -471,9 +474,13 @@ const u8 *const gStatusConditionStringsTable[][2] =
 
 void CB2_InitBattle(void)
 {
+    u64 generation = ADMG_BeginStateAccessCheck();
+
     if (!gTestRunnerEnabled)
         MoveSaveBlocks_ResetHeap();
+    if (!ADMG_EndStateAccessCheck(generation)) return;
     AllocateBattleResources();
+    if (!ADMG_EndStateAccessCheck(generation)) return;
     AllocateBattleSpritesData();
     AllocateMonSpritesGfx();
     RecordedBattle_ClearFrontierPassFlag();
@@ -568,15 +575,15 @@ static void CB2_InitBattleInternal(void)
         gBattleEnvironment = TestRunner_Battle_GetForcedEnvironment() - 1;
 
     InitBattleBgsVideo();
-    LoadBattleTextboxAndBackground();
+    { u64 background = ADMG_BeginStateAccessCheck(); LoadBattleTextboxAndBackground(); if (!ADMG_EndStateAccessCheck(background)) return; }
     ResetSpriteData();
     ResetTasks();
     if (B_FAST_INTRO_NO_SLIDE == FALSE && !gTestRunnerHeadless)
-        DrawBattleEntryBackground();
+        { u64 background = ADMG_BeginStateAccessCheck(); DrawBattleEntryBackground(); if (!ADMG_EndStateAccessCheck(background)) return; }
     FreeAllSpritePalettes();
     gReservedSpritePaletteCount = MAX_BATTLERS_COUNT;
     SetVBlankCallback(VBlankCB_Battle);
-    SetUpBattleVarsAndBirchZigzagoon();
+    { u64 setup = ADMG_BeginStateAccessCheck(); SetUpBattleVarsAndBirchZigzagoon(); if (!ADMG_EndStateAccessCheck(setup)) return; }
 
     if (gBattleTypeFlags & BATTLE_TYPE_MULTI
      && (TESTING || gBattleTypeFlags & (BATTLE_TYPE_BATTLE_TOWER | BATTLE_TYPE_INGAME_PARTNER)))
@@ -3257,7 +3264,11 @@ static void DoBattleIntro(void)
     case BATTLE_INTRO_STATE_INTRO_TEXT:
         if (!IsBattlerMarkedForControllerExec(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT)))
         {
-            PrepareStringBattle(STRINGID_INTROMSG, GetBattlerAtPosition(B_POSITION_PLAYER_LEFT));
+            {
+        u64 printGeneration = ADMG_BeginStateAccessCheck();
+        PrepareStringBattle(STRINGID_INTROMSG, GetBattlerAtPosition(B_POSITION_PLAYER_LEFT));
+        if (!ADMG_EndStateAccessCheck(printGeneration)) return;
+    }
             gBattleStruct->eventState.battleIntro++;
         }
         break;
@@ -3279,9 +3290,17 @@ static void DoBattleIntro(void)
         break;
     case BATTLE_INTRO_STATE_TRAINER_SEND_OUT_TEXT:
         if (gBattleTypeFlags & BATTLE_TYPE_RECORDED_LINK && !(gBattleTypeFlags & BATTLE_TYPE_RECORDED_IS_MASTER))
-            PrepareStringBattle(STRINGID_INTROSENDOUT, GetBattlerAtPosition(B_POSITION_PLAYER_LEFT));
+            {
+        u64 printGeneration = ADMG_BeginStateAccessCheck();
+        PrepareStringBattle(STRINGID_INTROSENDOUT, GetBattlerAtPosition(B_POSITION_PLAYER_LEFT));
+        if (!ADMG_EndStateAccessCheck(printGeneration)) return;
+    }
         else
-            PrepareStringBattle(STRINGID_INTROSENDOUT, GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT));
+            {
+        u64 printGeneration = ADMG_BeginStateAccessCheck();
+        PrepareStringBattle(STRINGID_INTROSENDOUT, GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT));
+        if (!ADMG_EndStateAccessCheck(printGeneration)) return;
+    }
         gBattleStruct->eventState.battleIntro++;
         break;
     case BATTLE_INTRO_STATE_WAIT_FOR_TRAINER_SEND_OUT_TEXT:
@@ -3347,7 +3366,11 @@ static void DoBattleIntro(void)
                 return;
             }
 
-            PrepareStringBattle(STRINGID_INTROSENDOUT, battler);
+            {
+        u64 printGeneration = ADMG_BeginStateAccessCheck();
+        PrepareStringBattle(STRINGID_INTROSENDOUT, battler);
+        if (!ADMG_EndStateAccessCheck(printGeneration)) return;
+    }
         }
         gBattleStruct->eventState.battleIntro++;
         break;
@@ -3389,16 +3412,7 @@ static void DoBattleIntro(void)
     case BATTLE_INTRO_STATE_SET_DEX_AND_BATTLE_VARS:
         if (!gBattleControllerExecFlags)
         {
-            gBattleStruct->eventState.beforeFirstTurn = 0;
-            gBattleStruct->switchInBattlerCounter = 0;
-            Ai_InitPartyStruct(); // Save mons party counts, and first 2/4 mons on the battlefield.
-
-            // mark all battlers as sent out
-            for (battler = 0; battler < gBattlersCount; battler++)
-                GetBattlerPartyState(battler)->sentOut = TRUE;
-
-#define UNPACK_STARTING_STATUS_TO_BATTLE(_enum, _fieldName, ...) gStartingStatuses._fieldName = (statusesOpponentA._fieldName || statusesOpponentB._fieldName || gStartingStatuses._fieldName);
-
+            u64 generation = ADMG_BeginStateAccessCheck();
             struct StartingStatuses statusesOpponentA = {0};
             struct StartingStatuses statusesOpponentB = {0};
 
@@ -3409,10 +3423,44 @@ static void DoBattleIntro(void)
                 if (TRAINER_BATTLE_PARAM.opponentB != 0xFFFF)
                     statusesOpponentB = GetTrainerStartingStatusFromId(TRAINER_BATTLE_PARAM.opponentB);
             }
+            if (!ADMG_EndStateAccessCheck(generation)) return;
+
+            gBattleStruct->eventState.beforeFirstTurn = 0;
+            gBattleStruct->switchInBattlerCounter = 0;
+            Ai_InitPartyStruct(); // Save mons party counts, and first 2/4 mons on the battlefield.
+
+            // mark all battlers as sent out
+            for (battler = 0; battler < gBattlersCount; battler++)
+                GetBattlerPartyState(battler)->sentOut = TRUE;
+
+#define UNPACK_STARTING_STATUS_TO_BATTLE(_enum, _fieldName, ...) gStartingStatuses._fieldName = (statusesOpponentA._fieldName || statusesOpponentB._fieldName || gStartingStatuses._fieldName);
+
             STARTING_STATUS_DEFINITIONS(UNPACK_STARTING_STATUS_TO_BATTLE);
             gBattleMainFunc = TryDoEventsBeforeFirstTurn;
         }
         break;
+    }
+}
+
+/* The existing queue stores Atk..Evasion at zero-based indices, as used
+ * by Mirror Herb and Opportunist. Keep its layout and all seven fields. */
+static void ADMG_ApplyQueuedTotemBoosts(enum BattlerId battler)
+{
+    if (battler >= MAX_BATTLERS_COUNT)
+        return;
+    for (enum Stat stat = STAT_ATK; stat < NUM_BATTLE_STATS; stat++)
+    {
+        u32 queuedStat = stat - STAT_ATK;
+        if (gQueuedStatBoosts[battler].stats & (1 << queuedStat))
+        {
+            s32 stage = gBattleMons[battler].statStages[stat]
+                      + gQueuedStatBoosts[battler].statChanges[queuedStat];
+            if (stage > MAX_STAT_STAGE)
+                stage = MAX_STAT_STAGE;
+            else if (stage < MIN_STAT_STAGE)
+                stage = MIN_STAT_STAGE;
+            gBattleMons[battler].statStages[stat] = stage;
+        }
     }
 }
 
@@ -3482,18 +3530,7 @@ static void TryDoEventsBeforeFirstTurn(void)
             if (gQueuedStatBoosts[battler].stats == 0)
                 continue;
 
-            for (enum Stat stat = STAT_ATK; stat < NUM_BATTLE_STATS; stat++)
-            {
-                if (gQueuedStatBoosts[battler].stats & (1 << stat))
-                {
-                    s32 stage = gQueuedStatBoosts[battler].statChanges[stat];
-                    gBattleMons[battler].statStages[stat] += stage;
-                    if (gBattleMons[battler].statStages[stat] > MAX_STAT_STAGE)
-                        gBattleMons[battler].statStages[stat] = MAX_STAT_STAGE;
-                    else if (gBattleMons[battler].statStages[stat] < MIN_STAT_STAGE)
-                        gBattleMons[battler].statStages[stat] = MIN_STAT_STAGE;
-                }
-            }
+            ADMG_ApplyQueuedTotemBoosts(battler);
 
             gBattlerAttacker = battler;
             gQueuedStatBoosts[battler].stats = 0;
@@ -3788,17 +3825,28 @@ enum
 
 static void HandleTurnActionSelectionState(void)
 {
+    if (gBattlersCount > MAX_BATTLERS_COUNT || gAiLogicData == NULL || gBattleStruct == NULL || gBattleResources == NULL)
+    { ADMG_StateAccessRejected(gBattlersCount, __func__); return; }
+    if (!ADMG_TryValidateBattleTrainerActors(gBattleTypeFlags, TRAINER_BATTLE_PARAM.opponentA,
+            TRAINER_BATTLE_PARAM.opponentB, gPartnerTrainerId)) return;
+
     s32 i;
 
     gBattleCommunication[ACTIONS_CONFIRMED_COUNT] = 0;
     for (enum BattlerId battlerIndex = 0; battlerIndex < gBattlersCount; battlerIndex++)
     {
         enum BattlerId battler = gAiLogicData->reverseBattlerLogicOrder ? GetPartnerBattler(battlerIndex) : battlerIndex;
+        if ((u32)battler >= MAX_BATTLERS_COUNT || (u32)GetBattlerPosition(battler) >= (u32)MAX_BATTLERS_COUNT)
+        { ADMG_StateAccessRejected((u32)battler, __func__); return; }
         enum BattlerPosition position = GetBattlerPosition(battler);
         switch (gBattleCommunication[battler])
         {
         case STATE_TURN_START_RECORD: // Recorded battle related action on start of every turn.
-            RecordedBattle_CopyBattlerMoves(battler);
+            {
+                u64 generation = ADMG_BeginStateAccessCheck();
+                RecordedBattle_CopyBattlerMoves(battler);
+                if (!ADMG_EndStateAccessCheck(generation)) return;
+            }
             gBattleCommunication[battler] = STATE_BEFORE_ACTION_CHOSEN;
             bool32 isAiBattler = (gBattleTypeFlags & BATTLE_TYPE_HAS_AI || IsWildMonSmart()) && (BattlerHasAi(battler) && !(gBattleTypeFlags & BATTLE_TYPE_PALACE));
             if (isAiBattler)
@@ -4094,7 +4142,11 @@ static void HandleTurnActionSelectionState(void)
                         UpdateBattlerPartyOrdersOnSwitch(battler);
                         return;
                     default:
-                        RecordedBattle_CheckMovesetChanges(B_RECORD_MODE_PLAYBACK);
+                        {
+                u64 generation = ADMG_BeginStateAccessCheck();
+                RecordedBattle_CheckMovesetChanges(B_RECORD_MODE_PLAYBACK);
+                if (!ADMG_EndStateAccessCheck(generation)) return;
+            }
                         if ((gBattleResources->bufferB[battler][2] | (gBattleResources->bufferB[battler][3] << 8)) == 0xFFFF)
                         {
                             gBattleCommunication[battler] = STATE_BEFORE_ACTION_CHOSEN;
@@ -4300,7 +4352,11 @@ static void HandleTurnActionSelectionState(void)
     // Check if everyone chose actions.
     if (gBattleCommunication[ACTIONS_CONFIRMED_COUNT] == gBattlersCount)
     {
-        RecordedBattle_CheckMovesetChanges(B_RECORD_MODE_RECORDING);
+        {
+                u64 generation = ADMG_BeginStateAccessCheck();
+                RecordedBattle_CheckMovesetChanges(B_RECORD_MODE_RECORDING);
+                if (!ADMG_EndStateAccessCheck(generation)) return;
+            }
 
         if (WILD_DOUBLE_BATTLE
             && gBattleStruct->throwingPokeBall
@@ -5060,6 +5116,30 @@ static void RunTurnActionsFunctions(void)
 
 static void HandleEndTurn_BattleWon(void)
 {
+    u32 victoryClass = 0;
+    /* Mirror the native ordinary-class branch; e-Reader and network words
+     * retain their original explicit domains and are not class queries. */
+    if ((gBattleTypeFlags & BATTLE_TYPE_TRAINER)
+        && !(gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK
+            | BATTLE_TYPE_FRONTIER | BATTLE_TYPE_TRAINER_HILL | BATTLE_TYPE_EREADER_TRAINER)))
+    {
+        u64 generation = ADMG_BeginStateAccessCheck();
+        if (gBattleTypeFlags & BATTLE_TYPE_SECRET_BASE)
+        {
+            if (gBattleResources == NULL || gBattleResources->secretBase == NULL)
+            { ADMG_StateAccessRejected(TRAINER_BATTLE_PARAM.opponentA, __func__); return; }
+            victoryClass = GetSecretBaseTrainerClass();
+        }
+        else
+        {
+            struct ADMG_TrainerActorRef actor;
+            if (!ADMG_TryClassifyTrainerActor(TRAINER_BATTLE_PARAM.opponentA,
+                ADMG_ACTOR_CONTENT, ADMG_ACTOR_OPPONENT, &actor)) return;
+            victoryClass = GetTrainerClassFromId(TRAINER_BATTLE_PARAM.opponentA);
+        }
+        if (!ADMG_EndStateAccessCheck(generation)) return;
+    }
+
     gCurrentActionFuncId = 0;
 
     if (gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK))
@@ -5086,7 +5166,7 @@ static void HandleEndTurn_BattleWon(void)
         BattleStopLowHpSound();
         gBattlescriptCurrInstr = BattleScript_LocalTrainerBattleWon;
 
-        switch (GetTrainerClassFromId(TRAINER_BATTLE_PARAM.opponentA))
+        switch (victoryClass)
         {
         case TRAINER_CLASS_ELITE_FOUR:
         case TRAINER_CLASS_CHAMPION:
@@ -5217,6 +5297,19 @@ static void HandleEndTurn_FinishBattle(void)
 {
     if (gCurrentActionFuncId == B_ACTION_TRY_FINISH || gCurrentActionFuncId == B_ACTION_FINISHED)
     {
+        /* Only this ordinary native bank can be interpreted by the later
+         * readiness cleanup. Preserve other native/opaque actor domains. */
+        u32 nativeActor = TRAINER_BATTLE_PARAM.opponentA;
+        if ((gBattleTypeFlags & BATTLE_TYPE_TRAINER)
+            && !(gBattleTypeFlags & (BATTLE_TYPE_FRONTIER | BATTLE_TYPE_LINK
+                | BATTLE_TYPE_RECORDED_LINK | BATTLE_TYPE_EREADER_TRAINER | BATTLE_TYPE_TRAINER_HILL))
+            && nativeActor >= ADMG_KANTO_TRAINER_FIRST && nativeActor <= ADMG_KANTO_TRAINER_LAST)
+        {
+            struct ADMG_TrainerActorRef actor;
+            if (!ADMG_TryClassifyTrainerActor(nativeActor, ADMG_ACTOR_CONTENT, ADMG_ACTOR_OPPONENT, &actor)) return;
+        }
+        u64 generation = ADMG_BeginStateAccessCheck();
+
         if (!(gBattleTypeFlags & (BATTLE_TYPE_LINK
                                   | BATTLE_TYPE_RECORDED_LINK
                                   | BATTLE_TYPE_FIRST_BATTLE
@@ -5282,6 +5375,9 @@ static void HandleEndTurn_FinishBattle(void)
             TryPutBreakingNewsOnAir();
         }
 
+        if (!ADMG_EndStateAccessCheck(generation)) return;
+        ADMG_ClearNativeTrainerBattleRematches();
+        if (!ADMG_EndStateAccessCheck(generation)) return;
         BeginFastPaletteFade(3);
         FadeOutMapMusic(5);
         TryRestoreHeldItems();
@@ -5797,17 +5893,25 @@ void SetTypeBeforeUsingMove(enum Move move, enum BattlerId battler, enum Ability
 // Queues stat boosts for a given battler for totem battles
 void ScriptSetTotemBoost(struct ScriptContext *ctx)
 {
-    enum BattlerId battler = VarGet(ScriptReadHalfword(ctx));
+    enum BattlerId battler = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
+    u16 stages[NUM_BATTLE_STATS - STAT_ATK];
+    if (battler >= MAX_BATTLERS_COUNT)
+    {
+        ADMG_StateAccessRejected(battler, __func__);
+        ADMG_StopInvalidStateCommand(ctx);
+        return;
+    }
+    for (enum Stat stat = STAT_ATK; stat < NUM_BATTLE_STATS; stat++)
+        stages[stat - STAT_ATK] = ADMG_SCRIPT_SIGNED_BYTE_VALUE(ctx, ScriptReadHalfword(ctx));
 
     Script_RequestEffects(SCREFF_V1);
-
     for (enum Stat stat = STAT_ATK; stat < NUM_BATTLE_STATS; stat++)
     {
-        u32 stage = VarGet(ScriptReadHalfword(ctx));
-        if (stage)
+        u32 queuedStat = stat - STAT_ATK;
+        if (stages[queuedStat])
         {
-            gQueuedStatBoosts[battler].stats |= (1 << stat);
-            gQueuedStatBoosts[battler].statChanges[stat] = stage;
+            gQueuedStatBoosts[battler].stats |= (1 << queuedStat);
+            gQueuedStatBoosts[battler].statChanges[queuedStat] = stages[queuedStat];
         }
     }
 }

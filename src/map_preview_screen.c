@@ -1,5 +1,6 @@
 #include "global.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "field_screen_effect.h"
 #include "field_weather.h"
 #include "fldeff.h"
@@ -690,6 +691,7 @@ u16 MapPreview_GetDuration(mapsec_u8_t mapsec)
 {
     u8 idx;
     u16 flagId;
+    bool8 visited;
 
     idx = GetMapPreviewScreenIdx(mapsec);
 
@@ -704,7 +706,9 @@ u16 MapPreview_GetDuration(mapsec_u8_t mapsec)
     }
     else
     {
-        if (!FlagGet(flagId))
+        if (!ADMG_TryReadFlag(flagId, &visited))
+            return 0;
+        if (!visited)
         {
             FlagSet(flagId);
             return MPS_DURATION_LONG;
@@ -718,7 +722,10 @@ u16 MapPreview_GetDuration(mapsec_u8_t mapsec)
 
 void MapPreview_SetFlag(u16 flagId)
 {
-    if (!FlagGet(flagId))
+    bool8 visited;
+    if (!ADMG_TryReadFlag(flagId, &visited))
+        return;
+    if (!visited)
     {
         sHasVisitedMapBefore = TRUE;
     }

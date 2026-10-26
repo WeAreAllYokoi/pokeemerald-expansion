@@ -110,6 +110,7 @@ bool8 GetTrainerFlag(void);
 bool8 HasTrainerBeenFought(u16 trainerId);
 void SetTrainerFlag(u16 trainerId);
 void ClearTrainerFlag(u16 trainerId);
+bool32 TrainerIsMatchCallRegistered(s32 i);
 void BattleSetup_StartTrainerBattle(void);
 void BattleSetup_StartRematchBattle(void);
 void ShowTrainerIntroSpeech(void);
@@ -143,5 +144,11 @@ u16 GetRematchTrainerIdFromTable(const struct RematchTrainer *table, u16 firstBa
 u8 GetRivalBattleFlags(void);
 
 void CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer *trainer);
+
+/* Retained named selector; compilation does not enable automatic rematches. */
+u16 GetRematchTrainerId(u16 trainerId);
+
+/* Native family cleanup before the return fade; old dispatch remains named. */
+void ADMG_ClearNativeTrainerBattleRematches(void);
 
 #endif // GUARD_BATTLE_SETUP_H

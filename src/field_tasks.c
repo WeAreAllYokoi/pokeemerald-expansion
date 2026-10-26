@@ -2,6 +2,7 @@
 #include "bike.h"
 #include "clock.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "field_camera.h"
 #include "field_effect_helpers.h"
 #include "field_player_avatar.h"
@@ -634,7 +635,7 @@ static bool32 CoordInIcePuzzleRegion(s16 x, s16 y)
 static void MarkIcePuzzleCoordVisited(s16 x, s16 y)
 {
     if (CoordInIcePuzzleRegion(x, y))
-        *GetVarPointer(sSootopolisGymIceRowVars[y]) |= (1 << (x - ICE_PUZZLE_L));
+        *ADMG_REQUIRE_VAR_SPAN(sSootopolisGymIceRowVars[y], 1) |= (1 << (x - ICE_PUZZLE_L));
 }
 
 static bool32 IsIcePuzzleCoordVisited(s16 x, s16 y)
@@ -643,7 +644,8 @@ static bool32 IsIcePuzzleCoordVisited(s16 x, s16 y)
     if (!CoordInIcePuzzleRegion(x, y))
         return FALSE;
 
-    var = VarGet(sSootopolisGymIceRowVars[y]);
+    if (!ADMG_TryReadVar(sSootopolisGymIceRowVars[y], &var, FALSE))
+        return FALSE;
     if (var &= (1 << (x - ICE_PUZZLE_L)))
         return TRUE;
     else
@@ -676,7 +678,7 @@ static void SootopolisGymIcePerStepCallback(u8 taskId)
 {
     s16 x, y;
     u16 tileBehavior;
-    u16 *iceStepCount;
+    u16 *iceStepCount = ADMG_REQUIRE_VAR_SPAN(VAR_ICE_STEP_COUNT, 1);
     s16 *data = gTasks[taskId].data;
     switch (tState)
     {
@@ -695,7 +697,6 @@ static void SootopolisGymIcePerStepCallback(u8 taskId)
         tPrevX = x;
         tPrevY = y;
         tileBehavior = MapGridGetMetatileBehaviorAt(x, y);
-        iceStepCount = GetVarPointer(VAR_ICE_STEP_COUNT);
         if (MetatileBehavior_IsThinIce(tileBehavior) == TRUE)
         {
             // Thin ice, set it to cracked ice
@@ -764,7 +765,7 @@ static void SootopolisGymIcePerStepCallback(u8 taskId)
 static void AshGrassPerStepCallback(u8 taskId)
 {
     s16 x, y;
-    u16 *ashGatherCount;
+    u16 *ashGatherCount = ADMG_REQUIRE_VAR_SPAN(VAR_ASH_GATHER_COUNT, 1);
     s16 *data = gTasks[taskId].data;
     PlayerGetDestCoords(&x, &y);
 
@@ -785,7 +786,6 @@ static void AshGrassPerStepCallback(u8 taskId)
         // Try to gather ash
         if (CheckBagHasItem(ITEM_SOOT_SACK, 1))
         {
-            ashGatherCount = GetVarPointer(VAR_ASH_GATHER_COUNT);
             if (*ashGatherCount < 9999)
                 (*ashGatherCount)++;
         }

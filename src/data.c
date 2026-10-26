@@ -227,14 +227,18 @@ const union AnimCmd *const gAnims_Trainer[] ={
 };
 
 #if !TESTING
-const struct Trainer gTrainers[DIFFICULTY_COUNT][TRAINERS_COUNT] =
-{
-#if IS_FRLG
-#include "data/trainers_frlg.h"
+const struct Trainer gTrainers[DIFFICULTY_COUNT][TRAINERS_COUNT_EMERALD] =
 #else
+/* Retain full ordinary content alongside the original test override provider. */
+const struct Trainer gADMG_HoennTrainers[DIFFICULTY_COUNT][TRAINERS_COUNT_EMERALD] =
+#endif
+{
 #include "data/trainers.h"
-#endif
 };
-#endif
+
+const struct Trainer gADMG_KantoTrainers[DIFFICULTY_COUNT][TRAINERS_COUNT_FRLG] =
+{
+#include "data/trainers_frlg.h"
+};
 
 #include "data/text/follower_messages.h"

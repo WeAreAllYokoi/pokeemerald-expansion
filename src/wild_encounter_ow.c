@@ -1,10 +1,12 @@
 #include "global.h"
+#include "admg_script.h"
 #include "wild_encounter_ow.h"
 #include "battle_setup.h"
 #include "battle_main.h"
 #include "battle_pike.h"
 #include "battle_pyramid.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "event_object_movement.h"
 #include "fieldmap.h"
 #include "field_effect.h"
@@ -363,20 +365,20 @@ static enum TypeOWE GetOverworldWildEncounterType(struct ObjectEvent *owe)
 
 void StartWildBattleWithOWE(struct ScriptContext *ctx)
 {
-    u32 localId = VarGet(ScriptReadHalfword(ctx));
-    u32 objEventId = GetObjectEventIdByLocalId(localId);
+    u32 localId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
+    u32 objEventId = ADMG_SCRIPT_OBJECT_ID(ctx, localId);
     u32 headerId = GetCurrentMapWildMonHeaderId();
     struct ObjectEvent *owe = &gObjectEvents[objEventId];
     enum CategoryOWE category = GetOWECategory(owe);
 
-    Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
-
     assertf(objEventId < OBJECT_EVENTS_COUNT && IsOverworldWildEncounter(owe, OWE_ANY), "cannot start overworld wild enocunter as the selected object is invalid.\nlocalId: %d", localId)
     {
-        UnlockPlayerFieldControls();
-        UnfreezeObjectEvents();
+        ADMG_StopInvalidStateCommand(ctx);
         return;
     }
+
+    ADMG_SCRIPT_REQUIRE_INDEX(ctx, OW_SPECIES(owe), NUM_SPECIES);
+    Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
 
     if (category < ROAMER_COUNT && StartWildBattleWithOWE_CheckRoamer(category))
         return;
@@ -413,22 +415,27 @@ void StartWildBattleWithOWE(struct ScriptContext *ctx)
 void SetOverworldObjectSpecies(struct ScriptContext *ctx)
 {
     u32 varId = ScriptReadHalfword(ctx);
-    u32 localId = VarGet(ScriptReadHalfword(ctx));
-    struct ObjectEvent *object = &gObjectEvents[GetObjectEventIdByLocalId(localId)];
+    u32 localId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
+    ADMG_SCRIPT_POINTER(ctx, varId);
+    u32 objectId = ADMG_SCRIPT_OBJECT_ID(ctx, localId);
+    struct ObjectEvent *object = &gObjectEvents[objectId];
     enum Species speciesId = SPECIES_NONE;
-
-    Script_RequestEffects(SCREFF_V1);
-    Script_RequestWriteVar(varId);
 
     if (IS_OW_MON_OBJ(object))
         speciesId = OW_SPECIES(object);
 
     assertf(speciesId != SPECIES_NONE, "species was not found for specified object. localid: %d", localId);
-    VarSet(varId, speciesId);
+    ADMG_SCRIPT_REQUIRE_INDEX(ctx, speciesId, NUM_SPECIES);
+    Script_RequestEffects(SCREFF_V1);
+    Script_RequestWriteVar(varId);
+    if (!VarSet(varId, speciesId))
+        ADMG_StopInvalidStateCommand(ctx);
 }
 
 static bool32 CreateEnemyPartyOWE(struct InfoOWE *info, s32 x, s32 y)
 {
+    ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1, FALSE);
+
     const struct WildPokemonInfo *wildMonInfo;
     enum WildPokemonArea wildArea;
     enum TimeOfDay timeOfDay;
@@ -627,6 +634,8 @@ static bool32 StartWildBattleWithOWE_CheckDoubleBattle(struct ObjectEvent *owe, 
 
 void SetMinimumOWESpawnTimer(void)
 {
+    ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1);
+
     if (!WE_OW_ENCOUNTERS)
         return;
 
@@ -637,6 +646,8 @@ void SetMinimumOWESpawnTimer(void)
 
 void TryTriggerOverworldWildEncounter(struct ObjectEvent *obstacle, struct ObjectEvent *collider)
 {
+    ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1);
+
     if (WE_OWE_NO_REPEL_DEXNAV_COLLISION && (FlagGet(DN_FLAG_SEARCHING) || REPEL_STEP_COUNT))
         return;
 
@@ -1066,6 +1077,8 @@ bool32 DespawnOWEDueToNPCCollision(struct ObjectEvent *obstacle, struct ObjectEv
 
 void DespawnAllOverworldWildEncounters(enum TypeOWE oweType, u32 flags)
 {
+    ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1);
+
     for (u32 i = 0; i < OBJECT_EVENTS_COUNT; ++i)
     {
         struct ObjectEvent *owe = &gObjectEvents[i];
@@ -1102,12 +1115,37 @@ u32 TryAndDespawnOldestGeneratedOWE_ToFreeObject(void)
 
 void DespawnOWEOnBattleStart(void)
 {
-    struct ObjectEvent *owe = &gObjectEvents[GetObjectEventIdByLocalId(gSpecialVar_LastTalked)];
+    if (gSaveBlock1Ptr == NULL)
+    {
+        ADMG_StateAccessRejected(gSpecialVar_LastTalked, __func__);
+        return;
+    }
+    /* LastTalked names a live object only when the battle began from one
+     * (a talked-to trainer, a static or overworld encounter). Field input
+     * resets it to LOCALID_NONE every frame and Rock Smash removes its rock
+     * first, so other battles find no object. Upstream then has nothing to
+     * despawn; recording that ordinary miss as rejected state makes
+     * Task_BattleStart abandon the battle after its transition. */
+    if (gSpecialVar_LastTalked <= 0xFF
+     && GetObjectEventIdByLocalId(gSpecialVar_LastTalked) >= OBJECT_EVENTS_COUNT)
+        return;
+    u8 objectId;
+    if (!ADMG_TryGetObjectEventId(gSpecialVar_LastTalked, &objectId))
+        return;
+    struct ObjectEvent *owe = &gObjectEvents[objectId];
     if (!IsOverworldWildEncounter(owe, OWE_ANY))
         return;
 
     if (IsOverworldWildEncounter(owe, OWE_MANUAL))
-        FlagSet(GetObjectEventFlagIdByLocalIdAndMap(owe->localId, owe->mapNum, owe->mapGroup));
+    {
+        u16 flagId;
+        if (!ADMG_TryGetObjectEventFlagId(owe->localId, owe->mapNum, owe->mapGroup, &flagId))
+            return;
+        u64 generation = ADMG_BeginStateAccessCheck();
+        FlagSet(flagId);
+        if (!ADMG_EndStateAccessCheck(generation))
+            return;
+    }
 
     ClearObjectEvent(owe);
     SetNewOWESpawnCountdown();
@@ -1147,6 +1185,8 @@ static bool32 ShouldDespawnGeneratedForNewOWE(struct ObjectEvent *owe)
 
 static void SetNewOWESpawnCountdown(void)
 {
+    ADMG_REQUIRE_VAR_SPAN(VAR_REPEL_STEP_COUNT, 1);
+
     u32 numActive = GetNumberOfActiveOWEs(OWE_GENERATED);
 
     if (WE_OWE_SPAWN_REPLACEMENT && numActive >= OWE_SPAWNS_MAX)
@@ -1564,10 +1604,12 @@ static enum Direction CheckOWEPathToPlayerFromCollision(struct ObjectEvent *owe,
 #define tObjectId data[0]
 void OWEApproachForBattle(struct ScriptContext *ctx)
 {
-    u32 localId = VarGet(ScriptReadHalfword(ctx));
-    u32 objectEventId = GetObjectEventIdByLocalId(localId);
+    u32 localId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
+    u32 objectEventId = ADMG_SCRIPT_OBJECT_ID(ctx, localId);
     struct ObjectEvent *owe = &gObjectEvents[objectEventId];
 
+    if (IS_OW_MON_OBJ(owe))
+        ADMG_SCRIPT_REQUIRE_INDEX(ctx, OW_SPECIES(owe), NUM_SPECIES);
     Script_RequestEffects(SCREFF_V1 | SCREFF_HARDWARE);
     
     if (!WE_OWE_APPROACH_FOR_BATTLE || !IsOverworldWildEncounter(owe, OWE_ANY))

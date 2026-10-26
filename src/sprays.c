@@ -1,5 +1,6 @@
 #include "global.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "script_menu.h"
 #include "strings.h"
 #include "constants/items.h"
@@ -26,10 +27,35 @@ void DrawSprayMenu(void);
 #endif
 void HandleSprayMenuChoice(void);
 
+// Validate the shared backing before selection arithmetic or menu effects.
+static bool8 ADMG_ValidateSprayMenuState(void)
+{
+    if (ADMG_GetVarSpan(VAR_REPEL_STEP_COUNT, 1) == NULL)
+    {
+        ADMG_StateAccessRejected(VAR_REPEL_STEP_COUNT, __func__);
+        return FALSE;
+    }
+    for (u32 i = 0; i < NUM_SPRAY_STRENGTH; ++i)
+    {
+        u16 id;
+        if (!ADMG_TryGetIndexedVarId(LOCAL_VAR_SPRAY_CONST, i, NUM_SPRAY_STRENGTH, 1, &id))
+            return FALSE;
+    }
+    if (VAR_LAST_REPEL_LURE_USED != 0 && ADMG_GetVarSpan(VAR_LAST_REPEL_LURE_USED, 1) == NULL)
+    {
+        ADMG_StateAccessRejected(VAR_LAST_REPEL_LURE_USED, __func__);
+        return FALSE;
+    }
+    return TRUE;
+}
+
 u32 CountOrGetSprays(u32 func)
 {
     u32 i, currentSpray, sprayCount = 0;
+    u64 generation = ADMG_BeginStateAccessCheck();
     u32 spray = GetLastUsedSprayType();
+    if (!ADMG_EndStateAccessCheck(generation))
+        return 0;
 
     for (i = 0; i < NUM_SPRAY_STRENGTH; i++)
     {
@@ -58,7 +84,10 @@ u32 GetSprayId(void)
 
 u32 GetLastUsedSprayType(void)
 {
-    if (IS_LAST_USED_LURE(VarGet(VAR_REPEL_STEP_COUNT)))
+    u16 packed;
+    if (!ADMG_TryReadVar(VAR_REPEL_STEP_COUNT, &packed, FALSE))
+        return ITEM_NONE;
+    if (IS_LAST_USED_LURE(packed))
         return ITEM_LURE;
     else
         return ITEM_REPEL;
@@ -66,7 +95,10 @@ u32 GetLastUsedSprayType(void)
 
 u32 SetSprayMenuCursorPosition(int currentSpray, int count)
 {
-    if (VarGet(VAR_LAST_REPEL_LURE_USED) == currentSpray)
+    u16 remembered;
+    if (!ADMG_TryReadVar(VAR_LAST_REPEL_LURE_USED, &remembered, VAR_LAST_REPEL_LURE_USED == 0))
+        return 0;
+    if (remembered == currentSpray)
         return count;
 
     return 0;
@@ -75,9 +107,15 @@ u32 SetSprayMenuCursorPosition(int currentSpray, int count)
 #if I_REPEL_LURE_MENU == TRUE
 void DrawSprayMenu(void)
 {
+    if (!ADMG_ValidateSprayMenuState())
+        return;
+
     struct MenuAction menuItems[NUM_SPRAY_STRENGTH+1] = {NULL};
     int sprayIndex, count = 0, menuPos = 0, currentSpray, yCoord = 0;
+    u64 generation = ADMG_BeginStateAccessCheck();
     u32 spray = GetLastUsedSprayType();
+    if (!ADMG_EndStateAccessCheck(generation))
+        return;
 
     for (sprayIndex = 0; sprayIndex < (NUM_SPRAY_STRENGTH); sprayIndex++)
     {
@@ -105,9 +143,18 @@ void DrawSprayMenu(void)
 
 void HandleSprayMenuChoice(void)
 {
-    u32 lureMask = (GetLastUsedSprayType() == ITEM_LURE) ? REPEL_LURE_MASK : 0;
+    u16 choiceId, choice;
+    if (!ADMG_ValidateSprayMenuState()
+        || !ADMG_TryGetIndexedVarId(LOCAL_VAR_SPRAY_CONST, gSpecialVar_Result, NUM_SPRAY_STRENGTH, 1, &choiceId)
+        || !ADMG_TryReadVar(choiceId, &choice, FALSE))
+        return;
 
-    LOCAL_VAR_SPRAY = VarGet(LOCAL_VAR_SPRAY_CONST + gSpecialVar_Result);
+    u64 generation = ADMG_BeginStateAccessCheck();
+    u32 lureMask = (GetLastUsedSprayType() == ITEM_LURE) ? REPEL_LURE_MASK : 0;
+    if (!ADMG_EndStateAccessCheck(generation))
+        return;
+
+    LOCAL_VAR_SPRAY = choice;
 
     VarSet(VAR_REPEL_STEP_COUNT, GetItemHoldEffectParam(LOCAL_VAR_SPRAY) | lureMask);
 

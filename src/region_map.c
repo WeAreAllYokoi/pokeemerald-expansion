@@ -9,6 +9,7 @@
 #include "trig.h"
 #include "overworld.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "secret_base.h"
 #include "string_util.h"
 #include "international_string_util.h"
@@ -1381,7 +1382,10 @@ static void RegionMap_InitializeStateBasedOnSSTidalLocation(void)
 
     y = 0;
     x = 0;
-    switch (GetSSTidalLocation(&mapGroup, &mapNum, &xOnMap, &yOnMap))
+    enum SSTidalLocation location;
+    if (!ADMG_TryGetSSTidalLocation(&mapGroup, &mapNum, &xOnMap, &yOnMap, &location))
+        return;
+    switch (location)
     {
     case SS_TIDAL_LOCATION_SLATEPORT:
         sRegionMap->mapSecId = MAPSEC_SLATEPORT_CITY;
@@ -2068,7 +2072,10 @@ static void DrawFlyDestTextWindow(void)
         {
             if (sFlyMap->regionMap.mapSecId == sMultiNameFlyDestinations[i].mapSecId)
             {
-                if (FlagGet(sMultiNameFlyDestinations[i].flag))
+                bool8 discovered;
+                if (!ADMG_TryReadFlag(sMultiNameFlyDestinations[i].flag, &discovered))
+                    return;
+                if (discovered)
                 {
                     StringLength(sMultiNameFlyDestinations[i].name[sFlyMap->regionMap.posWithinMapSec]);
                     namePrinted = TRUE;
@@ -2337,6 +2344,15 @@ static void CreateFlyDestIcons(void)
     u16 shape;
     u8 spriteId;
 
+    for (i = 0; i < ARRAY_COUNT(sFlyLocations); ++i)
+    {
+        if (sFlyLocations[i].regionMapType == regionMapType && !ADMG_IsFlagIdValid(sFlyLocations[i].flag))
+        {
+            ADMG_StateAccessRejected(sFlyLocations[i].flag, __func__);
+            return;
+        }
+    }
+
     for (i = 0; i < ARRAY_COUNT(sFlyLocations); i++)
     {
         if (sFlyLocations[i].regionMapType != regionMapType)
@@ -2380,6 +2396,15 @@ static void TryCreateRedOutlineFlyDestIcons(void)
     u16 height;
     mapsec_u16_t mapSecId;
     u8 spriteId;
+
+    for (i = 0; sRedOutlineFlyDestinations[i][1] != MAPSEC_NONE; ++i)
+    {
+        if (!ADMG_IsFlagIdValid(sRedOutlineFlyDestinations[i][0]))
+        {
+            ADMG_StateAccessRejected(sRedOutlineFlyDestinations[i][0], __func__);
+            return;
+        }
+    }
 
     for (i = 0; sRedOutlineFlyDestinations[i][1] != MAPSEC_NONE; i++)
     {

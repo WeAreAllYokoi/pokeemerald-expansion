@@ -2,6 +2,7 @@
 #include "debug.h"
 #include "malloc.h"
 #include "battle.h"
+#include "battle_setup.h"
 #include "battle_special.h"
 #include "cable_club.h"
 #include "data.h"
@@ -9,6 +10,7 @@
 #include "decoration.h"
 #include "diploma.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "event_object_movement.h"
 #include "fieldmap.h"
 #include "field_camera.h"
@@ -325,8 +327,9 @@ void UpdateCyclingRoadState(void)
 
 void SetSSTidalFlag(void)
 {
+    u16 *steps = ADMG_REQUIRE_VAR_SPAN(VAR_CRUISE_STEP_COUNT, 1);
     FlagSet(FLAG_SYS_CRUISE_MODE);
-    *GetVarPointer(VAR_CRUISE_STEP_COUNT) = 0;
+    *steps = 0;
 }
 
 void ResetSSTidalFlag(void)
@@ -337,7 +340,7 @@ void ResetSSTidalFlag(void)
 // Returns TRUE if the Cruise is over
 bool32 CountSSTidalStep(u16 delta)
 {
-    if (!FlagGet(FLAG_SYS_CRUISE_MODE) || (*GetVarPointer(VAR_CRUISE_STEP_COUNT) += delta) < SS_TIDAL_MAX_STEPS)
+    if (!FlagGet(FLAG_SYS_CRUISE_MODE) || (*ADMG_REQUIRE_VAR_SPAN(VAR_CRUISE_STEP_COUNT, 1, FALSE) += delta) < SS_TIDAL_MAX_STEPS)
         return FALSE;
 
     return TRUE;
@@ -345,9 +348,14 @@ bool32 CountSSTidalStep(u16 delta)
 
 enum SSTidalLocation GetSSTidalLocation(s8 *mapGroup, s8 *mapNum, s16 *x, s16 *y)
 {
-    u16 *varCruiseStepCount = GetVarPointer(VAR_CRUISE_STEP_COUNT);
+    u16 *varCruiseStepCount = ADMG_REQUIRE_VAR_SPAN(VAR_CRUISE_STEP_COUNT, 1, (enum SSTidalLocation)-1);
 
-    switch ((enum SSTidalState)(*GetVarPointer(VAR_SS_TIDAL_STATE)))
+    u16 *cruiseState = ADMG_REQUIRE_VAR_SPAN(VAR_SS_TIDAL_STATE, 1, (enum SSTidalLocation)-1);
+    if (mapGroup == NULL || mapNum == NULL || x == NULL || y == NULL
+     || *cruiseState < SS_TIDAL_BOARD_SLATEPORT || *cruiseState > SS_TIDAL_EXIT_CURRENTS_LEFT)
+        return (enum SSTidalLocation)-1;
+
+    switch ((enum SSTidalState)*cruiseState)
     {
     case SS_TIDAL_BOARD_SLATEPORT:
     case SS_TIDAL_LAND_SLATEPORT:
@@ -401,6 +409,19 @@ enum SSTidalLocation GetSSTidalLocation(s8 *mapGroup, s8 *mapNum, s16 *x, s16 *y
     return SS_TIDAL_LOCATION_CURRENTS;
 }
 
+bool8 ADMG_TryGetSSTidalLocation(s8 *mapGroup, s8 *mapNum, s16 *x, s16 *y, enum SSTidalLocation *location)
+{
+    enum SSTidalLocation result;
+    if (location == NULL || ADMG_GetVarSpan(VAR_CRUISE_STEP_COUNT, 1) == NULL
+     || ADMG_GetVarSpan(VAR_SS_TIDAL_STATE, 1) == NULL)
+        return FALSE;
+    result = GetSSTidalLocation(mapGroup, mapNum, x, y);
+    if (result < SS_TIDAL_LOCATION_CURRENTS || result > SS_TIDAL_LOCATION_ROUTE131)
+        return FALSE;
+    *location = result;
+    return TRUE;
+}
+
 bool32 ShouldDoWallyCall(void)
 {
     if (FlagGet(FLAG_ENABLE_FIRST_WALLY_POKENAV_CALL))
@@ -411,7 +432,7 @@ bool32 ShouldDoWallyCall(void)
         case MAP_TYPE_CITY:
         case MAP_TYPE_ROUTE:
         case MAP_TYPE_OCEAN_ROUTE:
-            if (++(*GetVarPointer(VAR_WALLY_CALL_STEP_COUNTER)) < 250)
+            if (++(*ADMG_REQUIRE_VAR_SPAN(VAR_WALLY_CALL_STEP_COUNTER, 1, FALSE)) < 250)
                 return FALSE;
             break;
         default:
@@ -436,7 +457,7 @@ bool32 ShouldDoScottFortreeCall(void)
         case MAP_TYPE_CITY:
         case MAP_TYPE_ROUTE:
         case MAP_TYPE_OCEAN_ROUTE:
-            if (++(*GetVarPointer(VAR_SCOTT_FORTREE_CALL_STEP_COUNTER)) < 10)
+            if (++(*ADMG_REQUIRE_VAR_SPAN(VAR_SCOTT_FORTREE_CALL_STEP_COUNTER, 1, FALSE)) < 10)
                 return FALSE;
             break;
         default:
@@ -461,7 +482,7 @@ bool32 ShouldDoScottBattleFrontierCall(void)
         case MAP_TYPE_CITY:
         case MAP_TYPE_ROUTE:
         case MAP_TYPE_OCEAN_ROUTE:
-            if (++(*GetVarPointer(VAR_SCOTT_BF_CALL_STEP_COUNTER)) < 10)
+            if (++(*ADMG_REQUIRE_VAR_SPAN(VAR_SCOTT_BF_CALL_STEP_COUNTER, 1, FALSE)) < 10)
                 return FALSE;
             break;
         default:
@@ -486,7 +507,7 @@ bool32 ShouldDoRoxanneCall(void)
         case MAP_TYPE_CITY:
         case MAP_TYPE_ROUTE:
         case MAP_TYPE_OCEAN_ROUTE:
-            if (++(*GetVarPointer(VAR_ROXANNE_CALL_STEP_COUNTER)) < 250)
+            if (++(*ADMG_REQUIRE_VAR_SPAN(VAR_ROXANNE_CALL_STEP_COUNTER, 1, FALSE)) < 250)
                 return FALSE;
             break;
         default:
@@ -511,7 +532,7 @@ bool32 ShouldDoRivalRayquazaCall(void)
         case MAP_TYPE_CITY:
         case MAP_TYPE_ROUTE:
         case MAP_TYPE_OCEAN_ROUTE:
-            if (++(*GetVarPointer(VAR_RIVAL_RAYQUAZA_CALL_STEP_COUNTER)) < 250)
+            if (++(*ADMG_REQUIRE_VAR_SPAN(VAR_RIVAL_RAYQUAZA_CALL_STEP_COUNTER, 1, FALSE)) < 250)
                 return FALSE;
             break;
         default:
@@ -1280,6 +1301,11 @@ void SetTrickHouseNuggetFlag(void)
 {
     u16 *specVar = &gSpecialVar_0x8004;
     u16 flag = FLAG_HIDDEN_ITEM_TRICK_HOUSE_NUGGET;
+    if (!ADMG_IsFlagIdValid(flag))
+    {
+        ADMG_StateAccessRejected(flag, __func__);
+        return;
+    }
     *specVar = flag;
     FlagSet(flag);
 }
@@ -1288,6 +1314,11 @@ void ResetTrickHouseNuggetFlag(void)
 {
     u16 *specVar = &gSpecialVar_0x8004;
     u16 flag = FLAG_HIDDEN_ITEM_TRICK_HOUSE_NUGGET;
+    if (!ADMG_IsFlagIdValid(flag))
+    {
+        ADMG_StateAccessRejected(flag, __func__);
+        return;
+    }
     *specVar = flag;
     FlagClear(flag);
 }
@@ -1434,6 +1465,11 @@ bool8 FoundAbandonedShipRoom1Key(void)
 {
     u16 *specVar = &gSpecialVar_0x8004;
     u16 flag = FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_1_KEY;
+    if (!ADMG_IsFlagIdValid(flag))
+    {
+        ADMG_StateAccessRejected(flag, __func__);
+        return FALSE;
+    }
     *specVar = flag;
     if (!FlagGet(flag))
         return FALSE;
@@ -1445,6 +1481,11 @@ bool8 FoundAbandonedShipRoom2Key(void)
 {
     u16 *specVar = &gSpecialVar_0x8004;
     u16 flag = FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_2_KEY;
+    if (!ADMG_IsFlagIdValid(flag))
+    {
+        ADMG_StateAccessRejected(flag, __func__);
+        return FALSE;
+    }
     *specVar = flag;
     if (!FlagGet(flag))
         return FALSE;
@@ -1456,6 +1497,11 @@ bool8 FoundAbandonedShipRoom4Key(void)
 {
     u16 *specVar = &gSpecialVar_0x8004;
     u16 flag = FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_4_KEY;
+    if (!ADMG_IsFlagIdValid(flag))
+    {
+        ADMG_StateAccessRejected(flag, __func__);
+        return FALSE;
+    }
     *specVar = flag;
     if (!FlagGet(flag))
         return FALSE;
@@ -1467,6 +1513,11 @@ bool8 FoundAbandonedShipRoom6Key(void)
 {
     u16 *specVar = &gSpecialVar_0x8004;
     u16 flag = FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_6_KEY;
+    if (!ADMG_IsFlagIdValid(flag))
+    {
+        ADMG_StateAccessRejected(flag, __func__);
+        return FALSE;
+    }
     *specVar = flag;
     if (!FlagGet(flag))
         return FALSE;
@@ -2144,7 +2195,7 @@ bool32 PlayerNotAtTrainerHillEntrance(void)
 
 void UpdateFrontierManiac(u16 daysSince)
 {
-    u16 *var = GetVarPointer(VAR_FRONTIER_MANIAC_FACILITY);
+    u16 *var = ADMG_REQUIRE_VAR_SPAN(VAR_FRONTIER_MANIAC_FACILITY, 1);
     *var += daysSince;
     *var %= FRONTIER_MANIAC_FACILITY_COUNT;
 }
@@ -2910,6 +2961,8 @@ void ShowGlassWorkshopMenu(void)
 
 void SetBattleTowerLinkPlayerGfx(void)
 {
+    ADMG_REQUIRE_VAR_SPAN(VAR_OBJ_GFX_ID_F - 1, 2);
+
     u8 i;
     for (i = 0; i < 2; i++)
     {
@@ -2934,7 +2987,7 @@ void ShowNatureGirlMessage(void)
 
 void UpdateFrontierGambler(u16 daysSince)
 {
-    u16 *var = GetVarPointer(VAR_FRONTIER_GAMBLER_CHALLENGE);
+    u16 *var = ADMG_REQUIRE_VAR_SPAN(VAR_FRONTIER_GAMBLER_CHALLENGE, 1);
     *var += daysSince;
     *var %= FRONTIER_GAMBLER_CHALLENGE_COUNT;
 }
@@ -3684,10 +3737,7 @@ bool32 IsTrainerRegistered(void)
 {
     int index = GetRematchIdxByTrainerIdx(gSpecialVar_0x8004);
     if (index >= 0)
-    {
-        if (FlagGet(TRAINER_REGISTERED_FLAGS_START + index) == TRUE)
-            return TRUE;
-    }
+        return TrainerIsMatchCallRegistered(index);
     return FALSE;
 }
 
@@ -4643,7 +4693,7 @@ bool8 CapeBrinkGetMoveToTeachLeadPokemon(void)
     //   to specialvar = whether a move can be taught in the first place
     u8 i, leadMonSlot, moveCount = 0;
     enum Move moveId;
-    u16 tutorFlag;
+    u32 tutorFlag;
     struct Pokemon *leadMon;
 
     leadMonSlot = GetLeadMonIndex();
@@ -4668,8 +4718,11 @@ bool8 CapeBrinkGetMoveToTeachLeadPokemon(void)
         return FALSE;
     }
 
+    bool8 taught;
+    if (!ADMG_TryReadFlag(tutorFlag, &taught))
+        return FALSE;
     StringCopy(gStringVar2, gMovesInfo[moveId].name);
-    if (FlagGet(tutorFlag) == TRUE)
+    if (taught == TRUE)
         return FALSE;
 
     for (i = 0; i < MAX_MON_MOVES; i++)

@@ -99,6 +99,8 @@ void BreakSubStringNaive(u8 *src, u32 maxWidth, u32 screenLines, u8 fontId, enum
     }
     //  Allocate enough space for word data
     struct StringWord *allWords = Alloc(numWords*sizeof(struct StringWord));
+    for (u32 i = 0; i < numWords; i++)
+        allWords[i] = (struct StringWord){0};
 
     allWords[currWordIndex].startIndex = 0;
     allWords[currWordIndex].width = 0;
@@ -209,6 +211,8 @@ void BreakSubStringAutomatic(u8 *src, u32 maxWidth, u32 screenLines, u8 fontId, 
     }
     //  Allocate enough space for word data
     struct StringWord *allWords = Alloc(numWords*sizeof(struct StringWord));
+    for (u32 i = 0; i < numWords; i++)
+        allWords[i] = (struct StringWord){0};
 
     allWords[currWordIndex].startIndex = 0;
     allWords[currWordIndex].width = 0;
@@ -283,6 +287,7 @@ void BreakSubStringAutomatic(u8 *src, u32 maxWidth, u32 screenLines, u8 fontId, 
 
         //  LINE LAYOUT STARTS HERE
         struct StringLine *stringLines;
+        u32 populatedLines = 0;
         do
         {
             shouldTryAgain = FALSE;
@@ -343,9 +348,12 @@ void BreakSubStringAutomatic(u8 *src, u32 maxWidth, u32 screenLines, u8 fontId, 
                     currWordIndex++;
                 }
             }
+            populatedLines = currLineIndex + 1;
         } while (shouldTryAgain);
         //u32 currBadness = GetStringBadness(stringLines, totalLines, maxWidth);
-        BuildNewString(stringLines, totalLines, screenLines, src, toggleScrollPrompt);
+        // Estimated lines can exceed the populated layout for an unbreakable
+        // word. Empty records do not describe another line of source text.
+        BuildNewString(stringLines, populatedLines, screenLines, src, toggleScrollPrompt);
         Free(stringLines);
     }
 

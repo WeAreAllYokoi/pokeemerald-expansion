@@ -1,5 +1,7 @@
 #include "global.h"
 #include "event_data.h"
+#include "admg_script.h"
+#include "admg_retention.h"
 #include "item.h"
 #include "pokemon.h"
 #include "random.h"
@@ -549,25 +551,48 @@ void ResolveMoves(enum Species species, u32 level, const u16 *movesTemplate, enu
     SortMoves(moves);
 }
 
+static bool8 ADMG_TryReadFilterFuncArg(struct ScriptContext *ctx, u16 *arg)
+{
+    u16 operand = ScriptReadHalfword(ctx);
+
+    /* The optional filter sentinel is encoded data, not a variable ID. */
+    if (operand == FILTER_FUNC_ARG_NONE)
+    {
+        *arg = operand;
+        return TRUE;
+    }
+    return ADMG_TryReadVar(operand, arg, TRUE);
+}
+
+/* Preserve the existing named helper and ABI. Internal commands use the
+ * separate checked interface so an invalid operand cannot become a filter. */
+static u16 ReadFilterFuncArg(struct ScriptContext *ctx) __attribute__((used, noipa));
 static u16 ReadFilterFuncArg(struct ScriptContext *ctx)
 {
-    u16 arg = ScriptReadHalfword(ctx);
-
-    if (arg != FILTER_FUNC_ARG_NONE)
-        arg = VarGet(arg);
-
+    u16 arg;
+    if (!ADMG_TryReadFilterFuncArg(ctx, &arg))
+    {
+        ADMG_StopInvalidStateCommand(ctx);
+        return FILTER_FUNC_ARG_NONE;
+    }
     return arg;
 }
+ADMG_RETAIN_FUNCTION(ReadFilterFuncArg);
 
 void ScrCmd_getrandomspecies(struct ScriptContext *ctx)
 {
     u16 destVar = ScriptReadHalfword(ctx);
-    u16 speciesOptionId = VarGet(ScriptReadHalfword(ctx));
-    struct FilterFuncArgs filterFuncArgs =
+    u16 speciesOptionId;
+    struct FilterFuncArgs filterFuncArgs;
+
+    (void)ADMG_SCRIPT_POINTER(ctx, destVar);
+    speciesOptionId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
+    if (!ADMG_TryReadFilterFuncArg(ctx, &filterFuncArgs.arg1)
+     || !ADMG_TryReadFilterFuncArg(ctx, &filterFuncArgs.arg2))
     {
-        .arg1 = ReadFilterFuncArg(ctx),
-        .arg2 = ReadFilterFuncArg(ctx),
-    };
+        ADMG_StopInvalidStateCommand(ctx);
+        return;
+    }
 
     Script_RequestEffects(SCREFF_V1);
     Script_RequestWriteVar(destVar);
@@ -577,8 +602,11 @@ void ScrCmd_getrandomspecies(struct ScriptContext *ctx)
 void ScrCmd_getrandomitem(struct ScriptContext *ctx)
 {
     u16 destVar = ScriptReadHalfword(ctx);
-    u16 itemOptionId = VarGet(ScriptReadHalfword(ctx));
+    u16 itemOptionId;
     const struct FilterFuncArgs filterFuncArgs = {0};
+
+    (void)ADMG_SCRIPT_POINTER(ctx, destVar);
+    itemOptionId = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
 
     Script_RequestEffects(SCREFF_V1);
     Script_RequestWriteVar(destVar);

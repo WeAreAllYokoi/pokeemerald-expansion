@@ -7,6 +7,7 @@
 #include "daycare.h"
 #include "decompress.h"
 #include "event_data.h"
+#include "admg_script.h"
 #include "international_string_util.h"
 #include "item.h"
 #include "link.h"
@@ -253,7 +254,7 @@ void ReducePlayerPartyToSelectedMons(void)
 void CanHyperTrain(struct ScriptContext *ctx)
 {
     u32 stat = ScriptReadByte(ctx);
-    u32 partyIndex = VarGet(ScriptReadHalfword(ctx));
+    u32 partyIndex = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -284,7 +285,7 @@ void CanHyperTrain(struct ScriptContext *ctx)
 void HyperTrain(struct ScriptContext *ctx)
 {
     u32 stat = ScriptReadByte(ctx);
-    u32 partyIndex = VarGet(ScriptReadHalfword(ctx));
+    u32 partyIndex = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -306,7 +307,7 @@ void HyperTrain(struct ScriptContext *ctx)
 
 void HasGigantamaxFactor(struct ScriptContext *ctx)
 {
-    u32 partyIndex = VarGet(ScriptReadHalfword(ctx));
+    u32 partyIndex = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -318,7 +319,7 @@ void HasGigantamaxFactor(struct ScriptContext *ctx)
 
 void ToggleGigantamaxFactor(struct ScriptContext *ctx)
 {
-    u32 partyIndex = VarGet(ScriptReadHalfword(ctx));
+    u32 partyIndex = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -340,7 +341,7 @@ void ToggleGigantamaxFactor(struct ScriptContext *ctx)
 
 void CheckTeraType(struct ScriptContext *ctx)
 {
-    u32 partyIndex = VarGet(ScriptReadHalfword(ctx));
+    u32 partyIndex = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -353,7 +354,7 @@ void CheckTeraType(struct ScriptContext *ctx)
 void SetTeraType(struct ScriptContext *ctx)
 {
     enum Type type = ScriptReadByte(ctx);
-    u32 partyIndex = VarGet(ScriptReadHalfword(ctx));
+    u32 partyIndex = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -398,7 +399,7 @@ u32 ScriptGiveMon(enum Species species, u8 level, enum Item item)
     return GiveScriptedMonToPlayer(&mon, PARTY_SIZE);
 }
 
-#define PARSE_FLAG(n, default_) (flags & (1 << (n))) ? VarGet(ScriptReadHalfword(ctx)) : (default_)
+#define PARSE_FLAG(n, default_) (flags & (1 << (n))) ? ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx)) : (default_)
 
 /* Give or create a mon to either player or opponent
  */
@@ -410,20 +411,20 @@ void ScrCmd_createmon(struct ScriptContext *ctx)
     u8 slot                   = ScriptReadByte(ctx);
 
     struct PokemonTemplate monTemplate = {0};
-    monTemplate.species      = VarGet(ScriptReadHalfword(ctx));
-    monTemplate.level        = VarGet(ScriptReadHalfword(ctx));
+    monTemplate.species      = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
+    monTemplate.level        = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
 
     u32 flags                 = ScriptReadWord(ctx);
     monTemplate.heldItem     = PARSE_FLAG(0, ITEM_NONE);
     if (flags & (1 << 1))
     {
-        monTemplate.ball = VarGet(ScriptReadHalfword(ctx));
+        monTemplate.ball = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
         monTemplate.doNotUseDefaultBall = TRUE;
     }
     monTemplate.nature       = PARSE_FLAG(2, NATURE_RANDOM);
     if (flags & (1 << 3))
     {
-        monTemplate.abilityNum = VarGet(ScriptReadHalfword(ctx));
+        monTemplate.abilityNum = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
         monTemplate.doNotUseDefaultAbility = TRUE;
     }
     monTemplate.gender       = PARSE_FLAG(4, MON_GENDER_RANDOM);
@@ -439,14 +440,14 @@ void ScrCmd_createmon(struct ScriptContext *ctx)
 
     if (flags & (1 << 21))
     {
-        monTemplate.isShiny = VarGet(ScriptReadHalfword(ctx));
+        monTemplate.isShiny = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
         monTemplate.doNotUseDefaultShinyness = TRUE;
     }
 
     monTemplate.gmaxFactor   = PARSE_FLAG(22, FALSE);
     if (flags & (1 << 23))
     {
-        monTemplate.teraType = VarGet(ScriptReadHalfword(ctx));
+        monTemplate.teraType = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
         monTemplate.doNotUseDefaultTeraType = TRUE;
     }
     monTemplate.dmaxLevel    = PARSE_FLAG(24, 0);
@@ -499,8 +500,8 @@ void Script_GetChosenMonDefensiveIVs(void)
 
 void Script_SetStatus1(struct ScriptContext *ctx)
 {
-    u32 status1 = VarGet(ScriptReadHalfword(ctx));
-    u32 slot = VarGet(ScriptReadHalfword(ctx));
+    u32 status1 = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
+    u32 slot = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 
@@ -525,7 +526,7 @@ void Script_SetStatus1(struct ScriptContext *ctx)
 
 void Script_SetKO(struct ScriptContext *ctx)
 {
-    u32 slot = VarGet(ScriptReadHalfword(ctx));
+    u32 slot = ADMG_SCRIPT_VALUE(ctx, ScriptReadHalfword(ctx));
 
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
 

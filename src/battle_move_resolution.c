@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_state.h"
 #include "battle.h"
 #include "battle_arena.h"
 #include "battle_environment.h"
@@ -1697,7 +1698,11 @@ static enum CancelerResult CancelerProtean(struct BattleCalcValues *cv)
             gBattleMons[cv->battlerAtk].volatiles.usedProteanLibero = TRUE;
         PREPARE_TYPE_BUFFER(gBattleTextBuff1, moveType);
         gBattlerAbility = cv->battlerAtk;
+        {
+        u64 printGeneration = ADMG_BeginStateAccessCheck();
         PrepareStringBattleWithWait(STRINGID_EMPTYSTRING3, cv->battlerAtk);
+        if (!ADMG_EndStateAccessCheck(printGeneration)) return CANCELER_RESULT_RUN_SCRIPT;
+    }
         BattleScriptCall(BattleScript_ProteanActivates);
         return CANCELER_RESULT_RUN_SCRIPT_AND_INCREMENT;
     }
@@ -2939,7 +2944,11 @@ static enum CancelerResult CancelerHealthBarUpdate(struct BattleCalcValues *cv)
     {
         if (DoesSubstituteBlockMove(cv->battlerAtk, battlerDef, cv->move))
         {
-            PrepareStringBattle(STRINGID_SUBSTITUTEDAMAGED, battlerDef);
+            {
+        u64 printGeneration = ADMG_BeginStateAccessCheck();
+        PrepareStringBattle(STRINGID_SUBSTITUTEDAMAGED, battlerDef);
+        if (!ADMG_EndStateAccessCheck(printGeneration)) return CANCELER_RESULT_RUN_SCRIPT;
+    }
             continue;
         }
 

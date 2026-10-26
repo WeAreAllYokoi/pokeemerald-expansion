@@ -1,4 +1,6 @@
 #include "global.h"
+#include "admg_state.h"
+#include "admg_trainer_actor.h"
 #include "battle.h"
 #include "battle_ai_switch.h"
 #include "battle_ai_util.h"
@@ -310,13 +312,31 @@ void OpponentBufferExecCompleted(enum BattlerId battler)
 
 static u32 OpponentGetTrainerPicId(enum BattlerId battlerId)
 {
+    if ((u32)battlerId >= MAX_BATTLERS_COUNT)
+    { ADMG_StateAccessRejected((u32)battlerId, __func__); return 0; }
+    struct ADMG_BattleTrainerActors snapshot;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    if (!ADMG_TryCaptureBattleTrainerActors(gBattleTypeFlags, TRAINER_BATTLE_PARAM.opponentA,
+        TRAINER_BATTLE_PARAM.opponentB, gPartnerTrainerId, &snapshot)) return 0;
+    bool8 useSecond = (gBattleTypeFlags & (BATTLE_TYPE_TWO_OPPONENTS | BATTLE_TYPE_TOWER_LINK_MULTI))
+        && !BATTLE_TWO_VS_ONE_OPPONENT && battlerId != 1;
+    u16 identity = useSecond ? TRAINER_BATTLE_PARAM.opponentB : TRAINER_BATTLE_PARAM.opponentA;
+    u32 domain = gBattleTypeFlags & (BATTLE_TYPE_FRONTIER | BATTLE_TYPE_TRAINER_HILL)
+        ? ADMG_ACTOR_FACILITY : ADMG_ACTOR_CONTENT;
+    if (domain == ADMG_ACTOR_CONTENT
+     && (gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK | BATTLE_TYPE_TOWER_LINK_MULTI)))
+    { ADMG_StateAccessRejected(identity, __func__); return 0; }
+    struct ADMG_TrainerActorRef actor;
+    if (!((gBattleTypeFlags & BATTLE_TYPE_EREADER_TRAINER)
+     && ADMG_IsBattleFacilityActor(gBattleTypeFlags, ADMG_ACTOR_OPPONENT, identity, ADMG_ACTOR_EREADER))
+     && !ADMG_TryClassifyTrainerActor(identity, domain, ADMG_ACTOR_OPPONENT, &actor)) return 0;
     enum TrainerPicID trainerPicId;
 
     if (gBattleTypeFlags & BATTLE_TYPE_SECRET_BASE)
     {
         trainerPicId = GetSecretBaseTrainerPicIndex();
     }
-    else if (TRAINER_BATTLE_PARAM.opponentA == TRAINER_FRONTIER_BRAIN)
+    else if (identity == TRAINER_FRONTIER_BRAIN && (gBattleTypeFlags & BATTLE_TYPE_FRONTIER))
     {
         trainerPicId = GetFrontierBrainTrainerPicIndex();
     }
@@ -329,13 +349,13 @@ static u32 OpponentGetTrainerPicId(enum BattlerId battlerId)
         if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS)
         {
             if (battlerId == 1)
-                trainerPicId = GetTrainerHillTrainerFrontSpriteId(TRAINER_BATTLE_PARAM.opponentA);
+                trainerPicId = GetTrainerHillTrainerFrontSpriteId(identity);
             else
-                trainerPicId = GetTrainerHillTrainerFrontSpriteId(TRAINER_BATTLE_PARAM.opponentB);
+                trainerPicId = GetTrainerHillTrainerFrontSpriteId(identity);
         }
         else
         {
-            trainerPicId = GetTrainerHillTrainerFrontSpriteId(TRAINER_BATTLE_PARAM.opponentA);
+            trainerPicId = GetTrainerHillTrainerFrontSpriteId(identity);
         }
     }
     else if (gBattleTypeFlags & BATTLE_TYPE_FRONTIER)
@@ -343,13 +363,13 @@ static u32 OpponentGetTrainerPicId(enum BattlerId battlerId)
         if (gBattleTypeFlags & (BATTLE_TYPE_TWO_OPPONENTS | BATTLE_TYPE_TOWER_LINK_MULTI))
         {
             if (battlerId == 1)
-                trainerPicId = GetFrontierTrainerFrontSpriteId(TRAINER_BATTLE_PARAM.opponentA);
+                trainerPicId = GetFrontierTrainerFrontSpriteId(identity);
             else
-                trainerPicId = GetFrontierTrainerFrontSpriteId(TRAINER_BATTLE_PARAM.opponentB);
+                trainerPicId = GetFrontierTrainerFrontSpriteId(identity);
         }
         else
         {
-            trainerPicId = GetFrontierTrainerFrontSpriteId(TRAINER_BATTLE_PARAM.opponentA);
+            trainerPicId = GetFrontierTrainerFrontSpriteId(identity);
         }
     }
     else if (gBattleTypeFlags & BATTLE_TYPE_EREADER_TRAINER)
@@ -359,26 +379,38 @@ static u32 OpponentGetTrainerPicId(enum BattlerId battlerId)
     else if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS)
     {
         if (battlerId != 1)
-            trainerPicId = GetTrainerPicFromId(TRAINER_BATTLE_PARAM.opponentB);
+            trainerPicId = GetTrainerPicFromId(identity);
         else
-            trainerPicId = GetTrainerPicFromId(TRAINER_BATTLE_PARAM.opponentA);
+            trainerPicId = GetTrainerPicFromId(identity);
     }
     else
     {
-        trainerPicId = GetTrainerPicFromId(TRAINER_BATTLE_PARAM.opponentA);
+        trainerPicId = GetTrainerPicFromId(identity);
     }
 
+    if (!ADMG_EndStateAccessCheck(generation)
+     || !ADMG_BattleTrainerActorsCurrent(&snapshot, gBattleTypeFlags,
+        TRAINER_BATTLE_PARAM.opponentA, TRAINER_BATTLE_PARAM.opponentB, gPartnerTrainerId)) return 0;
+    if (identity != (useSecond ? TRAINER_BATTLE_PARAM.opponentB : TRAINER_BATTLE_PARAM.opponentA))
+    { ADMG_StateAccessRejected(identity, __func__); return 0; }
+    if ((u32)trainerPicId >= TRAINER_PIC_COUNT)
+    { ADMG_StateAccessRejected((u32)trainerPicId, __func__); return 0; }
     return trainerPicId;
 }
 
 static void OpponentHandleDrawTrainerPic(enum BattlerId battler)
 {
+    if ((u32)battler >= MAX_BATTLERS_COUNT)
+    { ADMG_StateAccessRejected((u32)battler, __func__); return; }
+    u64 generation = ADMG_BeginStateAccessCheck();
     s16 xPos;
     enum TrainerPicID trainerPicId;
 
     // Sets battle test opponent sprites to Leaf and Red
     if (TESTING)
     {
+        if (!ADMG_TryValidateBattleTrainerActors(gBattleTypeFlags, TRAINER_BATTLE_PARAM.opponentA,
+            TRAINER_BATTLE_PARAM.opponentB, gPartnerTrainerId)) return;
         if (GetBattlerPosition(battler) == B_POSITION_OPPONENT_LEFT)
         {
             trainerPicId = TRAINER_PIC_LEAF;
@@ -410,12 +442,15 @@ static void OpponentHandleDrawTrainerPic(enum BattlerId battler)
         }
     }
 
+    if (!ADMG_EndStateAccessCheck(generation)) return;
     BtlController_HandleDrawTrainerPic(battler, trainerPicId, TRUE, xPos, 40, -1);
 }
 
 void OpponentHandleTrainerSlide(enum BattlerId battler)
 {
+    u64 generation = ADMG_BeginStateAccessCheck();
     enum TrainerPicID trainerPicId = OpponentGetTrainerPicId(battler);
+    if (!ADMG_EndStateAccessCheck(generation)) return;
     BtlController_HandleTrainerSlide(battler, trainerPicId);
 }
 

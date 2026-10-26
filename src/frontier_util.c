@@ -1,7 +1,9 @@
 #include "global.h"
+#include "admg_trainer.h"
 #include "frontier_util.h"
 #include "easy_chat.h"
 #include "event_data.h"
+#include "admg_state.h"
 #include "battle_setup.h"
 #include "overworld.h"
 #include "random.h"
@@ -37,6 +39,7 @@
 #include "constants/battle_pike.h"
 #include "constants/frontier_util.h"
 #include "constants/trainers.h"
+#include "constants/apprentice.h"
 #include "constants/game_stat.h"
 #include "constants/moves.h"
 #include "constants/items.h"
@@ -44,15 +47,7 @@
 #include "party_menu.h"
 #include "list_menu.h"
 
-struct FrontierBrainMon
-{
-    enum Species species;
-    enum Item heldItem;
-    u8 fixedIV;
-    u8 nature;
-    u8 evs[NUM_STATS];
-    enum Move moves[MAX_MON_MOVES];
-};
+
 
 // This file's functions.
 static void GetChallengeStatus(void);
@@ -904,36 +899,126 @@ static void GetChallengeStatus(void)
     }
 }
 
+bool8 ADMG_TryGetFrontierBrainInfo(u32 facility, const struct FrontierBrain **info)
+{
+    if (info == NULL || facility >= ARRAY_COUNT(gFrontierBrainInfo))
+    { ADMG_StateAccessRejected(facility, __func__); return FALSE; }
+    *info = &gFrontierBrainInfo[facility];
+    return TRUE;
+}
+
+static bool8 ADMG_TryGetBrainFacility(bool8 recorded, u32 *facility)
+{
+    u32 flags = gBattleTypeFlags & BATTLE_TYPE_RECORDED;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    u32 selected = recorded && flags ? GetRecordedBattleFrontierFacility() : VarGet(VAR_FRONTIER_FACILITY);
+    if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+    if (recorded && (gBattleTypeFlags & BATTLE_TYPE_RECORDED) != flags)
+    { ADMG_StateAccessRejected(selected, __func__); return FALSE; }
+    const struct FrontierBrain *info;
+    if (!ADMG_TryGetFrontierBrainInfo(selected, &info)) return FALSE;
+    *facility = selected;
+    return TRUE;
+}
+
+bool8 ADMG_TryGetFrontierBrainMon(u32 facility, u32 symbol, u32 monId,
+    const struct FrontierBrainMon **mon)
+{
+    if (mon == NULL || facility >= ARRAY_COUNT(sFrontierBrainsMons)
+     || symbol >= ARRAY_COUNT(sFrontierBrainsMons[0])
+     || monId >= ARRAY_COUNT(sFrontierBrainsMons[0][0]))
+    { ADMG_StateAccessRejected(monId, __func__); return FALSE; }
+    *mon = &sFrontierBrainsMons[facility][symbol][monId];
+    return TRUE;
+}
+
+static bool8 ADMG_TryGetLiveBrainMon(u32 monId, const struct FrontierBrainMon **mon)
+{
+    u32 facility;
+    if (!ADMG_TryGetBrainFacility(FALSE, &facility)) return FALSE;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    s32 symbol = GetFronterBrainSymbol();
+    if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+    return ADMG_TryGetFrontierBrainMon(facility, symbol, monId, mon);
+}
+
+bool8 ADMG_TryPrepareFrontierBrainSelection(struct ADMG_FrontierBrainSelection *selection)
+{
+    if (selection == NULL || gSaveBlock2Ptr == NULL)
+    { ADMG_StateAccessRejected(0, __func__); return FALSE; }
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    enum FrontierLevelMode mode = save->frontier.lvlMode;
+    struct ADMG_FrontierBrainSelection selected = {0};
+    u64 generation = ADMG_BeginStateAccessCheck();
+    if (!ADMG_TryGetBrainFacility(FALSE, &selected.facility)) return FALSE;
+    s32 symbol = GetFronterBrainSymbol();
+    if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+    selected.symbol = symbol;
+    if (!ADMG_TryGetFrontierBrainMon(selected.facility, selected.symbol, 0, &selected.mons)) return FALSE;
+    selected.tournamentId = -1;
+    if (selected.facility == FRONTIER_FACILITY_DOME)
+    {
+        selected.tournamentId = TrainerIdToDomeTournamentId(TRAINER_FRONTIER_BRAIN);
+        if ((u32)selected.tournamentId >= DOME_TOURNAMENT_TRAINERS_COUNT)
+        { ADMG_StateAccessRejected(selected.tournamentId, __func__); return FALSE; }
+    }
+    if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+    if (gSaveBlock2Ptr != save || save->frontier.lvlMode != mode)
+    { ADMG_StateAccessRejected(selected.facility, __func__); return FALSE; }
+    memcpy(selection, &selected, sizeof(selected));
+    return TRUE;
+}
+
+static bool8 ADMG_TryGetFrontierBrainBattledBit(u32 *bit)
+{
+    u32 facility;
+    const struct FrontierBrain *info;
+    if (!ADMG_TryGetBrainFacility(FALSE, &facility) || !ADMG_TryGetFrontierBrainInfo(facility, &info)) return FALSE;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    u32 symbol = GetPlayerSymbolCountForFacility(facility);
+    if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+    if (symbol == 2) symbol = 1;
+    if (symbol >= ARRAY_COUNT(info->battledBit))
+    { ADMG_StateAccessRejected(symbol, __func__); return FALSE; }
+    *bit = info->battledBit[symbol];
+    return TRUE;
+}
+
 static void GetFrontierData(void)
 {
-    u8 facility = VarGet(VAR_FRONTIER_FACILITY);
-    u8 hasSymbol = GetPlayerSymbolCountForFacility(facility);
-    if (hasSymbol == 2)
-        hasSymbol = 1;
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    if (save == NULL) { ADMG_StateAccessRejected(0, __func__); return; }
+    u32 battledBit = 0;
+    if (gSpecialVar_0x8005 == FRONTIER_DATA_HEARD_BRAIN_SPEECH)
+    {
+        if (!ADMG_TryGetFrontierBrainBattledBit(&battledBit)) return;
+        if (gSaveBlock2Ptr != save)
+        { ADMG_StateAccessRejected(0, __func__); return; }
+    }
 
     switch (gSpecialVar_0x8005)
     {
     case FRONTIER_DATA_CHALLENGE_STATUS:
-        gSpecialVar_Result = gSaveBlock2Ptr->frontier.challengeStatus;
+        gSpecialVar_Result = save->frontier.challengeStatus;
         break;
     case FRONTIER_DATA_LVL_MODE:
-        gSpecialVar_Result = gSaveBlock2Ptr->frontier.lvlMode;
+        gSpecialVar_Result = save->frontier.lvlMode;
         break;
     case FRONTIER_DATA_BATTLE_NUM:
-        gSpecialVar_Result = gSaveBlock2Ptr->frontier.curChallengeBattleNum;
+        gSpecialVar_Result = save->frontier.curChallengeBattleNum;
         break;
     case FRONTIER_DATA_PAUSED:
-        gSpecialVar_Result = gSaveBlock2Ptr->frontier.challengePaused;
+        gSpecialVar_Result = save->frontier.challengePaused;
         break;
     case FRONTIER_DATA_BATTLE_OUTCOME:
         gSpecialVar_Result = gBattleOutcome;
         gBattleOutcome = 0;
         break;
     case FRONTIER_DATA_RECORD_DISABLED:
-        gSpecialVar_Result = gSaveBlock2Ptr->frontier.disableRecordBattle;
+        gSpecialVar_Result = save->frontier.disableRecordBattle;
         break;
     case FRONTIER_DATA_HEARD_BRAIN_SPEECH:
-        gSpecialVar_Result = gSaveBlock2Ptr->frontier.battledBrainFlags & gFrontierBrainInfo[facility].battledBit[hasSymbol];
+        gSpecialVar_Result = save->frontier.battledBrainFlags & battledBit;
         break;
     }
 }
@@ -941,34 +1026,39 @@ static void GetFrontierData(void)
 static void SetFrontierData(void)
 {
     s32 i;
-    u8 facility = VarGet(VAR_FRONTIER_FACILITY);
-    u8 hasSymbol = GetPlayerSymbolCountForFacility(facility);
-    if (hasSymbol == 2)
-        hasSymbol = 1;
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    if (save == NULL) { ADMG_StateAccessRejected(0, __func__); return; }
+    u32 battledBit = 0;
+    if (gSpecialVar_0x8005 == FRONTIER_DATA_HEARD_BRAIN_SPEECH)
+    {
+        if (!ADMG_TryGetFrontierBrainBattledBit(&battledBit)) return;
+        if (gSaveBlock2Ptr != save)
+        { ADMG_StateAccessRejected(0, __func__); return; }
+    }
 
     switch (gSpecialVar_0x8005)
     {
     case FRONTIER_DATA_CHALLENGE_STATUS:
-        gSaveBlock2Ptr->frontier.challengeStatus = gSpecialVar_0x8006;
+        save->frontier.challengeStatus = gSpecialVar_0x8006;
         break;
     case FRONTIER_DATA_LVL_MODE:
-        gSaveBlock2Ptr->frontier.lvlMode = gSpecialVar_0x8006;
+        save->frontier.lvlMode = gSpecialVar_0x8006;
         break;
     case FRONTIER_DATA_BATTLE_NUM:
-        gSaveBlock2Ptr->frontier.curChallengeBattleNum = gSpecialVar_0x8006;
+        save->frontier.curChallengeBattleNum = gSpecialVar_0x8006;
         break;
     case FRONTIER_DATA_PAUSED:
-        gSaveBlock2Ptr->frontier.challengePaused = gSpecialVar_0x8006;
+        save->frontier.challengePaused = gSpecialVar_0x8006;
         break;
     case FRONTIER_DATA_SELECTED_MON_ORDER:
         for (i = 0; i < MAX_FRONTIER_PARTY_SIZE; i++)
-            gSaveBlock2Ptr->frontier.selectedPartyMons[i] = gSelectedOrderFromParty[i];
+            save->frontier.selectedPartyMons[i] = gSelectedOrderFromParty[i];
         break;
     case FRONTIER_DATA_RECORD_DISABLED:
-        gSaveBlock2Ptr->frontier.disableRecordBattle = gSpecialVar_0x8006;
+        save->frontier.disableRecordBattle = gSpecialVar_0x8006;
         break;
     case FRONTIER_DATA_HEARD_BRAIN_SPEECH:
-        gSaveBlock2Ptr->frontier.battledBrainFlags |= gFrontierBrainInfo[facility].battledBit[hasSymbol];
+        save->frontier.battledBrainFlags |= battledBit;
         break;
     }
 }
@@ -1745,35 +1835,40 @@ static void Script_GetFrontierBrainStatus(void)
 u8 GetFrontierBrainStatus(void)
 {
     s32 status = FRONTIER_BRAIN_NOT_READY;
-    s32 facility = VarGet(VAR_FRONTIER_FACILITY);
+    u32 facility;
+    const struct FrontierBrain *info;
+    if (!ADMG_TryGetBrainFacility(FALSE, &facility) || !ADMG_TryGetFrontierBrainInfo(facility, &info)) return FRONTIER_BRAIN_NOT_READY;
+    u64 generation = ADMG_BeginStateAccessCheck();
     s32 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);
     u16 winStreakNoModifier = GetCurrentFacilityWinStreak();
-    s32 winStreak = winStreakNoModifier + gFrontierBrainInfo[facility].streakAppearances[3];
+    if (!ADMG_EndStateAccessCheck(generation)) return FRONTIER_BRAIN_NOT_READY;
+    s32 winStreak = winStreakNoModifier + info->streakAppearances[3];
     s32 symbolsCount;
 
     if (battleMode != FRONTIER_MODE_SINGLES)
         return FRONTIER_BRAIN_NOT_READY;
 
     symbolsCount = GetPlayerSymbolCountForFacility(facility);
+    if (!ADMG_EndStateAccessCheck(generation)) return FRONTIER_BRAIN_NOT_READY;
     switch (symbolsCount)
     {
     // Missing a symbol
     case 0:
     case 1:
-        if (winStreak == gFrontierBrainInfo[facility].streakAppearances[symbolsCount])
+        if (winStreak == info->streakAppearances[symbolsCount])
             status = symbolsCount + 1; // FRONTIER_BRAIN_SILVER and FRONTIER_BRAIN_GOLD
         break;
     // Already received both symbols
     case 2:
     default:
         // Silver streak is reached
-        if (winStreak == gFrontierBrainInfo[facility].streakAppearances[0])
+        if (winStreak == info->streakAppearances[0])
             status = FRONTIER_BRAIN_STREAK;
         // Gold streak is reached
-        else if (winStreak == gFrontierBrainInfo[facility].streakAppearances[1])
+        else if (winStreak == info->streakAppearances[1])
             status = FRONTIER_BRAIN_STREAK_LONG;
         // Some increment of the gold streak is reached
-        else if (winStreak > gFrontierBrainInfo[facility].streakAppearances[1] && (winStreak - gFrontierBrainInfo[facility].streakAppearances[1]) % gFrontierBrainInfo[facility].streakAppearances[2] == 0)
+        else if (winStreak > info->streakAppearances[1] && info->streakAppearances[2] != 0 && (winStreak - info->streakAppearances[1]) % info->streakAppearances[2] == 0)
             status = FRONTIER_BRAIN_STREAK_LONG;
         break;
     }
@@ -1781,23 +1876,130 @@ u8 GetFrontierBrainStatus(void)
     return status;
 }
 
+struct ADMG_FrontierMetadata
+{
+    u32 facilityClass;
+    u32 apprenticeId;
+    bool8 recorded;
+    const struct BattleFrontierTrainer *trainer;
+    const struct BattleFrontierTrainer *table;
+    struct SaveBlock2 *save;
+    enum FrontierLevelMode mode;
+    u32 recordedFlags;
+    bool8 usesRecorded;
+    u64 generation;
+};
+static bool8 ADMG_CaptureFrontierMetadataContext(struct ADMG_FrontierMetadata *metadata, u32 identity, bool8 usesRecorded)
+{
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    if (metadata == NULL || save == NULL)
+    { ADMG_StateAccessRejected(identity, __func__); return FALSE; }
+    metadata->save = save;
+    metadata->mode = save->frontier.lvlMode;
+    metadata->recordedFlags = gBattleTypeFlags & BATTLE_TYPE_RECORDED;
+    metadata->usesRecorded = usesRecorded;
+    metadata->generation = ADMG_BeginStateAccessCheck();
+    return TRUE;
+}
+
+static bool8 ADMG_FrontierMetadataContextCurrent(const struct ADMG_FrontierMetadata *metadata,
+    u32 identity, bool8 published)
+{
+    if (metadata == NULL || metadata->save == NULL)
+    { ADMG_StateAccessRejected(identity, __func__); return FALSE; }
+    if (!ADMG_EndStateAccessCheck(metadata->generation)) return FALSE;
+    if (gSaveBlock2Ptr != metadata->save || metadata->save->frontier.lvlMode != metadata->mode
+     || (metadata->usesRecorded && (gBattleTypeFlags & BATTLE_TYPE_RECORDED) != metadata->recordedFlags)
+     || (published && metadata->trainer != NULL && gFacilityTrainers != metadata->table))
+    { ADMG_StateAccessRejected(identity, __func__); return FALSE; }
+    return TRUE;
+}
+
+
+bool8 ADMG_TryValidateTrainerText(const u8 *text, u32 extent, u32 identity, u32 *length)
+{
+    if (text == NULL || extent == 0)
+    { ADMG_StateAccessRejected(identity, __func__); return FALSE; }
+    u32 end = 0;
+    while (end < extent && text[end] != EOS) ++end;
+    if (end == extent) { ADMG_StateAccessRejected(identity, __func__); return FALSE; }
+    for (u32 cursor = 0; cursor < end;)
+    {
+        if (text[cursor] != EXT_CTRL_CODE_BEGIN) { ++cursor; continue; }
+        ++cursor;
+        u32 skip = GetExtCtrlCodeLength(text[cursor]);
+        if (skip > end - cursor)
+        { ADMG_StateAccessRejected(identity, __func__); return FALSE; }
+        cursor += skip;
+    }
+    if (length != NULL) *length = end;
+    return TRUE;
+}
+
+static void ADMG_PublishTrainerName(u8 *destination, const u8 *text, u32 extent,
+    u32 written, u32 identity, u64 generation, const struct ADMG_FrontierMetadata *metadata)
+{
+    if (!ADMG_EndStateAccessCheck(generation)) return;
+    if (metadata != NULL && !ADMG_FrontierMetadataContextCurrent(metadata, identity, TRUE)) return;
+    u32 length;
+    if (!ADMG_TryValidateTrainerText(text, extent, identity, &length)) return;
+    if (written < length + 1) written = length + 1;
+    if (destination == NULL || written > extent)
+    { ADMG_StateAccessRejected(identity, __func__); return; }
+    memcpy(destination, text, written);
+}
+
+static bool8 ADMG_FrontierMetadataValid(u32 trainerId, bool8 recorded, bool8 needsClass, struct ADMG_FrontierMetadata *metadata);
+
+static bool8 ADMG_CopyRecordedFrontierSpeech(struct SaveBlock2 *save, u32 recorded,
+    u64 generation, u32 trainerId)
+{
+    const u16 *speech = GetRecordedBattleEasyChatSpeech();
+    if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
+    if (speech == NULL || gSaveBlock2Ptr != save || (gBattleTypeFlags & BATTLE_TYPE_RECORDED) != recorded)
+    { ADMG_StateAccessRejected(trainerId, __func__); return FALSE; }
+    FrontierSpeechToString(speech);
+    return TRUE;
+}
+
 void CopyFrontierTrainerText(u8 whichText, u16 trainerId)
 {
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    u32 recorded = gBattleTypeFlags & BATTLE_TYPE_RECORDED;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    struct ADMG_FrontierMetadata metadata;
+    const struct BattleFrontierTrainer *admgTrainer = NULL;
+    if (trainerId < FRONTIER_TRAINERS_COUNT && !ADMG_TryGetFacilityTrainerRow(trainerId, &admgTrainer)) return;
+    if (!ADMG_FrontierMetadataValid(trainerId, whichText != FRONTIER_BEFORE_TEXT, FALSE, &metadata)) return;
+    if (!ADMG_EndStateAccessCheck(generation)) return;
+    if (gSaveBlock2Ptr != save || (gBattleTypeFlags & BATTLE_TYPE_RECORDED) != recorded)
+    { ADMG_StateAccessRejected(trainerId, __func__); return; }
+#if FREE_BATTLE_TOWER_E_READER == TRUE
+    /* The disabled native backing is not an apprentice record. */
+    if (trainerId == TRAINER_EREADER) return;
+#endif
+
+    if (trainerId > TRAINER_FRONTIER_BRAIN || gSaveBlock2Ptr == NULL)
+    {
+        ADMG_StateAccessRejected(trainerId, __func__);
+        return ;
+    }
+
     switch (whichText)
     {
     case FRONTIER_BEFORE_TEXT:
     #if FREE_BATTLE_TOWER_E_READER == FALSE
         if (trainerId == TRAINER_EREADER)
-            FrontierSpeechToString(gSaveBlock2Ptr->frontier.ereaderTrainer.greeting);
+            FrontierSpeechToString(save->frontier.ereaderTrainer.greeting);
         else if (trainerId == TRAINER_FRONTIER_BRAIN)
     #else
         if (trainerId == TRAINER_FRONTIER_BRAIN)
     #endif //FREE_BATTLE_TOWER_E_READER
             CopyFrontierBrainText(FALSE);
         else if (trainerId < FRONTIER_TRAINERS_COUNT)
-            FrontierSpeechToString(gFacilityTrainers[trainerId].speechBefore);
+            FrontierSpeechToString(admgTrainer->speechBefore);
         else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)
-            FrontierSpeechToString(gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].greeting);
+            FrontierSpeechToString(save->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].greeting);
         else
             BufferApprenticeChallengeText(trainerId - TRAINER_RECORD_MIXING_APPRENTICE);
         break;
@@ -1805,7 +2007,7 @@ void CopyFrontierTrainerText(u8 whichText, u16 trainerId)
     #if FREE_BATTLE_TOWER_E_READER == FALSE
         if (trainerId == TRAINER_EREADER)
         {
-            FrontierSpeechToString(gSaveBlock2Ptr->frontier.ereaderTrainer.farewellPlayerLost);
+            FrontierSpeechToString(save->frontier.ereaderTrainer.farewellPlayerLost);
         }
         else if (trainerId == TRAINER_FRONTIER_BRAIN)
     #else
@@ -1816,28 +2018,32 @@ void CopyFrontierTrainerText(u8 whichText, u16 trainerId)
         }
         else if (trainerId < FRONTIER_TRAINERS_COUNT)
         {
-            FrontierSpeechToString(gFacilityTrainers[trainerId].speechWin);
+            FrontierSpeechToString(admgTrainer->speechWin);
         }
         else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)
         {
             if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
-                FrontierSpeechToString(GetRecordedBattleEasyChatSpeech());
+            {
+                if (!ADMG_CopyRecordedFrontierSpeech(save, recorded, generation, trainerId)) return;
+            }
             else
-                FrontierSpeechToString(gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].speechWon);
+                FrontierSpeechToString(save->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].speechWon);
         }
         else
         {
             if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
-                FrontierSpeechToString(GetRecordedBattleEasyChatSpeech());
+            {
+                if (!ADMG_CopyRecordedFrontierSpeech(save, recorded, generation, trainerId)) return;
+            }
             else
-                FrontierSpeechToString(gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].speechWon);
+                FrontierSpeechToString(save->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].speechWon);
         }
         break;
     case FRONTIER_PLAYER_WON_TEXT:
         if (trainerId == TRAINER_EREADER)
         {
         #if FREE_BATTLE_TOWER_E_READER == FALSE
-            FrontierSpeechToString(gSaveBlock2Ptr->frontier.ereaderTrainer.farewellPlayerWon);
+            FrontierSpeechToString(save->frontier.ereaderTrainer.farewellPlayerWon);
         #endif //FREE_BATTLE_TOWER_E_READER
         }
         else if (trainerId == TRAINER_FRONTIER_BRAIN)
@@ -1846,25 +2052,27 @@ void CopyFrontierTrainerText(u8 whichText, u16 trainerId)
         }
         else if (trainerId < FRONTIER_TRAINERS_COUNT)
         {
-            FrontierSpeechToString(gFacilityTrainers[trainerId].speechLose);
+            FrontierSpeechToString(admgTrainer->speechLose);
         }
         else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)
         {
             if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
-                FrontierSpeechToString(GetRecordedBattleEasyChatSpeech());
+            {
+                if (!ADMG_CopyRecordedFrontierSpeech(save, recorded, generation, trainerId)) return;
+            }
             else
-                FrontierSpeechToString(gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].speechLost);
+                FrontierSpeechToString(save->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].speechLost);
         }
         else
         {
             if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
             {
-                trainerId = GetRecordedBattleApprenticeId();
+                trainerId = metadata.apprenticeId;
                 FrontierSpeechToString(gApprentices[trainerId].speechLost);
             }
             else
             {
-                trainerId = gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].id;
+                trainerId = metadata.apprenticeId;
                 FrontierSpeechToString(gApprentices[trainerId].speechLost);
             }
         }
@@ -1902,26 +2110,46 @@ void ResetWinStreaks(void)
 
 u32 GetCurrentFacilityWinStreak(void)
 {
-    s32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    if (save == NULL) { ADMG_StateAccessRejected(0, __func__); return 0; }
+    u64 generation = ADMG_BeginStateAccessCheck();
+    s32 lvlMode = save->frontier.lvlMode;
     s32 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);
     s32 facility = VarGet(VAR_FRONTIER_FACILITY);
 
+    if (!ADMG_EndStateAccessCheck(generation)) return 0;
+    if (gSaveBlock2Ptr != save || save->frontier.lvlMode != lvlMode)
+    { ADMG_StateAccessRejected(facility, __func__); return 0; }
     switch (facility)
     {
     case FRONTIER_FACILITY_TOWER:
-        return gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode];
+        if ((u32)battleMode >= ARRAY_COUNT(save->frontier.towerWinStreaks) || (u32)lvlMode >= ARRAY_COUNT(save->frontier.towerWinStreaks[0]))
+        { ADMG_StateAccessRejected(battleMode, __func__); return 0; }
+        return save->frontier.towerWinStreaks[battleMode][lvlMode];
     case FRONTIER_FACILITY_DOME:
-        return gSaveBlock2Ptr->frontier.domeWinStreaks[battleMode][lvlMode];
+        if ((u32)battleMode >= ARRAY_COUNT(save->frontier.domeWinStreaks) || (u32)lvlMode >= ARRAY_COUNT(save->frontier.domeWinStreaks[0]))
+        { ADMG_StateAccessRejected(battleMode, __func__); return 0; }
+        return save->frontier.domeWinStreaks[battleMode][lvlMode];
     case FRONTIER_FACILITY_PALACE:
-        return gSaveBlock2Ptr->frontier.palaceWinStreaks[battleMode][lvlMode];
+        if ((u32)battleMode >= ARRAY_COUNT(save->frontier.palaceWinStreaks) || (u32)lvlMode >= ARRAY_COUNT(save->frontier.palaceWinStreaks[0]))
+        { ADMG_StateAccessRejected(battleMode, __func__); return 0; }
+        return save->frontier.palaceWinStreaks[battleMode][lvlMode];
     case FRONTIER_FACILITY_ARENA:
-        return gSaveBlock2Ptr->frontier.arenaWinStreaks[lvlMode];
+        if ((u32)lvlMode >= ARRAY_COUNT(save->frontier.arenaWinStreaks))
+        { ADMG_StateAccessRejected(lvlMode, __func__); return 0; }
+        return save->frontier.arenaWinStreaks[lvlMode];
     case FRONTIER_FACILITY_FACTORY:
-        return gSaveBlock2Ptr->frontier.factoryWinStreaks[battleMode][lvlMode];
+        if ((u32)battleMode >= ARRAY_COUNT(save->frontier.factoryWinStreaks) || (u32)lvlMode >= ARRAY_COUNT(save->frontier.factoryWinStreaks[0]))
+        { ADMG_StateAccessRejected(battleMode, __func__); return 0; }
+        return save->frontier.factoryWinStreaks[battleMode][lvlMode];
     case FRONTIER_FACILITY_PIKE:
-        return gSaveBlock2Ptr->frontier.pikeWinStreaks[lvlMode];
+        if ((u32)lvlMode >= ARRAY_COUNT(save->frontier.pikeWinStreaks))
+        { ADMG_StateAccessRejected(lvlMode, __func__); return 0; }
+        return save->frontier.pikeWinStreaks[lvlMode];
     case FRONTIER_FACILITY_PYRAMID:
-        return gSaveBlock2Ptr->frontier.pyramidWinStreaks[lvlMode];
+        if ((u32)lvlMode >= ARRAY_COUNT(save->frontier.pyramidWinStreaks))
+        { ADMG_StateAccessRejected(lvlMode, __func__); return 0; }
+        return save->frontier.pyramidWinStreaks[lvlMode];
     default:
         return 0;
     }
@@ -1945,8 +2173,13 @@ static void IsTrainerFrontierBrain(void)
 
 u8 GetPlayerSymbolCountForFacility(u8 facility)
 {
-    return FlagGet(FLAG_SYS_TOWER_SILVER + facility * 2)
-         + FlagGet(FLAG_SYS_TOWER_GOLD + facility * 2);
+    u16 silver, gold;
+    bool8 hasSilver, hasGold;
+    if (!ADMG_TryGetIndexedFlagId(FLAG_SYS_TOWER_SILVER, facility, NUM_FRONTIER_FACILITIES, 2, &silver)
+     || !ADMG_TryGetIndexedFlagId(FLAG_SYS_TOWER_GOLD, facility, NUM_FRONTIER_FACILITIES, 2, &gold)
+     || !ADMG_TryReadFlag(silver, &hasSilver) || !ADMG_TryReadFlag(gold, &hasGold))
+        return 0;
+    return hasSilver + hasGold;
 }
 
 static void GiveBattlePoints(void)
@@ -2016,11 +2249,15 @@ static void GetFacilitySymbolCount(void)
 
 static void GiveFacilitySymbol(void)
 {
-    s32 facility = VarGet(VAR_FRONTIER_FACILITY);
+    u16 facility, silver, gold;
+    if (!ADMG_TryReadVar(VAR_FRONTIER_FACILITY, &facility, FALSE)
+     || !ADMG_TryGetIndexedFlagId(FLAG_SYS_TOWER_SILVER, facility, NUM_FRONTIER_FACILITIES, 2, &silver)
+     || !ADMG_TryGetIndexedFlagId(FLAG_SYS_TOWER_GOLD, facility, NUM_FRONTIER_FACILITIES, 2, &gold))
+        return;
     if (GetPlayerSymbolCountForFacility(facility) == 0)
-        FlagSet(FLAG_SYS_TOWER_SILVER + facility * 2);
+        FlagSet(silver);
     else
-        FlagSet(FLAG_SYS_TOWER_GOLD + facility * 2);
+        FlagSet(gold);
 }
 
 static void CheckBattleTypeFlag(void)
@@ -2548,56 +2785,48 @@ void SaveGameFrontier(void)
 // Frontier Brain functions.
 enum TrainerPicID GetFrontierBrainTrainerPicIndex(void)
 {
-    s32 facility;
-
-    if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
-        facility = GetRecordedBattleFrontierFacility();
-    else
-        facility = VarGet(VAR_FRONTIER_FACILITY);
-
-    return GetTrainerPicFromId(gFrontierBrainInfo[facility].trainerId);
+    u32 facility;
+    const struct FrontierBrain *info;
+    if (!ADMG_TryGetBrainFacility(TRUE, &facility) || !ADMG_TryGetFrontierBrainInfo(facility, &info)) return TRAINER_PIC_NONE;
+    return GetTrainerPicFromId(info->trainerId);
 }
 
 enum TrainerClassID GetFrontierBrainTrainerClass(void)
 {
-    s32 facility;
-
-    if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
-        facility = GetRecordedBattleFrontierFacility();
-    else
-        facility = VarGet(VAR_FRONTIER_FACILITY);
-
-    return GetTrainerClassFromId(gFrontierBrainInfo[facility].trainerId);
+    u32 facility;
+    const struct FrontierBrain *info;
+    if (!ADMG_TryGetBrainFacility(TRUE, &facility) || !ADMG_TryGetFrontierBrainInfo(facility, &info)) return 0;
+    return GetTrainerClassFromId(info->trainerId);
 }
 
 void CopyFrontierBrainTrainerName(u8 *dst)
 {
-    s32 i;
-    s32 facility;
-    const u8 *trainerName;
-
-    if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
-        facility = GetRecordedBattleFrontierFacility();
-    else
-        facility = VarGet(VAR_FRONTIER_FACILITY);
-
-    trainerName = GetTrainerNameFromId(gFrontierBrainInfo[facility].trainerId);
-    for (i = 0; i < PLAYER_NAME_LENGTH; i++)
-        dst[i] = trainerName[i];
-
-    dst[i] = EOS;
+    if (dst == NULL) { ADMG_StateAccessRejected(0, __func__); return; }
+    u32 facility;
+    const struct FrontierBrain *info;
+    if (!ADMG_TryGetBrainFacility(TRUE, &facility) || !ADMG_TryGetFrontierBrainInfo(facility, &info)) return;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    const u8 *name = GetTrainerNameFromId(info->trainerId);
+    if (!ADMG_EndStateAccessCheck(generation)) return;
+    if (name == NULL) { ADMG_StateAccessRejected(info->trainerId, __func__); return; }
+    for (u32 i = 0; i < PLAYER_NAME_LENGTH; ++i) dst[i] = name[i];
+    dst[PLAYER_NAME_LENGTH] = EOS;
 }
 
 bool8 IsFrontierBrainFemale(void)
 {
-    s32 facility = VarGet(VAR_FRONTIER_FACILITY);
-    return gFrontierBrainInfo[facility].isFemale;
+    u32 facility;
+    const struct FrontierBrain *info;
+    if (!ADMG_TryGetBrainFacility(FALSE, &facility) || !ADMG_TryGetFrontierBrainInfo(facility, &info)) return FALSE;
+    return info->isFemale;
 }
 
 void SetFrontierBrainObjEventGfx_2(void)
 {
-    s32 facility = VarGet(VAR_FRONTIER_FACILITY);
-    VarSet(VAR_OBJ_GFX_ID_0, gFrontierBrainInfo[facility].objEventGfx);
+    u32 facility;
+    const struct FrontierBrain *info;
+    if (!ADMG_TryGetBrainFacility(FALSE, &facility) || !ADMG_TryGetFrontierBrainInfo(facility, &info)) return;
+    VarSet(VAR_OBJ_GFX_ID_0, info->objEventGfx);
 }
 
 #define FRONTIER_BRAIN_OTID 61226
@@ -2609,100 +2838,128 @@ void CreateFrontierBrainPokemon(void)
     s32 monPartyId;
     s32 monLevel = 0;
     u8 friendship;
-    s32 facility = VarGet(VAR_FRONTIER_FACILITY);
-    s32 symbol = GetFronterBrainSymbol();
-
-    if (facility == FRONTIER_FACILITY_DOME)
-        selectedMonBits = GetDomeTrainerSelectedMons(TrainerIdToDomeTournamentId(TRAINER_FRONTIER_BRAIN));
-    else
-        selectedMonBits = (1 << FRONTIER_PARTY_SIZE) - 1; // all 3 mons selected
-
-    ZeroEnemyPartyMons();
-    monPartyId = 0;
+    const struct ADMG_FacilityPartyInput *input = ADMG_GetBorrowedFacilityParty();
+    struct ADMG_FrontierBrainSelection selection;
+    enum BattleTrainer target = B_TRAINER_OPPONENT_A;
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    if (save == NULL) { ADMG_StateAccessRejected(0, __func__); return; }
+    enum FrontierLevelMode mode = save->frontier.lvlMode;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    if (input != NULL && input->actor.kind == ADMG_ACTOR_BRAIN)
+    {
+        if (input->save != save || input->mode != mode)
+        { ADMG_StateAccessRejected(TRAINER_FRONTIER_BRAIN, __func__); return; }
+        selection = input->stored.brain;
+        target = input->target;
+    }
+    else if (!ADMG_TryPrepareFrontierBrainSelection(&selection)) return;
+    if (target != B_TRAINER_OPPONENT_A && target != B_TRAINER_OPPONENT_B)
+    { ADMG_StateAccessRejected(target, __func__); return; }
     monLevel = SetFacilityPtrsGetLevel();
+    if (!ADMG_EndStateAccessCheck(generation)) return;
+    if (gSaveBlock2Ptr != save || save->frontier.lvlMode != mode)
+    { ADMG_StateAccessRejected(TRAINER_FRONTIER_BRAIN, __func__); return; }
+    if (selection.facility == FRONTIER_FACILITY_DOME)
+        selectedMonBits = GetDomeTrainerSelectedMons(selection.tournamentId);
+    else
+        selectedMonBits = (1 << FRONTIER_PARTY_SIZE) - 1;
+    if (!ADMG_EndStateAccessCheck(generation)) return;
+    if (gSaveBlock2Ptr != save || save->frontier.lvlMode != mode)
+    { ADMG_StateAccessRejected(TRAINER_FRONTIER_BRAIN, __func__); return; }
+    if ((u32)selectedMonBits >= (1u << FRONTIER_PARTY_SIZE))
+    { ADMG_StateAccessRejected(selectedMonBits, __func__); return; }
+    if (target == B_TRAINER_OPPONENT_A) ZeroEnemyPartyMons();
+    else ZeroPartyMons(gParties[target]);
+    monPartyId = 0;
     for (i = 0; i < FRONTIER_PARTY_SIZE; selectedMonBits >>= 1, i++)
     {
         if (!(selectedMonBits & 1))
             continue;
 
-        u32 personality = GetMonPersonality(sFrontierBrainsMons[facility][symbol][i].species,
+        u32 personality = GetMonPersonality(selection.mons[i].species,
                                             MON_GENDER_RANDOM,
-                                            sFrontierBrainsMons[facility][symbol][i].nature,
+                                            selection.mons[i].nature,
                                             RANDOM_UNOWN_LETTER);
-        CreateMonWithIVs(&gParties[B_TRAINER_OPPONENT_A][monPartyId],
-                  sFrontierBrainsMons[facility][symbol][i].species,
+        CreateMonWithIVs(&gParties[target][monPartyId],
+                  selection.mons[i].species,
                   monLevel,
                   personality,
                   OTID_STRUCT_PRESET(FRONTIER_BRAIN_OTID),
-                  sFrontierBrainsMons[facility][symbol][i].fixedIV);
-        SetMonData(&gParties[B_TRAINER_OPPONENT_A][monPartyId], MON_DATA_HELD_ITEM, &sFrontierBrainsMons[facility][symbol][i].heldItem);
+                  selection.mons[i].fixedIV);
+        SetMonData(&gParties[target][monPartyId], MON_DATA_HELD_ITEM, &selection.mons[i].heldItem);
         for (j = 0; j < NUM_STATS; j++)
-            SetMonData(&gParties[B_TRAINER_OPPONENT_A][monPartyId], MON_DATA_HP_EV + j, &sFrontierBrainsMons[facility][symbol][i].evs[j]);
+            SetMonData(&gParties[target][monPartyId], MON_DATA_HP_EV + j, &selection.mons[i].evs[j]);
         friendship = MAX_FRIENDSHIP;
         for (j = 0; j < MAX_MON_MOVES; j++)
         {
-            SetMonMoveSlot(&gParties[B_TRAINER_OPPONENT_A][monPartyId], sFrontierBrainsMons[facility][symbol][i].moves[j], j);
-            if (GetMoveEffect(sFrontierBrainsMons[facility][symbol][i].moves[j]) == EFFECT_FRUSTRATION)
+            SetMonMoveSlot(&gParties[target][monPartyId], selection.mons[i].moves[j], j);
+            if (GetMoveEffect(selection.mons[i].moves[j]) == EFFECT_FRUSTRATION)
                 friendship = 0;
         }
-        SetMonData(&gParties[B_TRAINER_OPPONENT_A][monPartyId], MON_DATA_FRIENDSHIP, &friendship);
-        CalculateMonStats(&gParties[B_TRAINER_OPPONENT_A][monPartyId]);
+        SetMonData(&gParties[target][monPartyId], MON_DATA_FRIENDSHIP, &friendship);
+        CalculateMonStats(&gParties[target][monPartyId]);
         monPartyId++;
     }
 }
 
 enum Species GetFrontierBrainMonSpecies(u8 monId)
 {
-    s32 facility = VarGet(VAR_FRONTIER_FACILITY);
-    s32 symbol = GetFronterBrainSymbol();
-
-    return sFrontierBrainsMons[facility][symbol][monId].species;
+    const struct FrontierBrainMon *mon;
+    if (!ADMG_TryGetLiveBrainMon(monId, &mon)) return SPECIES_NONE;
+    return mon->species;
 }
 
 void SetFrontierBrainObjEventGfx(u8 facility)
 {
+    const struct FrontierBrain *info;
+    if (!ADMG_TryGetFrontierBrainInfo(facility, &info)) return;
     TRAINER_BATTLE_PARAM.opponentA = TRAINER_FRONTIER_BRAIN;
-    VarSet(VAR_OBJ_GFX_ID_0, gFrontierBrainInfo[facility].objEventGfx);
+    VarSet(VAR_OBJ_GFX_ID_0, info->objEventGfx);
 }
 
 u16 GetFrontierBrainMonMove(u8 monId, u8 moveSlotId)
 {
-    s32 facility = VarGet(VAR_FRONTIER_FACILITY);
-    s32 symbol = GetFronterBrainSymbol();
-
-    return sFrontierBrainsMons[facility][symbol][monId].moves[moveSlotId];
+    if (moveSlotId >= MAX_MON_MOVES) { ADMG_StateAccessRejected(moveSlotId, __func__); return MOVE_NONE; }
+    const struct FrontierBrainMon *mon;
+    if (!ADMG_TryGetLiveBrainMon(monId, &mon)) return MOVE_NONE;
+    return mon->moves[moveSlotId];
 }
 
 u8 GetFrontierBrainMonNature(u8 monId)
 {
-    s32 facility = VarGet(VAR_FRONTIER_FACILITY);
-    s32 symbol = GetFronterBrainSymbol();
-
-    return sFrontierBrainsMons[facility][symbol][monId].nature;
+    const struct FrontierBrainMon *mon;
+    if (!ADMG_TryGetLiveBrainMon(monId, &mon)) return 0;
+    return mon->nature;
 }
 
 u8 GetFrontierBrainMonEvs(u8 monId, u8 evStatId)
 {
-    s32 facility = VarGet(VAR_FRONTIER_FACILITY);
-    s32 symbol = GetFronterBrainSymbol();
-
-    return sFrontierBrainsMons[facility][symbol][monId].evs[evStatId];
+    if (evStatId >= NUM_STATS) { ADMG_StateAccessRejected(evStatId, __func__); return 0; }
+    const struct FrontierBrainMon *mon;
+    if (!ADMG_TryGetLiveBrainMon(monId, &mon)) return 0;
+    return mon->evs[evStatId];
 }
 
 s32 GetFronterBrainSymbol(void)
 {
-    s32 facility = VarGet(VAR_FRONTIER_FACILITY);
+    u32 facility;
+    const struct FrontierBrain *info;
+    if (!ADMG_TryGetBrainFacility(FALSE, &facility) || !ADMG_TryGetFrontierBrainInfo(facility, &info)) return -1;
+    u64 generation = ADMG_BeginStateAccessCheck();
     s32 symbol = GetPlayerSymbolCountForFacility(facility);
 
+    if (!ADMG_EndStateAccessCheck(generation)) return -1;
     if (symbol == 2)
     {
         u16 winStreak = GetCurrentFacilityWinStreak();
-        if (winStreak + gFrontierBrainInfo[facility].streakAppearances[3] == gFrontierBrainInfo[facility].streakAppearances[0])
+        if (!ADMG_EndStateAccessCheck(generation)) return -1;
+        if (winStreak + info->streakAppearances[3] == info->streakAppearances[0])
             symbol = 0;
-        else if (winStreak + gFrontierBrainInfo[facility].streakAppearances[3] == gFrontierBrainInfo[facility].streakAppearances[1])
+        else if (winStreak + info->streakAppearances[3] == info->streakAppearances[1])
             symbol = 1;
-        else if (winStreak + gFrontierBrainInfo[facility].streakAppearances[3] > gFrontierBrainInfo[facility].streakAppearances[1]
-                 && (winStreak + gFrontierBrainInfo[facility].streakAppearances[3] - gFrontierBrainInfo[facility].streakAppearances[1]) % gFrontierBrainInfo[facility].streakAppearances[2] == 0)
+        else if (winStreak + info->streakAppearances[3] > info->streakAppearances[1]
+                 && info->streakAppearances[2] != 0
+                 && (winStreak + info->streakAppearances[3] - info->streakAppearances[1]) % info->streakAppearances[2] == 0)
             symbol = 1;
     }
     return symbol;
@@ -2711,7 +2968,9 @@ s32 GetFronterBrainSymbol(void)
 // Called for intro speech as well despite the fact that its handled in the map scripts files instead
 static void CopyFrontierBrainText(bool8 playerWonText)
 {
-    s32 facility;
+    u32 facility;
+    const struct FrontierBrain *info;
+    u64 generation = ADMG_BeginStateAccessCheck();
     s32 symbol;
 
     if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
@@ -2725,13 +2984,16 @@ static void CopyFrontierBrainText(bool8 playerWonText)
         symbol = GetFronterBrainSymbol();
     }
 
+    if (!ADMG_EndStateAccessCheck(generation) || !ADMG_TryGetFrontierBrainInfo(facility, &info)) return;
+    if ((u32)symbol >= ARRAY_COUNT(info->wonTexts))
+    { ADMG_StateAccessRejected(symbol, __func__); return; }
     switch (playerWonText)
     {
     case FALSE:
-        StringCopy(gStringVar4, gFrontierBrainInfo[facility].wonTexts[symbol]);
+        StringCopy(gStringVar4, info->wonTexts[symbol]);
         break;
     case TRUE:
-        StringCopy(gStringVar4, gFrontierBrainInfo[facility].lostTexts[symbol]);
+        StringCopy(gStringVar4, info->lostTexts[symbol]);
         break;
     }
 }
@@ -2747,16 +3009,98 @@ void ClearEnemyPartyAfterChallenge()
     }
 }
 
-bool8 IsFrontierTrainerFemale(u16 trainerId)
+bool8 ADMG_TryGetFacilityTrainerRow(u32 trainerId, const struct BattleFrontierTrainer **trainer)
 {
+    if (trainer == NULL || gSaveBlock2Ptr == NULL)
+    { ADMG_StateAccessRejected(trainerId, __func__); return FALSE; }
+    const struct BattleFrontierTrainer *table;
+    const struct TrainerMon *mons;
+    u32 count;
+    if (!ADMG_TrySelectFacilityTrainerTables(gSaveBlock2Ptr->frontier.lvlMode == FRONTIER_LVL_TENT,
+            &table, &mons, &count)) return FALSE;
+    return ADMG_TryGetFacilityTrainerRowFromTable(table, count, trainerId, trainer);
+}
+
+
+
+/* Validate the same live/recorded authority each original consumer reads.
+ * No current map or campaign state chooses an actor's canonical owner. */
+static bool8 ADMG_FrontierMetadataValid(u32 trainerId, bool8 recorded, bool8 needsClass,
+                                      struct ADMG_FrontierMetadata *metadata)
+{
+    if (trainerId > TRAINER_FRONTIER_BRAIN || gSaveBlock2Ptr == NULL)
+    { ADMG_StateAccessRejected(trainerId, __func__); return FALSE; }
+    struct ADMG_FrontierMetadata selected = {0};
+    if (!ADMG_CaptureFrontierMetadataContext(&selected, trainerId, recorded)) return FALSE;
+    selected.recorded = recorded && (gBattleTypeFlags & BATTLE_TYPE_RECORDED);
+    u32 facilityClass = 0;
+    if (trainerId == TRAINER_FRONTIER_BRAIN)
+    { if (metadata != NULL) *metadata = selected; return TRUE; }
+    if (trainerId == TRAINER_EREADER)
+    {
+#if FREE_BATTLE_TOWER_E_READER == FALSE
+        facilityClass = gSaveBlock2Ptr->frontier.ereaderTrainer.facilityClass;
+#else
+        /* The excluded backing is never an apprentice slot. Preserve the
+         * original name/facility-class defaults; dependent lookups reject. */
+        if (needsClass) { ADMG_StateAccessRejected(trainerId, __func__); return FALSE; }
+#endif
+    }
+    else if (trainerId < FRONTIER_TRAINERS_COUNT)
+    {
+        const struct BattleFrontierTrainer *trainer;
+        if (!ADMG_TryGetFacilityTrainerRow(trainerId, &trainer)) return FALSE;
+        if (!ADMG_FrontierMetadataContextCurrent(&selected, trainerId, FALSE)) return FALSE;
+        selected.trainer = trainer;
+        selected.table = trainer - trainerId;
+        facilityClass = trainer->facilityClass;
+    }
+    else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)
+    {
+        if (selected.recorded)
+            facilityClass = GetRecordedBattleRecordMixFriendClass();
+        else
+            facilityClass = gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].facilityClass;
+    }
+    else
+    {
+        u32 apprentice = selected.recorded
+            ? GetRecordedBattleApprenticeId() : gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].id;
+        if (!ADMG_FrontierMetadataContextCurrent(&selected, trainerId, FALSE)) return FALSE;
+        if (apprentice >= NUM_APPRENTICES)
+        { ADMG_StateAccessRejected(apprentice, __func__); return FALSE; }
+        facilityClass = gApprentices[apprentice].facilityClass;
+        selected.apprenticeId = apprentice;
+    }
+    if (!ADMG_FrontierMetadataContextCurrent(&selected, trainerId, FALSE)) return FALSE;
+    if (needsClass && facilityClass >= FACILITY_CLASSES_COUNT)
+    { ADMG_StateAccessRejected(facilityClass, __func__); return FALSE; }
+    selected.facilityClass = facilityClass;
+    if (metadata != NULL) *metadata = selected;
+    return TRUE;
+}
+
+ADMG_NATIVE_ENTRY bool8 IsFrontierTrainerFemale(u16 trainerId)
+{
+    struct ADMG_FrontierMetadata metadata = {0};
+    if (!ADMG_FrontierMetadataValid(trainerId, FALSE, TRUE, &metadata)) return FALSE;
+
+    if (trainerId > TRAINER_FRONTIER_BRAIN || gSaveBlock2Ptr == NULL)
+    {
+        ADMG_StateAccessRejected(trainerId, __func__);
+        return FALSE;
+    }
+
     u32 i;
     u8 facilityClass;
 
+    if (!ADMG_FrontierMetadataContextCurrent(&metadata, trainerId, FALSE)) return FALSE;
     SetFacilityPtrsGetLevel();
+    if (!ADMG_FrontierMetadataContextCurrent(&metadata, trainerId, TRUE)) return FALSE;
     if (trainerId == TRAINER_EREADER)
     {
     #if FREE_BATTLE_TOWER_E_READER == FALSE
-        facilityClass = gSaveBlock2Ptr->frontier.ereaderTrainer.facilityClass;
+        facilityClass = metadata.facilityClass;
     #else
         facilityClass = 0;
     #endif //FREE_BATTLE_TOWER_E_READER
@@ -2767,15 +3111,15 @@ bool8 IsFrontierTrainerFemale(u16 trainerId)
     }
     else if (trainerId < FRONTIER_TRAINERS_COUNT)
     {
-        facilityClass = gFacilityTrainers[trainerId].facilityClass;
+        facilityClass = metadata.facilityClass;
     }
     else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)
     {
-        facilityClass = gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].facilityClass;
+        facilityClass = metadata.facilityClass;
     }
     else
     {
-        facilityClass = gApprentices[gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].id].facilityClass;
+        facilityClass = metadata.facilityClass;
     }
 
     // Search female classes.
@@ -2817,74 +3161,63 @@ u8 GetFrontierTrainerFixedIvs(u16 trainerId)
 }
 
 
-u16 GetRandomScaledFrontierTrainerId(u8 challengeNum, u8 battleNum)
+ADMG_NATIVE_ENTRY bool8 ADMG_TryGetFrontierTrainerIdRange(u32 challenge, u32 battle,
+    u16 *first, u16 *last)
 {
-    u16 trainerId;
-
-    if (challengeNum <= 7)
-    {
-        if (battleNum == FRONTIER_STAGES_PER_CHALLENGE - 1)
-        {
-            // The last battle in each challenge has a jump in difficulty, pulls from a table with higher ranges
-            trainerId = (sFrontierTrainerIdRangesHard[challengeNum][1] - sFrontierTrainerIdRangesHard[challengeNum][0]) + 1;
-            trainerId = sFrontierTrainerIdRangesHard[challengeNum][0] + (Random() % trainerId);
-        }
-        else
-        {
-            trainerId = (sFrontierTrainerIdRanges[challengeNum][1] - sFrontierTrainerIdRanges[challengeNum][0]) + 1;
-            trainerId = sFrontierTrainerIdRanges[challengeNum][0] + (Random() % trainerId);
-        }
-    }
-    else
-    {
-        // After challenge 7, trainer IDs always come from the last, hardest range, which is the same for both trainer ID tables
-        trainerId = (sFrontierTrainerIdRanges[7][1] - sFrontierTrainerIdRanges[7][0]) + 1;
-        trainerId = sFrontierTrainerIdRanges[7][0] + (Random() % trainerId);
-    }
-
-    return trainerId;
+    if (first == NULL || last == NULL)
+    { ADMG_StateAccessRejected(challenge, __func__); return FALSE; }
+    u32 index = challenge <= 7 ? challenge : 7;
+    const u16 (*ranges)[2] = challenge <= 7 && battle == FRONTIER_STAGES_PER_CHALLENGE - 1
+        ? sFrontierTrainerIdRangesHard : sFrontierTrainerIdRanges;
+    u32 count = challenge <= 7 && battle == FRONTIER_STAGES_PER_CHALLENGE - 1
+        ? ARRAY_COUNT(sFrontierTrainerIdRangesHard) : ARRAY_COUNT(sFrontierTrainerIdRanges);
+    if (index >= count || ranges[index][0] > ranges[index][1]
+     || ranges[index][1] >= FRONTIER_TRAINERS_COUNT)
+    { ADMG_StateAccessRejected(challenge, __func__); return FALSE; }
+    *first = ranges[index][0]; *last = ranges[index][1];
+    return TRUE;
 }
 
-static void UNUSED GetRandomScaledFrontierTrainerIdRange(u8 challengeNum, u8 battleNum, u16 *trainerIdPtr, u8 *rangePtr)
+ADMG_NATIVE_ENTRY u16 GetRandomScaledFrontierTrainerId(u8 challengeNum, u8 battleNum)
 {
-    u16 trainerId, range;
-
-    if (challengeNum <= 7)
-    {
-        if (battleNum == FRONTIER_STAGES_PER_CHALLENGE - 1)
-        {
-            // The last battle in each challenge has a jump in difficulty, pulls from a table with higher ranges
-            range = (sFrontierTrainerIdRangesHard[challengeNum][1] - sFrontierTrainerIdRangesHard[challengeNum][0]) + 1;
-            trainerId = sFrontierTrainerIdRangesHard[challengeNum][0];
-        }
-        else
-        {
-            range = (sFrontierTrainerIdRanges[challengeNum][1] - sFrontierTrainerIdRanges[challengeNum][0]) + 1;
-            trainerId = sFrontierTrainerIdRanges[challengeNum][0];
-        }
-    }
-    else
-    {
-        // After challenge 7, trainer IDs always come from the last, hardest range, which is the same for both trainer ID tables
-        range = (sFrontierTrainerIdRanges[7][1] - sFrontierTrainerIdRanges[7][0]) + 1;
-        trainerId = sFrontierTrainerIdRanges[7][0];
-    }
-
-    *trainerIdPtr = trainerId;
-    *rangePtr = range;
+    u16 first, last;
+    if (!ADMG_TryGetFrontierTrainerIdRange(challengeNum, battleNum, &first, &last)) return 0xFFFF;
+    return first + Random() % ((u32)last - first + 1);
 }
 
-void SetBattleFacilityTrainerGfxId(u16 trainerId, u8 tempVarId)
+ADMG_NATIVE_ENTRY void GetRandomScaledFrontierTrainerIdRange(u8 challengeNum, u8 battleNum, u16 *trainerIdPtr, u8 *rangePtr)
 {
+    if (trainerIdPtr == NULL || rangePtr == NULL)
+    { ADMG_StateAccessRejected(challengeNum, __func__); return; }
+    u16 first, last;
+    if (!ADMG_TryGetFrontierTrainerIdRange(challengeNum, battleNum, &first, &last)) return;
+    u32 count = (u32)last - first + 1;
+    if (count > 0xFF) { ADMG_StateAccessRejected(count, __func__); return; }
+    *trainerIdPtr = first; *rangePtr = count;
+}
+
+ADMG_NATIVE_ENTRY void SetBattleFacilityTrainerGfxId(u16 trainerId, u8 tempVarId)
+{
+    struct ADMG_FrontierMetadata metadata = {0};
+    if (!ADMG_FrontierMetadataValid(trainerId, FALSE, TRUE, &metadata)) return ;
+
+    if (trainerId > TRAINER_FRONTIER_BRAIN || gSaveBlock2Ptr == NULL)
+    {
+        ADMG_StateAccessRejected(trainerId, __func__);
+        return ;
+    }
+
     u32 i;
     u8 facilityClass;
     u8 trainerObjectGfxId;
 
+    if (!ADMG_FrontierMetadataContextCurrent(&metadata, trainerId, FALSE)) return;
     SetFacilityPtrsGetLevel();
+    if (!ADMG_FrontierMetadataContextCurrent(&metadata, trainerId, TRUE)) return;
 #if FREE_BATTLE_TOWER_E_READER == FALSE
     if (trainerId == TRAINER_EREADER)
     {
-        facilityClass = gSaveBlock2Ptr->frontier.ereaderTrainer.facilityClass;
+        facilityClass = metadata.facilityClass;
     }
     else if (trainerId == TRAINER_FRONTIER_BRAIN)
 #else
@@ -2896,15 +3229,15 @@ void SetBattleFacilityTrainerGfxId(u16 trainerId, u8 tempVarId)
     }
     else if (trainerId < FRONTIER_TRAINERS_COUNT)
     {
-        facilityClass = gFacilityTrainers[trainerId].facilityClass;
+        facilityClass = metadata.facilityClass;
     }
     else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)
     {
-        facilityClass = gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].facilityClass;
+        facilityClass = metadata.facilityClass;
     }
     else
     {
-        facilityClass = gApprentices[gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].id].facilityClass;
+        facilityClass = metadata.facilityClass;
     }
 
     // Search male classes.
@@ -2970,32 +3303,43 @@ void SetBattleFacilityTrainerGfxId(u16 trainerId, u8 tempVarId)
     }
 }
 
-u16 GetBattleFacilityTrainerGfxId(u16 trainerId)
+ADMG_NATIVE_ENTRY u16 GetBattleFacilityTrainerGfxId(u16 trainerId)
 {
+    struct ADMG_FrontierMetadata metadata = {0};
+    if (!ADMG_FrontierMetadataValid(trainerId, FALSE, TRUE, &metadata)) return OBJ_EVENT_GFX_BOY_1;
+
+    if (trainerId > TRAINER_EREADER || gSaveBlock2Ptr == NULL)
+    {
+        ADMG_StateAccessRejected(trainerId, __func__);
+        return OBJ_EVENT_GFX_BOY_1;
+    }
+
     u32 i;
     u8 facilityClass;
     u16 trainerObjectGfxId;
 
+    if (!ADMG_FrontierMetadataContextCurrent(&metadata, trainerId, FALSE)) return OBJ_EVENT_GFX_BOY_1;
     SetFacilityPtrsGetLevel();
+    if (!ADMG_FrontierMetadataContextCurrent(&metadata, trainerId, TRUE)) return OBJ_EVENT_GFX_BOY_1;
 #if FREE_BATTLE_TOWER_E_READER == FALSE
     if (trainerId == TRAINER_EREADER)
     {
-        facilityClass = gSaveBlock2Ptr->frontier.ereaderTrainer.facilityClass;
+        facilityClass = metadata.facilityClass;
     }
     else if (trainerId < FRONTIER_TRAINERS_COUNT)
 #else
     if (trainerId < FRONTIER_TRAINERS_COUNT)
 #endif //FREE_BATTLE_TOWER_E_READER
     {
-        facilityClass = gFacilityTrainers[trainerId].facilityClass;
+        facilityClass = metadata.facilityClass;
     }
     else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)
     {
-        facilityClass = gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].facilityClass;
+        facilityClass = metadata.facilityClass;
     }
     else
     {
-        facilityClass = gApprentices[gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].id].facilityClass;
+        facilityClass = metadata.facilityClass;
     }
 
     // Search male classes.
@@ -3027,14 +3371,25 @@ u16 GetBattleFacilityTrainerGfxId(u16 trainerId)
     }
 }
 
-u8 GetFrontierTrainerFrontSpriteId(u16 trainerId)
+ADMG_NATIVE_ENTRY u8 GetFrontierTrainerFrontSpriteId(u16 trainerId)
 {
+    struct ADMG_FrontierMetadata metadata = {0};
+    if (!ADMG_FrontierMetadataValid(trainerId, TRUE, TRUE, &metadata)) return TRAINER_PIC_NONE;
+
+    if (trainerId > TRAINER_FRONTIER_BRAIN || gSaveBlock2Ptr == NULL)
+    {
+        ADMG_StateAccessRejected(trainerId, __func__);
+        return TRAINER_PIC_NONE;
+    }
+
+    if (!ADMG_FrontierMetadataContextCurrent(&metadata, trainerId, FALSE)) return TRAINER_PIC_NONE;
     SetFacilityPtrsGetLevel();
+    if (!ADMG_FrontierMetadataContextCurrent(&metadata, trainerId, TRUE)) return TRAINER_PIC_NONE;
 
 #if FREE_BATTLE_TOWER_E_READER == FALSE
     if (trainerId == TRAINER_EREADER)
     {
-        return gFacilityClassToPicIndex[gSaveBlock2Ptr->frontier.ereaderTrainer.facilityClass];
+        return gFacilityClassToPicIndex[metadata.facilityClass];
     }
     else if (trainerId == TRAINER_FRONTIER_BRAIN)
 #else
@@ -3045,34 +3400,74 @@ u8 GetFrontierTrainerFrontSpriteId(u16 trainerId)
     }
     else if (trainerId < FRONTIER_TRAINERS_COUNT)
     {
-        return gFacilityClassToPicIndex[gFacilityTrainers[trainerId].facilityClass];
+        return gFacilityClassToPicIndex[metadata.facilityClass];
     }
     else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)
     {
-        if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
-            return gFacilityClassToPicIndex[GetRecordedBattleRecordMixFriendClass()];
+        if (metadata.recorded)
+            return gFacilityClassToPicIndex[metadata.facilityClass];
         else
-            return gFacilityClassToPicIndex[gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].facilityClass];
+            return gFacilityClassToPicIndex[metadata.facilityClass];
     }
     else
     {
-        if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
-            return gFacilityClassToPicIndex[gApprentices[GetRecordedBattleApprenticeId()].facilityClass];
+        if (metadata.recorded)
+            return gFacilityClassToPicIndex[metadata.facilityClass];
         else
-            return gFacilityClassToPicIndex[gApprentices[gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].id].facilityClass];
+            return gFacilityClassToPicIndex[metadata.facilityClass];
     }
 }
 
-enum TrainerClassID GetFrontierOpponentClass(u16 trainerId)
+ADMG_NATIVE_ENTRY enum TrainerClassID GetFrontierOpponentClass(u16 trainerId)
 {
+    struct ADMG_FrontierMetadata metadata = {0};
+    if (IsPartnerTrainerId(trainerId)
+     && !ADMG_CaptureFrontierMetadataContext(&metadata, trainerId, TRUE)) return 0;
+    if (!IsPartnerTrainerId(trainerId) && !(trainerId > ADMG_KANTO_TRAINER_FIRST && trainerId < ADMG_KANTO_TRAINER_FIRST + ADMG_KANTO_TRAINERS_COUNT))
+    {
+    if (!ADMG_FrontierMetadataValid(trainerId, TRUE, TRUE, &metadata)) return 0;
+    }
+
+    if (trainerId > ADMG_KANTO_TRAINER_FIRST && trainerId < ADMG_KANTO_TRAINER_FIRST + ADMG_KANTO_TRAINERS_COUNT)
+    {
+        const struct Trainer *native;
+        if (!ADMG_TryGetTrainerStruct(trainerId, &native)) return 0;
+        if (native->trainerClass >= TRAINER_CLASS_COUNT)
+        { ADMG_StateAccessRejected(native->trainerClass, __func__); return 0; }
+        return native->trainerClass;
+    }
+
+    if ((trainerId > TRAINER_FRONTIER_BRAIN && !IsPartnerTrainerId(trainerId)) || gSaveBlock2Ptr == NULL)
+    {
+        ADMG_StateAccessRejected(trainerId, __func__);
+        return 0;
+    }
+
     u8 trainerClass = 0;
-    enum DifficultyLevel difficulty = GetBattlePartnerDifficultyLevel(trainerId);
+    const struct Trainer *partner = NULL;
+    if (IsPartnerTrainerId(trainerId))
+    {
+        u64 generation = ADMG_BeginStateAccessCheck();
+        enum DifficultyLevel difficulty = GetBattlePartnerDifficultyLevel(trainerId);
+        if (!ADMG_TryGetTrainerRow(trainerId, difficulty, &partner)
+         || !ADMG_EndStateAccessCheck(generation))
+            return 0;
+    }
+    else if (trainerId > TRAINER_FRONTIER_BRAIN)
+    {
+        ADMG_StateAccessRejected(trainerId, __func__);
+        return 0;
+    }
+    if (partner != NULL && partner->trainerClass >= TRAINER_CLASS_COUNT)
+    { ADMG_StateAccessRejected(partner->trainerClass, __func__); return 0; }
+    if (!ADMG_FrontierMetadataContextCurrent(&metadata, trainerId, FALSE)) return 0;
     SetFacilityPtrsGetLevel();
+    if (!ADMG_FrontierMetadataContextCurrent(&metadata, trainerId, TRUE)) return 0;
 
 #if FREE_BATTLE_TOWER_E_READER == FALSE
     if (trainerId == TRAINER_EREADER)
     {
-        trainerClass = gFacilityClassToTrainerClass[gSaveBlock2Ptr->frontier.ereaderTrainer.facilityClass];
+        trainerClass = gFacilityClassToTrainerClass[metadata.facilityClass];
     }
     else if (trainerId == TRAINER_FRONTIER_BRAIN)
 #else
@@ -3081,80 +3476,136 @@ enum TrainerClassID GetFrontierOpponentClass(u16 trainerId)
     {
         return GetFrontierBrainTrainerClass();
     }
-    else if (trainerId > TRAINER_PARTNER(PARTNER_NONE))
+    else if (IsPartnerTrainerId(trainerId))
     {
-        trainerClass = gBattlePartners[difficulty][trainerId - TRAINER_PARTNER(PARTNER_NONE)].trainerClass;
+        trainerClass = partner->trainerClass;
     }
     else if (trainerId < FRONTIER_TRAINERS_COUNT)
     {
-        trainerClass = gFacilityClassToTrainerClass[gFacilityTrainers[trainerId].facilityClass];
+        trainerClass = gFacilityClassToTrainerClass[metadata.facilityClass];
     }
     else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)
     {
-        if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
+        if (metadata.recorded)
         {
-            trainerClass = gFacilityClassToTrainerClass[GetRecordedBattleRecordMixFriendClass()];
+            trainerClass = gFacilityClassToTrainerClass[metadata.facilityClass];
         }
         else
         {
-            trainerClass = gFacilityClassToTrainerClass[gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].facilityClass];
+            trainerClass = gFacilityClassToTrainerClass[metadata.facilityClass];
         }
     }
     else
     {
-        if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
+        if (metadata.recorded)
         {
-            trainerClass = gFacilityClassToTrainerClass[gApprentices[GetRecordedBattleApprenticeId()].facilityClass];
+            trainerClass = gFacilityClassToTrainerClass[metadata.facilityClass];
         }
         else
         {
-            trainerClass = gFacilityClassToTrainerClass[gApprentices[gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].id].facilityClass];
+            trainerClass = gFacilityClassToTrainerClass[metadata.facilityClass];
         }
     }
 
     return trainerClass;
 }
 
-u8 GetFrontierTrainerFacilityClass(u16 trainerId)
+ADMG_NATIVE_ENTRY u8 GetFrontierTrainerFacilityClass(u16 trainerId)
 {
+    struct ADMG_FrontierMetadata metadata = {0};
+    if (!ADMG_FrontierMetadataValid(trainerId, TRUE, TRUE, &metadata)) return 0;
+
+    if (trainerId > TRAINER_EREADER || gSaveBlock2Ptr == NULL)
+    {
+        ADMG_StateAccessRejected(trainerId, __func__);
+        return 0;
+    }
+
     u8 facilityClass;
+    if (!ADMG_FrontierMetadataContextCurrent(&metadata, trainerId, FALSE)) return 0;
     SetFacilityPtrsGetLevel();
+    if (!ADMG_FrontierMetadataContextCurrent(&metadata, trainerId, TRUE)) return 0;
 
     if (trainerId == TRAINER_EREADER)
     {
     #if FREE_BATTLE_TOWER_E_READER == FALSE
-        facilityClass = gSaveBlock2Ptr->frontier.ereaderTrainer.facilityClass;
+        facilityClass = metadata.facilityClass;
     #else
         facilityClass = 0;
     #endif //FREE_BATTLE_TOWER_E_READER
     }
     else if (trainerId < FRONTIER_TRAINERS_COUNT)
     {
-        facilityClass = gFacilityTrainers[trainerId].facilityClass;
+        facilityClass = metadata.facilityClass;
     }
     else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)
     {
-        if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
-            facilityClass = GetRecordedBattleRecordMixFriendClass();
+        if (metadata.recorded)
+            facilityClass = metadata.facilityClass;
         else
-            facilityClass = gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].facilityClass;
+            facilityClass = metadata.facilityClass;
     }
     else
     {
-        if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
-            facilityClass = gApprentices[GetRecordedBattleApprenticeId()].facilityClass;
+        if (metadata.recorded)
+            facilityClass = metadata.facilityClass;
         else
-            facilityClass = gApprentices[gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].id].facilityClass;
+            facilityClass = metadata.facilityClass;
     }
 
     return facilityClass;
 }
 
-void GetFrontierTrainerName(u8 *dst, u16 trainerId)
+ADMG_NATIVE_ENTRY void GetFrontierTrainerName(u8 *dst, u16 trainerId)
 {
+    struct ADMG_FrontierMetadata metadata = {0};
+    if (IsPartnerTrainerId(trainerId)
+     && !ADMG_CaptureFrontierMetadataContext(&metadata, trainerId, TRUE)) return;
+    if (dst == NULL) { ADMG_StateAccessRejected(0, __func__); return; }
+    u8 staged[32] = {EOS};
+    u8 *destination = dst;
+    dst = staged;
+    u64 outputGeneration = ADMG_BeginStateAccessCheck();
+    if (!IsPartnerTrainerId(trainerId) && !(trainerId > ADMG_KANTO_TRAINER_FIRST && trainerId < ADMG_KANTO_TRAINER_FIRST + ADMG_KANTO_TRAINERS_COUNT))
+    {
+    if (!ADMG_FrontierMetadataValid(trainerId, TRUE, FALSE, &metadata)) return ;
+    }
+
+    if (trainerId > ADMG_KANTO_TRAINER_FIRST && trainerId < ADMG_KANTO_TRAINER_FIRST + ADMG_KANTO_TRAINERS_COUNT)
+    {
+        const struct Trainer *native;
+        if (!ADMG_TryGetTrainerStruct(trainerId, &native)) return ;
+        if (dst == NULL) { ADMG_StateAccessRejected(0, __func__); return; }
+        if (!ADMG_TryValidateTrainerText(native->trainerName, sizeof(native->trainerName), trainerId, NULL)) return;
+        StringCopy(dst, native->trainerName);
+        ADMG_PublishTrainerName(destination, staged, sizeof(staged), 0, trainerId, outputGeneration, NULL);
+        return;
+    }
+
+    if ((trainerId > TRAINER_FRONTIER_BRAIN && !IsPartnerTrainerId(trainerId)) || gSaveBlock2Ptr == NULL)
+    {
+        ADMG_StateAccessRejected(trainerId, __func__);
+        return ;
+    }
+
     s32 i = 0;
-    enum DifficultyLevel difficulty = GetBattlePartnerDifficultyLevel(trainerId);
+    const struct Trainer *partner = NULL;
+    if (IsPartnerTrainerId(trainerId))
+    {
+        u64 generation = ADMG_BeginStateAccessCheck();
+        enum DifficultyLevel difficulty = GetBattlePartnerDifficultyLevel(trainerId);
+        if (!ADMG_TryGetTrainerRow(trainerId, difficulty, &partner)
+         || !ADMG_EndStateAccessCheck(generation))
+            return;
+    }
+    else if (trainerId > TRAINER_FRONTIER_BRAIN)
+    {
+        ADMG_StateAccessRejected(trainerId, __func__);
+        return;
+    }
+    if (!ADMG_FrontierMetadataContextCurrent(&metadata, trainerId, FALSE)) return;
     SetFacilityPtrsGetLevel();
+    if (!ADMG_FrontierMetadataContextCurrent(&metadata, trainerId, TRUE)) return;
 
     if (trainerId == TRAINER_EREADER)
     {
@@ -3166,29 +3617,35 @@ void GetFrontierTrainerName(u8 *dst, u16 trainerId)
     else if (trainerId == TRAINER_FRONTIER_BRAIN)
     {
         CopyFrontierBrainTrainerName(dst);
+        ADMG_PublishTrainerName(destination, staged, sizeof(staged), PLAYER_NAME_LENGTH + 1, trainerId, outputGeneration, &metadata);
         return;
     }
-    else if (trainerId > TRAINER_PARTNER(PARTNER_NONE))
+    else if (IsPartnerTrainerId(trainerId))
     {
-        for (i = 0; gBattlePartners[difficulty][trainerId - TRAINER_PARTNER(PARTNER_NONE)].trainerName[i] != EOS; i++)
-            dst[i] = gBattlePartners[difficulty][trainerId - TRAINER_PARTNER(PARTNER_NONE)].trainerName[i];
+        if (!ADMG_TryValidateTrainerText(partner->trainerName, sizeof(partner->trainerName), trainerId, NULL)) return;
+        for (i = 0; partner->trainerName[i] != EOS; i++)
+            dst[i] = partner->trainerName[i];
     }
     else if (trainerId < FRONTIER_TRAINERS_COUNT)
     {
         for (i = 0; i < PLAYER_NAME_LENGTH; i++)
-            dst[i] = gFacilityTrainers[trainerId].trainerName[i];
+            dst[i] = metadata.trainer->trainerName[i];
     }
     else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)
     {
-        if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
+        if (metadata.recorded)
         {
             GetRecordedBattleRecordMixFriendName(dst);
+            ADMG_PublishTrainerName(destination, staged, sizeof(staged), PLAYER_NAME_LENGTH + 1, trainerId, outputGeneration, &metadata);
             return;
         }
         else
         {
             struct EmeraldBattleTowerRecord *record = &gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND];
+            u32 sourceLength;
+            if (!ADMG_TryValidateTrainerText(record->name, sizeof(record->name), trainerId, &sourceLength)) return;
             TVShowConvertInternationalString(dst, record->name, record->language);
+            ADMG_PublishTrainerName(destination, staged, sizeof(staged), sourceLength + 1, trainerId, outputGeneration, &metadata);
             return;
         }
     }
@@ -3196,46 +3653,54 @@ void GetFrontierTrainerName(u8 *dst, u16 trainerId)
     {
         u8 id, language;
 
-        if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
+        if (metadata.recorded)
         {
-            id = GetRecordedBattleApprenticeId();
+            id = metadata.apprenticeId;
             language = GetRecordedBattleApprenticeLanguage();
         }
         else
         {
             struct Apprentice *apprentice = &gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE];
-            id = apprentice->id;
+            id = metadata.apprenticeId;
             language = apprentice->language;
         }
-        TVShowConvertInternationalString(dst, GetApprenticeNameInLanguage(id, language), language);
+        if (!ADMG_FrontierMetadataContextCurrent(&metadata, trainerId, TRUE)) return;
+        const u8 *name = GetApprenticeNameInLanguage(id, language);
+        u32 sourceLength;
+        if (!ADMG_TryValidateTrainerText(name, sizeof(gApprentices[0].name[0]), trainerId, &sourceLength)) return;
+        TVShowConvertInternationalString(dst, name, language);
+        ADMG_PublishTrainerName(destination, staged, sizeof(staged), sourceLength + 1, trainerId, outputGeneration, &metadata);
         return;
     }
 
     dst[i] = EOS;
+    ADMG_PublishTrainerName(destination, staged, sizeof(staged), i + 1, trainerId, outputGeneration, &metadata);
 }
 
 u16 GetRandomFrontierMonFromSet(u16 trainerId)
 {
+    struct SaveBlock2 *save = gSaveBlock2Ptr;
+    if (save == NULL)
+    { ADMG_StateAccessRejected(trainerId, __func__); return 0xFFFF; }
+    enum FrontierLevelMode mode = save->frontier.lvlMode;
+    const struct BattleFrontierTrainer *table;
+    const struct TrainerMon *selectedMons;
+    const u16 *monSet;
+    u32 trainerCount, numMons;
+    u64 generation = ADMG_BeginStateAccessCheck();
+    if (!ADMG_TrySelectFacilityTrainerTables(mode == FRONTIER_LVL_TENT, &table, &selectedMons, &trainerCount)
+     || !ADMG_TryGetFacilityTrainerMonSet(table, trainerId, &selectedMons, &monSet, &numMons)) return 0xFFFF;
     u8 level = SetFacilityPtrsGetLevel();
-    const u16 *monSet = gFacilityTrainers[trainerId].monSet;
-    u8 numMons = 0;
-    u32 monId = monSet[numMons];
-
-    while (monId != 0xFFFF)
-    {
-        numMons++;
-        monId = monSet[numMons];
-        if (monId == 0xFFFF)
-            break;
-    }
-
+    if (!ADMG_EndStateAccessCheck(generation)) return 0xFFFF;
+    if (gSaveBlock2Ptr != save || save->frontier.lvlMode != mode
+     || gFacilityTrainers != table || gFacilityTrainerMons != selectedMons)
+    { ADMG_StateAccessRejected(trainerId, __func__); return 0xFFFF; }
+    u32 monId;
     do
     {
-        // "High tier" Pokémon are only allowed on open level mode
-        // 20 is not a possible value for level here
+        // Preserve the original level policy and random selection order.
         monId = monSet[Random() % numMons];
     } while ((level == FRONTIER_MAX_LEVEL_50 || level == 20) && monId > FRONTIER_MONS_HIGH_TIER);
-
     return monId;
 }
 
@@ -3258,6 +3723,8 @@ void FrontierSpeechToString(const u16 *words)
 
 u8 SetFacilityPtrsGetLevel(void)
 {
+    if (gSaveBlock2Ptr == NULL) { ADMG_StateAccessRejected(0, __func__); return FRONTIER_MAX_LEVEL_50; }
+
     if (gSaveBlock2Ptr->frontier.lvlMode == FRONTIER_LVL_TENT)
     {
         return SetTentPtrsGetLevel();

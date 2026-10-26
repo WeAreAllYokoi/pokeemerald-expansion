@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_state.h"
 #include "malloc.h"
 #include "battle.h"
 #include "battle_message.h"
@@ -241,7 +242,7 @@ void EvolutionScene(struct Pokemon *mon, enum Species postEvoSpecies, bool32 can
     gBattleEnvironment = BATTLE_ENVIRONMENT_PLAIN;
 
     InitBattleBgsVideo();
-    LoadBattleTextboxAndBackground();
+    { u64 background = ADMG_BeginStateAccessCheck(); LoadBattleTextboxAndBackground(); if (!ADMG_EndStateAccessCheck(background)) return; }
     ResetSpriteData();
     ScanlineEffect_Stop();
     ResetTasks();
@@ -347,7 +348,7 @@ static void CB2_EvolutionSceneLoadGraphics(void)
     gBattleEnvironment = BATTLE_ENVIRONMENT_PLAIN;
 
     InitBattleBgsVideo();
-    LoadBattleTextboxAndBackground();
+    { u64 background = ADMG_BeginStateAccessCheck(); LoadBattleTextboxAndBackground(); if (!ADMG_EndStateAccessCheck(background)) return; }
     ResetSpriteData();
     FreeAllSpritePalettes();
     gReservedSpritePaletteCount = 4;

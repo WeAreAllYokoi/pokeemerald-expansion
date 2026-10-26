@@ -1,4 +1,5 @@
 #include "global.h"
+#include "admg_script.h"
 #include "follower_npc.h"
 #include "follower_npc_alternate_sprites.h"
 #include "battle.h"
@@ -186,34 +187,58 @@ static void TurnNPCIntoFollower(u32 localId, u32 followerFlags, u32 setScript, c
 {
     struct ObjectEventTemplate npc;
     struct ObjectEvent *follower;
-    u32 eventObjId = GetObjectEventIdByLocalId(localId);
+    u8 eventObjId;
+    u16 flag;
+    if (gSaveBlock1Ptr == NULL || gSaveBlock3Ptr == NULL)
+    {
+        ADMG_StateAccessRejected(localId, __func__);
+        return;
+    }
+    if (!ADMG_TryGetObjectEventId(localId, &eventObjId)
+     || !ADMG_TryGetObjectEventFlagId(localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, &flag))
+        return;
     u32 npcX = gObjectEvents[eventObjId].currentCoords.x;
     u32 npcY = gObjectEvents[eventObjId].currentCoords.y;
     const u8 *script;
-    u32 flag;
     u16 facingDirection = gObjectEvents[eventObjId].facingDirection;
 
-    flag = GetObjectEventFlagIdByLocalIdAndMap(localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);
     // If the object does not have an event flag, don't create follower.
     if (flag == 0)
         return;
 
+    u64 scriptGeneration = ADMG_BeginStateAccessCheck();
     if (setScript == TRUE)
         // Set the custom script.
         script = scriptPtr;
     else
         // Use the object's original script.
         script = GetObjectEventScriptPointerByObjectEventId(eventObjId);
+    if (!ADMG_EndStateAccessCheck(scriptGeneration))
+        return;
 
+    const struct ObjectEventTemplate *sourceTemplate = GetObjectEventTemplateByLocalIdAndMap(localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);
+    if (sourceTemplate == NULL)
+    {
+        ADMG_StateAccessRejected(localId, __func__);
+        return;
+    }
+    npc = *sourceTemplate;
     RemoveObjectEvent(&gObjectEvents[eventObjId]);
+    u64 generation = ADMG_BeginStateAccessCheck();
     FlagSet(flag);
-
-    npc = *GetObjectEventTemplateByLocalIdAndMap(localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);
+    if (!ADMG_EndStateAccessCheck(generation))
+        return;
     npc.movementType = 0;
     npc.script = script;
     npc.localId = OBJ_EVENT_ID_NPC_FOLLOWER;
     SetFollowerNPCData(FNPC_DATA_OBJ_ID, TrySpawnObjectEventTemplate(&npc, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, npcX, npcY));
-    follower = &gObjectEvents[GetFollowerNPCData(FNPC_DATA_OBJ_ID)];
+    u32 followerId = GetFollowerNPCData(FNPC_DATA_OBJ_ID);
+    if (followerId >= OBJECT_EVENTS_COUNT || gObjectEvents[followerId].spriteId >= MAX_SPRITES)
+    {
+        ADMG_StateAccessRejected(followerId, __func__);
+        return;
+    }
+    follower = &gObjectEvents[followerId];
     MoveObjectEventToMapCoords(follower, npcX, npcY);
     ObjectEventTurn(follower, facingDirection);
     follower->movementType = MOVEMENT_TYPE_NONE;
@@ -1797,6 +1822,30 @@ void ScriptSetFollowerNPC(struct ScriptContext *ctx)
     if (PlayerHasFollowerNPC())
         return;
 
+    if (gSaveBlock1Ptr == NULL || gSaveBlock3Ptr == NULL)
+    {
+        ADMG_StateAccessRejected(localId, __func__);
+        ADMG_StopInvalidStateCommand(ctx);
+        return;
+    }
+    u8 objectId;
+    u16 flagId;
+    if (!ADMG_TryGetObjectEventId(localId, &objectId)
+     || !ADMG_TryGetObjectEventFlagId(localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, &flagId))
+    {
+        ADMG_StopInvalidStateCommand(ctx);
+        return;
+    }
+    if (setScript != TRUE)
+    {
+        u64 generation = ADMG_BeginStateAccessCheck();
+        GetObjectEventScriptPointerByObjectEventId(objectId);
+        if (!ADMG_EndStateAccessCheck(generation))
+        {
+            ADMG_StopInvalidStateCommand(ctx);
+            return;
+        }
+    }
     SetFollowerNPCData(FNPC_DATA_BATTLE_PARTNER, battlePartner);
     TurnNPCIntoFollower(localId, flags, setScript, script);
 }

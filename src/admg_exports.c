@@ -1,0 +1,150 @@
+#include "global.h"
+#include "admg_native.h"
+#include "admg_retention.h"
+#include "admg_state.h"
+#include "admg_script.h"
+#include "admg_trainer.h"
+#include "data.h"
+#include "battle_setup.h"
+#include "event_data.h"
+#include "field_specials.h"
+#include "field_move.h"
+
+/* Later approved packages add their demonstrated function/data roots here.
+ * This initial root establishes the mechanism, not complete engine coverage. */
+ADMG_RETAIN_FUNCTION(ADMG_GetIntegrationRecipeVersion);
+ADMG_RETAIN_FUNCTION(FlagGet);
+ADMG_RETAIN_FUNCTION(FlagSet);
+ADMG_RETAIN_FUNCTION(FlagClear);
+ADMG_RETAIN_FUNCTION(FlagToggle);
+ADMG_RETAIN_FUNCTION(GetFlagPointer);
+ADMG_RETAIN_FUNCTION(VarGet);
+ADMG_RETAIN_FUNCTION(VarGetIfExist);
+ADMG_RETAIN_FUNCTION(VarSet);
+ADMG_RETAIN_FUNCTION(GetVarPointer);
+ADMG_RETAIN_FUNCTION(VarGetObjectEventGraphicsId);
+ADMG_RETAIN_FUNCTION(ADMG_TryReadFlag);
+ADMG_RETAIN_FUNCTION(ADMG_TryReadVar);
+ADMG_RETAIN_FUNCTION(ADMG_TryReadVarIndex);
+ADMG_RETAIN_FUNCTION(ADMG_IsMapIdValid);
+ADMG_RETAIN_FUNCTION(ADMG_TryGetObjectEventId);
+ADMG_RETAIN_FUNCTION(ADMG_TryGetObjectEventFlagId);
+ADMG_RETAIN_FUNCTION(ADMG_TryReadObjectGraphicsVar);
+ADMG_RETAIN_FUNCTION(ADMG_IsFlagIdValid);
+ADMG_RETAIN_FUNCTION(ADMG_IsFlagClear);
+ADMG_RETAIN_FUNCTION(ADMG_TryGetIndexedFlagId);
+ADMG_RETAIN_FUNCTION(ADMG_TryGetIndexedVarId);
+ADMG_RETAIN_FUNCTION(ADMG_TryGetFlagFromTable);
+ADMG_RETAIN_FUNCTION(FieldMove_GetInfo);
+ADMG_RETAIN_FUNCTION(ADMG_TryReadLegacyTrainerFlag);
+ADMG_RETAIN_FUNCTION(ADMG_TryReadCurrentTrainerFlag);
+ADMG_RETAIN_FUNCTION(ADMG_TryReadTrainerFlagFromScript);
+ADMG_RETAIN_FUNCTION(ADMG_GetVarSpan);
+ADMG_RETAIN_FUNCTION(ADMG_GetRegionalFlagPointer);
+ADMG_RETAIN_FUNCTION(ADMG_GetRegionalVarPointer);
+ADMG_RETAIN_FUNCTION(ADMG_ReadHiddenItemFlag);
+ADMG_RETAIN_FUNCTION(ADMG_InitRegionalEventData);
+ADMG_RETAIN_FUNCTION(ADMG_ClearRegionalDailyFlags);
+ADMG_RETAIN_FUNCTION(ADMG_StateAccessRejected);
+ADMG_RETAIN_FUNCTION(ADMG_BeginStateAccessCheck);
+ADMG_RETAIN_FUNCTION(ADMG_EndStateAccessCheck);
+ADMG_RETAIN_FUNCTION(ADMG_StopInvalidStateCommand);
+ADMG_RETAIN_FUNCTION(ADMG_TryGetSSTidalLocation);
+ADMG_RETAIN_DATA(gADMG_KantoFlags);
+ADMG_RETAIN_DATA(gADMG_KantoVars);
+ADMG_RETAIN_DATA(gADMG_UnionVisibility);
+ADMG_RETAIN_DATA(gADMG_NativeSpecialScratch);
+ADMG_RETAIN_DATA(gADMG_TextColorScratch);
+ADMG_RETAIN_DATA(gADMG_FeatureBindingFlags);
+ADMG_RETAIN_DATA(gADMG_FeatureBindingVars);
+
+/* Passive C3 roots preserve named checked access and every owned row. */
+ADMG_RETAIN_FUNCTION(ADMG_TryResolveTrainer);
+ADMG_RETAIN_FUNCTION(ADMG_TryGetOwnedTrainer);
+ADMG_RETAIN_FUNCTION(ADMG_TryGetTrainerRow);
+ADMG_RETAIN_FUNCTION(ADMG_TryGetTrainerStruct);
+ADMG_RETAIN_FUNCTION(ADMG_TryGetTrainerDefeatFlagId);
+ADMG_RETAIN_FUNCTION(GetCurrentDifficultyLevel);
+ADMG_RETAIN_FUNCTION(GetTrainerDifficultyLevel);
+ADMG_RETAIN_FUNCTION(GetBattlePartnerDifficultyLevel);
+ADMG_RETAIN_FUNCTION(HasTrainerBeenFought);
+ADMG_RETAIN_FUNCTION(SetTrainerFlag);
+ADMG_RETAIN_FUNCTION(ClearTrainerFlag);
+ADMG_RETAIN_FUNCTION(GetTrainerStructFromId);
+ADMG_RETAIN_FUNCTION(GetTrainerClassFromId);
+ADMG_RETAIN_FUNCTION(GetTrainerPicFromId);
+ADMG_RETAIN_FUNCTION(GetTrainerNameFromId);
+ADMG_RETAIN_FUNCTION(GetTrainerPartyFromId);
+ADMG_RETAIN_FUNCTION(GetTrainerPartySizeFromId);
+ADMG_RETAIN_FUNCTION(GetTrainerAIFlagsFromId);
+ADMG_RETAIN_FUNCTION(GetTrainerItemsFromId);
+ADMG_RETAIN_FUNCTION(GetTrainerBattleType);
+ADMG_RETAIN_FUNCTION(GetTrainerStartingStatusFromId);
+ADMG_RETAIN_FUNCTION(DoesTrainerHaveMugshot);
+ADMG_RETAIN_FUNCTION(GetTrainerMugshotColorFromId);
+ADMG_RETAIN_DATA(gADMG_HoennTrainers);
+ADMG_RETAIN_DATA(gADMG_KantoTrainers);
+ADMG_RETAIN_DATA(gBattlePartners);
+
+/* C4 passive named capability roots. These do not activate gameplay. */
+#include "admg_rematch.h"
+#include "admg_rematch_battle.h"
+#include "admg_rematch_movement.h"
+#include "admg_rematch_response.h"
+#include "admg_rematch_state.h"
+#include "vs_seeker.h"
+ADMG_RETAIN_FUNCTION(ADMG_BeginNativeTrainerBattle);
+ADMG_RETAIN_FUNCTION(ADMG_DiscardNativeBattleAssociation);
+ADMG_RETAIN_FUNCTION(ADMG_GetNativeRematchEpoch);
+ADMG_RETAIN_FUNCTION(ADMG_HasNativeRematchContext);
+ADMG_RETAIN_FUNCTION(ADMG_InitNativeRematchState);
+ADMG_RETAIN_FUNCTION(ADMG_IsNativeRematchContextCurrent);
+ADMG_RETAIN_FUNCTION(ADMG_IsNativeRematchMovement);
+ADMG_RETAIN_FUNCTION(ADMG_IsNativeRematchRestorePending);
+ADMG_RETAIN_FUNCTION(ADMG_IsNativeRematchSpritePair);
+ADMG_RETAIN_FUNCTION(ADMG_TryBeginNativeReadiness);
+ADMG_RETAIN_FUNCTION(ADMG_TryBindNativeBattleNpc);
+ADMG_RETAIN_FUNCTION(ADMG_TryCaptureNativeRematchContext);
+ADMG_RETAIN_FUNCTION(ADMG_TryClearNativeNpcReadiness);
+ADMG_RETAIN_FUNCTION(ADMG_TryCompleteNativeBattleNpc);
+ADMG_RETAIN_FUNCTION(ADMG_TryFindNativeRematch);
+ADMG_RETAIN_FUNCTION(ADMG_TryGetDeclaredObjectTemplate);
+ADMG_RETAIN_FUNCTION(ADMG_TryGetDeclaredRematchNpcTemplate);
+ADMG_RETAIN_FUNCTION(ADMG_TryGetNativeBattleNpc);
+ADMG_RETAIN_FUNCTION(ADMG_TryGetNativeRematchGraphics);
+ADMG_RETAIN_FUNCTION(ADMG_TryGetNativeRematchMovement);
+ADMG_RETAIN_FUNCTION(ADMG_TryGetNativeRematchNpcTrainer);
+ADMG_RETAIN_FUNCTION(ADMG_TryGetNativeRematchObjectForSprite);
+ADMG_RETAIN_FUNCTION(ADMG_TryGetNativeRematchProgress);
+ADMG_RETAIN_FUNCTION(ADMG_TryGetNativeRematchResponse);
+ADMG_RETAIN_FUNCTION(ADMG_TryGetNativeRematchTrainer);
+ADMG_RETAIN_FUNCTION(ADMG_TryGetRematchNpcTemplate);
+ADMG_RETAIN_FUNCTION(ADMG_TryIsNativeNpcReady);
+ADMG_RETAIN_FUNCTION(ADMG_TryPrepareNativeRematchRestore);
+ADMG_RETAIN_FUNCTION(ADMG_TryPrepareNativeRematchSprite);
+ADMG_RETAIN_FUNCTION(ADMG_TryReadNativeReadiness);
+ADMG_RETAIN_FUNCTION(ADMG_TryReadNativeVsSeekerCounter);
+ADMG_RETAIN_FUNCTION(ADMG_TryResetNativeBagCharge);
+ADMG_RETAIN_FUNCTION(ADMG_TryResetNativeRematches);
+ADMG_RETAIN_FUNCTION(ADMG_TryRestoreNativeRematchSprite);
+ADMG_RETAIN_FUNCTION(ADMG_TryResumeNativeRematchBindings);
+ADMG_RETAIN_FUNCTION(ADMG_TryResumeNativeRematches);
+ADMG_RETAIN_FUNCTION(ADMG_TrySelectNativeRematch);
+ADMG_RETAIN_FUNCTION(ADMG_TryShouldRematchNativeNpc);
+ADMG_RETAIN_FUNCTION(ADMG_TryStepNativeVsSeeker);
+ADMG_RETAIN_FUNCTION(ADMG_TryValidateNativeRematchBindings);
+ADMG_RETAIN_FUNCTION(ADMG_TryWriteNativeReadiness);
+ADMG_RETAIN_FUNCTION(ADMG_CancelNativeVsSeeker);
+ADMG_RETAIN_FUNCTION(ADMG_InitializeNativeRematchGameState);
+ADMG_RETAIN_FUNCTION(ADMG_PrepareNativeRematchContinue);
+ADMG_RETAIN_FUNCTION(ADMG_TryClearNativeRematchFamilyMovement);
+ADMG_RETAIN_FUNCTION(ADMG_TryInitNativeVsSeeker);
+ADMG_RETAIN_FUNCTION(ADMG_TryResetNativeRematchMap);
+ADMG_RETAIN_FUNCTION(ADMG_TryResetNativeRematchObjectMovements);
+ADMG_RETAIN_FUNCTION(ADMG_TryResetNativeRematchTemplateMovements);
+ADMG_RETAIN_DATA(gADMG_KantoRematchFamilies);
+ADMG_RETAIN_DATA(gADMG_KantoNpcReadiness);
+ADMG_RETAIN_DATA(gADMG_KantoVsSeekerCounter);
+ADMG_RETAIN_DATA(gADMG_NativeRematchGraphics);
+ADMG_RETAIN_DATA(gADMG_NativeRematchGraphicsCount);
+ADMG_RETAIN_DATA(gADMG_NativeRematchAnimations);

@@ -1,4 +1,6 @@
 #include "global.h"
+#include "admg_state.h"
+#include "admg_trainer_actor.h"
 #include "battle.h"
 #include "battle_transition.h"
 #include "battle_transition_frontier.h"
@@ -2255,7 +2257,7 @@ static bool8 Mugshot_Init(struct Task *task)
 
     InitTransitionData();
     ScanlineEffect_Clear();
-    Mugshots_CreateTrainerPics(task);
+    { u64 mugshots = ADMG_BeginStateAccessCheck(); Mugshots_CreateTrainerPics(task); if (!ADMG_EndStateAccessCheck(mugshots)) return FALSE; }
 
     task->tSinIndex = 0;
     task->tTopBannerX = 1;
@@ -2278,7 +2280,9 @@ static bool8 Mugshot_SetGfx(struct Task *task)
     s16 i, j;
     u16 *tilemap, *tileset;
     const u16 *mugshotsMap = sMugshotsTilemap;
+    u64 generation = ADMG_BeginStateAccessCheck();
     enum MugshotColor mugshotColor = GetTrainerMugshotColorFromId(TRAINER_BATTLE_PARAM.opponentA);
+    if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
 
     GetBg0TilesDst(&tilemap, &tileset);
     CpuSet(sEliteFour_Tileset, tileset, 0xF0);
@@ -2581,10 +2585,30 @@ static void Mugshots_CreateTrainerPics(struct Task *task)
 {
     struct Sprite *opponentSpriteA, *opponentSpriteB=0, *playerSprite, *partnerSprite=0;
 
-    enum TrainerPicID trainerAPicId = GetTrainerPicFromId(TRAINER_BATTLE_PARAM.opponentA);
-    enum TrainerPicID trainerBPicId = GetTrainerPicFromId(TRAINER_BATTLE_PARAM.opponentB);
-    enum TrainerPicID partnerPicId = GetTrainerPicFromId(gPartnerTrainerId);
-    struct Coords16 mugshotCoordsA = GetTrainerFrontPicMugshotCoords(trainerAPicId);
+    enum TrainerPicID trainerAPicId, trainerBPicId = TRAINER_PIC_NONE, partnerPicId = TRAINER_PIC_NONE;
+    struct Coords16 mugshotCoordsA;
+    struct ADMG_TrainerActorRef actor;
+    bool8 second = TRAINER_BATTLE_PARAM.opponentB != TRAINER_NONE && (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS);
+    bool8 partner = gPartnerTrainerId != TRAINER_PARTNER(PARTNER_NONE) && (gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER);
+    u64 generation;
+    if (!ADMG_TryClassifyTrainerActor(TRAINER_BATTLE_PARAM.opponentA, ADMG_ACTOR_CONTENT, ADMG_ACTOR_OPPONENT, &actor)
+        || (second && !ADMG_TryClassifyTrainerActor(TRAINER_BATTLE_PARAM.opponentB, ADMG_ACTOR_CONTENT, ADMG_ACTOR_OPPONENT, &actor))
+        || (partner && !ADMG_TryClassifyTrainerActor(gPartnerTrainerId, ADMG_ACTOR_FACILITY, ADMG_ACTOR_PARTNER, &actor)))
+        return;
+    generation = ADMG_BeginStateAccessCheck();
+    trainerAPicId = GetTrainerPicFromId(TRAINER_BATTLE_PARAM.opponentA);
+    if (!ADMG_EndStateAccessCheck(generation)) return;
+    if (second)
+    {
+        trainerBPicId = GetTrainerPicFromId(TRAINER_BATTLE_PARAM.opponentB);
+        if (!ADMG_EndStateAccessCheck(generation)) return;
+    }
+    if (partner)
+    {
+        partnerPicId = GetTrainerPicFromId(gPartnerTrainerId);
+        if (!ADMG_EndStateAccessCheck(generation)) return;
+    }
+    mugshotCoordsA = GetTrainerFrontPicMugshotCoords(trainerAPicId);
     s16 opponentARotationScales = 0;
     s16 opponentBRotationScales = 0;
 
