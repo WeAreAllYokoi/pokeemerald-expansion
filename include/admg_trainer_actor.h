@@ -13,9 +13,12 @@ enum ADMG_TrainerActorKind
     ADMG_ACTOR_NONE, ADMG_ACTOR_HOENN, ADMG_ACTOR_KANTO, ADMG_ACTOR_NAMED_PARTNER,
     ADMG_ACTOR_FRONTIER, ADMG_ACTOR_RECORD_FRIEND, ADMG_ACTOR_APPRENTICE,
     ADMG_ACTOR_EREADER, ADMG_ACTOR_BRAIN, ADMG_ACTOR_SECRET_BASE,
-    ADMG_ACTOR_LINK, ADMG_ACTOR_UNION_ROOM, ADMG_ACTOR_NETWORK_PLAYER
+    ADMG_ACTOR_LINK, ADMG_ACTOR_UNION_ROOM, ADMG_ACTOR_NETWORK_PLAYER,
+    ADMG_ACTOR_ADDED, // A mod's trainer used as an ordinary opponent, with no compiled resource rows
 };
-struct ADMG_TrainerActorRef { u16 identifier; u16 index; enum ADMG_TrainerActorKind kind; };
+// Keep the identifier 32-bit: added trainers start at FIRST_ADDED_TRAINER (0x10000)
+// Actor references aren't stored in saves
+struct ADMG_TrainerActorRef { u32 identifier; u16 index; enum ADMG_TrainerActorKind kind; };
 
 bool8 ADMG_TryClassifyTrainerActor(u32 identifier, u32 domain, u32 role, struct ADMG_TrainerActorRef *actor);
 bool8 ADMG_TryValidateOrdinaryTrainerOperands(u32 opponentA, u32 opponentB);

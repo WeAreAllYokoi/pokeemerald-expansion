@@ -5,6 +5,7 @@
 #include "constants/battle.h"
 #include "constants/battle_partner.h"
 #include "constants/trainers.h"
+#include "admg_registry.h"
 
 static bool8 RejectActor(u32 identifier, const char *operation)
 {
@@ -16,7 +17,11 @@ bool8 ADMG_TryClassifyTrainerActor(u32 identifier, u32 domain, u32 role, struct 
 {
     struct ADMG_TrainerActorRef selected;
     struct ADMG_TrainerRef content;
-    if (actor == NULL || identifier > 0xFFFF || domain > ADMG_ACTOR_NETWORK || role > ADMG_ACTOR_UNUSED)
+    if (actor == NULL || domain > ADMG_ACTOR_NETWORK || role > ADMG_ACTOR_UNUSED)
+        return RejectActor(identifier, __func__);
+    // Only content opponents may use added trainer IDs above 0xFFFF
+    // All other actor IDs must still fit in 16 bits
+    if (identifier > 0xFFFF && (domain != ADMG_ACTOR_CONTENT || role != ADMG_ACTOR_OPPONENT || identifier < FIRST_ADDED_TRAINER))
         return RejectActor(identifier, __func__);
     selected.identifier = identifier;
     selected.index = 0;
@@ -75,7 +80,8 @@ bool8 ADMG_TryClassifyTrainerActor(u32 identifier, u32 domain, u32 role, struct 
         if ((identifier == TRAINER_NONE && !TESTING && !gIsDebugBattle)
          || !ADMG_TryResolveTrainer(identifier, &content) || content.owner == ADMG_TRAINER_PARTNER)
             return RejectActor(identifier, __func__);
-        selected.kind = content.owner == ADMG_TRAINER_KANTO ? ADMG_ACTOR_KANTO : ADMG_ACTOR_HOENN;
+        selected.kind = content.owner == ADMG_TRAINER_KANTO ? ADMG_ACTOR_KANTO
+                      : content.owner == ADMG_TRAINER_ADDED ? ADMG_ACTOR_ADDED : ADMG_ACTOR_HOENN;
         selected.index = content.nativeIndex;
     }
     *actor = selected;
