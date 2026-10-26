@@ -1328,13 +1328,15 @@ static void TryUpdateGymLeaderRematchFromTrainer(void)
         UpdateGymLeaderRematch();
 }
 
-static u16 GetTrainerAFlag(void)
+// Keep defeat flags 32-bit: added trainers use ADMG_ADDED_TRAINER_FLAGS_START (0x10000) and above
+// Returning u16 would truncate the flag ID
+static u32 GetTrainerAFlag(void)
 {
     u32 id;
     return ADMG_TryGetTrainerDefeatFlagId(TRAINER_BATTLE_PARAM.opponentA, &id) ? id : 0xFFFF;
 }
 
-static u16 GetTrainerBFlag(void)
+static u32 GetTrainerBFlag(void)
 {
     u32 id;
     return ADMG_TryGetTrainerDefeatFlagId(TRAINER_BATTLE_PARAM.opponentB, &id) ? id : 0xFFFF;
@@ -1886,8 +1888,8 @@ bool8 GetTrainerFlag(void)
 
 static void SetBattledTrainersFlags(void)
 {
-    u16 first = GetTrainerAFlag();
-    u16 second = 0;
+    u32 first = GetTrainerAFlag();
+    u32 second = 0;
     /* 65535 is the existing partner sentinel, not a second trainer flag. */
     if (TRAINER_BATTLE_PARAM.opponentB != 0 && TRAINER_BATTLE_PARAM.opponentB != 0xFFFF)
         second = GetTrainerBFlag();
@@ -1903,7 +1905,7 @@ static void UNUSED SetBattledTrainerFlag(void)
     FlagSet(GetTrainerAFlag());
 }
 
-bool8 HasTrainerBeenFought(u16 trainerId)
+bool8 HasTrainerBeenFought(u32 trainerId)
 {
     u32 id;
     if (!ADMG_TryGetTrainerDefeatFlagId(trainerId, &id))
@@ -1911,14 +1913,14 @@ bool8 HasTrainerBeenFought(u16 trainerId)
     return FlagGet(id);
 }
 
-void SetTrainerFlag(u16 trainerId)
+void SetTrainerFlag(u32 trainerId)
 {
     u32 id;
     if (ADMG_TryGetTrainerDefeatFlagId(trainerId, &id))
         FlagSet(id);
 }
 
-void ClearTrainerFlag(u16 trainerId)
+void ClearTrainerFlag(u32 trainerId)
 {
     u32 id;
     if (ADMG_TryGetTrainerDefeatFlagId(trainerId, &id))
@@ -1930,7 +1932,7 @@ bool8 ADMG_TryReadLegacyTrainerFlag(u32 trainerId, bool8 *value)
     u32 id;
     if (value == NULL || !ADMG_TryGetTrainerDefeatFlagId(trainerId, &id))
         return FALSE;
-    *value = HasTrainerBeenFought((u16)trainerId);
+    *value = HasTrainerBeenFought(trainerId);
     return TRUE;
 }
 
