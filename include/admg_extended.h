@@ -22,6 +22,8 @@ enum ADMG_ExtendedStore
 
 // Sizes and allocates every store from the registry counts. Called once when the game starts.
 void ADMG_InitExtendedStores(void);
+// Clears every store, keeping its size. A new game calls it: a save loaded before keeps nothing in them.
+void ADMG_ClearExtendedStores(void);
 // The byte that holds bit index of a bit store (bit index % 8), or NULL if the store has no such bit.
 u8 *ADMG_GetExtendedBitPointer(enum ADMG_ExtendedStore store, u32 index);
 // The flag byte of an extended flag ID (the bit is id % 8), or NULL if no store holds that flag.

@@ -34,6 +34,16 @@ void ADMG_InitExtendedStores(void)
     InitBitStore(ADMG_EXTENDED_DEX_CAUGHT, addedDex);
 }
 
+void ADMG_ClearExtendedStores(void)
+{
+    u32 i;
+    for (i = 0; i < ADMG_EXTENDED_STORE_COUNT; i++)
+    {
+        if (sStores[i].data != NULL)
+            memset(sStores[i].data, 0, sStores[i].size);
+    }
+}
+
 u8 *ADMG_GetExtendedBitPointer(enum ADMG_ExtendedStore store, u32 index)
 {
     if (store >= ADMG_EXTENDED_STORE_COUNT || index >= sStores[store].count || sStores[store].data == NULL)
