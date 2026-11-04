@@ -1492,7 +1492,7 @@ static void CheckIfMaxScoreEqualExpectMove(enum BattlerId battlerId, s32 target,
     u32 i;
     s32 *scores = gAiBattleData->finalScore[battlerId][target];
     s32 bestScore = 0, bestScoreId = 0;
-    u16 *moves = gBattleMons[battlerId].moves;
+    enum Move *moves = gBattleMons[battlerId].moves;
     for (i = 0; i < MAX_MON_MOVES; i++)
     {
         if (scores[i] > bestScore)

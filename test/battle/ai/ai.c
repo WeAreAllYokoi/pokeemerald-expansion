@@ -1070,7 +1070,7 @@ AI_SINGLE_BATTLE_TEST("AI won't increase its stats if it's about to fall asleep 
 
 AI_SINGLE_BATTLE_TEST("AI will consider using Explosion inversely proportional to its missing HP")
 {
-    u32 monHP; u32 passesChance;
+    u32 monHP; u32 passesChance = 0; // the chances are run-time values now, so the compiler can't see PARAMETRIZE set it
     PARAMETRIZE { monHP = 20; passesChance = EXPLOSION_MINIMUM_CHANCE; }
     PARAMETRIZE { monHP = 1; passesChance = EXPLOSION_MAXIMUM_CHANCE; }
     PASSES_RANDOMLY(passesChance, 100, RNG_AI_CONSIDER_EXPLOSION);

@@ -7,7 +7,7 @@
 TEST("Form species ID tables are shared between all forms")
 {
     enum Species species = SPECIES_NONE;
-    const u16 *formSpeciesIdTable;
+    const enum Species *formSpeciesIdTable;
 
     for (enum Species i = SPECIES_NONE; i < NUM_SPECIES; i++)
     {
@@ -29,7 +29,7 @@ TEST("Form species ID tables fit within RANDOM_MON_MAX_FORMS")
 {
     u32 formCount;
     enum Species species = SPECIES_NONE;
-    const u16 *formSpeciesIdTable;
+    const enum Species *formSpeciesIdTable;
 
     for (enum Species i = SPECIES_NONE; i < NUM_SPECIES; i++)
     {
@@ -48,7 +48,7 @@ TEST("Form change tables contain only forms in the form species ID table")
 {
     enum Species species = SPECIES_NONE;
     const struct FormChange *formChangeTable;
-    const u16 *formSpeciesIdTable;
+    const enum Species *formSpeciesIdTable;
 
     for (enum Species i = SPECIES_NONE; i < NUM_SPECIES; i++)
     {

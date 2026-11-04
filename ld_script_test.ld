@@ -10,6 +10,7 @@ MEMORY
     IWRAM            (rwx) : ORIGIN = 0x3000000, LENGTH = 0x7F00
     IWRAM_PERSISTENT (rwx) : ORIGIN = 0x3007F00, LENGTH = 0x100
     ROM               (rx) : ORIGIN = 0x8000000, LENGTH = 32M
+    NATIVE           (rw) : ORIGIN = 0x10000000, LENGTH = 0x70000000
 }
 
 SECTIONS {
@@ -30,6 +31,17 @@ SECTIONS {
         test/*.o(.sbss);
         . = ALIGN(4);
     } > EWRAM
+
+    /* Native BSS, as in ld_script_modern.ld: test builds use the game's memory layout, so a test runs only where the
+       runner maps native memory at 0x10000000 */
+    .native (NOLOAD) :
+    ALIGN(16)
+    {
+        __native_start = .;
+        *.o(.native_bss*);
+        . = ALIGN(16);
+        __native_end = .;
+    } > NATIVE
 
     .iwram ORIGIN(IWRAM) : AT (__iwram_lma)
     ALIGN(4)

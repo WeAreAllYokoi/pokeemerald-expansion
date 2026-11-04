@@ -6,6 +6,17 @@
 
 	.set _last_implicit_waitstate, -1
 
+	@ Sets .Ladmg_is_var to whether value is a VAR_ identifier (the generated ranges of constants/admg_state_ids.h).
+	@ Script files reach here through the C preprocessor; a test's inline scripts (include/test/overworld_script.h)
+	@ define this macro themselves first, since inline assembly is not preprocessed.
+	.ifndef .Ladmg_is_var_operand_defined
+	.set .Ladmg_is_var_operand_defined, 1
+	.macro admg_is_var_operand value:req
+	.set .Ladmg_operand, \value
+	.set .Ladmg_is_var, ADMG_STATE_IS_VAR_OPERAND(.Ladmg_operand)
+	.endm
+	.endif
+
 	@ Does nothing.
 	.macro nop
 	.byte SCR_OP_NOP
@@ -153,7 +164,8 @@
 
 	@ Changes the value of destination to value.
 	.macro setvar destination:req, value:req, warn=TRUE
-	.if \warn && ADMG_STATE_IS_VAR_OPERAND(\value)
+	admg_is_var_operand \value
+	.if \warn && .Ladmg_is_var
 	.warning "setvar with a value that might be a VAR_ constant; did you mean copyvar instead?"
 	.endif
 	.byte SCR_OP_SETVAR
@@ -186,7 +198,8 @@
 
 	@ Copies the value of source into destination.
 	.macro copyvar destination:req, source:req, warn=TRUE
-	.if \warn && !ADMG_STATE_IS_VAR_OPERAND(\source)
+	admg_is_var_operand \source
+	.if \warn && !.Ladmg_is_var
 	.warning "copyvar with a value that is not a VAR_ constant; did you mean setvar instead?"
 	.endif
 	.byte SCR_OP_COPYVAR
@@ -268,7 +281,8 @@
 	@ Generic compare macro which attempts to deduce argument types based on their values
 	@ Variable identifiers follow the approved generated domains; raw alias mirrors are excluded
 	.macro compare var:req, arg:req
-		.if ADMG_STATE_IS_VAR_OPERAND(\arg)
+		admg_is_var_operand \arg
+		.if .Ladmg_is_var
 			compare_var_to_var \var, \arg
 		.else
 			compare_var_to_value \var, \arg

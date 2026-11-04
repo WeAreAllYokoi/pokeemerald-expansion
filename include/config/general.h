@@ -90,11 +90,8 @@
 #define ADMG_DEFAULT_AUTO_LOWERCASE_KEYBOARD      GEN_LATEST  // Starting in GEN_6, after entering the first uppercase character, the keyboard switches to lowercase letters.
 #define AUTO_LOWERCASE_KEYBOARD ADMG_CONFIG_EXTRA(AUTO_LOWERCASE_KEYBOARD)
 
-// Read through ADMG_GetConfig in normal builds and use ADMG_DEFAULT_<name> in test builds
-#if TESTING
-#define ADMG_CONFIG_EXTRA(name) ADMG_DEFAULT_##name
-#else
+// Read through ADMG_GetConfig, in test builds too (src/config_changes.c), so an option whose default is another option
+// expands the same way in both
 #define ADMG_CONFIG_EXTRA(name) ((int)ADMG_GetConfig(CONFIG_##name))
-#endif
 
 #endif // GUARD_CONFIG_GENERAL_H

@@ -189,6 +189,22 @@ void SetConfig(enum ConfigTag _config, u32 _value)
 }
 
 #if TESTING
+// The test build's selector: no host selects anything, so a table option reads the test's value and an extra option
+// (ADMG_CONFIG_EXTRA) its compiled default
+#define UNPACK_ADMG_CONFIG_EXTRA_TEST_DEFAULT(_name, _maximum) case CONFIG_##_name: return ADMG_DEFAULT_##_name;
+u32 ADMG_GetConfig(u32 tag)
+{
+    if (tag < CONFIG_COUNT)
+        return GetConfigInternal(tag);
+    switch (tag)
+    {
+    ADMG_CONFIG_EXTRA_DEFINITIONS(UNPACK_ADMG_CONFIG_EXTRA_TEST_DEFAULT)
+    default:
+        return 0;
+    }
+}
+#undef UNPACK_ADMG_CONFIG_EXTRA_TEST_DEFAULT
+
 void TestInitConfigData(void)
 {
     Free(gConfigChangesTestOverride);
@@ -207,9 +223,8 @@ void TestFreeConfigData(void)
 ADMG_CONFIG_EXTRA_DEFINITIONS(ADMG_CHECK_EXTRA_TAG)
 #undef ADMG_CHECK_EXTRA_TAG
 
-#if !TESTING
 // Field-script config test: read the next word as a tag from config_changes.h or admg_config_extra.h
-// Set comparisonResult to 1 if the selected value is nonzero, or 0 otherwise
+// Set comparisonResult to 1 if the selected value is nonzero, or 0 otherwise (test builds read the test's selector)
 void ADMG_ScriptTestConfig(struct ScriptContext *ctx)
 {
     u32 tag = ScriptReadWord(ctx);
@@ -217,5 +232,6 @@ void ADMG_ScriptTestConfig(struct ScriptContext *ctx)
     ctx->comparisonResult = ADMG_GetConfig(tag) != 0 ? 1 : 0;
 }
 
+#if !TESTING
 ADMG_RETAIN_FUNCTION(ADMG_ScriptTestConfig);
 #endif

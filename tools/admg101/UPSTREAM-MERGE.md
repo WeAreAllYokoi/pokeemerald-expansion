@@ -75,9 +75,21 @@ make -j$(nproc)                                                  # the game buil
 make check -j$(nproc)                                            # upstream's test suite, compared with admg-101 unmerged
 ```
 
-`make check` does not compile on build 39 itself: test builds (`TESTING`) leave out the run-time selector, so
-`ADMG_CONFIG_EXTRA` and `ADMG_GetConfig` are undeclared (`src/battle_ai_util.c`, `src/battle_anim.c`). Until that is
-fixed it can't gate a merge; check that the merge fails the same way as `admg-101` unmerged, no worse.
+`make check` compiles and links from recipe 40 on, and the test ELF uses the game's own memory layout: the native region
+at 0x10000000 (`.native_bss`: the 16 MB heap, the parties, the save blocks, the PC storage) is in `ld_script_test.ld`
+as it is in `ld_script_modern.ld`. Test builds get no layout or data of their own; the only test branches are upstream's
+harness (test flags and vars, the config test override, allocation counters, fixtures). Keep it that way: never shrink
+memory or drop data to make a test build fit.
+
+Stock mGBA has no memory at 0x10000000, so the suite does not run under `mgba-rom-test` yet: the first allocation fails
+(`ASSERTION FAILED src/malloc.c:97`, then `Illegal opcode`) and the workers flood their output. Until there is a runner
+that maps the native region (FU-6 part 2), `make check` gates a merge by compiling and linking only.
+
+History, so it isn't rediscovered: build 39 didn't compile `make check`. Commit `05853bf370` moved the enlarged data to
+native memory and updated only `ld_script_modern.ld`, an oversight; test builds also left out the run-time selector.
+The old workspace's test checks were bounded ARM compiles of single source units, with no link or run, so upstream's
+runner had not run since. Recipe 40 fixed the compile (a test `ADMG_GetConfig` that returns each option's default) and
+the link.
 
 Then on the ADMG-101 side, its configuration inventory with `ADMG_GAME_TOOLS` set to this folder:
 `tools/recipe/inventory_r38_config.py <this clone> --check`. Its status counts should match the previous build's,

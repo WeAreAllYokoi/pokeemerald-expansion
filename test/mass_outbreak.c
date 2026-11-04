@@ -16,8 +16,7 @@ TEST("startoutbreak sets a static outbreak when called with only one argument")
 
     struct MassOutbreak outbreak = GetStaticOutbreak(0);
     EXPECT_EQ(gSaveBlock1Ptr->outbreakPokemonSpecies, outbreak.species);
-    EXPECT_EQ(gSaveBlock1Ptr->outbreakLocationMapNum, MAP_NUM(outbreak.location));
-    EXPECT_EQ(gSaveBlock1Ptr->outbreakLocationMapGroup, MAP_GROUP(outbreak.location));
+    EXPECT_EQ(gSaveBlock1Ptr->outbreakLocation, outbreak.location); // one 32-bit map identity
     EXPECT_EQ(gSaveBlock1Ptr->outbreakPokemonLevel, outbreak.level);
     for (u32 i = 0; i < MAX_MON_MOVES; i++)
     {
@@ -36,8 +35,7 @@ TEST("startoutbreak can set a dynamic outbreak")
     );
 
     EXPECT_EQ(gSaveBlock1Ptr->outbreakPokemonSpecies, SPECIES_BULBASAUR);
-    EXPECT_EQ(gSaveBlock1Ptr->outbreakLocationMapNum, MAP_NUM(MAP_OLDALE_TOWN));
-    EXPECT_EQ(gSaveBlock1Ptr->outbreakLocationMapGroup, MAP_GROUP(MAP_OLDALE_TOWN));
+    EXPECT_EQ(gSaveBlock1Ptr->outbreakLocation, MAP_OLDALE_TOWN); // one 32-bit map identity
     EXPECT_EQ(gSaveBlock1Ptr->outbreakPokemonLevel, 2);
     EXPECT_EQ(gSaveBlock1Ptr->outbreakPokemonMoves[0], MOVE_SCRATCH);
     EXPECT_EQ(gSaveBlock1Ptr->outbreakPokemonMoves[1], MOVE_CELEBRATE);
@@ -65,8 +63,7 @@ TEST("startoutbreak can set a dynamic outbreak (vars)")
     );
 
     EXPECT_EQ(gSaveBlock1Ptr->outbreakPokemonSpecies, SPECIES_BULBASAUR);
-    EXPECT_EQ(gSaveBlock1Ptr->outbreakLocationMapNum, MAP_NUM(MAP_OLDALE_TOWN));
-    EXPECT_EQ(gSaveBlock1Ptr->outbreakLocationMapGroup, MAP_GROUP(MAP_OLDALE_TOWN));
+    EXPECT_EQ(gSaveBlock1Ptr->outbreakLocation, MAP_OLDALE_TOWN); // one 32-bit map identity
     EXPECT_EQ(gSaveBlock1Ptr->outbreakPokemonLevel, 2);
     EXPECT_EQ(gSaveBlock1Ptr->outbreakPokemonMoves[0], MOVE_SCRATCH);
     EXPECT_EQ(gSaveBlock1Ptr->outbreakPokemonMoves[1], MOVE_CELEBRATE);
@@ -86,8 +83,7 @@ TEST("editoutbreak doesn't touch unset arguments")
     );
 
     EXPECT_EQ(gSaveBlock1Ptr->outbreakPokemonSpecies, SPECIES_BULBASAUR);
-    EXPECT_EQ(gSaveBlock1Ptr->outbreakLocationMapNum, MAP_NUM(MAP_OLDALE_TOWN));
-    EXPECT_EQ(gSaveBlock1Ptr->outbreakLocationMapGroup, MAP_GROUP(MAP_OLDALE_TOWN));
+    EXPECT_EQ(gSaveBlock1Ptr->outbreakLocation, MAP_OLDALE_TOWN); // one 32-bit map identity
     EXPECT_EQ(gSaveBlock1Ptr->outbreakPokemonLevel, 2);
     EXPECT_EQ(gSaveBlock1Ptr->outbreakPokemonMoves[0], MOVE_SCRATCH);
     EXPECT_EQ(gSaveBlock1Ptr->outbreakPokemonMoves[1], MOVE_CELEBRATE);

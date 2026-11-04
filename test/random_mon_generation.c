@@ -116,7 +116,7 @@ TEST("Random mon generation supports held item filter funcs")
 TEST("ResolveMoves resolves teachable moves")
 {
     enum Species species = SPECIES_CHARIZARD;
-    u16 moves[MAX_MON_MOVES] = {MOVE_RANDOM_TEACHABLE, MOVE_DEFAULT, MOVE_DEFAULT, MOVE_DEFAULT};
+    u32 moves[MAX_MON_MOVES] = {MOVE_RANDOM_TEACHABLE, MOVE_DEFAULT, MOVE_DEFAULT, MOVE_DEFAULT};
     enum Move finalMoves[MAX_MON_MOVES];
 
     ResolveMoves(species, 100, moves, finalMoves);

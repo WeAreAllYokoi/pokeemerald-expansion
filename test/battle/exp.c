@@ -154,7 +154,7 @@ WILD_BATTLE_TEST("Transformed Pokemon gives the experience points of the copied 
     }
 }
 
-#if I_EXP_SHARE_ITEM < GEN_6
+#if ADMG_DEFAULT_I_EXP_SHARE_ITEM < GEN_6 // the compiled default, which test builds use
 
 WILD_BATTLE_TEST("Exp Share(held) gives Experience to mons which did not participate in battle")
 {

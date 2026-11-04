@@ -543,6 +543,9 @@
 #include "config_changes.h"
 #include "item.h"
 #include "random.h"
+
+// The data headers define this for themselves (their B_USE_FROSTBITE read is measured data); tests read the selection
+#define MOVE_EFFECT_FREEZE_OR_FROSTBITE (B_USE_FROSTBITE ? MOVE_EFFECT_FROSTBITE : MOVE_EFFECT_FREEZE)
 #include "recorded_battle.h"
 #include "util.h"
 #include "constants/abilities.h"

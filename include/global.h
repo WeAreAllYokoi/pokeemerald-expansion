@@ -29,7 +29,9 @@
 #include "constants/admg_config_extra.h"
 #if !TESTING
 #include "admg_native.h"
-ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetConfig(ADMG_Word tag); // ADMG_CONFIG_EXTRA reads through here outside test builds
+ADMG_NATIVE_ENTRY ADMG_Word ADMG_GetConfig(ADMG_Word tag); // ADMG_CONFIG_EXTRA reads through here
+#else
+u32 ADMG_GetConfig(u32 tag); // Test builds have no host: the test's value of a table option, an extra option's default
 #endif
 
 // Prevent cross-jump optimization.

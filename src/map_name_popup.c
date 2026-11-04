@@ -194,18 +194,12 @@ static const u8 sMapSectionToThemeId[MAPSEC_COUNT - KANTO_MAPSEC_COUNT - 1] =
     [MAPSEC_TRAINER_HILL - KANTO_MAPSEC_COUNT] = MAPPOPUP_THEME_MARBLE,
 };
 
-#if !TESTING || ADMG_DEFAULT_OW_POPUP_GENERATION == GEN_5 // Always include Gen 5 assets in normal builds; test builds only need them for a Gen 5 default
+// Gen 5 assets are always built: OW_POPUP_GENERATION is chosen at run time
 // Gen5 assets
 static const u8 sMapPopUpTilesPrimary_BW[] = INCGFX_U8("graphics/map_popup/bw/bw_primary.png", ".4bpp");
 static const u8 sMapPopUpTilesSecondary_BW[] = INCGFX_U8("graphics/map_popup/bw/bw_secondary.png", ".4bpp");
 static const u16 sMapPopUpTilesPalette_BW_Black[16] = INCGFX_U16("graphics/map_popup/bw/black.pal", ".gbapal");
 static const u16 sMapPopUpTilesPalette_BW_White[16] = INCGFX_U16("graphics/map_popup/bw/white.pal", ".gbapal");
-#else
-static const u8 sMapPopUpTilesPrimary_BW[] = {0};
-static const u8 sMapPopUpTilesSecondary_BW[] = {0};
-static const u16 sMapPopUpTilesPalette_BW_Black[] = {0};
-static const u16 sMapPopUpTilesPalette_BW_White[] = {0};
-#endif
 
 static const u8 sRegionMapSectionId_To_PopUpThemeIdMapping_BW[] =
 {

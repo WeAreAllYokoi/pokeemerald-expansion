@@ -54,6 +54,14 @@ asm(".set FALSE, 0\n"
     ".set SPECIAL_VARS_START, " STR(SPECIAL_VARS_START) "\n"
     ".set SPECIAL_VARS_END, " STR(SPECIAL_VARS_END) "\n");
 
+// event.inc tests VAR_ identifiers with the C macro ADMG_STATE_IS_VAR_OPERAND, which inline assembly never sees: give
+// the assembler the same test, expanded here
+asm(".set .Ladmg_is_var_operand_defined, 1\n"
+    ".macro admg_is_var_operand value:req\n"
+    ".set .Ladmg_operand, \\value\n"
+    ".set .Ladmg_is_var, " STR(ADMG_STATE_IS_VAR_OPERAND(.Ladmg_operand)) "\n"
+    ".endm\n");
+
 // Make overworld script macros available.
 asm(".include \"constants/gba_constants.inc\"\n"
     ".include \"asm/macros/asm.inc\"\n"

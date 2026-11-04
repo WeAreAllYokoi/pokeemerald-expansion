@@ -33,7 +33,7 @@ EWRAM_DATA static u8 sSpecialFlags[SPECIAL_FLAGS_SIZE] = {0};
 #define TEST_FLAGS_SIZE     1
 #define TEST_VARS_SIZE      8
 EWRAM_DATA static u8 sTestFlags[TEST_FLAGS_SIZE] = {0};
-EWRAM_DATA static u16 sTestVars[TEST_VARS_SIZE] = {0};
+EWRAM_DATA static u32 sTestVars[TEST_VARS_SIZE] = {0}; // vars are 32-bit, like SaveBlock1's
 #endif // TESTING
 
 extern u32 *const gSpecialVars[];
