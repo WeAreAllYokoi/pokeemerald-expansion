@@ -225,7 +225,7 @@ enum
     VAR_SHOW_HP,
     VAR_SUBSTITUTE,
     VAR_IN_LOVE,
-    VAR_U16_4_ENTRIES,
+    VAR_MOVES_4_ENTRIES,
     VAL_S8,
     VAL_ALL_STAT_STAGES,
 };
@@ -1729,11 +1729,11 @@ static void UpdateBattlerValue(struct BattleDebugMenu *data)
     case VAL_U16:
         *(u16 *)(data->modifyArrows.modifiedValPtr) = data->modifyArrows.currValue;
         break;
-    case VAR_U16_4_ENTRIES:
-        ((u16 *)(data->modifyArrows.modifiedValPtr))[0] = data->modifyArrows.currValue;
-        ((u16 *)(data->modifyArrows.modifiedValPtr))[1] = data->modifyArrows.currValue;
-        ((u16 *)(data->modifyArrows.modifiedValPtr))[2] = data->modifyArrows.currValue;
-        ((u16 *)(data->modifyArrows.modifiedValPtr))[3] = data->modifyArrows.currValue;
+    case VAR_MOVES_4_ENTRIES:
+        ((enum Move *)(data->modifyArrows.modifiedValPtr))[0] = data->modifyArrows.currValue;
+        ((enum Move *)(data->modifyArrows.modifiedValPtr))[1] = data->modifyArrows.currValue;
+        ((enum Move *)(data->modifyArrows.modifiedValPtr))[2] = data->modifyArrows.currValue;
+        ((enum Move *)(data->modifyArrows.modifiedValPtr))[3] = data->modifyArrows.currValue;
         break;
     case VAL_ALL_STAT_STAGES:
         for (i = 0; i < NUM_BATTLE_STATS; i++)
@@ -2041,7 +2041,7 @@ static void SetUpModifyArrows(struct BattleDebugMenu *data)
         {
             data->modifyArrows.modifiedValPtr = &gBattleMons[data->battlerId].moves[0];
             data->modifyArrows.currValue = gBattleMons[data->battlerId].moves[0];
-            data->modifyArrows.typeOfVal = VAR_U16_4_ENTRIES;
+            data->modifyArrows.typeOfVal = VAR_MOVES_4_ENTRIES;
         }
         else
         {

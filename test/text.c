@@ -595,7 +595,7 @@ TEST("Map names fit in popup")
     EXPECT_LE(GetStringWidth(fontId, GetPopUpMapName(mapName, Overworld_GetMapHeaderByGroupAndId(mapGroup, mapNum)), 0), widthPx);
 }
 
-extern u16 sBattlerAbilities[MAX_BATTLERS_COUNT];
+extern enum Ability sBattlerAbilities[MAX_BATTLERS_COUNT];
 //*
 #define BATTLE_STRING_BUFFER_SIZE 1000
 TEST("Battle strings fit on the battle message window")

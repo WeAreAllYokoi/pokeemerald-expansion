@@ -16,7 +16,8 @@ enum
 };
 
 #define ROAMER(index) (&gSaveBlock1Ptr->roamer[index])
-EWRAM_DATA static u8 sLocationHistory[ROAMER_COUNT][3][2] = {0};
+// The player's last three maps, whole: an added map's group is 256 or more
+EWRAM_DATA static MapId sLocationHistory[ROAMER_COUNT][3] = {0};
 EWRAM_DATA static u8 sRoamerLocation[ROAMER_COUNT][2] = {0};
 EWRAM_DATA u8 gEncounteredRoamerIndex = 0;
 
@@ -76,10 +77,7 @@ static void ClearRoamerLocationHistory(u32 roamerIndex)
     u32 i;
 
     for (i = 0; i < ARRAY_COUNT(sLocationHistory[roamerIndex]); i++)
-    {
-        sLocationHistory[roamerIndex][i][MAP_GRP] = 0;
-        sLocationHistory[roamerIndex][i][MAP_NUM] = 0;
-    }
+        sLocationHistory[roamerIndex][i] = MAP_ID(0, 0);
 }
 
 void MoveAllRoamersToOtherLocationSets(void)
@@ -167,14 +165,9 @@ void UpdateLocationHistoryForRoamer(void)
 
     for (i = 0; i < ROAMER_COUNT; i++)
     {
-        sLocationHistory[i][2][MAP_GRP] = sLocationHistory[i][1][MAP_GRP];
-        sLocationHistory[i][2][MAP_NUM] = sLocationHistory[i][1][MAP_NUM];
-
-        sLocationHistory[i][1][MAP_GRP] = sLocationHistory[i][0][MAP_GRP];
-        sLocationHistory[i][1][MAP_NUM] = sLocationHistory[i][0][MAP_NUM];
-
-        sLocationHistory[i][0][MAP_GRP] = MAP_GROUP(gSaveBlock1Ptr->location.mapId);
-        sLocationHistory[i][0][MAP_NUM] = MAP_NUM(gSaveBlock1Ptr->location.mapId);
+        sLocationHistory[i][2] = sLocationHistory[i][1];
+        sLocationHistory[i][1] = sLocationHistory[i][0];
+        sLocationHistory[i][0] = gSaveBlock1Ptr->location.mapId;
     }
 }
 
@@ -225,8 +218,7 @@ void RoamerMove(u32 roamerIndex)
                 do
                 {
                     mapNum = sRoamerLocations[locSet][(Random() % (NUM_LOCATIONS_PER_SET - 1)) + 1];
-                } while ((sLocationHistory[roamerIndex][2][MAP_GRP] == ROAMER_MAP_GROUP
-                        && sLocationHistory[roamerIndex][2][MAP_NUM] == mapNum)
+                } while (sLocationHistory[roamerIndex][2] == MAP_ID(ROAMER_MAP_GROUP, mapNum)
                         || mapNum == MAP_NUM(MAP_UNDEFINED));
                 sRoamerLocation[roamerIndex][MAP_NUM] = mapNum;
                 return;

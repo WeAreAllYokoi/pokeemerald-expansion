@@ -1727,8 +1727,8 @@ ADMG_NATIVE_ENTRY void ShowPartnerCandidateMessage(void)
     ShowFieldMessage(messageText);
 }
 
-static bool8 ADMG_TryGetTowerBattlePair(const u16 *ids, u32 count, u32 battle,
-    u16 *first, u16 *second)
+static bool8 ADMG_TryGetTowerBattlePair(const enum TrainerId *ids, u32 count, u32 battle,
+    enum TrainerId *first, enum TrainerId *second)
 {
     if (ids == NULL || first == NULL || second == NULL || count < 2 || battle >= count / 2)
     { ADMG_StateAccessRejected(battle, __func__); return FALSE; }
@@ -1824,9 +1824,9 @@ ADMG_NATIVE_ENTRY void LoadLinkMultiOpponentsData(void)
     case 3:
         if ((GetBlockReceivedStatus() & 3) == 3)
         {
-            u16 selected[ARRAY_COUNT(save->frontier.trainerIds)];
+            enum TrainerId selected[ARRAY_COUNT(save->frontier.trainerIds)];
             memcpy(selected, gBlockRecvBuffer, sizeof(selected));
-            u16 a, b;
+            enum TrainerId a, b;
             if (!ADMG_TryGetTowerBattlePair(selected, ARRAY_COUNT(selected), battleNum, &a, &b)) return;
             ResetBlockReceivedFlags();
             if (!ADMG_EndStateAccessCheck(generation)) return;
