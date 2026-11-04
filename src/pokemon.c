@@ -2253,7 +2253,7 @@ u32 GetBoxMonData3(struct BoxPokemon *boxMon, s32 field, u8 *data)
             if (GetSubstruct0(boxMon)->species && !IsEggOrBadEgg(boxMon))
             {
                 struct PokemonSubstruct1 *substruct1 = GetSubstruct1(boxMon);
-                u16 *moves = (u16 *)data;
+                const enum Move *moves = (const enum Move *)data; // a MOVES_COUNT-terminated list of 32-bit move IDs
                 s32 i = 0;
 
                 while (moves[i] != MOVES_COUNT)

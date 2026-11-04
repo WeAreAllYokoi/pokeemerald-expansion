@@ -738,7 +738,7 @@ bool32 RemovePyramidBagItem(enum Item itemId, u16 count)
     }
     else
     {
-        u16 *newItems = Alloc(PYRAMID_BAG_ITEMS_COUNT * sizeof(*newItems));
+        enum Item *newItems = Alloc(PYRAMID_BAG_ITEMS_COUNT * sizeof(*newItems));
     #if MAX_PYRAMID_BAG_ITEM_CAPACITY > 255
         u16 *newQuantities = Alloc(PYRAMID_BAG_ITEMS_COUNT * sizeof(*newQuantities));
     #else
