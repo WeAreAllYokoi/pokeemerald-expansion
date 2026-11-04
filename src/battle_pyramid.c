@@ -2023,7 +2023,7 @@ void LoadBattlePyramidObjectEventTemplates(void)
     u64 generation = ADMG_BeginStateAccessCheck();
     struct ObjectEventTemplate previousEvents[ARRAY_COUNT(context.save1->objectEventTemplates)];
     _Static_assert(MAX_PYRAMID_TRAINERS <= ARRAY_COUNT(context.save2->frontier.trainerIds), "native Pyramid trainer slots must fit their existing array");
-    u16 previousTrainers[MAX_PYRAMID_TRAINERS];
+    enum TrainerId previousTrainers[MAX_PYRAMID_TRAINERS];
     memcpy(previousEvents, context.save1->objectEventTemplates, sizeof(previousEvents));
     memcpy(previousTrainers, context.save2->frontier.trainerIds, sizeof(previousTrainers));
     int i;
