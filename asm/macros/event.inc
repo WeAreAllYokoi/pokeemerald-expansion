@@ -743,8 +743,7 @@
 	.macro showplayer
 	.byte SCR_OP_SHOWOBJECTAT
 	.2byte LOCALID_PLAYER
-	.byte 0 @ map group
-	.byte 0 @ map num
+	.4byte 0 @ map: MAP_ID(0, 0), a 32-bit MapId as ScrCmd_showobjectat reads it
 	.endm
 
 	@ Sets the specified object's invisibility to TRUE.
@@ -758,8 +757,7 @@
 	.macro hideplayer
 	.byte SCR_OP_HIDEOBJECTAT
 	.2byte LOCALID_PLAYER
-	.byte 0 @ map group
-	.byte 0 @ map num
+	.4byte 0 @ map: MAP_ID(0, 0), a 32-bit MapId as ScrCmd_hideobjectat reads it
 	.endm
 
 	@ Turns the currently selected object (if there is one) to face the player.

@@ -135,7 +135,7 @@
 	.macro jumpifability battler:req, ability:req, jumpInstr:req
 	.byte B_SCR_OP_JUMPIFABILITY
 	.byte \battler
-	.2byte \ability
+	.4byte \ability @ enum Ability is 32-bit, as Cmd_jumpifability reads it
 	.4byte \jumpInstr
 	.endm
 
@@ -344,7 +344,7 @@
 
 	.macro jumpifabilitypresent ability:req, jumpInstr:req
 	.byte B_SCR_OP_JUMPIFABILITYPRESENT
-	.2byte \ability
+	.4byte \ability @ enum Ability is 32-bit, as Cmd_jumpifabilitypresent reads it
 	.4byte \jumpInstr
 	.endm
 
@@ -1986,7 +1986,7 @@
 
 	.macro jumpifspecies species:req, jumpInstr:req
 	callnative BS_JumpIfSpecies
-	.2byte \species
+	.4byte \species @ enum Species is 32-bit, as BS_JumpIfSpecies reads it
 	.4byte \jumpInstr
 	.endm
 
