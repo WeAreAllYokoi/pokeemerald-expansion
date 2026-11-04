@@ -3803,7 +3803,8 @@ u32 AbilityBattleEffects(enum AbilityEffect caseID, enum BattlerId battler, enum
                 }
                 break;
             case ABILITY_CUD_CHEW:
-                if (--gBattleMons[battler].volatiles.cudChewTimer == 0)
+                // The 2-bit timer is 0 until a Berry is eaten: counting down from 0 would wrap to 3 and fire every 4th turn
+                if (gBattleMons[battler].volatiles.cudChewTimer != 0 && --gBattleMons[battler].volatiles.cudChewTimer == 0)
                 {
                     gBattleScripting.battler = battler;
                     gLastUsedItem = GetBattlerPartyState(battler)->usedHeldItem;
