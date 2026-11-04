@@ -2423,7 +2423,7 @@ static void BufferDomeOpponentName(void)
 
 /* Only the selected native roster/mon coordinates are borrowed here. */
 static bool8 ADMG_DomePartyInputCurrent(struct SaveBlock2 *save, u64 generation,
-    enum TrainerId identity, u32 slot, const u16 *mons)
+    enum TrainerId identity, u32 slot, const enum Species *mons)
 {
     if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
     if (save == NULL || gSaveBlock2Ptr != save || TRAINER_BATTLE_PARAM.opponentA != identity)
@@ -2445,7 +2445,7 @@ static void ADMG_RunDomeOpponentParty(enum TrainerId identity, u32 slot, struct 
     u64 generation)
 {
     if (!ADMG_DomePartyInputCurrent(save, generation, identity, slot, NULL)) return;
-    u16 mons[FRONTIER_PARTY_SIZE];
+    enum Species mons[FRONTIER_PARTY_SIZE];
     memcpy(mons, DOME_MONS[slot], sizeof(mons));
     if (!ADMG_DomePartyInputCurrent(save, generation, identity, slot, mons)) return;
     struct Pokemon saved[2][PARTY_SIZE];
@@ -2571,7 +2571,7 @@ ADMG_reject_tables:
 }
 
 static bool8 ADMG_DomeMonPartyCurrent(struct SaveBlock2 *save, u64 generation,
-    u32 slot, u16 actor, const u16 *indices, u32 used)
+    u32 slot, u16 actor, const enum Species *indices, u32 used)
 {
     if (!ADMG_EndStateAccessCheck(generation)) return FALSE;
     if (save == NULL || gSaveBlock2Ptr != save || slot >= ARRAY_COUNT(DOME_TRAINERS)
@@ -2594,7 +2594,7 @@ static void ADMG_RunDomeMonParty(u16 tournamentTrainerId, u16 actor,
     int i, selectedMonBits;
 
     if (!ADMG_DomeMonPartyCurrent(save, generation, tournamentTrainerId, actor, NULL, 0)) return;
-    u16 indices[FRONTIER_PARTY_SIZE];
+    enum Species indices[FRONTIER_PARTY_SIZE];
     memcpy(indices, DOME_MONS[tournamentTrainerId], sizeof(indices));
     u32 used = actor == TRAINER_FRONTIER_BRAIN ? 0 : (1u << FRONTIER_PARTY_SIZE) - 1;
     struct Pokemon saved[2][PARTY_SIZE];
