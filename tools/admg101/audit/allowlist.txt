@@ -1,0 +1,277 @@
+# Reviewed, accepted findings of run_audit.sh. Each entry accepts exactly one finding: its filter, its location without
+# the line number, and its detail text exactly as the report prints it. Anything else is reported as unreviewed.
+#   <reason id> | <filter> | <location> | <detail>
+# Reviewed on recipe 35 build-7 (source d4483f35, ROM SHA-1 e95b049d) for F7.1. Known limits named here are the ones
+# ADMG-101's docs/admg101-dynamic-content.md records; an entry is never added for a content capacity problem without a reason.
+
+[reasons]
+debug-menu: The debug menu (debug.c, battle_debug.c, the sprite visualizer) keeps GBA widths for its value entry and list items: a development tool, recorded as a known limit.
+frontier-index: Battle Frontier, Battle Dome, Trainer Hill and Trainer Tower trainer and Pokémon-set indices index the facility's own tables, not registry content (known limit: Battle Frontier trainer indices keep GBA widths). domeMonIds is typed enum Species in recipe 35 but holds frontier set indices.
+player-trainer-id: The player's or an OT's trainer ID (bytes, halves or the 4-byte array of SaveBlock2, mail, records, TV shows, Walda's phrase), not a content trainer ID.
+rematch-matchcall: Rematch and Match Call static tables name base trainers by 16-bit ID (known limit: added trainers have no rematches or calls); availabilityFlag is a flag ID.
+apprentice-species-index: The apprentice's speciesIds are indices into its own option list, not species IDs.
+decoration-id: Decoration IDs: decorations are not a content registry (DecorationAdd takes a u8 decoration).
+ball-enum: Poké Ball IDs (enum PokeBall, 28 balls) are not a content registry; the battle result keeps a byte.
+object-event-graphics: Object-event graphics IDs keep their 16-bit width (known limit); a follower's or weather form's overworld species is stored as a graphics ID.
+base-dex-bounded: The Pokédex screens and the credits list base National Pokédex numbers only, bounded by NATIONAL_DEX_COUNT (known limit: added species are counted and flagged but not listed).
+base-count-bounded: The value is clamped below a base-game count before it is narrowed (type icon animation: type < NUMBER_OF_MON_TYPES, else TYPE_MYSTERY).
+wireless-link: Union Room trade-board fields keep the wireless adapter's 384-byte block layout (known limit); the type comes from a list of base types.
+mapheader-widened: struct MapHeader's map section is 32 bits in recipe 35: mapjson emits the header at that width and every generated header checks its size against MAP_HEADER_SIZE (patch series, ADMG-101's docs/admg101-dynamic-content.md).
+rom-header: The RHH and Game Freak ROM headers describe the base build for external tools (fixed counts and lengths); the game does not read them for capacity.
+not-a-registry: The value belongs to a kind that is not a content registry and keeps its range: stats, egg groups, growth rates, ability slot numbers, hold effects, move target flags and damage, contest categories, scores and excitement, map-section types, outbreak probabilities, link version signatures, fusion handling, movement types, random-generation option indices, relearner info category.
+count: A count, total, quantity or size, bounded by the menu, list or table it counts, not a content ID.
+slot-or-index: A move slot, party slot, list or menu index, or a cursor position, not a content ID.
+bitmask: A bitmask over the four move slots or a restricted-move list (move limitations, known moves), not a content ID.
+ui-state: Task and UI state: state machine values, timers, sprite and window IDs, fade parameters, camera-shake and confetti parameters, scroll-multichoice IDs, scores and list padding.
+split-word: The low half of a function pointer kept across data[8] and data[9] (the high half is in data[8]), as the base game does.
+boolean: A boolean result.
+map-identity-widened: Recipe 37 makes the map one 32-bit MapId and the layout ID 32-bit in assembly-emitted structs on purpose (MapHeader, WarpEvent, MapConnection; the probe reads the former group and number members as the MapId): mapjson and the map.inc macros emit the new layouts and every generated header checks its size against MAP_HEADER_SIZE (ADMG-101's docs/admg101-f3.3a-map-identity.md).
+fly-icon-mapsec: A Fly icon sprite keeps its map section in data[0] (s16): base sections are below MAPSEC_NONE and added sections start at FIRST_ADDED_MAPSEC (0x100); the SDK keeps added sections below 0x8000.
+
+[entries]
+decoration-id | cid | src/shop.c | u32 -> u8: if (DecorationAdd(contentIds[0]))
+ui-state | data | src/battle_anim_mon_movement.c | s32 | gTasks[taskId].data[15] = gAnimMoveDmg / 12;
+ui-state | data | src/battle_transition.c | int | data[6] = -xMove;
+ui-state | data | src/battle_transition.c | int | data[7] = -yMove;
+debug-menu | data | src/debug.c | u32 | gTasks[taskId].data[3] = species;
+debug-menu | data | src/debug.c | u32 | gTasks[taskId].data[6] = gSpecialVar_0x8004;
+ui-state | data | src/field_specials.c | s32 | gTasks[taskId].data[0] = GetLearnMoveResumeAfterSummaryScreenState();
+ui-state | data | src/field_specials.c | s32 | gTasks[taskId].data[0] = GetLearnMoveStartState();
+ui-state | data | src/field_specials.c | s32 | gTasks[taskId].data[0] = LearnMove(&sMoveLearnUI, taskId);
+slot-or-index | data | src/field_specials.c | u32 | gTasks[taskId].data[1] = gSpecialVar_0x8000;
+slot-or-index | data | src/field_specials.c | u32 | gTasks[taskId].data[1] = gSpecialVar_0x8004;
+ui-state | data | src/field_specials.c | u32 | gTasks[taskId].data[0] = gSpecialVar_0x8005;
+ui-state | data | src/field_specials.c | u32 | gTasks[taskId].data[0] = gSpecialVar_0x8005;
+ui-state | data | src/field_specials.c | u32 | gTasks[taskId].data[2] = gSpecialVar_0x8006;
+ui-state | data | src/field_specials.c | u32 | gTasks[taskId].data[2] = gSpecialVar_0x8006;
+ui-state | data | src/field_specials.c | u32 | gTasks[taskId].data[3] = gSpecialVar_0x8007;
+ui-state | data | src/field_specials.c | u32 | gTasks[taskId].data[3] = gSpecialVar_0x8007;
+ui-state | data | src/field_specials.c | u32 | gTasks[taskId].data[4] = gSpecialVar_0x8004;
+ui-state | data | src/field_specials.c | u32 | gTasks[taskId].data[4] = gSpecialVar_0x8004;
+ui-state | data | src/field_specials.c | u32 | task->data[11] = gSpecialVar_0x8004;
+split-word | data | src/fldeff_defog.c | uintptr_t | gTasks[taskId].data[9] = (uintptr_t)FieldMove_Defog;
+split-word | data | src/fldeff_rocksmash.c | u32 | gTasks[taskId].data[9] = (u32)FieldMove_RockSmash;
+not-a-registry | data | src/follower_npc.c | u32 | gTasks[taskId].data[1] = movementType;
+ui-state | data | src/hall_of_fame.c | u32 | gTasks[taskId].data[1] = gSpecialVar_0x8004;
+ui-state | data | src/move_relearner.c | s32 | gTasks[sMoveRelearnerStruct->mainTask].data[0] = GetLearnMoveResumeAfterSummaryScreenState();
+ui-state | data | src/move_relearner.c | s32 | gTasks[taskId].data[0] = GetLearnMoveStartAfterPromptState();
+ui-state | data | src/move_relearner.c | s32 | gTasks[taskId].data[0] = LearnMove(&sMoveLearnUI, taskId);
+not-a-registry | data | src/move_relearner.c | u32 | gTasks[sMoveRelearnerStruct->mainTask].data[4] = gSpecialVar_0x800A;
+slot-or-index | data | src/move_relearner.c | u32 | gTasks[sMoveRelearnerStruct->mainTask].data[1] = gSpecialVar_0x8004;
+slot-or-index | data | src/move_relearner.c | u32 | gTasks[sMoveRelearnerStruct->mainTask].data[1] = gSpecialVar_0x8008;
+not-a-registry | data | src/party_menu.c | const enum FusionExtraMoveHandling | task->data[13] = itemFusion[i].extraMoveHandling;
+not-a-registry | data | src/party_menu.c | const enum FusionExtraMoveHandling | task->data[13] = itemFusion[i].extraMoveHandling;
+not-a-registry | data | src/party_menu.c | u32 | data[2] = GetMonData2(&gParties[B_TRAINER_PLAYER][data[3]], MON_DATA_ABILITY_NUM) ^ 1;
+bitmask | dest | src/battle_ai_main.c | u32 -> u8: aiData->moveLimitations[battler] = CheckMoveLimitations(battler, 0, ~((1 << 15)));
+slot-or-index | dest | src/battle_ai_main.c | u32 -> u8: mostViableMovesIndices[0] = moveIndex;
+slot-or-index | dest | src/battle_ai_main.c | u32 -> u8: mostViableMovesIndices[mostViableMovesNo] = moveIndex;
+not-a-registry | dest | src/battle_ai_record.c | enum HoldEffect -> u8: gBattleHistory->itemEffects[battlerId] = itemEffect;
+debug-menu | dest | src/battle_debug.c | s32 -> u8: data->currentMainListItemId = listItemId;
+debug-menu | dest | src/battle_debug.c | s32 -> u8: data->currentSecondaryListItemId = listItemId;
+frontier-index | dest | src/battle_dome.c | int -> u16: gSaveBlock2Ptr->frontier.domeTrainers[i].trainerId = trainerId;
+frontier-index | dest | src/battle_dome.c | int -> u16: gSaveBlock2Ptr->frontier.domeTrainers[i].trainerId = trainerId;
+frontier-index | dest | src/battle_dome.c | int -> u16: gSaveBlock2Ptr->frontier.domeTrainers[i].trainerId = trainerId;
+bitmask | dest | src/battle_gfx_sfx_util.c | u32 -> u8: u8 unusableMovesBits = CheckMoveLimitations(battler, 0, 0xFFFF);
+ui-state | dest | src/contest_ai.c | s16 -> u8: (*gContestResources->aiData).moveScores[(*gContestResources->aiData).nextMoveIndex] = score;
+not-a-registry | dest | src/contest_effect.c | u32 -> u8: u8 lastMoveComboStarterId = GetMoveContestComboStarter(lastMove);
+debug-menu | dest | src/debug.c | u32 -> u16: u16 moveId = DebugSelection_GetData(taskId, i);
+ui-state | dest | src/list_menu.c | s32 -> u8: data->template.itemVerticalPadding = value;
+bitmask | dest | src/pokemon_storage_system.c | u32 -> u16: knownMoves = GetAndCopyBoxMonDataAt(sStorage->releaseCheckBoxId, sStorage->releaseCheckBoxPos, MON_DATA_KNOWN_MOVES, (u8 *)sStorage->restrictedMoveLis
+bitmask | dest | src/pokemon_storage_system.c | u32 -> u16: knownMoves = GetMonData3(&gParties[B_TRAINER_PLAYER][i], MON_DATA_KNOWN_MOVES, (u8 *)sStorage->restrictedMoveList);
+not-a-registry | dest | src/random_mon_generation.c | u32 -> u16: itemOptionId = ({ u32 admg_value; if (!ADMG_TryReadVar((ScriptReadHalfword(ctx)), &admg_value, 1)) { ADMG_StopInvalidStateCommand(ctx); return ; } adm
+not-a-registry | dest | src/random_mon_generation.c | u32 -> u16: speciesOptionId = ({ u32 admg_value; if (!ADMG_TryReadVar((ScriptReadHalfword(ctx)), &admg_value, 1)) { ADMG_StopInvalidStateCommand(ctx); return ; } 
+slot-or-index | dest | src/script_menu.c | s32 -> u16: struct DynamicListMenuEventArgs eventArgs = {.selectedItem = input, .windowId = gTasks[taskId].data[2], .list =
+slot-or-index | dest | src/script_menu.c | s32 -> u16: struct DynamicListMenuEventArgs eventArgs = {.selectedItem = itemIndex, .windowId = list->template.windowId, .list = &list->template};
+slot-or-index | dest | src/script_menu.c | u32 -> u16: struct DynamicListMenuEventArgs eventArgs = {.selectedItem = initialRow, .windowId = windowId, .list =
+boolean | dest | src/script_pokemon_util.c | bool32 -> bool8: bool8 hasItem = CheckPartyMonHasHeldItem(ITEM_ENIGMA_BERRY_E_READER);
+frontier-index | dest | src/trainer_tower.c | u32 -> u16: trainerId = VarGet((0x4000 + 0x1));
+frontier-index | dest | src/trainer_tower.c | u32 -> u16: u16 trainerId = gSpecialVar_0x8006;
+player-trainer-id | dest | src/tv.c | u32 -> u8: show->common.srcTrainerId2Lo = id;
+player-trainer-id | dest | src/tv.c | u32 -> u8: show->common.srcTrainerIdLo = id;
+player-trainer-id | dest | src/tv.c | u32 -> u8: show->common.srcTrainerIdLo = id;
+player-trainer-id | dest | src/tv.c | u32 -> u8: show->common.trainerIdLo = id;
+player-trainer-id | dest | src/tv.c | u32 -> u8: show->common.trainerIdLo = id;
+wireless-link | dest | src/union_room.c | s32 -> u16: sUnionRoomTrade.type = input;
+player-trainer-id | dest | src/walda_phrase.c | u32 -> u16: u16 trainerId = GetTrainerId(gSaveBlock2Ptr->playerTrainerId);
+not-a-registry | dwarf | global sAccurateStatOrder | content-enum enum Stat[8] size=1
+not-a-registry | dwarf | global sStatsToRaise | content-enum enum Stat[7] size=1
+slot-or-index | dwarf | struct AiBattleData.chosenMoveIndex | narrow-named u8[4] size=1
+not-a-registry | dwarf | struct AiLogicData.moveAccuracy | narrow-named u8[4][4][4] size=1
+not-a-registry | dwarf | struct AiLogicData.moveLimitations | narrow-named u8[4] size=1
+slot-or-index | dwarf | struct AiThinkingStruct.movesetIndex | narrow-named u8 size=1
+count | dwarf | struct ApprenticePartyMovesData.moveCounter | narrow-named u8 size=1
+slot-or-index | dwarf | struct ApprenticePartyMovesData.moveSlots | narrow-named u8[3][5] size=1
+slot-or-index | dwarf | struct ApprenticeQuestion.moveSlot | narrow-named u8 size=1 bits=2
+ui-state | dwarf | struct BagMenu.contextMenuItemsBuffer | narrow-named u8[4] size=1
+count | dwarf | struct BagMenu.contextMenuNumItems | narrow-named u8 size=1
+slot-or-index | dwarf | struct BagMenu.itemIconSlot | narrow-named u8 size=1 bits=2
+count | dwarf | struct BagMenu.numItemStacks | narrow-named u8[5] size=1
+count | dwarf | struct BagMenu.numShownItems | narrow-named u8[5] size=1
+debug-menu | dwarf | struct BattleDebugMenu.aiMovesWindowId | narrow-named u8 size=1
+debug-menu | dwarf | struct BattleDebugMenu.currentMainListItemId | narrow-named u8 size=1
+debug-menu | dwarf | struct BattleDebugMenu.currentSecondaryListItemId | narrow-named u8 size=1
+debug-menu | dwarf | struct BattleDebugMenu.secondaryListItemCount | narrow-named u8 size=1
+frontier-index | dwarf | struct BattleDomeTrainer.trainerId | narrow-named u16 size=2 bits=10
+player-trainer-id | dwarf | struct BattleFrontier.opponentTrainerIds | narrow-named u8[2][4] size=1
+not-a-registry | dwarf | struct BattleHistory.itemEffects | narrow-named u8[4] size=1
+count | dwarf | struct BattleHistory.itemsNo | narrow-named u8 size=1
+slot-or-index | dwarf | struct BattleHistory.moveHistoryIndex | narrow-named u8[4] size=1
+ui-state | dwarf | struct BattleMsgData.itemEffectBattler | narrow-named u8 size=1
+count | dwarf | struct BattleResults.numHealingItemsUsed | narrow-named u8 size=1
+ui-state | dwarf | struct BattleScripting.learnMoveState | narrow-named u8 size=1
+ui-state | dwarf | struct BattleScripting.moveendState | narrow-named u8 size=1
+ui-state | dwarf | struct BattleStruct.abilityPopUpSpriteIds | narrow-named u8[4][2] size=1
+slot-or-index | dwarf | struct BattleStruct.chosenMovePositions | narrow-named u8[4] size=1
+slot-or-index | dwarf | struct BattleStruct.itemMoveIndex | narrow-named u8[4] size=1
+slot-or-index | dwarf | struct BattleStruct.itemPartyIndex | narrow-named u8[4] size=1
+not-a-registry | dwarf | struct BattleStruct.moveDamage | narrow-named s16[4] size=2
+ui-state | dwarf | struct BattleStruct.moveInfoSpriteId | narrow-named u8 size=1
+not-a-registry | dwarf | struct BattleStruct.moveTarget | narrow-named u16[4] size=2
+ui-state | dwarf | struct BattleStruct.wallyMoveFrames | narrow-named u8 size=1
+ui-state | dwarf | struct BattleStruct.wallyMovesState | narrow-named u8 size=1
+player-trainer-id | dwarf | struct BattleTowerEReaderTrainer.trainerId | narrow-named u8[4] size=1
+slot-or-index | dwarf | struct ChosenAction.moveIndex | narrow-named u8 size=1
+not-a-registry | dwarf | struct Contest.excitementHistory | narrow-named u8[5][4] size=1
+count | dwarf | struct Contest.moveAnimTurnCount | narrow-named u8 size=1
+slot-or-index | dwarf | struct Contest.playerMoveChoice | narrow-named u8 size=1
+not-a-registry | dwarf | struct ContestAIInfo.moveScores | narrow-named u8[4] size=1
+slot-or-index | dwarf | struct ContestAIInfo.nextMoveIndex | narrow-named u8 size=1
+not-a-registry | dwarf | struct ContestExcitement.excitementAppealBonus | narrow-named s8 size=1
+not-a-registry | dwarf | struct ContestExcitement.moveExcitement | narrow-named s8 size=1
+not-a-registry | dwarf | struct ContestantStatus.moveCategory | narrow-named u8 size=1
+count | dwarf | struct ContestantStatus.moveRepeatCount | narrow-named u8 size=1 bits=3
+count | dwarf | struct DecorationItemsMenu.maxShownItems | narrow-named u8 size=1
+count | dwarf | struct DecorationItemsMenu.numMenuItems | narrow-named u8 size=1
+not-a-registry | dwarf | struct DexNavSearch.abilityNum | narrow-named u8 size=1
+ui-state | dwarf | struct DexNavSearch.itemSpriteId | narrow-named u8 size=1
+slot-or-index | dwarf | struct DynamicListMenuEventArgs.selectedItem | narrow-named u16 size=2
+frontier-index | dwarf | struct EReaderTrainerHillTrainer.trainerNum | narrow-named u8 size=1
+player-trainer-id | dwarf | struct EmeraldBattleTowerRecord.trainerId | narrow-named u8[4] size=1
+ui-state | dwarf | struct FactorySelectScreen.faceSpeciesNameDelay | narrow-named u8 size=1
+ui-state | dwarf | struct FactorySelectScreen.fadeSpeciesNameCoeff | narrow-named u8 size=1
+ui-state | dwarf | struct FactorySelectScreen.fadeSpeciesNameCoeffDelay | narrow-named u8 size=1
+ui-state | dwarf | struct FactorySelectScreen.fadeSpeciesNameTaskId | narrow-named u8 size=1
+ui-state | dwarf | struct FactorySelectScreen.speciesNameColorBackup | narrow-named u16 size=2
+ui-state | dwarf | struct FactorySwapScreen.faceSpeciesNameDelay | narrow-named u8 size=1
+ui-state | dwarf | struct FactorySwapScreen.fadeSpeciesNameCoeff | narrow-named u8 size=1
+ui-state | dwarf | struct FactorySwapScreen.fadeSpeciesNameCoeffDelay | narrow-named u8 size=1
+ui-state | dwarf | struct FactorySwapScreen.fadeSpeciesNameTaskId | narrow-named u8 size=1
+ui-state | dwarf | struct FactorySwapScreen.speciesNameColorBackup | narrow-named u16 size=2
+frontier-index | dwarf | struct FrontierBrain.trainerId | narrow-named u16 size=2
+rom-header | dwarf | struct GFRomHeader.bagCountItems | narrow-named u8 size=1
+rom-header | dwarf | struct GFRomHeader.bagCountKeyItems | narrow-named u8 size=1
+rom-header | dwarf | struct GFRomHeader.pcItemsCount | narrow-named u8 size=1
+not-a-registry | dwarf | struct InGameTrade.abilityNum | narrow-named u8 size=1
+count | dwarf | struct LilycoveLadyFavor.numItemsGiven | narrow-named u8 size=1
+player-trainer-id | dwarf | struct LilycoveLadyQuiz.playerTrainerId | narrow-named u16[4] size=2
+player-trainer-id | dwarf | struct LinkBattleRecord.trainerId | narrow-named u16 size=2
+not-a-registry | dwarf | struct LinkBattlerHeader.versionSignatureHi | narrow-named u8 size=1
+not-a-registry | dwarf | struct LinkBattlerHeader.versionSignatureLo | narrow-named u8 size=1
+ui-state | dwarf | struct ListMenuTemplate.itemVerticalPadding | narrow-named u8 size=1 bits=3
+slot-or-index | dwarf | struct ListMenuTemplate.item_X | narrow-named u8 size=1
+player-trainer-id | dwarf | struct Mail.trainerId | narrow-named u8[4] size=1
+ui-state | dwarf | struct MailLayout.signatureWidth | narrow-named u8 size=1
+ui-state | dwarf | struct MailLayout.signatureYPos | narrow-named u8 size=1
+ui-state | dwarf | struct MailRead.signatureWidth | narrow-named u8 size=1
+count | dwarf | struct MartInfo.itemCount | narrow-named u16 size=2
+not-a-registry | dwarf | struct MassOutbreak.probability | narrow-named u8 size=1
+rematch-matchcall | dwarf | struct MatchCallTextDataStruct.availabilityFlag | narrow-named u16 size=2
+rematch-matchcall | dwarf | struct MatchCallTrainerTextInfo.trainerId | narrow-named u16 size=2
+player-trainer-id | dwarf | struct MauvilleManBard.playerTrainerId | narrow-named u8[4] size=1
+rematch-matchcall | dwarf | struct MultiTrainerMatchCallText.trainerId | narrow-named u16 size=2
+player-trainer-id | dwarf | struct MysteryGiftLinkGameData.playerTrainerId | narrow-named u8[4] size=1
+not-a-registry | dwarf | struct NatureInfo.statDown | content-enum enum Stat size=1
+not-a-registry | dwarf | struct NatureInfo.statUp | content-enum enum Stat size=1
+ui-state | dwarf | struct PartyMenu.learnMoveState | narrow-named s16 size=2
+ui-state | dwarf | struct PartyMenuBox.itemSpriteId | narrow-named u8 size=1
+count | dwarf | struct PlayerPCItemPageStruct.itemsAbove | narrow-named u16 size=2
+count | dwarf | struct PlayerPCItemPageStruct.pageItems | narrow-named u8 size=1
+apprentice-species-index | dwarf | struct PlayersApprentice.speciesIds | narrow-named u8[3] size=1
+not-a-registry | dwarf | struct PokeSummary.abilityNum | narrow-named u8 size=1
+count | dwarf | struct PokeblockMenuStruct.itemsNo | narrow-named u8 size=1
+ui-state | dwarf | struct PokedexCryMeterNeedle.moveIncrement | narrow-named u8 size=1
+slot-or-index | dwarf | struct PokedexView.moveSelected | narrow-named u16 size=2
+count | dwarf | struct PokedexView.movesTotal | narrow-named u16 size=2
+count | dwarf | struct PokedexView.numEggMoves | narrow-named u8 size=1
+count | dwarf | struct PokedexView.numLevelUpMoves | narrow-named u8 size=1
+count | dwarf | struct PokedexView.numTeachableMoves | narrow-named u16 size=2
+count | dwarf | struct PokemonJump.prizeItemQuantity | narrow-named u16 size=2
+debug-menu | dwarf | struct PokemonSpriteVisualizer.moveBackground | narrow-named u8 size=1
+not-a-registry | dwarf | struct PokemonStats.growthRate | content-enum enum GrowthRate size=1
+slot-or-index | dwarf | struct PokemonStorageSystemData.cursorMoveSteps | narrow-named u16 size=2
+ui-state | dwarf | struct PokemonStorageSystemData.itemInfoWindowOffset | narrow-named u16 size=2
+count | dwarf | struct PokemonStorageSystemData.menuItemsCount | narrow-named u8 size=1
+ui-state | dwarf | struct PokemonStorageSystemData.multiMoveWindowId | narrow-named u16 size=2
+count | dwarf | struct PokemonStorageSystemData.numIconsPerSpecies | narrow-named u16[40] size=2
+ui-state | dwarf | struct PokemonStorageSystemData.partyMenuMoveTimer | narrow-named u8 size=1
+slot-or-index | dwarf | struct PokemonSummaryScreenData.firstMoveIndex | narrow-named u8 size=1
+slot-or-index | dwarf | struct PokemonSummaryScreenData.secondMoveIndex | narrow-named u8 size=1
+not-a-registry | dwarf | struct PokemonTemplate.abilityNum | narrow-named u16 size=2
+count | dwarf | struct PokenavListTemplate.itemSize | narrow-named u8 size=1
+slot-or-index | dwarf | struct PokenavListTemplate.item_X | narrow-named u8 size=1
+slot-or-index | dwarf | struct Pokenav_Menu.currMenuItem | narrow-named u16 size=2
+slot-or-index | dwarf | struct PyramidFloorTemplate.itemPositions | narrow-named u8 size=1
+count | dwarf | struct PyramidFloorTemplate.numItems | narrow-named u8 size=1
+not-a-registry | dwarf | struct PyramidWildMon.abilityNum | narrow-named u8 size=1
+rom-header | dwarf | struct RHHRomHeader.abilitiesCount | narrow-named u16 size=2
+rom-header | dwarf | struct RHHRomHeader.itemNameLength | narrow-named u8 size=1
+rom-header | dwarf | struct RHHRomHeader.itemsCount | narrow-named u16 size=2
+rom-header | dwarf | struct RHHRomHeader.movesCount | narrow-named u16 size=2
+rom-header | dwarf | struct RHHRomHeader.numSpecies | narrow-named u16 size=2
+player-trainer-id | dwarf | struct RSBattleTowerRecord.trainerId | narrow-named u8[4] size=1
+count | dwarf | struct RandomItemGeneratorOptions.heldItemPoolCount | narrow-named u16 size=2
+slot-or-index | dwarf | struct RectangularSpiralLine.moveIndex | narrow-named u8 size=1
+not-a-registry | dwarf | struct RegionMap.mapSecType | narrow-named u8 size=1
+slot-or-index | dwarf | struct RegionMap.posWithinMapSec | narrow-named u8 size=1
+rematch-matchcall | dwarf | struct RematchTrainer.trainerIds | narrow-named u16[5] size=2
+not-a-registry | dwarf | struct RentalMon.abilityNum | narrow-named u8 size=1
+player-trainer-id | dwarf | struct RfuGameCompatibilityData.playerTrainerId | narrow-named u8[2] size=1
+not-a-registry | dwarf | struct Roulette.partySpeciesFlags | narrow-named u8 size=1
+not-a-registry | dwarf | struct SaveBlock1.outbreakPokemonProbability | narrow-named u8 size=1
+player-trainer-id | dwarf | struct SaveBlock2.playerTrainerId | narrow-named u8[4] size=1
+player-trainer-id | dwarf | struct SecretBase.trainerId | narrow-named u8[4] size=1
+ui-state | dwarf | struct ShopData.itemSpriteIds | narrow-named u8[2] size=1
+count | dwarf | struct ShopData.itemsShowed | narrow-named u16 size=2
+not-a-registry | dwarf | struct SpeciesInfo.eggGroups | content-enum enum EggGroup[2] size=1
+ui-state | dwarf | struct Sprite.subspriteMode | narrow-named u8 size=1 bits=2
+not-a-registry | dwarf | struct StatChange.stat | content-enum enum Stat size=1
+not-a-registry | dwarf | struct TerrainInfo.seedStat | content-enum enum Stat size=1 bits=4
+player-trainer-id | dwarf | struct TrainerCard.trainerId | narrow-named u16 size=2
+frontier-index | dwarf | struct TrainerHillFloor.trainerNum1 | narrow-named u8 size=1
+frontier-index | dwarf | struct TrainerHillFloor.trainerNum2 | narrow-named u8 size=1
+not-a-registry | dwarf | struct Volatiles.paradoxBoostedStat | content-enum enum Stat size=1 bits=3
+not-a-registry | dwarf | struct ZMoveData.possibleZMoves | narrow-named u8[4] size=1
+frontier-index | enum | src/battle_dome.c | enum Species -> u16: input->loserIndices[i] = gSaveBlock2Ptr->frontier.domeMonIds[loser][i];
+frontier-index | enum | src/battle_dome.c | enum Species -> u16: selected.indices[i] = gSaveBlock2Ptr->frontier.domeMonIds[slot][i];
+frontier-index | enum | src/battle_dome.c | enum Species -> u16: u16 index = gSaveBlock2Ptr->frontier.domeMonIds[tournamentTrainerId][tournamentMonId];
+frontier-index | enum | src/battle_dome.c | enum Species -> u16: { temp = gSaveBlock2Ptr->frontier.domeMonIds[id1][i]; gSaveBlock2Ptr->frontier.domeMonIds[id1][i] = gSaveBlock2Ptr->frontier.domeMonIds[id2][i]; gSaveBlock2Ptr-
+base-dex-bounded | enum | src/credits.c | enum NationalDexOrder -> u16: spriteId = CreateCreditsMonSprite(sCreditsData->monToShow[sCreditsData->currShownMon],
+debug-menu | enum | src/debug.c | enum TrainerId -> s16: sDebugMenuListData->data[0] = gTrainerBattleParameter.params.opponentA;
+debug-menu | enum | src/debug.c | enum TrainerId -> s16: sDebugMenuListData->data[2] = gTrainerBattleParameter.params.opponentB;
+object-event-graphics | enum | src/event_object_movement.c | enum Species -> u16: objectEvent->graphicsId = GetOverworldWeatherSpecies(((objectEvent)->graphicsId & (~(7u << 12))));
+object-event-graphics | gfx | src/event_object_movement.c | enum Species -> u16: objectEvent->graphicsId = GetOverworldWeatherSpecies(((objectEvent)->graphicsId & (~(7u << 12))));
+base-dex-bounded | enum | src/pokedex.c | enum NationalDexOrder -> u16: dexNum = sPokedexView->pokedexList[entryNum].dexNum;
+base-dex-bounded | enum | src/pokedex.c | enum NationalDexOrder -> u16: return sPokedexView->pokedexList[index].dexNum;
+base-dex-bounded | enum | src/pokedex_plus_hgss.c | enum NationalDexOrder -> u16: sPokedexView->originalSearchSelectionNum = sPokedexListItem->dexNum;
+base-dex-bounded | enum | src/pokedex_plus_hgss.c | enum NationalDexOrder -> u16: sPokedexView->originalSearchSelectionNum = sPokedexListItem->dexNum;
+base-count-bounded | enum | src/type_icons.c | enum Type -> u8: StartSpriteAnim(sprite, type < NUMBER_OF_MON_TYPES ? type : TYPE_MYSTERY);
+mapheader-widened | layout | layout O(MapHeader,battleType) | 27 -> 31
+mapheader-widened | layout | layout O(MapHeader,floorNumber) | 23 -> 26
+mapheader-widened | layout | layout O(MapHeader,mapType) | 22 -> 25
+mapheader-widened | layout | layout O(MapHeader,nightMusic) | 24 -> 28
+mapheader-widened | layout | layout O(MapHeader,weather) | 21 -> 24
+mapheader-widened | layout | layout S(MapHeader) | 28 -> 32
+map-identity-widened | layout | layout S(MapHeader) | 28 -> 36
+map-identity-widened | layout | layout O(MapHeader,mapLayoutId) | 18 -> 20
+map-identity-widened | layout | layout O(MapHeader,regionMapSectionId) | 20 -> 24
+map-identity-widened | layout | layout O(MapHeader,weather) | 21 -> 28
+map-identity-widened | layout | layout O(MapHeader,mapType) | 22 -> 29
+map-identity-widened | layout | layout O(MapHeader,floorNumber) | 23 -> 30
+map-identity-widened | layout | layout O(MapHeader,nightMusic) | 24 -> 18
+map-identity-widened | layout | layout O(MapHeader,battleType) | 27 -> 32
+map-identity-widened | layout | layout S(WarpEvent) | 8 -> 12
+map-identity-widened | layout | layout O(WarpEvent,mapGroup) | 7 -> 8
+map-identity-widened | layout | layout O(WarpEvent,mapNum) | 6 -> 8
+map-identity-widened | layout | layout O(MapConnection,mapNum) | 9 -> 8
+fly-icon-mapsec | enum | src/region_map.c | mapsec_u16_t -> s16: gSprites[spriteId].data[0] = mapSecId;
+ball-enum | mondata | src/battle_script_commands.c | u32 -> u8: gBattleResults.caughtMonBall = GetMonData2(caughtMon, MON_DATA_POKEBALL);
