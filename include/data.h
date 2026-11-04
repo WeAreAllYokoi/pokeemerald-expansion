@@ -360,12 +360,12 @@ static inline const u8 GetTrainerMugshotColorFromId(enum TrainerId trainerId)
     return GetTrainerStructFromId(trainerId)->mugshotColor;
 }
 
-static inline const enum Item *GetTrainerItemsFromId(u16 trainerId)
+static inline const enum Item *GetTrainerItemsFromId(enum TrainerId trainerId)
 {
     return GetTrainerStructFromId(trainerId)->items;
 }
 
-static inline const struct TrainerMon *GetTrainerPartyFromId(u16 trainerId)
+static inline const struct TrainerMon *GetTrainerPartyFromId(enum TrainerId trainerId)
 {
     return GetTrainerStructFromId(trainerId)->party;
 }
