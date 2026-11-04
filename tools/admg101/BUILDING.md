@@ -53,3 +53,7 @@ ADMG-101 recompiles each build into a native game. It needs these from the build
 | Computed jumps the recompiler couldn't follow | `check_r38_dispatch.py <coverage-r1.json> pokeemerald.gba`, after ADMG-101 recompiles |
 
 ADMG-101 does the rest (the recipe, the API descriptor, the target profile) with its own tools.
+
+## Merging upstream
+
+See [UPSTREAM-MERGE.md](UPSTREAM-MERGE.md).
