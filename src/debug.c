@@ -228,7 +228,7 @@ struct DebugMenuListData
     u8 itemNames[DEBUG_MAX_MENU_ITEMS + 1][26];
     enum DebugMenuTypes menuType:2;
     u32 padding:30;
-    s16 data[8];
+    s32 data[8]; // Holds full-width trainer IDs: added trainers start at 0x10000
 };
 
 struct DebugSelectionStep
