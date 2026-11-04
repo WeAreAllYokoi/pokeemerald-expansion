@@ -391,7 +391,8 @@ static u32 CalcBeatUpPower(void)
 {
     enum Species species = gBattleStruct->beatUpSpecies[gBattleStruct->beatUpSlot++];
     // FIXME: Why call CalcBeatUpPower when 'beatUpSlot' is OOB?
-    if (species == 0xFFFF)
+    // An empty slot is the memset's 0xFF in every byte: 0xFFFFFFFF, as enum Species is 32-bit here (upstream: 0xFFFF)
+    if (species == SPECIES_ID_MAX)
         return 0;
     return (GetSpeciesBaseAttack(species) / 10) + 5;
 }
