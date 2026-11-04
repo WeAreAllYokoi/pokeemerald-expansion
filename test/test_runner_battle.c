@@ -2688,7 +2688,7 @@ void Item_(u32 sourceLine, u32 item)
     }
 }
 
-void Moves_(u32 sourceLine, u16 moves[MAX_MON_MOVES])
+void Moves_(u32 sourceLine, enum Move moves[MAX_MON_MOVES])
 {
     s32 i;
     INVALID_IF(!DATA.currentMon, "Moves outside of PLAYER/OPPONENT");

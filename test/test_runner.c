@@ -146,7 +146,7 @@ void TestRunner_CheckMemory(void)
         do
         {
             if (block->magic != MALLOC_SYSTEM_ID
-             || !(EWRAM_START <= (uintptr_t)block->next && (uintptr_t)block->next < EWRAM_END)
+             || !((uintptr_t)gHeap <= (uintptr_t)block->next && (uintptr_t)block->next < (uintptr_t)gHeap + HEAP_SIZE)
              || (block->next <= block && block->next != head))
             {
                 Test_MgbaPrintf("gHeap corrupted block at %p", block);
