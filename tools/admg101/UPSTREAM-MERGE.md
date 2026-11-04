@@ -81,9 +81,49 @@ as it is in `ld_script_modern.ld`. Test builds get no layout or data of their ow
 harness (test flags and vars, the config test override, allocation counters, fixtures). Keep it that way: never shrink
 memory or drop data to make a test build fit.
 
-Stock mGBA has no memory at 0x10000000, so the suite does not run under `mgba-rom-test` yet: the first allocation fails
-(`ASSERTION FAILED src/malloc.c:97`, then `Illegal opcode`) and the workers flood their output. Until there is a runner
-that maps the native region (FU-6 part 2), `make check` gates a merge by compiling and linking only.
+Stock mGBA has no memory at 0x10000000, so the suite does not run under `mgba-rom-test`: the first allocation fails
+(`ASSERTION FAILED src/malloc.c:97`, then `Illegal opcode`) and the workers flood their output. It runs natively instead:
+the test ELF is recompiled by GBARecomp and run in ADMG-101's runtime, which maps the native region (FU-6 part 2; the
+runner is still a proof, not yet a tool here). Upstream's runner then reports through its own protocol (`:N`, `:P`, `:F`)
+and exits with its own code.
+
+### What the native run found
+
+The first native run (recipe 40, November 2026) failed `test/battle/weather/rain.c`'s "Drizzle fails if Desolate Land
+is active" with `wrong use of printselectionstringfromtable`. The cause was a bug in the shipped game, build 39
+included, not in the runtime: this fork widened content IDs to 32 bits (`enum Ability`, `enum Species`, `enum Move`,
+`enum Item`, `MapId`, ...), and some code still wrote or read them at the old width.
+
+- Battle-script macros `jumpifability`, `jumpifabilitypresent` and `jumpifspecies` wrote the ID as `.2byte`, while
+  their commands read a 4-byte field (`CMD_ARGS` and `NATIVE_ARGS` are packed structs over the script bytes). The jump
+  target and the next command were read 2 bytes off: Groudon's Drought script ran garbage. `jumpifability` is used 36
+  times in the battle scripts.
+- Event-script macros `showplayer` and `hideplayer` wrote the map as two `.byte`s, while `ScrCmd_showobjectat` and
+  `ScrCmd_hideobjectat` read a 4-byte `MapId`: the next command after any of their 17 uses was read 2 bytes off.
+- `GetBoxMonData(..., MON_DATA_KNOWN_MOVES, ...)` walked its move list as `u16`, while every caller passes `enum Move`
+  lists: the PC's "don't release the last Pokémon that knows a needed move" check read the wrong moves.
+- The Battle Pyramid bag copied its 32-bit `itemId` array through a `u16` buffer of half the size (`src/item.c`,
+  `src/battle_pyramid_bag.c`), scrambling the bag.
+- Upstream's test helper `Moves_` passed a `u16` array to the 32-bit move field, so each move took the next one as its
+  upper half (all of `strong_winds.c` was INVALID).
+
+All are fixed in recipe 40. The fixes change the ROM.
+
+The checks after a merge or any ID widening, until they are tools here:
+
+- Every battle-script macro against the struct its command reads. Measure each `CMD_ARGS`/`NATIVE_ARGS` field type with
+  the compiler (`sizeof` in a probe built with the game's flags), and compare with the macro's `.byte`/`.2byte`/`.4byte`
+  sequence. Recipe 40: 374 macros, 0 mismatches after the fix.
+- Every event-script macro, nested macros expanded, against the order and width of its command's `ScriptRead*` calls.
+  Commands whose reads match upstream's, with an unchanged macro, keep upstream's layout. Recipe 40: 283 exact matches,
+  the rest checked by hand.
+- `SetMonData`/`SetBoxMonData`: `CHECK_MON_DATA_ARG` stops the build for a narrow pointer to an ID field, but only when
+  the field is a constant. A field like `MON_DATA_MOVE1 + i` needs the guard extended temporarily to computed fields,
+  and its hits read by hand.
+- Animation scripts carry no content IDs; their commands read explicit widths.
+
+This is why the suite runs natively: it ran the game's own battle code and found bugs in the shipped game that no
+compile, link or static gate had caught.
 
 History, so it isn't rediscovered: build 39 didn't compile `make check`. Commit `05853bf370` moved the enlarged data to
 native memory and updated only `ld_script_modern.ld`, an oversight; test builds also left out the run-time selector.
