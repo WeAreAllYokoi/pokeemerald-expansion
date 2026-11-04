@@ -1722,7 +1722,7 @@ static void Task_ClosePokedex(u8 taskId)
         DestroyTask(taskId);
         SetMainCallback2(CB2_ReturnToFieldWithOpenMenu);
         m4aMPlayVolumeControl(&gMPlayInfo_BGM, TRACKS_ALL, 0x100);
-        Free(sPokedexView);
+        FREE_AND_SET_NULL(sPokedexView);
     }
 }
 
@@ -4125,10 +4125,10 @@ static void Task_ExitCaughtMonPage(u8 taskId)
         isShiny = (bool8)gTasks[taskId].tIsShiny;
         LoadDexMonPalette(taskId, isShiny);
 
+        // The dex is chosen at run time (ADMG_POLICY_HGSS_POKEDEX), so test the view, not POKEDEX_PLUS_HGSS
         if (sPokedexView)
         {
-            Free(sPokedexView);
-            sPokedexView = NULL;
+            FREE_AND_SET_NULL(sPokedexView);
         }
 
         DestroyTask(taskId);

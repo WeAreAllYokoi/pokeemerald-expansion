@@ -2683,52 +2683,10 @@ void PlayTrainerEncounterMusic(void)
         trainerId = TRAINER_BATTLE_PARAM.opponentB;
 
     u64 generation = ADMG_BeginStateAccessCheck();
-    u32 encounterMusic = GetTrainerEncounterMusicId(trainerId);
+    enum TrainerApproachMusic musicStyle = GetTrainerEncounterMusicId(trainerId);
     if (!ADMG_EndStateAccessCheck(generation)) return;
-    switch (encounterMusic)
-    {
-    case TRAINER_ENCOUNTER_MUSIC_MALE:
-        music = MUS_ENCOUNTER_MALE;
-        break;
-    case TRAINER_ENCOUNTER_MUSIC_FEMALE:
-        music = MUS_ENCOUNTER_FEMALE;
-        break;
-    case TRAINER_ENCOUNTER_MUSIC_GIRL:
-        music = MUS_ENCOUNTER_GIRL;
-        break;
-    case TRAINER_ENCOUNTER_MUSIC_INTENSE:
-        music = MUS_ENCOUNTER_INTENSE;
-        break;
-    case TRAINER_ENCOUNTER_MUSIC_COOL:
-        music = MUS_ENCOUNTER_COOL;
-        break;
-    case TRAINER_ENCOUNTER_MUSIC_AQUA:
-        music = MUS_ENCOUNTER_AQUA;
-        break;
-    case TRAINER_ENCOUNTER_MUSIC_MAGMA:
-        music = MUS_ENCOUNTER_MAGMA;
-        break;
-    case TRAINER_ENCOUNTER_MUSIC_SWIMMER:
-        music = MUS_ENCOUNTER_SWIMMER;
-        break;
-    case TRAINER_ENCOUNTER_MUSIC_TWINS:
-        music = MUS_ENCOUNTER_TWINS;
-        break;
-    case TRAINER_ENCOUNTER_MUSIC_ELITE_FOUR:
-        music = MUS_ENCOUNTER_ELITE_FOUR;
-        break;
-    case TRAINER_ENCOUNTER_MUSIC_HIKER:
-        music = MUS_ENCOUNTER_HIKER;
-        break;
-    case TRAINER_ENCOUNTER_MUSIC_INTERVIEWER:
-        music = MUS_ENCOUNTER_INTERVIEWER;
-        break;
-    case TRAINER_ENCOUNTER_MUSIC_RICH:
-        music = MUS_ENCOUNTER_RICH;
-        break;
-    default:
-        music = MUS_ENCOUNTER_SUSPICIOUS;
-    }
+    // An added trainer can carry any value: one past the table plays the suspicious theme, as before the table existed
+    music = musicStyle < TRAINER_ENCOUNTER_MUSIC_COUNT ? gTrainerApproachMusicStyles[musicStyle] : MUS_ENCOUNTER_SUSPICIOUS;
     PlayNewMapMusic(music);
 
 }

@@ -413,7 +413,7 @@ bool32 MoveRecordedBattleToSaveData(void)
     }
 
 
-    memcpy(battleSave->parties, gParties, sizeof(struct Pokemon[MAX_BATTLE_TRAINERS][PARTY_SIZE]));
+    memcpy(battleSave->parties, sSavedParties, sizeof(struct Pokemon[MAX_BATTLE_TRAINERS][PARTY_SIZE]));
 
     battleSave->playersGender = 0;
 

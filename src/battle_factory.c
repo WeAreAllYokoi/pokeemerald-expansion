@@ -445,6 +445,67 @@ static void SetRentalsToOpponentParty(void)
     }
 }
 
+// The rental's own personality and ability (upstream 73b3fbeb57); its row comes from the captured rental backing
+static void CreateRentalMon(struct Pokemon *dst, const struct TrainerMon *fmon, const struct RentalMon *rentalMon, u32 level, u32 ot)
+{
+    u32 data;
+    CreateMonWithIVs(dst, fmon->species, level, rentalMon->personality, OTID_STRUCT_PRESET(ot), rentalMon->ivs);
+    SetMonData(dst, MON_DATA_ABILITY_NUM, &rentalMon->abilityNum);
+
+    u32 friendship = MAX_FRIENDSHIP;
+    for (u32 i = 0; i < MAX_MON_MOVES; i++)
+    {
+        enum Move move = fmon->moves[i];
+        if (move == MOVE_RETURN)
+            move = MOVE_FRUSTRATION;
+
+        SetMonMoveSlot(dst, move, i);
+        if (GetMoveEffect(move) == EFFECT_FRUSTRATION)
+            friendship = 0;
+    }
+
+    SetMonData(dst, MON_DATA_FRIENDSHIP, &friendship);
+    SetMonData(dst, MON_DATA_HELD_ITEM, &fmon->heldItem);
+
+    if (fmon->ev != NULL)
+    {
+        SetMonData(dst, MON_DATA_HP_EV, &(fmon->ev[0]));
+        SetMonData(dst, MON_DATA_ATK_EV, &(fmon->ev[1]));
+        SetMonData(dst, MON_DATA_DEF_EV, &(fmon->ev[2]));
+        SetMonData(dst, MON_DATA_SPATK_EV, &(fmon->ev[3]));
+        SetMonData(dst, MON_DATA_SPDEF_EV, &(fmon->ev[4]));
+        SetMonData(dst, MON_DATA_SPEED_EV, &(fmon->ev[5]));
+    }
+
+    if (fmon->isShiny)
+    {
+        data = TRUE;
+        SetMonData(dst, MON_DATA_IS_SHINY, &data);
+    }
+    if (fmon->dynamaxLevel > 0)
+    {
+        data = fmon->dynamaxLevel;
+        SetMonData(dst, MON_DATA_DYNAMAX_LEVEL, &data);
+    }
+    if (fmon->gigantamaxFactor)
+    {
+        data = fmon->gigantamaxFactor;
+        SetMonData(dst, MON_DATA_GIGANTAMAX_FACTOR, &data);
+    }
+    if (fmon->teraType)
+    {
+        data = fmon->teraType;
+        SetMonData(dst, MON_DATA_TERA_TYPE, &data);
+    }
+
+    if (fmon->ball < POKEBALL_COUNT)
+    {
+        data = fmon->ball;
+        SetMonData(dst, MON_DATA_POKEBALL, &data);
+    }
+    CalculateMonStats(dst);
+}
+
 static void SetPlayerAndOpponentParties(void)
 {
     struct SaveBlock2 *save;
@@ -470,14 +531,14 @@ static void SetPlayerAndOpponentParties(void)
     u32 ot = T1_READ_32(save->playerTrainerId);
     gFacilityTrainerMons = mons;
     if (player) ZeroPlayerPartyMons();
+    if (opponent) ZeroEnemyPartyMons();
     for (u32 target = 0; target < 2; ++target)
     {
         if ((target == 0 && !player) || (target == 1 && !opponent)) continue;
         for (u32 i = 0; i < FRONTIER_PARTY_SIZE; ++i)
         {
             u32 index = target * FRONTIER_PARTY_SIZE + i;
-            CreateFacilityMon(rows[index], monLevel, selected[index].ivs, ot,
-                FLAG_FRONTIER_MON_FACTORY, &gParties[target == 0 ? B_TRAINER_PLAYER : B_TRAINER_OPPONENT_A][i]);
+            CreateRentalMon(&gParties[target == 0 ? B_TRAINER_PLAYER : B_TRAINER_OPPONENT_A][i], rows[index], &selected[index], monLevel, ot);
         }
     }
 }
