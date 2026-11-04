@@ -824,19 +824,12 @@ static bool8 ADMG_RecordedMovesetFramesValid(u8 mode)
         { ADMG_StateAccessRejected(cursor, __func__); return FALSE; }
         if (mode == B_RECORD_MODE_RECORDING)
         {
-            bool8 changed = FALSE;
-            for (u32 move = 0; move < MAX_MON_MOVES; ++move)
-                if (gBattleMons[battler].moves[move] != sPlayerMonMoves[battler / 2][move]) changed = TRUE;
-            if (!changed) continue;
-            if (cursor > BATTLER_RECORD_SIZE - (MAX_MON_MOVES + 1))
-            { ADMG_StateAccessRejected(cursor, __func__); return FALSE; }
-            for (u32 move = 0; move < MAX_MON_MOVES; ++move)
-            {
-                bool8 found = FALSE;
-                for (u32 slot = 0; slot < MAX_MON_MOVES; ++slot)
-                    if (gBattleMons[battler].moves[move] == sPlayerMonMoves[battler / 2][slot]) { found = TRUE; break; }
-                if (!found) { ADMG_StateAccessRejected(move, __func__); return FALSE; }
-            }
+            /* Recording only writes, through RecordedBattle_SetBattlerAction, which stays inside the record and
+             * writes nothing during playback. Nothing here can go out of bounds, so nothing is rejected: in
+             * playback the saved moves are never filled (RecordedBattle_CopyBattlerMoves skips it), a move can
+             * change to one that was not saved (Mimic, Sketch), and the record can be nearly full; refusing any
+             * of these would stop action selection for good. */
+            continue;
         }
         else
         {
