@@ -7,6 +7,7 @@
 #include "malloc.h"
 #include "random.h"
 #include "task.h"
+#include "text.h"
 #include "union_room_chat.h"
 #include "constants/characters.h"
 #include "test_runner.h"
@@ -313,6 +314,9 @@ top:
             gTestRunnerState.timeoutSeconds = TIMEOUT_SECONDS;
         else
             gTestRunnerState.timeoutSeconds = UINT_MAX;
+        // A test that ends mid-battle (a failure) can leave text printers, which live on the heap, in their list.
+        // Free them while their blocks are still valid; after InitHeap the next test would free stale pointers.
+        DeactivateAllTextPrinters();
         InitHeap(gHeap, HEAP_SIZE);
         ResetTasks();
         EnableInterrupts(INTR_FLAG_TIMER2);
