@@ -1,6 +1,7 @@
 #include "global.h"
 #include "admg_feature_state.h"
 #include "admg_feature_bindings.h"
+#include "admg_extended.h"
 #include "clock.h"
 #include "new_game.h"
 #include "random.h"
@@ -186,6 +187,7 @@ void NewGameInitData(void)
     InitPlayerTrainerId();
     PlayTimeCounter_Reset();
     ClearPokedexFlags();
+    ADMG_ClearExtendedStores();
     InitEventData();
     ClearTVShowData();
     ResetGabbyAndTy();
