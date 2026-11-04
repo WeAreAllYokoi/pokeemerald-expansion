@@ -6171,7 +6171,7 @@ static void Cmd_mimicattackcopy(void)
 
         if (i == MAX_MON_MOVES)
         {
-            gChosenMove = 0xFFFF;
+            gChosenMove = MOVE_UNAVAILABLE; // upstream's 0xFFFF, the 16-bit form; moves are 32-bit here
             gBattleMons[gBattlerAttacker].moves[gCurrMovePos] = gLastMoves[gBattlerTarget];
             u32 pp = GetMovePP(gLastMoves[gBattlerTarget]);
             if (pp < 5)
