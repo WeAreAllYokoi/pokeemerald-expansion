@@ -72,7 +72,7 @@ All of these must pass before the merge is committed:
 python3 -B tools/admg101/audit_r38_config_reads.py . --check     # no direct code reads of an option
 python3 -B tools/admg101/route_r38_config_extra.py --check .     # the extra routes header is current
 make -j$(nproc)                                                  # the game builds
-make check -j$(nproc)                                            # upstream's test suite, compared with admg-101 unmerged
+make check -j$(nproc)                                            # script widths, then upstream's test suite
 ```
 
 `make check` compiles and links from recipe 40 on, and the test ELF uses the game's own memory layout: the native region
@@ -109,14 +109,15 @@ included, not in the runtime: this fork widened content IDs to 32 bits (`enum Ab
 
 All are fixed in recipe 40. The fixes change the ROM.
 
-The checks after a merge or any ID widening, until they are tools here:
+The checks after a merge or any ID widening:
 
-- Every battle-script macro against the struct its command reads. Measure each `CMD_ARGS`/`NATIVE_ARGS` field type with
-  the compiler (`sizeof` in a probe built with the game's flags), and compare with the macro's `.byte`/`.2byte`/`.4byte`
-  sequence. Recipe 40: 374 macros, 0 mismatches after the fix.
-- Every event-script macro, nested macros expanded, against the order and width of its command's `ScriptRead*` calls.
-  Commands whose reads match upstream's, with an unchanged macro, keep upstream's layout. Recipe 40: 283 exact matches,
-  the rest checked by hand.
+- `make check-script-widths` (also run by `make check`; `tools/admg101/check_script_widths.py`): every battle-script
+  macro against the packed struct its command reads, with each `CMD_ARGS`/`NATIVE_ARGS` field type measured by the
+  build's own compiler, and every event-script macro, nested macros expanded, against the order and width of its
+  command's `ScriptRead*` calls. A case it cannot decide (bitfields, reads in loops or behind flags, a helper that reads
+  the bytes) passes only as listed in `script-widths-reviewed.json` with the same signature and a reason; a changed one
+  fails until it is reviewed again (`--write-reviewed` records the current cases, keeping their reasons). Recipe 40:
+  377 battle-script and 313 event-script macros, 12 reviewed by hand.
 - `SetMonData`/`SetBoxMonData`: `CHECK_MON_DATA_ARG` stops the build for a narrow pointer to an ID field, but only when
   the field is a constant. A field like `MON_DATA_MOVE1 + i` needs the guard extended temporarily to computed fields,
   and its hits read by hand.

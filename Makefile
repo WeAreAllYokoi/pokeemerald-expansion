@@ -370,7 +370,14 @@ else
 TEST_SKIP_IS_FAIL := \x00
 endif
 
-check: $(TESTELF)
+# Every script macro writes each argument at the width its command reads (tools/admg101/check_script_widths.py)
+.PHONY: check-script-widths
+check-script-widths: tools
+	$(PYTHON) -B tools/admg101/check_script_widths.py --work $(OBJ_DIR)/script-widths \
+		--cpp "$(CPP) $(CPPFLAGS)" --preproc "$(PREPROC) -i -g $(ASSETS_DIR_NAME)" \
+		--cc1 "$(CC1) $(CFLAGS)" --as "$(AS) $(ASFLAGS)" --nm $(PREFIX)nm
+
+check: $(TESTELF) check-script-widths
 	@cp $< $(HEADLESSELF)
 	$(PATCHELF) $(HEADLESSELF) gTestRunnerHeadless '\x01' gTestRunnerSkipIsFail "$(TEST_SKIP_IS_FAIL)"
 	$(ROMTESTHYDRA) $(ROMTEST) $(OBJCOPY) $(HEADLESSELF)

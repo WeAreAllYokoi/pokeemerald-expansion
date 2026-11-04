@@ -40,6 +40,18 @@ python3 -B tools/admg101/route_r38_config_extra.py .
 
 The checks' own tests: `test_config_read_detection.py` and `test_config_variants_cache.py`.
 
+## When you change a script macro or a script command's arguments
+
+Content IDs (abilities, species, moves, items, map IDs) are 32 bits here. A macro that writes one at another width than
+its command reads makes every command after it read the wrong bytes. `make check` runs this first; by itself:
+
+```bash
+make check-script-widths
+```
+
+A case it can't decide, like a command whose reads sit behind flags, goes in `tools/admg101/script-widths-reviewed.json`
+with the reason it is correct (see [UPSTREAM-MERGE.md](UPSTREAM-MERGE.md), section 6).
+
 ## For a new build
 
 ADMG-101 recompiles each build into a native game. It needs these from the build, made with the tools here:

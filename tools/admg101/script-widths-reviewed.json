@@ -1,0 +1,228 @@
+{
+ "battle:jumpifcantswitch": {
+  "command": "Cmd_jumpifcantswitch",
+  "emitted": [
+   [
+    1,
+    4
+   ]
+  ],
+  "reads": null,
+  "why": "CMD_ARGS(u8 battler:7, u8 ignoreEscapePrevention:1, const u8 *jumpInstr): the two bitfields pack into the one .byte, then the 4-byte pointer."
+ },
+ "battle:openpartyscreen": {
+  "command": "Cmd_openpartyscreen",
+  "emitted": [
+   [
+    1,
+    4
+   ]
+  ],
+  "reads": null,
+  "why": "CMD_ARGS(u8 battler:7, u8 partyScreenOptional:1, const u8 *failInstr): the two bitfields pack into the one .byte, then the 4-byte pointer."
+ },
+ "event:comparehiddenvar": {
+  "command": "ScrCmd_nop1",
+  "emitted": [
+   [
+    1,
+    4
+   ]
+  ],
+  "reads": [],
+  "why": "FireRed command kept for its opcode: the table runs ScrCmd_nop1, which reads nothing. Unused in Emerald; as upstream."
+ },
+ "event:createmon": {
+  "command": "ScrCmd_createmon",
+  "emitted": [
+   [
+    1,
+    1,
+    2,
+    2
+   ],
+   [
+    1,
+    1,
+    2,
+    2,
+    "?"
+   ]
+  ],
+  "reads": [
+   1,
+   1,
+   2,
+   2,
+   4,
+   2,
+   2,
+   2,
+   2
+  ],
+  "why": "Optional fields follow a 4-byte flags word: ScrCmd_createmon reads each halfword only when its flag is set, in the macro's order (src/script_pokemon_util.c PARSE_FLAG)."
+ },
+ "event:drawbox": {
+  "command": "ScrCmd_drawbox",
+  "emitted": [
+   []
+  ],
+  "reads": [
+   1,
+   1,
+   1,
+   1
+  ],
+  "why": "Upstream's unused drawbox: the macro writes only the opcode while ScrCmd_drawbox reads four bytes. No script uses it; unchanged from upstream."
+ },
+ "event:editoutbreak": {
+  "command": "ScrCmd_editoutbreak",
+  "emitted": [
+   [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  ],
+  "reads": [
+   2,
+   2,
+   2,
+   2,
+   2
+  ],
+  "why": "Species, level, 4 moves (a loop), probability, daysLeft, then the map through ReadMapFromContext (one halfword): 9 halfwords, as written."
+ },
+ "event:getrandomspecies": {
+  "command": "ScrCmd_getrandomspecies",
+  "emitted": [
+   [
+    2,
+    2,
+    2,
+    2
+   ]
+  ],
+  "reads": [
+   2,
+   2
+  ],
+  "why": "The last two halfwords are read by ADMG_TryReadFilterFuncArg (one ScriptReadHalfword each): 4 halfwords in all, as written."
+ },
+ "event:givemon": {
+  "command": "ScrCmd_createmon",
+  "emitted": [
+   [
+    1,
+    1,
+    2,
+    2
+   ],
+   [
+    1,
+    1,
+    2,
+    2,
+    "?"
+   ]
+  ],
+  "reads": [
+   1,
+   1,
+   2,
+   2,
+   4,
+   2,
+   2,
+   2,
+   2
+  ],
+  "why": "givemon is createmon for the player: the same layout and reads as event:createmon."
+ },
+ "event:loadhelp": {
+  "command": "ScrCmd_nop1",
+  "emitted": [
+   [
+    4
+   ]
+  ],
+  "reads": [],
+  "why": "FireRed command kept for its opcode: the table runs ScrCmd_nop1, which reads nothing. Unused in Emerald; as upstream."
+ },
+ "event:setdynamicoutbreak": {
+  "command": "ScrCmd_setdynamicoutbreak",
+  "emitted": [
+   [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    1
+   ]
+  ],
+  "reads": [
+   2,
+   2,
+   2,
+   2,
+   2,
+   1
+  ],
+  "why": "As editoutbreak's 9 halfwords, then the noReplacement byte: as written."
+ },
+ "event:settotemboost": {
+  "command": "ScriptSetTotemBoost",
+  "emitted": [
+   [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  ],
+  "reads": [
+   2,
+   2
+  ],
+  "why": "A battler halfword, then one halfword per stat from STAT_ATK to NUM_BATTLE_STATS in a loop (7): 8 halfwords, as written."
+ },
+ "event:trainerbattle": {
+  "command": "ScrCmd_trainerbattle",
+  "emitted": [
+   [],
+   [
+    1,
+    1,
+    4,
+    4,
+    4,
+    4,
+    1,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    1
+   ]
+  ],
+  "reads": [],
+  "why": "ConfigureTrainerBattle copies the bytes into the PACKED TrainerBattleParameter: flags byte, u8, enum TrainerId (32-bit), 4 pointers, u8, enum TrainerId, 6 pointers, u8, as written."
+ }
+}
