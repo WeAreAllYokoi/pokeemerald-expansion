@@ -107,7 +107,33 @@ included, not in the runtime: this fork widened content IDs to 32 bits (`enum Ab
 - Upstream's test helper `Moves_` passed a `u16` array to the 32-bit move field, so each move took the next one as its
   upper half (all of `strong_winds.c` was INVALID).
 
-All are fixed in recipe 40. The fixes change the ROM.
+Running the whole suite (807 files) then found more of the same kinds, and some upstream bugs that only show natively:
+
+- `gBattleScripting`'s hand-written script offsets (`sMOVE_EFFECT` ... `sSTICKY_WEB_STAT_DROP`) were stale after
+  `moveEffect` and `abilityPopupOverwrite` became 32-bit: scripts wrote into the wrong fields. Move effects set by a
+  script never applied (Flatter's and Swagger's confusion), Sticky Web set the next ability pop-up to ability 1, and
+  ability replacement showed the wrong pop-ups. About 80 failing tests had this one cause.
+- 16-bit sentinels left behind: Mimic set the chosen move to 0xFFFF and Beat Up tested for 0xFFFF, where moves and
+  species are now 32-bit (`MOVE_UNAVAILABLE`, `SPECIES_ID_MAX`).
+- Recorded battles: the fork's moveset check refused every turn of a played-back battle (646 timeouts); the recorded
+  controllers indexed the moves with the gimmick flag still set (upstream too).
+- A Soundproof check on the absent partner in singles, and Shadow Force's and Phantom Force's animations playing sound
+  `SOUND_PAN_ATTACKER` (upstream typos; natively the bad song pointer faults).
+- Test harness: the leak check assumed the heap is in EWRAM; text printers outlived a failed test across the per-test
+  heap reset; tests pinned upstream's save sizes, BoxPokemon bytes and AI frame counts.
+- Gooey Mulch's mulch-usage description, which upstream's default build never tests, was too wide for the bag.
+
+All are fixed in recipe 40. The fixes change the ROM. With them, the suite runs natively with every test passing,
+except the one below.
+
+### Known limitation: crash recovery
+
+`test/test_runner.c` and upstream's runner recover from a crash by restarting the game: a test that crashes (for
+example by calling a NULL function, as `test_test_runner.c`'s "Tests resume after CRASH" does on purpose) jumps to
+0x00000000, the GBA's reset vector, and the runner resumes after the crashed test from `.persistent` IWRAM. ADMG-101's
+runtime treats a jump to 0x00000000 as an error, not a reset, so the run stops there and the rest of that file doesn't
+run. This is not a game bug: it needs the runtime to reset on a jump to address 0 (GBAModernRuntime). Until then that
+file stops at its crash test.
 
 The checks after a merge or any ID widening:
 
@@ -121,6 +147,9 @@ The checks after a merge or any ID widening:
 - `SetMonData`/`SetBoxMonData`: `CHECK_MON_DATA_ARG` stops the build for a narrow pointer to an ID field, but only when
   the field is a constant. A field like `MON_DATA_MOVE1 + i` needs the guard extended temporarily to computed fields,
   and its hits read by hand.
+- `gBattleScripting` offsets: `STATIC_ASSERT`s in `src/battle_script_commands.c` check every hand-written offset in
+  `include/constants/battle_script_commands.h` against the struct, and the multi-byte fields' sizes, so a field that is
+  widened or moved fails the build until the offsets and the scripts' write widths follow.
 - Animation scripts carry no content IDs; their commands read explicit widths.
 
 This is why the suite runs natively: it ran the game's own battle code and found bugs in the shipped game that no
