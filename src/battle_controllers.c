@@ -2816,12 +2816,21 @@ void BtlController_HandlePrintString(enum BattlerId battler)
     gBattle_BG0_X = 0;
     gBattle_BG0_Y = 0;
     BufferStringBattle(stringId, battler);
-    if (!ADMG_EndStateAccessCheck(generation) || gBattleResources != resources
+    if (gBattleResources != resources
         || !ADMG_BattleTrainerActorsCurrent(&actors, gBattleTypeFlags, TRAINER_BATTLE_PARAM.opponentA,
             TRAINER_BATTLE_PARAM.opponentB, gPartnerTrainerId))
     {
+        // The battle changed while the message was being built: refuse it.
         gBattle_BG0_X = previousX; gBattle_BG0_Y = previousY;
         if (ADMG_EndStateAccessCheck(generation)) ADMG_StateAccessRejected(stringId, __func__);
+        return;
+    }
+    if (!ADMG_EndStateAccessCheck(generation))
+    {
+        // The message's text was refused (a battler or placeholder it cannot name; the refusal is logged). Fail safe:
+        // skip the message and let the battle continue, instead of retrying it every frame.
+        gBattle_BG0_X = previousX; gBattle_BG0_Y = previousY;
+        BtlController_Complete(battler);
         return;
     }
 
