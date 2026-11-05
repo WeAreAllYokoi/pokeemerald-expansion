@@ -293,14 +293,14 @@ enum BattleScriptOpcode
 #define sMON_CAUGHT                  (gBattleScripting + 0x27) // monCaught
 #define sSAVED_DMG                   (gBattleScripting + 0x28) // savedDmg
 #define sUNUSED_0x2C                 (gBattleScripting + 0x2C) // unused_0x2c
-#define sMOVE_EFFECT                 (gBattleScripting + 0x2E) // moveEffect
-#define sUNUSED_0x30                 (gBattleScripting + 0x30) // unused_0x30
-#define sILLUSION_NICK_HACK          (gBattleScripting + 0x32) // illusionNickHack
-#define sFIXED_ABILITY_POPUP         (gBattleScripting + 0x33) // fixedPopup
-#define sABILITY_OVERWRITE           (gBattleScripting + 0x34) // abilityPopupOverwrite
-#define sSWITCH_CASE                 (gBattleScripting + 0x36) // switchCase
-#define sBERRY_OVERRIDE              (gBattleScripting + 0x37) // overrideBerryRequirements
-#define sSTICKY_WEB_STAT_DROP        (gBattleScripting + 0x38) // stickyWebStatDrop
+#define sMOVE_EFFECT                 (gBattleScripting + 0x30) // moveEffect
+#define sUNUSED_0x30                 (gBattleScripting + 0x34) // unused_0x30
+#define sILLUSION_NICK_HACK          (gBattleScripting + 0x36) // illusionNickHack
+#define sFIXED_ABILITY_POPUP         (gBattleScripting + 0x37) // fixedPopup
+#define sABILITY_OVERWRITE           (gBattleScripting + 0x38) // abilityPopupOverwrite
+#define sSWITCH_CASE                 (gBattleScripting + 0x3C) // switchCase
+#define sBERRY_OVERRIDE              (gBattleScripting + 0x3D) // overrideBerryRequirements
+#define sSTICKY_WEB_STAT_DROP        (gBattleScripting + 0x3E) // stickyWebStatDrop
 
 // Array entries for battle communication
 #define MULTIUSE_STATE          0

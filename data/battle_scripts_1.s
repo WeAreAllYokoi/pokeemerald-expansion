@@ -2633,7 +2633,7 @@ BattleScript_EffectSkillSwap::
 	copybyte gBattlerAbility, gBattlerAttacker
 	call BattleScript_AbilityPopUpOverwriteThenNormal
 	copybyte gBattlerAbility, gBattlerTarget
-	copyhword sABILITY_OVERWRITE, gLastUsedAbility
+	copyword sABILITY_OVERWRITE, gLastUsedAbility
 	call BattleScript_AbilityPopUpOverwriteThenNormal
 BattleScript_EffectSkillSwap_AfterAbilityPopUp:
 	recordability BS_ATTACKER
@@ -3961,7 +3961,7 @@ BattleScript_BattlerFormChangeNoPopup::
 	handleformchange BS_SCRIPTING, 0
 	playanimation BS_SCRIPTING, B_ANIM_FORM_CHANGE
 	waitanimation
-	sethword sABILITY_OVERWRITE, 0
+	setword sABILITY_OVERWRITE, 0
 BattleScript_BattlerFormChangeFromAfterAnimation::
 	handleformchange BS_SCRIPTING, 1
 	switchinabilities BS_SCRIPTING
@@ -4483,7 +4483,7 @@ BattleScript_AbilityPopUp::
 	showabilitypopup
 	pause B_WAIT_TIME_SHORT
 	recordability BS_ABILITY_BATTLER
-	sethword sABILITY_OVERWRITE, 0
+	setword sABILITY_OVERWRITE, 0
 	return
 
 BattleScript_AbilityPopUpScripting:
@@ -4494,7 +4494,7 @@ BattleScript_AbilityPopUpOverwriteThenNormal:
 	setbyte sFIXED_ABILITY_POPUP, TRUE
 	showabilitypopup
 	pause B_WAIT_TIME_SHORT
-	sethword sABILITY_OVERWRITE, 0
+	setword sABILITY_OVERWRITE, 0
 	updateabilitypopup
 	pause B_WAIT_TIME_SHORT
 	recordability BS_ABILITY_BATTLER
@@ -5015,7 +5015,7 @@ BattleScript_MummyActivates::
 	setbyte sFIXED_ABILITY_POPUP, TRUE
 	call BattleScript_AbilityPopUpTarget
 	copybyte gBattlerAbility, gBattlerAttacker
-	copyhword sABILITY_OVERWRITE, gLastUsedAbility
+	copyword sABILITY_OVERWRITE, gLastUsedAbility
 	call BattleScript_AbilityPopUpOverwriteThenNormal
 	recordability BS_TARGET
 	recordability BS_ATTACKER
@@ -5031,10 +5031,10 @@ BattleScript_WanderingSpiritActivates::
 	saveattacker
 	savetarget
 	copybyte gBattlerAbility, gBattlerTarget
-	sethword sABILITY_OVERWRITE, ABILITY_WANDERING_SPIRIT
+	setword sABILITY_OVERWRITE, ABILITY_WANDERING_SPIRIT
 	call BattleScript_AbilityPopUpOverwriteThenNormal
 	copybyte gBattlerAbility, gBattlerAttacker
-	copyhword sABILITY_OVERWRITE, gLastUsedAbility
+	copyword sABILITY_OVERWRITE, gLastUsedAbility
 	call BattleScript_AbilityPopUpOverwriteThenNormal
 	recordability BS_TARGET
 	recordability BS_ATTACKER
@@ -5059,7 +5059,7 @@ BattleScript_ActivateAsOne::
 	printfromtable gSwitchInAbilityStringIds
 	waitmessage B_WAIT_TIME_LONG
 	@ show unnerve
-	sethword sABILITY_OVERWRITE, ABILITY_UNNERVE
+	setword sABILITY_OVERWRITE, ABILITY_UNNERVE
 	setbyte cMULTISTRING_CHOOSER, B_MSG_SWITCHIN_UNNERVE
 	call BattleScript_AbilityPopUp
 	printfromtable gSwitchInAbilityStringIds

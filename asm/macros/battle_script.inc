@@ -1502,7 +1502,7 @@
 
 @ helpful macros
 	.macro setmoveeffect effect:req
-	sethword sMOVE_EFFECT, \effect
+	setword sMOVE_EFFECT, \effect @ enum MoveEffect is 32-bit
 	.endm
 
 	.macro sethword dst:req, value:req

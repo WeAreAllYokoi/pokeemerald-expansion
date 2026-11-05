@@ -95,6 +95,57 @@
 //
 // The arguments can be accessed as cmd->position
 // gBattlescriptCurrInstr = cmd->nextInstr; advances to the next instruction.
+
+// The battle scripts address gBattleScripting through the hand-written offsets in
+// include/constants/battle_script_commands.h, and write its multi-byte fields at a fixed width. A field that
+// is widened or moved must move them too, or scripts write into the wrong field (recipe 40: moveEffect and
+// abilityPopupOverwrite became 32-bit and every later offset was stale).
+#pragma push_macro("gBattleScripting")
+#define gBattleScripting 0
+STATIC_ASSERT(offsetof(struct BattleScripting, unused_0x00) == (uintptr_t)sUNUSED_0x00, ScriptingOffset_sUNUSED_0x00);
+STATIC_ASSERT(offsetof(struct BattleScripting, unused_0x04) == (uintptr_t)sUNUSED_0x04, ScriptingOffset_sUNUSED_0x04);
+STATIC_ASSERT(offsetof(struct BattleScripting, multihitString) == (uintptr_t)sMULTIHIT_STRING, ScriptingOffset_sMULTIHIT_STRING);
+STATIC_ASSERT(offsetof(struct BattleScripting, expOnCatch) == (uintptr_t)sEXP_CATCH, ScriptingOffset_sEXP_CATCH);
+STATIC_ASSERT(offsetof(struct BattleScripting, animArg1) == (uintptr_t)sB_ANIM_ARG1, ScriptingOffset_sB_ANIM_ARG1);
+STATIC_ASSERT(offsetof(struct BattleScripting, animArg2) == (uintptr_t)sB_ANIM_ARG2, ScriptingOffset_sB_ANIM_ARG2);
+STATIC_ASSERT(offsetof(struct BattleScripting, savedStringId) == (uintptr_t)sSAVED_STRINID, ScriptingOffset_sSAVED_STRINID);
+STATIC_ASSERT(offsetof(struct BattleScripting, moveendState) == (uintptr_t)sMOVEEND_STATE, ScriptingOffset_sMOVEEND_STATE);
+STATIC_ASSERT(offsetof(struct BattleScripting, unused_0x15) == (uintptr_t)sUNUSED_0x15, ScriptingOffset_sUNUSED_0x15);
+STATIC_ASSERT(offsetof(struct BattleScripting, shiftSwitched) == (uintptr_t)sSHIFT_SWITCHED, ScriptingOffset_sSHIFT_SWITCHED);
+STATIC_ASSERT(offsetof(struct BattleScripting, battler) == (uintptr_t)sBATTLER, ScriptingOffset_sBATTLER);
+STATIC_ASSERT(offsetof(struct BattleScripting, animTurn) == (uintptr_t)sB_ANIM_TURN, ScriptingOffset_sB_ANIM_TURN);
+STATIC_ASSERT(offsetof(struct BattleScripting, animTargetsHit) == (uintptr_t)sB_ANIM_TARGETS_HIT, ScriptingOffset_sB_ANIM_TARGETS_HIT);
+STATIC_ASSERT(offsetof(struct BattleScripting, unused_0x1a) == (uintptr_t)sUNUSED_0x1A, ScriptingOffset_sUNUSED_0x1A);
+STATIC_ASSERT(offsetof(struct BattleScripting, unused_0x1b) == (uintptr_t)sUNUSED_0x1B, ScriptingOffset_sUNUSED_0x1B);
+STATIC_ASSERT(offsetof(struct BattleScripting, getexpState) == (uintptr_t)sGIVEEXP_STATE, ScriptingOffset_sGIVEEXP_STATE);
+STATIC_ASSERT(offsetof(struct BattleScripting, battleStyle) == (uintptr_t)sBATTLE_STYLE, ScriptingOffset_sBATTLE_STYLE);
+STATIC_ASSERT(offsetof(struct BattleScripting, drawlvlupboxState) == (uintptr_t)sLVLBOX_STATE, ScriptingOffset_sLVLBOX_STATE);
+STATIC_ASSERT(offsetof(struct BattleScripting, learnMoveState) == (uintptr_t)sLEARNMOVE_STATE, ScriptingOffset_sLEARNMOVE_STATE);
+STATIC_ASSERT(offsetof(struct BattleScripting, savedBattler) == (uintptr_t)sSAVED_BATTLER, ScriptingOffset_sSAVED_BATTLER);
+STATIC_ASSERT(offsetof(struct BattleScripting, reshowMainState) == (uintptr_t)sRESHOW_MAIN_STATE, ScriptingOffset_sRESHOW_MAIN_STATE);
+STATIC_ASSERT(offsetof(struct BattleScripting, reshowHelperState) == (uintptr_t)sRESHOW_HELPER_STATE, ScriptingOffset_sRESHOW_HELPER_STATE);
+STATIC_ASSERT(offsetof(struct BattleScripting, levelUpHP) == (uintptr_t)sLVLUP_HP, ScriptingOffset_sLVLUP_HP);
+STATIC_ASSERT(offsetof(struct BattleScripting, windowsType) == (uintptr_t)sWINDOWS_TYPE, ScriptingOffset_sWINDOWS_TYPE);
+STATIC_ASSERT(offsetof(struct BattleScripting, multiplayerId) == (uintptr_t)sMULTIPLAYER_ID, ScriptingOffset_sMULTIPLAYER_ID);
+STATIC_ASSERT(offsetof(struct BattleScripting, specialTrainerBattleType) == (uintptr_t)sSPECIAL_TRAINER_BATTLE_TYPE, ScriptingOffset_sSPECIAL_TRAINER_BATTLE_TYPE);
+STATIC_ASSERT(offsetof(struct BattleScripting, monCaught) == (uintptr_t)sMON_CAUGHT, ScriptingOffset_sMON_CAUGHT);
+STATIC_ASSERT(offsetof(struct BattleScripting, savedDmg) == (uintptr_t)sSAVED_DMG, ScriptingOffset_sSAVED_DMG);
+STATIC_ASSERT(offsetof(struct BattleScripting, unused_0x2c) == (uintptr_t)sUNUSED_0x2C, ScriptingOffset_sUNUSED_0x2C);
+STATIC_ASSERT(offsetof(struct BattleScripting, moveEffect) == (uintptr_t)sMOVE_EFFECT, ScriptingOffset_sMOVE_EFFECT);
+STATIC_ASSERT(offsetof(struct BattleScripting, unused_0x30) == (uintptr_t)sUNUSED_0x30, ScriptingOffset_sUNUSED_0x30);
+STATIC_ASSERT(offsetof(struct BattleScripting, illusionNickHack) == (uintptr_t)sILLUSION_NICK_HACK, ScriptingOffset_sILLUSION_NICK_HACK);
+STATIC_ASSERT(offsetof(struct BattleScripting, fixedPopup) == (uintptr_t)sFIXED_ABILITY_POPUP, ScriptingOffset_sFIXED_ABILITY_POPUP);
+STATIC_ASSERT(offsetof(struct BattleScripting, abilityPopupOverwrite) == (uintptr_t)sABILITY_OVERWRITE, ScriptingOffset_sABILITY_OVERWRITE);
+STATIC_ASSERT(offsetof(struct BattleScripting, switchCase) == (uintptr_t)sSWITCH_CASE, ScriptingOffset_sSWITCH_CASE);
+STATIC_ASSERT(offsetof(struct BattleScripting, overrideBerryRequirements) == (uintptr_t)sBERRY_OVERRIDE, ScriptingOffset_sBERRY_OVERRIDE);
+STATIC_ASSERT(offsetof(struct BattleScripting, stickyWebStatDrop) == (uintptr_t)sSTICKY_WEB_STAT_DROP, ScriptingOffset_sSTICKY_WEB_STAT_DROP);
+STATIC_ASSERT(sizeof(((struct BattleScripting *)0)->multihitString) == 6, ScriptingSize_multihitString);
+STATIC_ASSERT(sizeof(((struct BattleScripting *)0)->savedStringId) == 2, ScriptingSize_savedStringId);
+STATIC_ASSERT(sizeof(((struct BattleScripting *)0)->savedDmg) == 4, ScriptingSize_savedDmg);
+STATIC_ASSERT(sizeof(((struct BattleScripting *)0)->moveEffect) == 4, ScriptingSize_moveEffect);
+STATIC_ASSERT(sizeof(((struct BattleScripting *)0)->abilityPopupOverwrite) == 4, ScriptingSize_abilityPopupOverwrite);
+#pragma pop_macro("gBattleScripting")
+
 #define CMD_ARGS(...) const struct __attribute__((packed)) { u8 opcode; RECURSIVELY(R_FOR_EACH(APPEND_SEMICOLON, __VA_ARGS__)) const u8 nextInstr[0]; } *const cmd UNUSED = (const void *)gBattlescriptCurrInstr
 #define NATIVE_ARGS(...) CMD_ARGS(void (*func)(void), ##__VA_ARGS__)
 
