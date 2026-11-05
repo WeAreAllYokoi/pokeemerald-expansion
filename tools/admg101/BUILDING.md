@@ -66,6 +66,20 @@ ADMG-101 recompiles each build into a native game. It needs these from the build
 
 ADMG-101 does the rest (the recipe, the API descriptor, the target profile) with its own tools.
 
+## The release patch
+
+A build is released as a BPS patch from the retail Pokémon Emerald (USA, Europe) ROM, attached to the build's GitHub
+release (tag `build-N`). Never the ROM or the ELF. Make it after building, from your own retail ROM:
+
+```bash
+bash tools/admg101/make_bps.sh <retail Emerald ROM> pokeemerald.gba emerald-expansion-build-N.bps
+```
+
+It refuses a retail ROM or build with the wrong SHA-1, builds Floating IPS from its source at a pinned commit, and checks
+that the patch applied to the retail ROM gives the build exactly. `tools/admg101/rom-sha1.txt` is the build's SHA-1; the
+ADMG-101 build workflow (`.github/workflows/admg101-build.yml`) checks every push still builds it, in the Ubuntu 26.04 image
+with the toolchain packages pinned. Update `rom-sha1.txt` in the same commit as any change that alters the ROM.
+
 ## Merging upstream
 
 See [UPSTREAM-MERGE.md](UPSTREAM-MERGE.md).
