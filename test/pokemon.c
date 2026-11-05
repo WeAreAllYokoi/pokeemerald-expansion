@@ -656,28 +656,44 @@ TEST("BoxPokemon encryption works")
     // This test exists to ensure that expansion has not broken anything with regards to how BoxPokemon encryption works.
     // If users make changes to the definitions of BoxPokemon, Pokemon, or any of their members, it is expected that this test will fail. To avoid the failing test from blocking CI, users can uncomment the KNOWN_FAILING declaration.
     // KNOWN_FAILING;
-    u32 raw[20] =
+    // ADMG-101's BoxPokemon layout (32-bit content IDs), built with this fork's CreateBoxMon and SetBoxMonData from
+    // the values checked below and upstream's personality and OT ID.
+    u32 raw[sizeof(struct BoxPokemon) / 4] =
     {
         990384375,
         2948624514,
         3907508686,
         14410461,
-        35316705,
-        3907508686,
-        64742109,
-        718729,
-        3102307966,
-        2160206402,
-        49956971,
-        2495766612,
-        1424318580,
-        273408756,
-        2371630199,
-        2708871082,
-        3059937332,
-        2529190026,
-        2290634828,
-        2870614922
+        189409,
+        3,
+        65282,
+        0,
+        240189443,
+        10,
+        255,
+        11,
+        520,
+        790080,
+        2080309474,
+        18,
+        255,
+        33,
+        0,
+        10,
+        0,
+        1,
+        0,
+        45,
+        2206368024,
+        132,
+        740365835,
+        336216631,
+        2519869470,
+        2,
+        7,
+        2011109780,
+        545287036,
+        1365
     };
 
     struct Pokemon mon;

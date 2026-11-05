@@ -4,10 +4,11 @@
 
 // If you would like to ensure save compatibility, update the values below with those for your hack. You can find these through the debug menu.
 // Please note that this simple check is not 100% foolproof, but should be able to catch most unintended shifts.
-#define T_SAVEBLOCK1_SIZE 15568
-#define T_SAVEBLOCK2_SIZE 3884
+// ADMG-101's sizes: its save blocks are larger than upstream's by design (32-bit content IDs, its own save format).
+#define T_SAVEBLOCK1_SIZE 19476
+#define T_SAVEBLOCK2_SIZE 4644
 #define T_SAVEBLOCK3_SIZE 4
-#define T_POKEMONSTORAGE_SIZE 34144
+#define T_POKEMONSTORAGE_SIZE 59760
 
 TEST("SaveBlock1 is backwards compatible")
 {
