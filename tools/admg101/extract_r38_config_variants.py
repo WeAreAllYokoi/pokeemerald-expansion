@@ -795,7 +795,8 @@ def main():
             # Independent verification: every compile behind an option that is new or differs from the committed
             # measurement is recompiled from scratch (a fresh include tree, a fresh default object, no cache) and must agree
             # exactly with the result this run used, whether that came from the cache or from this run's own compile.
-            reference = json.loads(args.reference.read_text(encoding='utf-8')) if args.reference.exists() else None
+            reference = (json.loads(args.reference.read_text(encoding='utf-8'))
+                         if args.reference is not None and args.reference.exists() else None)
             names = options_to_verify(result['options'], result['unsupported'], reference)
             keys = sorted({used[(name, value, unit)] for (name, value, unit) in used if name in names})
             by_key = {k: measured[k[0], k[2]] for k in keys}
