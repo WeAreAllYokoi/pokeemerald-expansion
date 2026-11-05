@@ -3537,7 +3537,7 @@ const struct ItemInfo gItemsInfo[] =
         .description = COMPOUND_STRING(
             "Ups the times new\n"
             "plants grow where\n"
-            "mature ones withered."),
+            "old ones withered."),
         .pocket = POCKET_ITEMS,
         .sortType = ITEM_TYPE_GROWTH,
         .type = ITEM_USE_BAG_MENU,
