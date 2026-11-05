@@ -98,7 +98,7 @@
 
 // The battle scripts address gBattleScripting through the hand-written offsets in
 // include/constants/battle_script_commands.h, and write its multi-byte fields at a fixed width. A field that
-// is widened or moved must move them too, or scripts write into the wrong field (recipe 40: moveEffect and
+// is widened or moved must move them too, or scripts write into the wrong field (build 40: moveEffect and
 // abilityPopupOverwrite became 32-bit and every later offset was stale).
 #pragma push_macro("gBattleScripting")
 #define gBattleScripting 0

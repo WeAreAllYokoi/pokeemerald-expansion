@@ -11,7 +11,7 @@ A case the scan cannot decide (bitfields, conditionals, reads that branch or go 
 tools/admg101/script-widths-reviewed.json lists it with the same signature, so a change to it is reviewed again.
 
 Why: this fork widens content IDs (abilities, species, moves, items, map IDs) to 32 bits, and a macro left at the old
-width makes the command after it read 2 bytes off (recipe 40: jumpifability, jumpifabilitypresent, jumpifspecies,
+width makes the command after it read 2 bytes off (build 40: jumpifability, jumpifabilitypresent, jumpifspecies,
 showplayer, hideplayer). Run by `make check`; by hand:
 
 python3 -B tools/admg101/check_script_widths.py --cpp "<cpp and flags>" --preproc "<preproc and flags>" \

@@ -1,6 +1,6 @@
 # Merging upstream Emerald Expansion
 
-How to bring a new upstream release into this fork. It was first done for 1.17.2 (recipe 40, November 2026); the
+How to bring a new upstream release into this fork. It was first done for 1.17.2 (build 40, November 2026); the
 examples below are from that merge.
 
 ## What makes this fork different
@@ -12,7 +12,9 @@ upstream's side": whatever upstream adds has to keep every option selectable at 
 ## 1. Set up
 
 - Work in a clone of `WeAreAllYokoi/pokeemerald-expansion`. Branches: `admg-101` is the build line (what the current
-  build is made from), `master` mirrors upstream's `master`, and each new build gets its own branch (`recipe-40`).
+  build is made from), `master` mirrors upstream's `master`, and each new build gets its own branch (`build-40`).
+- Names: what this fork produces is a build (build 40). A recipe is ADMG-101's: the symbols and recompiler
+  configuration it makes from a build (recipe 40 is made from build 40).
 - Commit as the fork's owner, set in the clone only, never globally:
   `git config user.name WeAreAllYokoi` and
   `git config user.email 349864965+WeAreAllYokoi@users.noreply.github.com`. Check with `git config --show-origin user.name`.
@@ -60,7 +62,7 @@ No conflict is resolved by taking upstream's compile-time form:
 
 ## 5. Merge, don't cherry-pick
 
-`git switch -c recipe-NN admg-101`, merge our pending fix branches, then `git merge --no-ff master`. A real merge moves
+`git switch -c build-NN admg-101`, merge our pending fix branches, then `git merge --no-ff master`. A real merge moves
 the merge base, so the next sync starts from here instead of meeting the same conflicts again, and the history says
 which upstream the build is. Every conflict is resolved once either way.
 
@@ -75,7 +77,7 @@ make -j$(nproc)                                                  # the game buil
 make check -j$(nproc)                                            # script widths, then upstream's test suite
 ```
 
-`make check` compiles and links from recipe 40 on, and the test ELF uses the game's own memory layout: the native region
+`make check` compiles and links from build 40 on, and the test ELF uses the game's own memory layout: the native region
 at 0x10000000 (`.native_bss`: the 16 MB heap, the parties, the save blocks, the PC storage) is in `ld_script_test.ld`
 as it is in `ld_script_modern.ld`. Test builds get no layout or data of their own; the only test branches are upstream's
 harness (test flags and vars, the config test override, allocation counters, fixtures). Keep it that way: never shrink
@@ -89,7 +91,7 @@ and exits with its own code.
 
 ### What the native run found
 
-The first native run (recipe 40, November 2026) failed `test/battle/weather/rain.c`'s "Drizzle fails if Desolate Land
+The first native run (build 40, November 2026) failed `test/battle/weather/rain.c`'s "Drizzle fails if Desolate Land
 is active" with `wrong use of printselectionstringfromtable`. The cause was a bug in the shipped game, build 39
 included, not in the runtime: this fork widened content IDs to 32 bits (`enum Ability`, `enum Species`, `enum Move`,
 `enum Item`, `MapId`, ...), and some code still wrote or read them at the old width.
@@ -123,7 +125,7 @@ Running the whole suite (807 files) then found more of the same kinds, and some 
   heap reset; tests pinned upstream's save sizes, BoxPokemon bytes and AI frame counts.
 - Gooey Mulch's mulch-usage description, which upstream's default build never tests, was too wide for the bag.
 
-All are fixed in recipe 40. The fixes change the ROM. With them, the suite runs natively with every test passing,
+All are fixed in build 40. The fixes change the ROM. With them, the suite runs natively with every test passing,
 except the one below.
 
 ### Known limitation: crash recovery
@@ -142,7 +144,7 @@ The checks after a merge or any ID widening:
   build's own compiler, and every event-script macro, nested macros expanded, against the order and width of its
   command's `ScriptRead*` calls. A case it cannot decide (bitfields, reads in loops or behind flags, a helper that reads
   the bytes) passes only as listed in `script-widths-reviewed.json` with the same signature and a reason; a changed one
-  fails until it is reviewed again (`--write-reviewed` records the current cases, keeping their reasons). Recipe 40:
+  fails until it is reviewed again (`--write-reviewed` records the current cases, keeping their reasons). Build 40:
   377 battle-script and 313 event-script macros, 12 reviewed by hand.
 - `SetMonData`/`SetBoxMonData`: `CHECK_MON_DATA_ARG` stops the build for a narrow pointer to an ID field, but only when
   the field is a constant. A field like `MON_DATA_MOVE1 + i` needs the guard extended temporarily to computed fields,
@@ -158,7 +160,7 @@ compile, link or static gate had caught.
 History, so it isn't rediscovered: build 39 didn't compile `make check`. Commit `05853bf370` moved the enlarged data to
 native memory and updated only `ld_script_modern.ld`, an oversight; test builds also left out the run-time selector.
 The old workspace's test checks were bounded ARM compiles of single source units, with no link or run, so upstream's
-runner had not run since. Recipe 40 fixed the compile (a test `ADMG_GetConfig` that returns each option's default) and
+runner had not run since. Build 40 fixed the compile (a test `ADMG_GetConfig` that returns each option's default) and
 the link.
 
 Then on the ADMG-101 side, its configuration inventory with `ADMG_GAME_TOOLS` set to this folder:
