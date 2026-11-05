@@ -1,0 +1,49 @@
+# ADMG-101's build of Emerald Expansion: builds the ROM from this source and checks it is byte for byte the build
+# ADMG-101's recipe was made from (tools/admg101/rom-sha1.txt). No ROM, ELF or retail data is used or uploaded.
+#
+# The exact bytes depend on the toolchain, so the job runs in the Ubuntu release the build was made with, with the same
+# arm-none-eabi packages (tools/admg101/BUILDING.md). A change that alters the ROM on purpose updates rom-sha1.txt in the
+# same commit.
+name: ADMG-101 build
+
+on:
+  push:
+    branches:
+      - admg-101
+      - 'build-*'
+    tags:
+      - 'build-*'
+  pull_request:
+    branches:
+      - admg-101
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: ubuntu:26.04@sha256:6a06111c3b0a8600feadb270aec771dc239bf407b25625f93f44ab00e11f4d3c
+    env:
+      DEBIAN_FRONTEND: noninteractive
+    steps:
+      - name: Install the toolchain
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates git make gcc g++ libc6-dev libpng-dev python3 \
+            gcc-arm-none-eabi=15:14.2.rel1-1 binutils-arm-none-eabi=2.45.50.20251209-1ubuntu1+23build1 \
+            libnewlib-arm-none-eabi=4.6.0.20260123-1
+          arm-none-eabi-gcc --version | head -1
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build
+        run: |
+          touch .histignore
+          make -j"$(nproc)" -O
+
+      - name: Check the ROM is the recorded build
+        run: |
+          want="$(tr -d '[:space:]' < tools/admg101/rom-sha1.txt)"
+          got="$(sha1sum pokeemerald.gba | cut -d' ' -f1)"
+          echo "ROM SHA-1 $got (recorded $want)"
+          test "$got" = "$want"
