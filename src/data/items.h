@@ -3554,9 +3554,9 @@ const struct ItemInfo gItemsInfo[] =
         .pluralName = ITEM_PLURAL_NAME("Rich Mulch"),
         .price = 200,
         .description = COMPOUND_STRING(
-            "A fertilizer for\n"
-            "growing Berries that\n"
-            "increases the harvest."),
+            "A Berry fertilizer\n"
+            "that increases the\n"
+            "harvest."),
         .pocket = POCKET_ITEMS,
         .sortType = ITEM_TYPE_GROWTH,
         .type = ITEM_USE_BAG_MENU,
@@ -3573,9 +3573,9 @@ const struct ItemInfo gItemsInfo[] =
         .pluralName = ITEM_PLURAL_NAME("Surprise Mulch"),
         .price = 200,
         .description = COMPOUND_STRING(
-            "A fertilizer for\n"
-            "growing Berries that\n"
-            "causes mutations."),
+            "A Berry fertilizer\n"
+            "that causes\n"
+            "mutations."),
         .pocket = POCKET_ITEMS,
         .sortType = ITEM_TYPE_GROWTH,
         .type = ITEM_USE_BAG_MENU,
@@ -3592,9 +3592,9 @@ const struct ItemInfo gItemsInfo[] =
         .pluralName = ITEM_PLURAL_NAME("Boost Mulch"),
         .price = 200,
         .description = COMPOUND_STRING(
-            "Increases the Berry\n"
-            "harvest that can be\n"
-            "grown by watering."),
+            "Raises the Berry\n"
+            "harvest you get\n"
+            "from watering."),
         .pocket = POCKET_ITEMS,
         .sortType = ITEM_TYPE_GROWTH,
         .type = ITEM_USE_BAG_MENU,
@@ -3611,9 +3611,9 @@ const struct ItemInfo gItemsInfo[] =
         .pluralName = ITEM_PLURAL_NAME("Amaze Mulch"),
         .price = 200,
         .description = COMPOUND_STRING(
-            "A fertilizer with the\n"
-            "effects of Rich, Boost,\n"
-            "and Surprise Mulch."),
+            "Has the effects of\n"
+            "Rich, Boost, and\n"
+            "Surprise Mulch."),
         .pocket = POCKET_ITEMS,
         .sortType = ITEM_TYPE_GROWTH,
         .type = ITEM_USE_BAG_MENU,
