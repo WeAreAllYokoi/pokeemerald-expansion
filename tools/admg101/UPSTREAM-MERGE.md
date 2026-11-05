@@ -59,6 +59,11 @@ No conflict is resolved by taking upstream's compile-time form:
 - **Re-express upstream's fix inside our structure** where our code was rewritten: in 1.17.2 the Factory rental fix went
   into our rental backing, and the approach-music table into our state-access check, keeping the old default for an
   out-of-range value.
+- **Pokémon are stored unencrypted, on purpose.** This fork keeps `BoxPokemon` in a native layout with a fixed
+  substructure order and no encryption (`f05da80ddc`; 136 bytes against upstream's 80, with 32-bit IDs). Upstream code
+  or tests that encrypt, decrypt or reorder substructures, or carry encrypted Pokémon bytes, don't apply as they are:
+  re-express them in the native layout (build 40: `test/pokemon.c`'s "BoxPokemon encryption works" data was rebuilt with
+  this fork's own `CreateBoxMon`/`SetBoxMonData`). There are no save-compatibility promises with upstream's format.
 
 ## 5. Merge, don't cherry-pick
 
