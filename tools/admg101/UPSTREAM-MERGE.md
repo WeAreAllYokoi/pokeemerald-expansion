@@ -23,8 +23,8 @@ upstream's side": whatever upstream adds has to keep every option selectable at 
 
 ## 2. Prove the current build first
 
-Build `admg-101` unchanged and check the ROM's SHA-1 against the current build's (build 39:
-`cb305c76bd7337d02ef55c491c2cb1b2e9a10fe3`). If it doesn't match, something the build needs is missing: find it before
+Build `admg-101` unchanged and check the ROM's SHA-1 against the current build's (build 40:
+`bc99c00d9bd16d29572ee9ad19761b5c7b4aa4cc`; build 39 was `cb305c76bd7337d02ef55c491c2cb1b2e9a10fe3`). If it doesn't match, something the build needs is missing: find it before
 merging anything.
 
 ## 3. Review upstream before merging

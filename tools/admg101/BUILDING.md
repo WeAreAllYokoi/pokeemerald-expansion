@@ -17,8 +17,8 @@ a Python with `pyelftools`.
 make -j$(nproc)
 ```
 
-This writes `pokeemerald.gba` and `pokeemerald.elf` at the root. A build reproduces exactly: build 39 (branch `admg-101`)
-gives ROM SHA-1 `cb305c76bd7337d02ef55c491c2cb1b2e9a10fe3`. Check that before changing anything.
+This writes `pokeemerald.gba` and `pokeemerald.elf` at the root. A build reproduces exactly: build 40 (branch `admg-101`)
+gives ROM SHA-1 `bc99c00d9bd16d29572ee9ad19761b5c7b4aa4cc`. Check that before changing anything.
 
 ## When you change code that reads a configuration option
 
