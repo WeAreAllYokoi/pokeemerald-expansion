@@ -430,7 +430,7 @@ def main():
         for key in ("approval", "allocation_proposal_sha256", "exact_assignment_review"):
             proposal.pop(key, None)
         proposal.update(format="admg101-s3-b-allocation-proposal", status="PROPOSED_NOT_ACCEPTED")
-        if hashlib.sha256(canonical(proposal)).hexdigest() != "4d9cd04e8fdd8c78d43090e87c600ccaa38bc6de0c45496c4982bd60ba3f4130":
+        if hashlib.sha256(canonical(proposal)).hexdigest() != "b267fcf240b8bea7be734a3e971776d6493902561b86f118faefb0dae317b5a5":
             raise ValueError("reviewed immutable proposal identity changed")
         if proposal["semantic_registry_sha256"] != digest(args.registry) or registry["source_identity"]["commit"] != PIN:
             raise ValueError("accepted semantic input changed")

@@ -1,5 +1,5 @@
 {
-  "allocation_proposal_sha256": "4d9cd04e8fdd8c78d43090e87c600ccaa38bc6de0c45496c4982bd60ba3f4130",
+  "allocation_proposal_sha256": "b267fcf240b8bea7be734a3e971776d6493902561b86f118faefb0dae317b5a5",
   "approval": "Human accepted reviewed ranges and three alias treatments; bounded source integration and V3-B2 only; 2026-10-23 amendment, human approved: feature_binding_flags reservation 40 -> 48 and feature_binding_vars 8 -> 12 for the badge stat boost flags, B_EV_CAP_VARIABLE and the three OW_FOLLOWERS_ALLOWED_* variables; existing identities unchanged",
   "consumer_safety_verified": false,
   "coverage": {
@@ -21878,7 +21878,7 @@
     }
   ],
   "runtime_consumption": "none",
-  "semantic_registry_sha256": "eac424d020bd880746336b361bfe0c8bf39f433b3d903f8151b883bb9a4b101b",
+  "semantic_registry_sha256": "08f455b972df8ef47966287fe488295d7af6a605860289e615baf8e5813d6756",
   "source_commit": "c5f026363afda6dd56225bebb2f2d2cdcd9d84f0",
   "status": "ACCEPTED_IMMUTABLE",
   "unresolved_legacy_expressions": {

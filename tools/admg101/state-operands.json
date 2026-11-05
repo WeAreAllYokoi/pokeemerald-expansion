@@ -11855,7 +11855,7 @@
     "VAR_WONDER_NEWS_STEP_COUNTER": 16430,
     "VAR_WONDER_NEWS_STEP_COUNTER_FRLG": 16424
   },
-  "lock_sha256": "3fc9e8018af64bef63b720e6bef0478795412e317415674a33f33dcf07ba103e",
+  "lock_sha256": "339558c2529f03ed8afcad43da9e520ed63a2f1406b53f9f82f7028be9a05e27",
   "map_fields": {
     "bg_events.hidden_item.flag": "flag",
     "coord_events.var": "var",

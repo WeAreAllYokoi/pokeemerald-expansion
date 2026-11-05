@@ -9,7 +9,7 @@
     "repository": "rh-hideout/pokeemerald-expansion",
     "version": "1.17.1",
     "commit": "c5f026363afda6dd56225bebb2f2d2cdcd9d84f0",
-    "candidate_root": "C:\\EmeraldExpansionRR\\candidates\\admg101-scope2-c5f02636\\s2-b-43b57386-20261011\\checks\\V4-B1-root-encoding\\windows\\source",
+    "candidate_root": "rh-hideout/pokeemerald-expansion at commit c5f026363afda6dd56225bebb2f2d2cdcd9d84f0 (a local checkout; no machine path recorded)",
     "governing_contract_commit": "faffb972cad3407f6a8059b0fbe301e8f9235b09",
     "accepted_S2_B_project_commit": "a4c2e78d978961ef8ba2d398560928b0ea35ebc8",
     "integration_recipe_sha256": "43b573860f849d09170a76f99955caf33b67039cabfc5534541a840931f53341",

@@ -2,7 +2,7 @@
   "format": "admg101-s3-b-source-ownership",
   "format_version": 1,
   "source_commit": "c5f026363afda6dd56225bebb2f2d2cdcd9d84f0",
-  "semantic_registry_sha256": "eac424d020bd880746336b361bfe0c8bf39f433b3d903f8151b883bb9a4b101b",
+  "semantic_registry_sha256": "08f455b972df8ef47966287fe488295d7af6a605860289e615baf8e5813d6756",
   "status": "APPROVED_BOUNDED_SOURCE_GENERATION",
   "runtime_consumption": "build-time source ownership only; never current runtime map",
   "map_rules": {
