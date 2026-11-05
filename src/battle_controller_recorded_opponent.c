@@ -359,7 +359,8 @@ static void RecordedOpponentHandleChooseMove(enum BattlerId battler)
         if (target == RECORDED_TARGET_DEFAULT)
         {
             struct ChooseMoveStruct *moveInfo = (struct ChooseMoveStruct *)(&gBattleResources->bufferA[battler][4]);
-            target = GetDefaultSelectionTarget(battler, GetBattlerMoveSelectionTargetType(battler, moveInfo->moves[moveId]));
+            // The recorded slot carries RET_GIMMICK when a gimmick is used: index the moves without it
+            target = GetDefaultSelectionTarget(battler, GetBattlerMoveSelectionTargetType(battler, moveInfo->moves[moveId & ~RET_GIMMICK]));
         }
         BtlController_EmitTwoReturnValues(battler, B_COMM_TO_ENGINE, B_ACTION_EXEC_SCRIPT, moveId | (target << 8));
     }
