@@ -20,6 +20,18 @@ make -j$(nproc)
 This writes `pokeemerald.gba` and `pokeemerald.elf` at the root. A build reproduces exactly: build 40 (branch `admg-101`)
 gives ROM SHA-1 `bc99c00d9bd16d29572ee9ad19761b5c7b4aa4cc`. Check that before changing anything.
 
+## The symbol table in the ROM
+
+`make ADMG_SYMBOLS=1` ends the build by running `tools/admgsym` on the ROM. It writes the ELF's ROM functions and
+data objects (names, addresses, sizes, ARM or Thumb) into the 0xFF padding after the game as an ADMGSYM1 table, with a
+footer in the ROM's last 16 bytes. ADMG-101's Ghidra loader (gba-ghidra-loader) reads it, so a build of this fork
+names its own functions without its ELF. The format is described at the top of `tools/admgsym/admgsym.c`.
+
+It is off by default until the next build, because it changes the ROM's bytes: with it on, the ROM isn't build 40.
+Changing the value rebuilds the ROM. The build fails, and the ROM is deleted, if the table doesn't fit in the padding
+or the padding isn't all 0xFF. `admgsym sidecar <elf> <rom> <out.admgsym>` writes the same entries and names to their own
+file instead, with the ROM CRC-32 taken over the whole ROM, leaving the ROM as it is.
+
 ## When you change code that reads a configuration option
 
 A read outside the selector keeps the compiled value, so selecting the option would apply only partly. After any change:

@@ -46,6 +46,9 @@ LTO          ?= 0
 # Makes an optimized build for release, also enabling NDEBUG macro and disabling other debugging features
 # Enables LTO by default, but can be changed in the config.mk file
 RELEASE      ?= 0
+# ADMG-101: write the ELF's ROM functions and data objects into the ROM's 0xFF padding as an ADMGSYM1 symbol table
+# (tools/admgsym), for ADMG-101's Ghidra loader. Off until the next build, so the branch still builds build 40.
+ADMG_SYMBOLS ?= 0
 
 ifeq (compare,$(MAKECMDGOALS))
   COMPARE := 1
@@ -222,6 +225,7 @@ SCANINC      := $(TOOLS_DIR)/scaninc/scaninc$(EXE)
 PREPROC      := $(TOOLS_DIR)/preproc/preproc$(EXE)
 RAMSCRGEN    := $(TOOLS_DIR)/ramscrgen/ramscrgen$(EXE)
 FIX          := $(TOOLS_DIR)/gbafix/gbafix$(EXE)
+ADMGSYM      := $(TOOLS_DIR)/admgsym/admgsym$(EXE)
 MAPJSON      := $(TOOLS_DIR)/mapjson/mapjson$(EXE)
 JSONPROC     := $(TOOLS_DIR)/jsonproc/jsonproc$(EXE)
 TRAINERPROC  := $(TOOLS_DIR)/trainerproc/trainerproc$(EXE)
@@ -647,10 +651,17 @@ $(ELF): $(LD_SCRIPT) $(OBJS) libagbsyscall
 	$(FIX) $@ -t"$(TITLE)" -c$(GAME_CODE) -m$(MAKER_CODE) -r$(REVISION) --silent
 endif
 
+# Records ADMG_SYMBOLS, rewritten only when its value changes, so changing it rebuilds the ROM
+ADMG_SYMBOLS_FLAG := $(BUILD_DIR)/admg_symbols.flag
+$(shell mkdir -p $(BUILD_DIR); [ "$$(cat $(ADMG_SYMBOLS_FLAG) 2>/dev/null)" = "$(ADMG_SYMBOLS)" ] || echo "$(ADMG_SYMBOLS)" > $(ADMG_SYMBOLS_FLAG))
+
 # Builds the rom from the elf file
-$(ROM): $(ELF)
+$(ROM): $(ELF) $(ADMG_SYMBOLS_FLAG) $(if $(filter 1,$(ADMG_SYMBOLS)),$(ADMGSYM))
 	$(OBJCOPY) -O binary $< $@
 	$(FIX) $@ -p --silent
+ifeq ($(ADMG_SYMBOLS),1)
+	$(ADMGSYM) embed $< $@
+endif
 
 emerald: all
 firered: all
