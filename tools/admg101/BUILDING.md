@@ -27,6 +27,13 @@ data objects (names, addresses, sizes, ARM or Thumb) into the 0xFF padding after
 footer in the ROM's last 16 bytes. ADMG-101's Ghidra loader (gba-ghidra-loader) reads it, so a build of this fork
 names its own functions without its ELF. The format is described at the top of `tools/admgsym/admgsym.c`.
 
+The table also names the code the ELF calls but has no function symbol for: GCC's `bx Rm` call thunks (as
+`_call_via_<register>_<address>`) and crt0's code labels. And it records coverage ranges: the parts of the ROM where its
+functions are every function there is, worked out from the ELF's `$a`, `$t` and `$d` mapping symbols. The loader then
+lets no guess start a function inside them. Multiboot images with a cartridge header and anything given with
+`--not-covered <symbol>` stay outside coverage, as does any code the tool finds in no function (other than padding),
+of which it prints the first ten stretches when it runs.
+
 It is off by default until the next build, because it changes the ROM's bytes: with it on, the ROM isn't build 40.
 Changing the value rebuilds the ROM. The build fails, and the ROM is deleted, if the table doesn't fit in the padding
 or the padding isn't all 0xFF. `admgsym sidecar <elf> <rom> <out.admgsym>` writes the same entries and names to their own
