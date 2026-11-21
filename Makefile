@@ -656,11 +656,14 @@ ADMG_SYMBOLS_FLAG := $(BUILD_DIR)/admg_symbols.flag
 $(shell mkdir -p $(BUILD_DIR); [ "$$(cat $(ADMG_SYMBOLS_FLAG) 2>/dev/null)" = "$(ADMG_SYMBOLS)" ] || echo "$(ADMG_SYMBOLS)" > $(ADMG_SYMBOLS_FLAG))
 
 # Builds the rom from the elf file
-$(ROM): $(ELF) $(ADMG_SYMBOLS_FLAG) $(if $(filter 1,$(ADMG_SYMBOLS)),$(ADMGSYM))
+# The data tables mods can move, in the order ADMG-101's preparation numbers them (admgsym --relocatable)
+ADMG_RELOCATABLE := tools/admg101/relocatable-symbols.txt
+
+$(ROM): $(ELF) $(ADMG_SYMBOLS_FLAG) $(if $(filter 1,$(ADMG_SYMBOLS)),$(ADMGSYM) $(ADMG_RELOCATABLE))
 	$(OBJCOPY) -O binary $< $@
 	$(FIX) $@ -p --silent
 ifeq ($(ADMG_SYMBOLS),1)
-	$(ADMGSYM) embed $< $@
+	$(ADMGSYM) embed --relocatable $(ADMG_RELOCATABLE) $< $@
 endif
 
 emerald: all

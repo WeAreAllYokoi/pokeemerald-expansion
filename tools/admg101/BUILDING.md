@@ -22,10 +22,18 @@ gives ROM SHA-1 `bc99c00d9bd16d29572ee9ad19761b5c7b4aa4cc`. Check that before ch
 
 ## The symbol table in the ROM
 
-`make ADMG_SYMBOLS=1` ends the build by running `tools/admgsym` on the ROM. It writes the ELF's ROM functions and
-data objects (names, addresses, sizes, ARM or Thumb) into the 0xFF padding after the game as an ADMGSYM1 table, with a
-footer in the ROM's last 16 bytes. ADMG-101's Ghidra loader (gba-ghidra-loader) reads it, so a build of this fork
-names its own functions without its ELF. The format is described at the top of `tools/admgsym/admgsym.c`.
+`make ADMG_SYMBOLS=1` ends the build by running `tools/admgsym` on the ROM. It writes the ELF's named symbols
+(functions, data objects and labels, with names, addresses, sizes and ARM or Thumb, in ROM and RAM) into the 0xFF padding
+after the game as an ADMGSYM1 table, with a footer in the ROM's last 16 bytes. ADMG-101's Ghidra loader
+(gba-ghidra-loader) and ADMG-101's preparation read it, so a build of this fork can be prepared without its ELF. The format is
+described at the top of `tools/admgsym/admgsym.c`.
+
+The table carries the tables mods can move too. `tools/admg101/relocatable-symbols.txt` lists them, in the order
+ADMG-101 numbers them (ADMG-101's `tools/recipe/relocatable-symbols.txt` holds the same list); the Makefile passes it
+as `--relocatable`. The table numbers each one from 1 and keeps the relocations ADMG-101's recompiler reads for them:
+1,044 of the 218,526 R_ARM_ABS32 relocations the recompiler's symbol file carries for build 40. A name in the list has
+to be exactly one data object with a size, and the list has to keep at least one relocation, or the build fails. Build 40's table takes 1.25 MiB of
+its 2.52 MiB of padding.
 
 The table also names the code the ELF calls but has no function symbol for: GCC's `bx Rm` call thunks (as
 `_call_via_<register>_<address>`) and crt0's code labels. And it records coverage ranges: the parts of the ROM where its
@@ -36,8 +44,8 @@ of which it prints the first ten stretches when it runs.
 
 It is off by default until the next build, because it changes the ROM's bytes: with it on, the ROM isn't build 40.
 Changing the value rebuilds the ROM. The build fails, and the ROM is deleted, if the table doesn't fit in the padding
-or the padding isn't all 0xFF. `admgsym sidecar <elf> <rom> <out.admgsym>` writes the same entries and names to their own
-file instead, with the ROM CRC-32 taken over the whole ROM, leaving the ROM as it is.
+or the padding isn't all 0xFF. `admgsym sidecar [--relocatable <list>] <elf> <rom> <out.admgsym>` writes the same
+table to its own file instead, with the ROM CRC-32 taken over the whole ROM, leaving the ROM as it is.
 
 ## When you change code that reads a configuration option
 

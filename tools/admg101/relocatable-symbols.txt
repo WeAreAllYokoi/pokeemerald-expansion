@@ -1,0 +1,21 @@
+# Extensible content tables the native registry can move and grow before the game starts.
+gSpeciesInfo
+gFusionTablePointers
+gMovesInfo
+gItemsInfo
+gAbilitiesInfo
+gTypesInfo
+gTypeEffectivenessTable
+gBattleMoveEffects
+gNaturesInfo
+gTrainerClasses
+gTrainerPicInfo
+gTrainers
+gADMG_AddedTrainers
+gADMG_AddedMaps
+gADMG_AddedLayouts
+gADMG_AddedMapSections
+gADMG_AddedHealLocations
+gADMG_AddedObjectEventGraphics
+gADMG_AddedObjectEventPalettes
+gWildMonHeaders

@@ -1,15 +1,19 @@
 /*
- * admgsym: writes an ADMGSYM1 symbol table, the ROM functions and data objects of a GBA game's ELF and the ranges in
- * which they are complete, for the GBA loader of ADMG-101's Ghidra (gba-ghidra-loader) to read.
+ * admgsym: writes an ADMGSYM1 symbol table: the named symbols of a GBA game's ELF, the ranges in which its functions are
+ * complete, and the relocations into the tables mods can move. ADMG-101's Ghidra loader (gba-ghidra-loader) and its
+ * preparation read it, so a build needs no ELF to be prepared.
  *
- *   admgsym embed [--not-covered <symbol>]... <elf> <rom>                  write the table into the ROM's 0xFF padding
- *   admgsym sidecar [--not-covered <symbol>]... <elf> <rom> <out.admgsym>  write the table to its own file
+ *   admgsym embed [options] <elf> <rom>                  write the table into the ROM's 0xFF padding
+ *   admgsym sidecar [options] <elf> <rom> <out.admgsym>  write the table to its own file
+ * Options:
+ *   --not-covered <symbol>   leave the symbol's bytes out of coverage (any number of times)
+ *   --relocatable <file>     the data objects mods can move, one name per line, in the order they are numbered
  *
  * The format, little-endian throughout:
  *
  *   Header, 32 bytes:
  *     0   8  magic "ADMGSYM1"
- *     8   2  format version, 2
+ *     8   2  format version, 3
  *     10  2  flags, 0
  *     12  4  entry count
  *     16  4  string table length
@@ -17,11 +21,25 @@
  *     24  4  CRC-32 of the header and the stored payload, with this field read as 0
  *     28  4  reserved, 0
  *   Payload: a zlib stream (RFC 1950) holding the entries, then the string table.
- *   Entry, 12 bytes, sorted by address, then kind, then name, then size:
- *     0   4  address, 0x08000000-0x09FFFFFF; for a function, bit 0 set marks Thumb
+ *   Entry, 20 bytes, sorted by address, with bit 0 of a function's address ignored; entries at one address keep the
+ *   order this tool wrote them in, which for the ELF's symbols is the symbol table's order (the first name at an
+ *   address is the one GBARecomp uses):
+ *     0   4  address, anywhere in the GBA's address space; for a function, bit 0 set marks Thumb
  *     4   4  size in bytes, 0 if unknown; a coverage range's is never 0
- *     8   1  kind: 0 function, 1 data object, 2 coverage range
- *     9   3  offset of the name in the string table
+ *     8   4  value, by kind; 0 when the kind has none
+ *     12  1  kind
+ *     13  1  flags, by kind; bits a kind doesn't define are 0
+ *     14  2  aux, by kind; 0 when the kind has none
+ *     16  4  offset of the name in the string table, or 0xFFFFFFFF for none
+ *   Kinds:
+ *     0  function: address (bit 0 Thumb), size. Flags bit 0, derived: a function the ELF has no symbol for (below).
+ *     1  data object: address, size. Aux: its number among the relocatable data objects, from 1 in the order
+ *        --relocatable lists them, or 0 when it isn't relocatable.
+ *     2  coverage range: address, size; named after the ELF section.
+ *     3  label: an ELF symbol with a name that is neither a function nor a data object (crt0's Init, assembly labels).
+ *     4  relocation: address is the place, where the ROM image holds the word; value is the word, the target the
+ *        linker computed; the name is the symbol it computed it from, or none for a section-relative one.
+ *   Kinds 5-255 are unassigned.
  *   String table: NUL-terminated names of printable ASCII (0x21-0x7E), each stored once.
  *   Footer, embedded only, the last 16 bytes of the ROM:
  *     0   8  magic "ADMGSYMF"
@@ -45,8 +63,15 @@
  *   - Sections the ELF links at another address (code or data copied to RAM) are not in the ROM window, so they are
  *     never covered.
  *
- * Besides the ELF's function symbols, the table has a function at each piece of code that a BL in the ELF's code calls
- * and no function symbol starts or contains, in an executable section where the ELF doesn't mark it $d:
+ * The table holds every named ELF symbol that is defined and not absolute, other than names beginning with $ (the
+ * mapping symbols $a, $t, $d among them), at any address, exact repeats included: STT_FUNC and STT_ARM_TFUNC as
+ * functions, STT_OBJECT as data objects, the rest as labels. A name outside printable ASCII stops the tool. These are the
+ * symbols ADMG-101's export_symbols_v2.py writes, in the same order once sorted by address, with two differences that a
+ * toolchain marking Thumb by bit 0 with printable names never meets: export_symbols_v2.py, like GBARecomp's own ELF
+ * reader, writes an STT_ARM_TFUNC symbol as a label, and it keeps a name with other characters.
+ *
+ * Besides those, the table has a derived function at each piece of code that a BL in the ELF's code calls and no
+ * function symbol starts or contains, in an executable section where the ELF doesn't mark it $d:
  *   - a Thumb `bx Rm` that a Thumb BL calls, named _call_via_<register>_<address>, size 2. GCC emits these at the end
  *     of a Thumb compilation unit for calls through a register on ARMv4T, under internal .L labels the ELF doesn't keep.
  *   - code with an STT_NOTYPE label, such as crt0's InitializeWorkingMemory, under its own name, sized up to the next
@@ -56,6 +81,15 @@
  * A BL target inside a function with a size is a second entry into that function and gets nothing. These are close to
  * the classes ADMG-101's score.py (called_code) counts as call thunks and code labels; score.py also counts a `bx Rm`
  * that only an ARM BL reaches.
+ *
+ * Relocations are the R_ARM_ABS32 relocations the linker kept (--emit-relocs), read as export_symbols_v2.py reads them:
+ * the place is where the ROM image holds the word (data the game copies into RAM is found at its ROM copy; a word only
+ * RAM holds is left out), and the symbol is named only when it is a non-section symbol whose name is unique in its
+ * symbol table. Only the ones GBARecomp reads are kept: those computed from a relocatable data object, section-relative
+ * ones whose target lies in a relocatable data object or just past its end, and those computed from another symbol whose
+ * target lies inside one (GBARecomp reports those as errors). Without --relocatable there are none. Each name
+ * --relocatable gives must be exactly one data object with a size, and a list that keeps no relocation at all stops the
+ * tool, since GBARecomp refuses relocatable symbols without relocations.
  *
  * The table starts at the first 16-byte boundary after the game's bytes: the end of the ELF's last segment loaded into
  * ROM. Embedding fails, and writes nothing, unless every byte from there to the end of the ROM is 0xFF and the table
@@ -81,24 +115,33 @@
 #define HEADER_SIZE 32u
 #define FOOTER_SIZE 16u
 #define CARTRIDGE_HEADER 0xC0u
-#define MAX_STRINGS 0x01000000u /* a name offset is 3 bytes */
-#define FORMAT_VERSION 2
+#define ENTRY_SIZE 20u
+#define NO_NAME 0xFFFFFFFFu
+#define FORMAT_VERSION 3
+#define FLAG_DERIVED 1u
 
 enum
 {
     KIND_FUNCTION = 0,
     KIND_DATA = 1,
     KIND_COVERAGE = 2,
+    KIND_LABEL = 3,
+    KIND_RELOCATION = 4,
 };
 
-/* An entry of the table. name points into the ELF, or into memory this tool allocated. */
+/* An entry of the table. name points into the ELF, or into memory this tool allocated, or is NULL for none. order is
+   the order the entry was added in, which keeps entries at one address in that order. */
 struct Symbol
 {
     uint32_t address;
     uint32_t size;
+    uint32_t value;
     uint8_t kind;
+    uint8_t flags;
+    uint16_t aux;
     const char *name;
     uint32_t nameOffset;
+    size_t order;
 };
 
 struct Symbols
@@ -181,10 +224,17 @@ static void *grow(void *items, size_t count, size_t *capacity, size_t itemSize)
     return grown;
 }
 
-static void addSymbol(struct Symbols *list, uint32_t address, uint32_t size, uint8_t kind, const char *name)
+static void addEntry(struct Symbols *list, uint32_t address, uint32_t size, uint32_t value, uint8_t kind, uint8_t flags,
+                     uint16_t aux, const char *name)
 {
     list->items = grow(list->items, list->count, &list->capacity, sizeof(*list->items));
-    list->items[list->count++] = (struct Symbol){ address, size, kind, name, 0 };
+    list->items[list->count] = (struct Symbol){ address, size, value, kind, flags, aux, name, 0, list->count };
+    list->count++;
+}
+
+static void addSymbol(struct Symbols *list, uint32_t address, uint32_t size, uint8_t kind, const char *name)
+{
+    addEntry(list, address, size, 0, kind, 0, 0, name);
 }
 
 static void addRange(struct Ranges *list, uint32_t start, uint32_t end)
@@ -340,19 +390,16 @@ static uint32_t checkRomMatchesElf(const struct Elf *elf, const uint8_t *rom, si
     return end;
 }
 
+/* By address (bit 0 cleared, so a Thumb function sorts with the other names at its start), then by the order the
+   entries were added in. */
 static int compareSymbols(const void *a, const void *b)
 {
     const struct Symbol *x = a, *y = b;
-    if (x->address != y->address)
-        return x->address < y->address ? -1 : 1;
-    if (x->kind != y->kind)
-        return x->kind < y->kind ? -1 : 1;
-    int byName = strcmp(x->name, y->name);
-    if (byName != 0)
-        return byName;
-    if (x->size != y->size)
-        return x->size < y->size ? -1 : 1;
-    return 0;
+    uint32_t xa = x->kind == KIND_FUNCTION ? x->address & ~1u : x->address;
+    uint32_t ya = y->kind == KIND_FUNCTION ? y->address & ~1u : y->address;
+    if (xa != ya)
+        return xa < ya ? -1 : 1;
+    return x->order < y->order ? -1 : x->order > y->order;
 }
 
 static int compareU32(const void *a, const void *b)
@@ -667,7 +714,7 @@ static char *textf(const char *fmt, ...)
 /* Statistics for the summary line. */
 struct Summary
 {
-    size_t functions, thunks, labels, data, ranges;
+    size_t functions, thunks, labels, data, ranges, symbolLabels, outsideRom, relocations, relocatable;
     uint64_t coveredBytes, uncoveredCode;
 };
 
@@ -762,7 +809,8 @@ static void addCalledCode(struct Symbols *table, const uint8_t *rom, size_t romS
         uint16_t h = rom16(rom, romSize, t);
         if (!cartridgeEntry && calls[i].thumb && (h & 0xFF87) == 0x4700)
         {
-            addSymbol(table, t | 1u, 2, KIND_FUNCTION, textf("_call_via_%s_%08X", REGISTER_NAMES[h >> 3 & 15], t));
+            addEntry(table, t | 1u, 2, 0, KIND_FUNCTION, FLAG_DERIVED, 0,
+                     textf("_call_via_%s_%08X", REGISTER_NAMES[h >> 3 & 15], t));
             summary->thunks++;
             continue;
         }
@@ -773,7 +821,7 @@ static void addCalledCode(struct Symbols *table, const uint8_t *rom, size_t romS
             continue;
         uint32_t end = nextAfter(allStarts, allCount, t, section->end);
         end = nextAfter(dataMarks, dataCount, t, end);
-        addSymbol(table, t | (calls[i].thumb > 0 ? 1u : 0u), end - t, KIND_FUNCTION, label);
+        addEntry(table, t | (calls[i].thumb > 0 ? 1u : 0u), end - t, 0, KIND_FUNCTION, FLAG_DERIVED, 0, label);
         summary->labels++;
     }
     free(dataMarks);
@@ -1016,33 +1064,239 @@ static void addCoverage(struct Symbols *table, const uint8_t *rom, size_t romSiz
     free(starts);
 }
 
+/* Adds every named ELF symbol that is defined and not absolute, other than mapping symbols, at any address, in the
+   order of the symbol table, exact repeats included (as export_symbols_v2.py takes them). */
+static void addElfSymbols(struct Symbols *table, const struct Elf *elf, struct Summary *summary)
+{
+    for (unsigned s = 0; s < elf->header->e_shnum; s++)
+    {
+        const Elf32_Shdr *section = sectionHeader(elf, s);
+        if (section->sh_type != SHT_SYMTAB)
+            continue;
+        const Elf32_Shdr *strings = sectionHeader(elf, section->sh_link);
+        const char *names = elfRange(elf, strings->sh_offset, strings->sh_size, "string table");
+        const Elf32_Sym *symbols = elfRange(elf, section->sh_offset, section->sh_size, "symbol table");
+        size_t entries = section->sh_size / sizeof(Elf32_Sym);
+        for (size_t i = 0; i < entries; i++)
+        {
+            const Elf32_Sym *sym = &symbols[i];
+            if (sym->st_shndx == SHN_UNDEF || sym->st_shndx == SHN_ABS || sym->st_name >= strings->sh_size ||
+                memchr(names + sym->st_name, 0, strings->sh_size - sym->st_name) == NULL)
+                continue;
+            const char *name = names + sym->st_name;
+            if (*name == '\0' || *name == '$')
+                continue;
+            checkName(name, sym->st_value);
+            unsigned type = ELF32_ST_TYPE(sym->st_info);
+            if (sym->st_value < ROM_START || sym->st_value >= ROM_END)
+                summary->outsideRom++;
+            if (type == STT_FUNC || type == STT_ARM_TFUNC)
+                addSymbol(table, sym->st_value | (type == STT_ARM_TFUNC ? 1u : 0u), sym->st_size, KIND_FUNCTION, name);
+            else if (type == STT_OBJECT)
+                addSymbol(table, sym->st_value, sym->st_size, KIND_DATA, name);
+            else
+            {
+                addSymbol(table, sym->st_value, 0, KIND_LABEL, name);
+                summary->symbolLabels++;
+            }
+        }
+    }
+}
+
+/* The relocatable data objects, by --relocatable's order: sets each one's aux and returns their extents. */
+static struct Ranges markRelocatable(struct Symbols *table, char **names, int count)
+{
+    struct Ranges spans = { 0 };
+    for (int i = 0; i < count; i++)
+    {
+        struct Symbol *found = NULL;
+        int matches = 0;
+        for (size_t j = 0; j < table->count; j++)
+        {
+            struct Symbol *e = &table->items[j];
+            if (e->kind == KIND_DATA && strcmp(e->name, names[i]) == 0)
+            {
+                found = e;
+                matches++;
+            }
+        }
+        if (matches != 1 || found->size == 0)
+            fail("--relocatable %s: the ELF has to have exactly one data object of that name, with a size (it has %d)",
+                 names[i], matches);
+        if (found->aux != 0)
+            fail("--relocatable lists %s more than once", names[i]);
+        if (i + 1 > 0xFFFF)
+            fail("--relocatable lists more than 65535 data objects");
+        found->aux = (uint16_t)(i + 1);
+        addRange(&spans, found->address, found->address + found->size);
+    }
+    if (spans.count > 1)
+        qsort(spans.items, spans.count, sizeof(*spans.items), compareRanges);
+    for (size_t i = 1; i < spans.count; i++)
+    {
+        if (spans.items[i].start < spans.items[i - 1].end)
+            fail("--relocatable lists data objects that overlap, at 0x%08X", spans.items[i].start);
+    }
+    return spans;
+}
+
+/* Whether target lies inside one of spans, or (with includeEnd) just past its end. */
+static int inRelocatable(const struct Ranges *spans, uint32_t target, int includeEnd)
+{
+    for (size_t i = 0; i < spans->count; i++)
+    {
+        if (spans->items[i].start <= target && (target < spans->items[i].end ||
+                                                (includeEnd && target == spans->items[i].end)))
+            return 1;
+    }
+    return 0;
+}
+
+/* Where the ROM image holds the word the ELF links at address: through the loaded segment that holds all 4 bytes, at
+   or after the start of the ROM; 0 when no ROM copy holds it. */
+static uint32_t romPlace(const struct Elf *elf, uint32_t address)
+{
+    for (unsigned i = 0; i < elf->header->e_phnum; i++)
+    {
+        const Elf32_Phdr *p = programHeader(elf, i);
+        if (p->p_type != PT_LOAD || address < p->p_vaddr || address - p->p_vaddr + 4u > p->p_filesz)
+            continue;
+        uint32_t place = p->p_paddr + (address - p->p_vaddr);
+        return place >= ROM_START ? place : 0;
+    }
+    return 0;
+}
+
+/* A symbol table's names, sorted, for counting how many symbols share one; local section and file symbols are left out,
+   as export_symbols_v2.py leaves them out. */
+struct NameCounts
+{
+    const char **names;
+    size_t count;
+};
+
+static int compareNames(const void *a, const void *b)
+{
+    return strcmp(*(const char *const *)a, *(const char *const *)b);
+}
+
+static struct NameCounts countNames(const Elf32_Sym *symbols, size_t count, const char *strtab, size_t strtabSize)
+{
+    struct NameCounts out = { allocate((count ? count : 1) * sizeof(char *)), 0 };
+    for (size_t k = 0; k < count; k++)
+    {
+        unsigned type = ELF32_ST_TYPE(symbols[k].st_info);
+        if (ELF32_ST_BIND(symbols[k].st_info) == STB_LOCAL && (type == STT_SECTION || type == STT_FILE))
+            continue;
+        if (symbols[k].st_name < strtabSize && memchr(strtab + symbols[k].st_name, 0, strtabSize - symbols[k].st_name))
+            out.names[out.count++] = strtab + symbols[k].st_name;
+    }
+    qsort(out.names, out.count, sizeof(*out.names), compareNames);
+    return out;
+}
+
+/* How many of counted's names equal name. */
+static size_t countName(const struct NameCounts *counted, const char *name)
+{
+    size_t lo = 0, hi = counted->count;
+    while (lo < hi)
+    {
+        size_t mid = (lo + hi) / 2;
+        if (strcmp(counted->names[mid], name) < 0)
+            lo = mid + 1;
+        else
+            hi = mid;
+    }
+    size_t n = 0;
+    while (lo + n < counted->count && strcmp(counted->names[lo + n], name) == 0)
+        n++;
+    return n;
+}
+
+/* Adds the relocations GBARecomp reads, as the comment at the top describes. */
+static void addRelocations(struct Symbols *table, const struct Elf *elf, const struct Ranges *relocatable,
+                           char **names, int nameCount, struct Summary *summary)
+{
+    if (nameCount == 0)
+        return;
+    for (unsigned r = 0; r < elf->header->e_shnum; r++)
+    {
+        const Elf32_Shdr *rel = sectionHeader(elf, r);
+        if (rel->sh_type != SHT_REL)
+            continue;
+        const Elf32_Shdr *target = sectionHeader(elf, rel->sh_info);
+        if (!(target->sh_flags & SHF_ALLOC) || target->sh_type == SHT_NOBITS)
+            continue;
+        const Elf32_Shdr *symtab = sectionHeader(elf, rel->sh_link);
+        const Elf32_Shdr *strings = sectionHeader(elf, symtab->sh_link);
+        const char *strtab = elfRange(elf, strings->sh_offset, strings->sh_size, "string table");
+        const Elf32_Sym *symbols = elfRange(elf, symtab->sh_offset, symtab->sh_size, "symbol table");
+        size_t symbolCount = symtab->sh_size / sizeof(Elf32_Sym);
+        const uint8_t *bytes = elfRange(elf, target->sh_offset, target->sh_size, "relocated section");
+        size_t step = rel->sh_entsize > sizeof(Elf32_Rel) ? rel->sh_entsize : sizeof(Elf32_Rel);
+        const uint8_t *rows = elfRange(elf, rel->sh_offset, rel->sh_size, "relocations");
+        struct NameCounts counted = countNames(symbols, symbolCount, strtab, strings->sh_size);
+        for (size_t at = 0; at + sizeof(Elf32_Rel) <= rel->sh_size; at += step)
+        {
+            const Elf32_Rel *row = (const Elf32_Rel *)(rows + at);
+            if (ELF32_R_TYPE(row->r_info) != R_ARM_ABS32)
+                continue;
+            if (row->r_offset < target->sh_addr ||
+                (uint64_t)(row->r_offset - target->sh_addr) + 4u > (uint64_t)target->sh_size)
+                fail("the relocation at 0x%08X is outside its section", row->r_offset);
+            const uint8_t *w = bytes + (row->r_offset - target->sh_addr);
+            uint32_t value = (uint32_t)w[0] | (uint32_t)w[1] << 8 | (uint32_t)w[2] << 16 | (uint32_t)w[3] << 24;
+            size_t index = ELF32_R_SYM(row->r_info);
+            if (index >= symbolCount)
+                fail("the relocation at 0x%08X names a symbol outside its symbol table", row->r_offset);
+            const Elf32_Sym *sym = &symbols[index];
+            if (sym->st_shndx == SHN_UNDEF || sym->st_shndx == SHN_ABS)
+                continue;
+            uint32_t place = romPlace(elf, row->r_offset);
+            if (place == 0)
+                continue;
+            unsigned type = ELF32_ST_TYPE(sym->st_info);
+            const char *name = sym->st_name < strings->sh_size &&
+                                       memchr(strtab + sym->st_name, 0, strings->sh_size - sym->st_name)
+                                   ? strtab + sym->st_name
+                                   : "";
+            /* Named only when the name is unique among the table's symbols that aren't local section or file symbols. */
+            if (type == STT_SECTION || type == STT_FILE || *name == '\0' || countName(&counted, name) != 1)
+                name = NULL;
+            int named = 0;
+            for (int k = 0; name != NULL && k < nameCount && !named; k++)
+                named = strcmp(name, names[k]) == 0;
+            int keep = named || (name == NULL && inRelocatable(relocatable, value, 1)) ||
+                       (name != NULL && inRelocatable(relocatable, value, 0));
+            if (!keep)
+                continue;
+            addEntry(table, place, 0, value, KIND_RELOCATION, 0, 0, name);
+            summary->relocations++;
+        }
+        free(counted.names);
+    }
+}
+
 /*
- * The table's entries: the ELF's ROM functions (STT_FUNC, or STT_ARM_TFUNC from older toolchains, which marks Thumb
- * by type rather than by bit 0) and ROM data objects (STT_OBJECT), the called code it has no function symbol for, and
- * the coverage ranges; sorted, with exact repeats removed.
+ * The table's entries, as the comment at the top describes: the ELF's symbols (addElfSymbols), the derived functions,
+ * the coverage ranges and the relocations, sorted by address with entries at one address in the order they were added,
+ * exact repeats kept.
  */
 static struct Symbols readTable(const struct Elf *elf, const uint8_t *rom, size_t romSize, char **notCovered,
-                                int notCoveredCount, struct Summary *summary)
+                                int notCoveredCount, char **relocatableNames, int relocatableCount,
+                                struct Summary *summary)
 {
     size_t rawCount;
     struct RawSymbol *raw = readRawSymbols(elf, &rawCount);
     struct Symbols table = { 0 };
+    addElfSymbols(&table, elf, summary);
     size_t markCount = 0;
     struct Mark *marks = allocate((rawCount ? rawCount : 1) * sizeof(*marks));
     for (size_t i = 0; i < rawCount; i++)
     {
-        unsigned type = raw[i].type;
         char kind = markKind(raw[i].name);
         if (kind)
-        {
             marks[markCount++] = (struct Mark){ raw[i].value & ~1u, kind };
-            continue;
-        }
-        if (!isFunctionType(type) && type != STT_OBJECT)
-            continue;
-        checkName(raw[i].name, raw[i].value);
-        addSymbol(&table, raw[i].value | (type == STT_ARM_TFUNC ? 1u : 0u), raw[i].size,
-                  type == STT_OBJECT ? KIND_DATA : KIND_FUNCTION, raw[i].name);
     }
     qsort(marks, markCount, sizeof(*marks), compareMarks);
 
@@ -1057,16 +1311,15 @@ static struct Symbols readTable(const struct Elf *elf, const uint8_t *rom, size_
     struct Ranges excluded =
         findEmbeddedPrograms(rom, romSize, sections, sectionCount, raw, rawCount, &table, notCovered, notCoveredCount);
     addCoverage(&table, rom, romSize, sections, sectionCount, marks, markCount, &excluded, summary);
+    struct Ranges relocatable = markRelocatable(&table, relocatableNames, relocatableCount);
+    summary->relocatable = (size_t)relocatableCount;
+    addRelocations(&table, elf, &relocatable, relocatableNames, relocatableCount, summary);
+    if (relocatableCount > 0 && summary->relocations == 0)
+        fail("--relocatable names %d data objects, but no relocation the recompiler reads refers to them",
+             relocatableCount);
+    free(relocatable.items);
 
     qsort(table.items, table.count, sizeof(*table.items), compareSymbols);
-    size_t kept = 0;
-    for (size_t i = 0; i < table.count; i++)
-    {
-        if (kept > 0 && compareSymbols(&table.items[kept - 1], &table.items[i]) == 0)
-            continue;
-        table.items[kept++] = table.items[i];
-    }
-    table.count = kept;
     for (size_t i = 0; i < table.count; i++)
     {
         if (table.items[i].kind == KIND_FUNCTION)
@@ -1099,11 +1352,16 @@ static uint8_t *buildStrings(struct Symbol *symbols, size_t count, uint32_t *len
     memset(slots, 0, buckets * sizeof(*slots));
     size_t total = 0;
     for (size_t i = 0; i < count; i++)
-        total += strlen(symbols[i].name) + 1;
+        total += symbols[i].name ? strlen(symbols[i].name) + 1 : 0;
     uint8_t *strings = allocate(total);
     uint32_t used = 0;
     for (size_t i = 0; i < count; i++)
     {
+        if (symbols[i].name == NULL)
+        {
+            symbols[i].nameOffset = NO_NAME;
+            continue;
+        }
         size_t slot = hashName(symbols[i].name) & (buckets - 1);
         while (slots[slot] != 0 && strcmp(symbols[slots[slot] - 1].name, symbols[i].name) != 0)
             slot = (slot + 1) & (buckets - 1);
@@ -1113,8 +1371,8 @@ static uint8_t *buildStrings(struct Symbol *symbols, size_t count, uint32_t *len
             continue;
         }
         size_t size = strlen(symbols[i].name) + 1;
-        if (used + size > MAX_STRINGS)
-            fail("the names take more than %u bytes, the most a 3-byte name offset reaches", MAX_STRINGS);
+        if (used + size >= NO_NAME)
+            fail("the names take more than 4 GiB");
         symbols[i].nameOffset = used;
         memcpy(strings + used, symbols[i].name, size);
         used += (uint32_t)size;
@@ -1134,20 +1392,21 @@ static uint8_t *buildTable(struct Symbols *symbols, uint32_t romCrc, uint32_t *t
     uint32_t stringLength;
     uint8_t *strings = buildStrings(symbols->items, count, &stringLength);
 
-    size_t payloadSize = count * 12 + stringLength;
+    size_t payloadSize = count * ENTRY_SIZE + stringLength;
     uint8_t *payload = allocate(payloadSize);
     for (size_t i = 0; i < count; i++)
     {
         const struct Symbol *s = &symbols->items[i];
-        uint8_t *e = payload + i * 12;
+        uint8_t *e = payload + i * ENTRY_SIZE;
         put32(e, s->address);
         put32(e + 4, s->size);
-        e[8] = s->kind;
-        e[9] = (uint8_t)s->nameOffset;
-        e[10] = (uint8_t)(s->nameOffset >> 8);
-        e[11] = (uint8_t)(s->nameOffset >> 16);
+        put32(e + 8, s->value);
+        e[12] = s->kind;
+        e[13] = s->flags;
+        put16(e + 14, s->aux);
+        put32(e + 16, s->nameOffset);
     }
-    memcpy(payload + count * 12, strings, stringLength);
+    memcpy(payload + count * ENTRY_SIZE, strings, stringLength);
 
     mz_ulong stored = mz_compressBound((mz_ulong)payloadSize);
     uint8_t *table = allocate(HEADER_SIZE + stored);
@@ -1181,10 +1440,43 @@ static uint8_t *buildTable(struct Symbols *symbols, uint32_t romCrc, uint32_t *t
 static void printSummary(const struct Summary *s)
 {
     fprintf(stderr,
-            "admgsym: %zu functions (%zu call thunks and %zu code labels without a function symbol), %zu data objects, "
-            "%zu coverage ranges over %llu bytes\n",
-            s->functions, s->thunks, s->labels, s->data, s->ranges, (unsigned long long)s->coveredBytes);
+            "admgsym: %zu functions (%zu call thunks and %zu code labels derived), %zu data objects, %zu labels; %zu of "
+            "these symbols outside the ROM; %zu coverage ranges over %llu bytes; %zu relocations into %zu relocatable "
+            "data objects\n",
+            s->functions, s->thunks, s->labels, s->data, s->symbolLabels, s->outsideRom, s->ranges,
+            (unsigned long long)s->coveredBytes, s->relocations, s->relocatable);
 }
+
+/* The names in a --relocatable file, one per line; blank lines and lines starting with # are skipped. */
+static char **readNameList(const char *path, int *count)
+{
+    size_t size;
+    char *text = (char *)readFile(path, &size);
+    char *copy = allocate(size + 1);
+    memcpy(copy, text, size);
+    copy[size] = '\0';
+    free(text);
+    size_t capacity = 0;
+    int n = 0;
+    char **names = NULL;
+    for (char *line = strtok(copy, "\r\n"); line != NULL; line = strtok(NULL, "\r\n"))
+    {
+        while (*line == ' ' || *line == '\t')
+            line++;
+        char *end = line + strlen(line);
+        while (end > line && (end[-1] == ' ' || end[-1] == '\t'))
+            *--end = '\0';
+        if (*line == '\0' || *line == '#')
+            continue;
+        names = grow(names, (size_t)n, &capacity, sizeof(*names));
+        names[n++] = line;
+    }
+    *count = n;
+    return names;
+}
+
+static char **relocatableNames;
+static int relocatableCount, relocatableGiven;
 
 static void embed(const char *elfPath, const char *romPath, char **notCovered, int notCoveredCount)
 {
@@ -1204,7 +1496,8 @@ static void embed(const char *elfPath, const char *romPath, char **notCovered, i
         fail("the symbol table needs more than %zu bytes, but only %zu bytes of 0xFF padding follow the game at 0x%X",
              (size_t)(tableOffset - gameEnd) + HEADER_SIZE + FOOTER_SIZE, romSize - gameEnd, gameEnd);
     struct Summary summary = { 0 };
-    struct Symbols symbols = readTable(&elf, rom, romSize, notCovered, notCoveredCount, &summary);
+    struct Symbols symbols = readTable(&elf, rom, romSize, notCovered, notCoveredCount, relocatableNames,
+                                       relocatableCount, &summary);
     uint32_t tableLength;
     uint8_t *table = buildTable(&symbols, crc32Of(rom, tableOffset), &tableLength);
     size_t needed = (size_t)(tableOffset - gameEnd) + tableLength + FOOTER_SIZE;
@@ -1230,7 +1523,8 @@ static void sidecar(const char *elfPath, const char *romPath, const char *outPat
     uint8_t *rom = readFile(romPath, &romSize);
     checkRomMatchesElf(&elf, rom, romSize);
     struct Summary summary = { 0 };
-    struct Symbols symbols = readTable(&elf, rom, romSize, notCovered, notCoveredCount, &summary);
+    struct Symbols symbols = readTable(&elf, rom, romSize, notCovered, notCoveredCount, relocatableNames,
+                                       relocatableCount, &summary);
     uint32_t tableLength;
     uint8_t *table = buildTable(&symbols, crc32Of(rom, romSize), &tableLength);
     writeFile(outPath, table, tableLength);
@@ -1241,8 +1535,8 @@ static void sidecar(const char *elfPath, const char *romPath, const char *outPat
 
 static int usage(void)
 {
-    fputs("Usage: admgsym embed [--not-covered <symbol>]... <elf> <rom>\n"
-          "       admgsym sidecar [--not-covered <symbol>]... <elf> <rom> <out.admgsym>\n",
+    fputs("Usage: admgsym embed [--not-covered <symbol>]... [--relocatable <file>] <elf> <rom>\n"
+          "       admgsym sidecar [--not-covered <symbol>]... [--relocatable <file>] <elf> <rom> <out.admgsym>\n",
           stderr);
     return 2;
 }
@@ -1261,6 +1555,13 @@ int main(int argc, char **argv)
             if (i + 1 >= argc)
                 return usage();
             notCovered[notCoveredCount++] = argv[++i];
+        }
+        else if (strcmp(argv[i], "--relocatable") == 0)
+        {
+            if (i + 1 >= argc || relocatableGiven)
+                return usage();
+            relocatableGiven = 1;
+            relocatableNames = readNameList(argv[++i], &relocatableCount);
         }
         else
             paths[pathCount++] = argv[i];
