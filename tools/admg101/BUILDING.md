@@ -47,6 +47,48 @@ Changing the value rebuilds the ROM. The build fails, and the ROM is deleted, if
 or the padding isn't all 0xFF. `admgsym sidecar [--relocatable <list>] <elf> <rom> <out.admgsym>` writes the same
 table to its own file instead, with the ROM CRC-32 taken over the whole ROM, leaving the ROM as it is.
 
+## Going past 32 MiB (ADMG-101 only)
+
+A GBA cartridge holds at most 32 MiB. On ADMG-101 a hack can have more: data the linker puts in the extended ROM, a
+region at `0x40000000` of up to 256 MiB that ADMG-101 is to map when the game starts. The build then writes
+`pokeemerald.admgrom` instead of `pokeemerald.gba`: the 32 MiB cartridge image, then the extended ROM's data. Only
+ADMG-101 will run it, and ADMG-101 doesn't read `.admgrom` files yet. No GBA or emulator can run it, and the build's
+tests, which run on mGBA, still link everything into the cartridge.
+
+Move whole groups of data with `ADMG_ROMX`:
+
+```bash
+make -j$(nproc) ADMG_ROMX="sound pokemon graphics maps"
+```
+
+| Group | What moves | MiB in build 40 |
+|---|---|---|
+| `sound` | `data/sound_data.o` (voice groups, samples, the song and music player tables) and the songs | 10.64 |
+| `pokemon` | `src/pokemon.o`'s data: the species pictures and palettes, and the species tables | 7.04 |
+| `graphics` | `src/graphics.o`, the overworld object graphics (`src/event_object_movement.o`) and the fonts | 2.09 |
+| `maps` | Map layouts and headers (`data/maps.o`), map events, tilesets and animated tiles | 2.52 |
+| `extended` | Nothing more: only the objects marked `EXTENDED_DATA`, which every `ADMG_ROMX` build moves | 0 |
+
+Each group is a file of linker input-section rules in `tools/admg101/romx-groups/`, which the Makefile hands to
+`ld_script_modern.ld`'s `.romx` section. A group moves an object's `.rodata` whole, because the build doesn't compile
+with `-fdata-sections`. That's also why `ADMG_ROMX` can't be used with LTO, which `RELEASE=1` turns on: LTO compiles
+with `-fdata-sections` and links objects of its own, so the groups' rules would match nothing. String literals and
+compound strings stay in the cartridge: GCC puts string literals in `.rodata.str*` when it merges constants, which
+every build here does (the Makefile passes `-fmerge-constants`, so `-O0` builds do too). They have to stay, because
+the heap records where a block was allocated as a 25-bit offset from the start of the cartridge (`include/malloc.h`),
+and those locations are string literals.
+
+`pokemon` moves `gSpeciesInfo`, one of ADMG-101's relocatable tables, with the pictures, so it is its own group.
+Event scripts (`data/event_scripts.o`) and all code stay in the cartridge. For data a group doesn't cover, mark the
+object `EXTENDED_DATA` (`include/gba/defines.h`), as `NATIVE_DATA` marks native memory. The extended ROM is read-only,
+so the object must be `const`. A build whose ELF has extended ROM data can't make a `.gba`, so it fails unless
+`ADMG_ROMX` is set: `ADMG_ROMX=extended` moves only the marked objects.
+
+`tools/admgext` writes the `.admgrom` and refuses code in the extended ROM (an executable section, a function or an
+`$a`/`$t` mapping symbol there) and writable data. Its refusals and the format are described at the top of
+`tools/admgext/admgext.c`. With `ADMG_ROMX` empty and no `EXTENDED_DATA`, the default, the build writes the same `.gba`
+as before, byte for byte. `ADMG_SYMBOLS=1` can't be combined with it yet.
+
 ## When you change code that reads a configuration option
 
 A read outside the selector keeps the compiled value, so selecting the option would apply only partly. After any change:
@@ -101,6 +143,9 @@ release (tag `build-N`). Never the ROM or the ELF. Make it after building, from 
 ```bash
 bash tools/admg101/make_bps.sh <retail Emerald ROM> pokeemerald.gba emerald-expansion-build-N.bps
 ```
+
+For a build with `ADMG_ROMX`, give it `pokeemerald.admgrom` instead, and record the `.admgrom`'s SHA-1 in
+`rom-sha1.txt`. The build workflow below then has to build with the same `ADMG_ROMX`.
 
 It refuses a retail ROM or build with the wrong SHA-1, builds Floating IPS from its source at a pinned commit, and checks
 that the patch applied to the retail ROM gives the build exactly. `tools/admg101/rom-sha1.txt` is the build's SHA-1; the

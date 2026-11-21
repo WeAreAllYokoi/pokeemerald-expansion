@@ -3,6 +3,7 @@
 *.i
 *.elf
 *.gba
+*.admgrom
 !data/*.gba
 *.sgm
 *.sa1

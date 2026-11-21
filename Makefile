@@ -49,6 +49,10 @@ RELEASE      ?= 0
 # ADMG-101: write the ELF's ROM functions and data objects into the ROM's 0xFF padding as an ADMGSYM1 symbol table
 # (tools/admgsym), for ADMG-101's Ghidra loader. Off until the next build, so the branch still builds build 40.
 ADMG_SYMBOLS ?= 0
+# ADMG-101: move groups of data into the extended ROM at 0x40000000: graphics, maps, pokemon and sound, or extended
+# for only the data marked EXTENDED_DATA (see tools/admg101/romx-groups). The build then writes a .admgrom, which runs
+# only on ADMG-101 (once ADMG-101 supports it), instead of a .gba. Not with LTO.
+ADMG_ROMX ?=
 
 ifeq (compare,$(MAKECMDGOALS))
   COMPARE := 1
@@ -128,6 +132,8 @@ ifeq ($(RELEASE),1)
   OBJ_DIR := $(OBJ_DIR_NAME_RELEASE)
 endif
 ELF := $(ROM:.gba=.elf)
+ADMGROM := $(ROM:.gba=.admgrom)
+ADMG_ROMX := $(strip $(ADMG_ROMX))
 MAP := $(ROM:.gba=.map)
 SYM := $(ROM:.gba=.sym)
 
@@ -210,6 +216,10 @@ override CFLAGS := $(filter-out -O1 -Og -O2,$(CFLAGS))
 override CFLAGS += -O0
 endif
 
+# -fmerge-constants, which -O1 and up have by default, keeps string literals in .rodata.str* at every level, where
+# ADMG_ROMX's groups leave them in the cartridge
+override CFLAGS += -fmerge-constants
+
 # Variable filled out in other make files
 PYTHON ?= python3
 
@@ -226,6 +236,7 @@ PREPROC      := $(TOOLS_DIR)/preproc/preproc$(EXE)
 RAMSCRGEN    := $(TOOLS_DIR)/ramscrgen/ramscrgen$(EXE)
 FIX          := $(TOOLS_DIR)/gbafix/gbafix$(EXE)
 ADMGSYM      := $(TOOLS_DIR)/admgsym/admgsym$(EXE)
+ADMGEXT      := $(TOOLS_DIR)/admgext/admgext$(EXE)
 MAPJSON      := $(TOOLS_DIR)/mapjson/mapjson$(EXE)
 JSONPROC     := $(TOOLS_DIR)/jsonproc/jsonproc$(EXE)
 TRAINERPROC  := $(TOOLS_DIR)/trainerproc/trainerproc$(EXE)
@@ -387,7 +398,7 @@ check: $(TESTELF) check-script-widths
 	$(ROMTESTHYDRA) $(ROMTEST) $(OBJCOPY) $(HEADLESSELF)
 
 # Other rules
-rom: $(ROM)
+rom: $(if $(ADMG_ROMX),$(ADMGROM),$(ROM))
 ifeq ($(COMPARE),1)
 	@$(SHA1) rom.sha1
 endif
@@ -410,7 +421,7 @@ clean-assets:
 tidy: tidymodern tidycheck tidydebug tidyrelease
 
 tidymodern:
-	rm -f poke*.gba poke*.elf poke*.map
+	rm -f poke*.gba poke*.admgrom poke*.elf poke*.map
 	rm -rf $(OBJ_DIR_NAME)
 
 tidycheck:
@@ -422,9 +433,9 @@ tidydebug:
 
 tidyrelease:
 ifeq ($(RELEASE),1)
-	rm -f $(ROM_NAME) $(ELF_NAME) $(MAP_NAME)
+	rm -f $(ROM_NAME) $(ROM_NAME:.gba=.admgrom) $(ELF_NAME) $(MAP_NAME)
 else # Manually remove the release files on clean/tidy
-	rm -f $(FILE_NAME)-release.gba $(FILE_NAME)-release.elf $(FILE_NAME)-release.map
+	rm -f $(FILE_NAME)-release.gba $(FILE_NAME)-release.admgrom $(FILE_NAME)-release.elf $(FILE_NAME)-release.map
 endif
 	rm -rf $(OBJ_DIR_NAME_RELEASE)
 
@@ -629,6 +640,21 @@ $(DATA_SRC_SUBDIR)/tutor_moves.h: $(DATA_SRC_SUBDIR)/pokemon/special_movesets.js
 # Linker script
 LD_SCRIPT := ld_script_modern.ld
 
+# ADMG_ROMX's groups as input-section rules for the .romx section of ld_script_modern.ld, which INCLUDEs this file from
+# the directory the link runs in. Rewritten only when it changes, so changing ADMG_ROMX relinks; empty without groups.
+ADMG_ROMX_GROUPS := $(basename $(notdir $(wildcard tools/admg101/romx-groups/*.ld)))
+$(foreach group,$(ADMG_ROMX),$(if $(filter $(group),$(ADMG_ROMX_GROUPS)),,$(error ADMG_ROMX: there's no group named $(group). The groups are extended, graphics, maps, pokemon and sound (tools/admg101/romx-groups))))
+ifneq ($(ADMG_ROMX),)
+ifeq ($(ADMG_SYMBOLS),1)
+$(error ADMG_SYMBOLS=1 can't be used with ADMG_ROMX yet: admgsym doesn't read .admgrom files)
+endif
+ifneq ($(LTO),0)
+$(error ADMG_ROMX can't be used with LTO (RELEASE=1 turns it on): the groups name object files, which LTO replaces)
+endif
+endif
+ROMX_INPUTS := $(OBJ_DIR)/romx_inputs.ld
+$(shell mkdir -p $(OBJ_DIR); cat $(ADMG_ROMX:%=tools/admg101/romx-groups/%.ld) /dev/null > $(ROMX_INPUTS).tmp; if cmp -s $(ROMX_INPUTS).tmp $(ROMX_INPUTS); then rm -f $(ROMX_INPUTS).tmp; else mv -f $(ROMX_INPUTS).tmp $(ROMX_INPUTS); fi)
+
 # Final rules
 
 libagbsyscall:
@@ -638,14 +664,14 @@ libagbsyscall:
 ifneq ($(LTO),0)
 LDFLAGS := -march=armv4t -mabi=apcs-gnu -mcpu=arm7tdmi -Xlinker -Map=../../$(MAP) -Xlinker --print-memory-usage -Xassembler -meabi=5 -Xassembler -march=armv4t -Xassembler -mcpu=arm7tdmi -Xlinker --gc-sections
 LDFLAGS += -Xlinker -flto=auto -Xlinker --emit-relocs
-$(ELF): $(LD_SCRIPT) $(OBJS) libagbsyscall
+$(ELF): $(LD_SCRIPT) $(ROMX_INPUTS) $(OBJS) libagbsyscall
 	@echo "cd $(OBJ_DIR) && $(ARMCC) $(LDFLAGS) -T ../../$< -o ../../$@ <objs> <libs>"
 	+@cd $(OBJ_DIR) && $(ARMCC) $(LDFLAGS) -T ../../$< -o ../../$@ $(OBJS_REL) $(LIB)
 	$(FIX) $@ -t"$(TITLE)" -c$(GAME_CODE) -m$(MAKER_CODE) -r$(REVISION) --silent
 else
 # Output .map file, memory usage readout and gc sections to clean-up unused data
 LDFLAGS = -Map ../../$(MAP) --print-memory-usage --gc-sections --emit-relocs
-$(ELF): $(LD_SCRIPT) $(OBJS) libagbsyscall
+$(ELF): $(LD_SCRIPT) $(ROMX_INPUTS) $(OBJS) libagbsyscall
 	@cd $(OBJ_DIR) && $(LD) $(LDFLAGS) -T ../../$<  -o ../../$@ $(OBJS_REL) $(LIB) | cat
 	@echo "cd $(OBJ_DIR) && $(LD) $(LDFLAGS) -T ../../$< -o ../../$@ <objs> <libs> | cat"
 	$(FIX) $@ -t"$(TITLE)" -c$(GAME_CODE) -m$(MAKER_CODE) -r$(REVISION) --silent
@@ -655,16 +681,25 @@ endif
 ADMG_SYMBOLS_FLAG := $(BUILD_DIR)/admg_symbols.flag
 $(shell mkdir -p $(BUILD_DIR); [ "$$(cat $(ADMG_SYMBOLS_FLAG) 2>/dev/null)" = "$(ADMG_SYMBOLS)" ] || echo "$(ADMG_SYMBOLS)" > $(ADMG_SYMBOLS_FLAG))
 
-# Builds the rom from the elf file
 # The data tables mods can move, in the order ADMG-101's preparation numbers them (admgsym --relocatable)
 ADMG_RELOCATABLE := tools/admg101/relocatable-symbols.txt
 
+# Builds the rom from the elf file. An ELF with extended ROM data (.romx) can't be one: the data would be left out.
 $(ROM): $(ELF) $(ADMG_SYMBOLS_FLAG) $(if $(filter 1,$(ADMG_SYMBOLS)),$(ADMGSYM) $(ADMG_RELOCATABLE))
-	$(OBJCOPY) -O binary $< $@
+	rm -f $(ADMGROM)
+	@if $(OBJDUMP) -h $< | grep ' \.romx ' > /dev/null; then echo "$< links data into the extended ROM (EXTENDED_DATA), so it can't be a .gba; set ADMG_ROMX (ADMG_ROMX=extended for that data alone) to build a .admgrom." >&2; rm -f $@; exit 1; fi
+	$(OBJCOPY) -O binary -R .romx $< $@
 	$(FIX) $@ -p --silent
 ifeq ($(ADMG_SYMBOLS),1)
 	$(ADMGSYM) embed --relocatable $(ADMG_RELOCATABLE) $< $@
 endif
+
+# Builds the extended ROM (ADMG_ROMX): the cartridge image without .romx, padded, then admgext appends .romx after it
+$(ADMGROM): $(ELF) $(ADMGEXT)
+	rm -f $(ROM)
+	$(OBJCOPY) -O binary -R .romx $< $(OBJ_DIR)/cartridge.gba
+	$(FIX) $(OBJ_DIR)/cartridge.gba -p --silent
+	$(ADMGEXT) $< $(OBJ_DIR)/cartridge.gba $@
 
 emerald: all
 firered: all

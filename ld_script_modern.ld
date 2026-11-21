@@ -9,7 +9,8 @@ MEMORY
     EWRAM (rwx) : ORIGIN = 0x2000000, LENGTH = 256K
     IWRAM (rwx) : ORIGIN = 0x3000000, LENGTH = 32K
     ROM    (rx) : ORIGIN = 0x8000000, LENGTH = 32M
-    NATIVE (rw) : ORIGIN = 0x10000000, LENGTH = 0x70000000
+    NATIVE (rw) : ORIGIN = 0x10000000, LENGTH = 0x30000000
+    ROMX    (r) : ORIGIN = 0x40000000, LENGTH = 0x10000000
 }
 
 SECTIONS {
@@ -58,6 +59,15 @@ SECTIONS {
         . = ALIGN(16);
         __native_end = .;
     } > NATIVE
+
+    /* Extended ROM data for ADMG-101 only (ADMG_ROMX and EXTENDED_DATA). It comes before .rodata because an input
+       section goes to the first rule that matches it. Empty, and left out of the ELF, unless a build moves data. */
+    .romx :
+    ALIGN(4)
+    {
+        INCLUDE romx_inputs.ld
+        *.o(.romx*);
+    } > ROMX
 
     /* BEGIN ROM DATA */
 

@@ -11,6 +11,8 @@
 // Zero-initialized data in native memory, starting at 0x10000000
 // Use this for enlarged data that won't fit in the GBA's 256 KiB of EWRAM
 #define NATIVE_DATA __attribute__((section(".native_bss")))
+// Constant data in the extended ROM at 0x40000000, which is read-only, for ADMG-101 only (ADMG_ROMX in the Makefile)
+#define EXTENDED_DATA __attribute__((section(".romx")))
 #define IWRAM_INIT __attribute__((section(".iwram")))
 #define EWRAM_INIT __attribute__((section(".ewram")))
 #define COMMON_DATA __attribute__((section("common_data")))

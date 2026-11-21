@@ -1,7 +1,9 @@
 #!/bin/bash
 # Makes the BPS patch that turns a retail Pokémon Emerald (USA, Europe) ROM into this build, for its GitHub release.
 #
-#   bash tools/admg101/make_bps.sh <retail Emerald ROM> <this build's pokeemerald.gba> <out.bps>
+#   bash tools/admg101/make_bps.sh <retail Emerald ROM> <the build's ROM> <out.bps>
+#
+# The build's ROM is pokeemerald.gba, or pokeemerald.admgrom when the build sets ADMG_ROMX; rom-sha1.txt is its SHA-1.
 #
 # Run it in WSL or Linux after building (make). It refuses a retail ROM or a build whose SHA-1 is not the expected one
 # (tools/admg101/rom-sha1.txt for the build), builds Floating IPS from its source at a pinned commit (no published
@@ -13,7 +15,7 @@ FLIPS_REPOSITORY=https://github.com/Sir-Walrus/Flips.git  # Floating IPS by its 
 FLIPS_COMMIT=359d414cff73b3e0400871d3c288a59b36564834    # tag v198
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
-if [ $# -ne 3 ]; then sed -n '2,9p' "$0"; exit 2; fi
+if [ $# -ne 3 ]; then sed -n '2,11p' "$0"; exit 2; fi
 RETAIL="$1"; BUILT="$2"; OUT="$3"
 BUILD_SHA1="$(tr -d '[:space:]' < "$HERE/rom-sha1.txt")"
 
