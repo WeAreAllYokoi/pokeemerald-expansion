@@ -61,7 +61,7 @@ static const struct MassOutbreak *ADMG_GetStaticOutbreakEntry(u32 index)
 {
     if (index >= ARRAY_COUNT(sPokeOutbreakSpeciesList))
     {
-        MgbaPrintf(MGBA_LOG_WARN, "%s: invalid static outbreak index %lu", __func__, index);
+        DebugPrintfLevel(MGBA_LOG_WARN, "%s: invalid static outbreak index %lu", __func__, index);
         return NULL;
     }
     return &sPokeOutbreakSpeciesList[index];

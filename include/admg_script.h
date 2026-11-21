@@ -47,7 +47,7 @@ ADMG_NATIVE_ENTRY void ADMG_StopInvalidStateCommand(struct ScriptContext *ctx);
     { \
         if ((backing) == NULL) \
         { \
-            MgbaPrintf(MGBA_LOG_WARN, "%s: required state backing is unavailable", __func__); \
+            DebugPrintfLevel(MGBA_LOG_WARN, "%s: required state backing is unavailable", __func__); \
             ADMG_StopInvalidStateCommand(context); \
             return __VA_ARGS__; \
         } \
